@@ -10,7 +10,7 @@ hilt = "2.60.1"
 hiltNavigationCompose = "1.2.0"
 
 # Data Persistence & Preference
-room = "2.6.1"
+room = "2.7.2"
 datastore = "1.1.2"
 
 # Navigation & Lifecycle

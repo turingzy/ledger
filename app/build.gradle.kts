@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.ledger.android.application)
     alias(libs.plugins.ledger.android.compose)
     alias(libs.plugins.ledger.android.hilt)
+    alias(libs.plugins.ledger.android.room)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -23,31 +25,30 @@ android {
 }
 
 dependencies {
-    // 依赖所有 Feature 特性模块
-    implementation(projects.feature.transaction)
-    implementation(projects.feature.account)
-    implementation(projects.feature.statistics)
-    implementation(projects.feature.category)
-    implementation(projects.feature.importer)
-    implementation(projects.feature.backup)
-    implementation(projects.feature.settings)
-
-    // 核心支撑层
-    implementation(projects.core.model)
-    implementation(projects.core.common)
-    implementation(projects.core.navigation)
-    implementation(projects.core.designsystem)
-    implementation(projects.core.data)
-    implementation(projects.sync)
-
-    // AndroidX 核心与导航
+    // AndroidX Core, Lifecycle & Navigation
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.hilt.navigation.compose)
 
+    // Kotlinx Extensions
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.serialization.json)
+
+    // DataStore & Logging
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.timber)
+
+    // Testing
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.turbine)
+    testImplementation(libs.mockk)
+
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
