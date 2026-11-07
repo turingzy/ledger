@@ -8,7 +8,7 @@
 - **代码优雅**: 保持函数单一职责；优先提前返回（Guard Clauses）避免深层嵌套；善用 Kotlin 惯法语义，拒绝过度炫技。
 - **状态流安全**: 严禁公开发布 `MutableStateFlow`，必须通过 `.asStateFlow()` 暴露只读 `StateFlow`。
 - **协程调度**: 注入 `@Dispatcher(LedgerDispatchers.IO)`，严禁直接写死 `Dispatchers.IO`。
-- **架构隔离**: Feature 间严禁横向依赖，路由统一走 `:core:navigation`；Room `@Entity` 严禁穿透到 UI/ViewModel。
+- **架构隔离**: Feature 间严禁直接耦合，页面导航统一走 `cn.turingzy.ledger.navigation`；Room `@Entity` 严禁穿透到 UI/ViewModel。
 
 ## 专题规则索引
 - [01-架构分层与依赖拓扑](file://.agents/rules/01-architecture-principles.md)

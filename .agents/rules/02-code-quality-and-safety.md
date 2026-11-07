@@ -16,7 +16,7 @@
 ## 3. 记账核心：金额处理
 - **统一以分存储计算**: 货币金额一律采用 **`Long`（单位：分）**，彻底杜绝 `Double`/`Float` 精度丢失。
 - **汇率与除法**: 涉及乘除运算使用 `BigDecimal` 并指定舍入模式，计算完毕转回 `Long`（分）。
-- **展示格式化**: 仅在 UI 渲染层调用 `:core:common` 格式化为元。
+- **展示格式化**: 仅在 UI 渲染层调用 `cn.turingzy.ledger.util.AmountFormatter`（或扩展函数 `toFormattedAmount()`）格式化为元。
 
 ## 4. 并发与数据完整性
 - **协程调度**: 耗时 IO 注入 `@Dispatcher(LedgerDispatchers.IO)`，严禁直接硬编码 `Dispatchers.IO`。
