@@ -1,15 +1,12 @@
 package cn.turingzy.ledger.navigation
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ReceiptLong
-import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
 import androidx.compose.material.icons.filled.AccountBalanceWallet
-import androidx.compose.material.icons.filled.AutoGraph
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
-import androidx.compose.material.icons.outlined.AutoGraph
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
+import cn.turingzy.ledger.ui.component.LedgerIcons
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -34,14 +31,14 @@ enum class TopLevelDestination(
     val route: Route,
 ) {
     LEDGER(
-        selectedIcon = Icons.AutoMirrored.Filled.ReceiptLong,
-        unselectedIcon = Icons.AutoMirrored.Outlined.ReceiptLong,
+        selectedIcon = LedgerIcons.LedgerFilled,
+        unselectedIcon = LedgerIcons.LedgerOutline,
         labelText = "账本",
         route = Route.Ledger,
     ),
     ANALYTICS(
-        selectedIcon = Icons.Filled.AutoGraph,
-        unselectedIcon = Icons.Outlined.AutoGraph,
+        selectedIcon = LedgerIcons.AnalyticsFilled,
+        unselectedIcon = LedgerIcons.AnalyticsOutline,
         labelText = "统计",
         route = Route.Analytics,
     ),

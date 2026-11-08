@@ -1,6 +1,14 @@
 package cn.turingzy.ledger.ui.feature.ledger
 
 import cn.turingzy.ledger.model.TransactionDetail
+import java.time.LocalDate
+
+enum class DateFilterType {
+    WEEK,
+    MONTH,
+    YEAR,
+    RANGE,
+}
 
 data class DayTransactionGroup(
     val dateEpochDay: Long,
@@ -14,10 +22,16 @@ sealed interface LedgerUiState {
     data object Loading : LedgerUiState
 
     data class Success(
-        val monthDisplay: String,
+        val year: Int,
+        val month: Int,
+        val monthDisplay: String, // e.g. "2026年 11月"
+        val cardMonthDisplay: String, // e.g. "11月 结余"
         val monthIncome: Long,
         val monthExpense: Long,
         val monthBalance: Long,
         val dayGroups: List<DayTransactionGroup>,
+        val filterType: DateFilterType = DateFilterType.MONTH,
+        val filterStartDate: LocalDate? = null,
+        val filterEndDate: LocalDate? = null,
     ) : LedgerUiState
 }

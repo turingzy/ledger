@@ -6,7 +6,6 @@ import cn.turingzy.ledger.data.repository.AccountRepository
 import cn.turingzy.ledger.data.repository.CategoryRepository
 import cn.turingzy.ledger.data.repository.TransactionRepository
 import cn.turingzy.ledger.model.AccountWithTemplate
-import cn.turingzy.ledger.model.CategoryType
 import cn.turingzy.ledger.model.CategoryWithIcon
 import cn.turingzy.ledger.model.Transaction
 import cn.turingzy.ledger.model.TransactionDetail
@@ -16,11 +15,11 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
@@ -28,6 +27,25 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.inject.Inject
+
+sealed interface LedgerDateFilter {
+    data class Week(val anchorDate: LocalDate) : LedgerDateFilter
+    data class Month(val yearMonth: YearMonth) : LedgerDateFilter
+    data class Year(val year: Int) : LedgerDateFilter
+    data class Range(val startDate: LocalDate, val endDate: LocalDate) : LedgerDateFilter
+}
+
+private data class FilterCalcResult(
+    val startEpoch: Long,
+    val endEpoch: Long,
+    val filterType: DateFilterType,
+    val headerDisplay: String,
+    val cardDisplay: String,
+    val year: Int,
+    val month: Int,
+    val startDate: LocalDate,
+    val endDate: LocalDate,
+)
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
@@ -37,7 +55,7 @@ class LedgerViewModel @Inject constructor(
     accountRepository: AccountRepository,
 ) : ViewModel() {
 
-    private val currentMonth = MutableStateFlow(YearMonth.now())
+    private val dateFilter = MutableStateFlow<LedgerDateFilter>(LedgerDateFilter.Week(LocalDate.now()))
 
     val categories: StateFlow<List<CategoryWithIcon>> = categoryRepository.getCategoriesStream()
         .stateIn(
@@ -53,23 +71,61 @@ class LedgerViewModel @Inject constructor(
             initialValue = emptyList(),
         )
 
-    val uiState: StateFlow<LedgerUiState> = currentMonth.flatMapLatest { month ->
+    val uiState: StateFlow<LedgerUiState> = dateFilter.flatMapLatest { filter ->
         val zone = ZoneId.systemDefault()
-        val startEpoch = month.atDay(1).atStartOfDay(zone).toInstant().toEpochMilli()
-        val endEpoch = month.atEndOfMonth().atTime(23, 59, 59, 999_000_000).atZone(zone).toInstant().toEpochMilli()
+        val calc = when (filter) {
+            is LedgerDateFilter.Week -> {
+                val startOfWeek = filter.anchorDate.with(DayOfWeek.MONDAY)
+                val endOfWeek = filter.anchorDate.with(DayOfWeek.SUNDAY)
+                val s = startOfWeek.atStartOfDay(zone).toInstant().toEpochMilli()
+                val e = endOfWeek.atTime(23, 59, 59, 999_000_000).atZone(zone).toInstant().toEpochMilli()
+                val header = "${filter.anchorDate.year}.${filter.anchorDate.monthValue.toString().padStart(2, '0')}"
+                val cardLabel = "结余"
+                FilterCalcResult(s, e, DateFilterType.WEEK, header, cardLabel, filter.anchorDate.year, filter.anchorDate.monthValue, startOfWeek, endOfWeek)
+            }
+            is LedgerDateFilter.Month -> {
+                val s = filter.yearMonth.atDay(1).atStartOfDay(zone).toInstant().toEpochMilli()
+                val e = filter.yearMonth.atEndOfMonth().atTime(23, 59, 59, 999_000_000).atZone(zone).toInstant().toEpochMilli()
+                val header = "${filter.yearMonth.year}.${filter.yearMonth.monthValue.toString().padStart(2, '0')}"
+                val cardLabel = "结余"
+                FilterCalcResult(s, e, DateFilterType.MONTH, header, cardLabel, filter.yearMonth.year, filter.yearMonth.monthValue, filter.yearMonth.atDay(1), filter.yearMonth.atEndOfMonth())
+            }
+            is LedgerDateFilter.Year -> {
+                val startOfYear = LocalDate.of(filter.year, 1, 1)
+                val endOfYear = LocalDate.of(filter.year, 12, 31)
+                val s = startOfYear.atStartOfDay(zone).toInstant().toEpochMilli()
+                val e = endOfYear.atTime(23, 59, 59, 999_000_000).atZone(zone).toInstant().toEpochMilli()
+                val header = "${filter.year}"
+                val cardLabel = "结余"
+                FilterCalcResult(s, e, DateFilterType.YEAR, header, cardLabel, filter.year, 1, startOfYear, endOfYear)
+            }
+            is LedgerDateFilter.Range -> {
+                val s = filter.startDate.atStartOfDay(zone).toInstant().toEpochMilli()
+                val e = filter.endDate.atTime(23, 59, 59, 999_000_000).atZone(zone).toInstant().toEpochMilli()
+                val header = "${filter.startDate.year}.${filter.startDate.monthValue.toString().padStart(2, '0')}"
+                val cardLabel = "结余"
+                FilterCalcResult(s, e, DateFilterType.RANGE, header, cardLabel, filter.startDate.year, filter.startDate.monthValue, filter.startDate, filter.endDate)
+            }
+        }
 
         combine(
-            transactionRepository.getAmountSum(TransactionType.INCOME, startEpoch, endEpoch),
-            transactionRepository.getAmountSum(TransactionType.EXPENSE, startEpoch, endEpoch),
-            transactionRepository.getTransactionsBetween(startEpoch, endEpoch),
+            transactionRepository.getAmountSum(TransactionType.INCOME, calc.startEpoch, calc.endEpoch),
+            transactionRepository.getAmountSum(TransactionType.EXPENSE, calc.startEpoch, calc.endEpoch),
+            transactionRepository.getTransactionsBetween(calc.startEpoch, calc.endEpoch),
         ) { income, expense, transactions ->
             val dayGroups = groupTransactionsByDay(transactions, zone)
             LedgerUiState.Success(
-                monthDisplay = "${month.year}年${month.monthValue}月",
+                year = calc.year,
+                month = calc.month,
+                monthDisplay = calc.headerDisplay,
+                cardMonthDisplay = calc.cardDisplay,
                 monthIncome = income,
                 monthExpense = expense,
                 monthBalance = income - expense,
                 dayGroups = dayGroups,
+                filterType = calc.filterType,
+                filterStartDate = calc.startDate,
+                filterEndDate = calc.endDate,
             )
         }
     }.stateIn(
@@ -77,6 +133,22 @@ class LedgerViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = LedgerUiState.Loading,
     )
+
+    fun setMonth(year: Int, month: Int) {
+        dateFilter.value = LedgerDateFilter.Month(YearMonth.of(year, month))
+    }
+
+    fun setWeek(anchorDate: LocalDate) {
+        dateFilter.value = LedgerDateFilter.Week(anchorDate)
+    }
+
+    fun setYear(year: Int) {
+        dateFilter.value = LedgerDateFilter.Year(year)
+    }
+
+    fun setRange(startDate: LocalDate, endDate: LocalDate) {
+        dateFilter.value = LedgerDateFilter.Range(startDate, endDate)
+    }
 
     fun createTransaction(
         type: TransactionType,
@@ -112,7 +184,7 @@ class LedgerViewModel @Inject constructor(
         zone: ZoneId,
     ): List<DayTransactionGroup> {
         val today = LocalDate.now(zone)
-        val dateFormatter = DateTimeFormatter.ofPattern("M月d日 E", Locale.CHINESE)
+        val dateFormatter = DateTimeFormatter.ofPattern("MM.dd E", Locale.CHINESE)
 
         return transactions
             .groupBy { tx ->
