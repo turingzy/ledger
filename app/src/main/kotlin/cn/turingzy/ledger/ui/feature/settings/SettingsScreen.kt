@@ -1,35 +1,45 @@
 package cn.turingzy.ledger.ui.feature.settings
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,14 +47,25 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cn.turingzy.ledger.model.Category
 import cn.turingzy.ledger.model.CategoryType
 import cn.turingzy.ledger.model.CategoryWithIcon
-import cn.turingzy.ledger.model.Icon
+import cn.turingzy.ledger.model.Icon as ModelIcon
+import cn.turingzy.ledger.ui.theme.IosBg
+import cn.turingzy.ledger.ui.theme.IosCard
+import cn.turingzy.ledger.ui.theme.IosLabel
+import cn.turingzy.ledger.ui.theme.IosSecondaryLabel
+import cn.turingzy.ledger.ui.theme.IosSeparator
 
 @Composable
 fun SettingsScreen(
@@ -54,15 +75,29 @@ fun SettingsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     var showAddCategoryDialog by remember { mutableStateOf(false) }
+    var showCategorySheet by remember { mutableStateOf(false) }
+    var showParseRulesDialog by remember { mutableStateOf(false) }
+    var showBackupDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
 
     SettingsContent(
         uiState = uiState,
-        onAddCategoryClick = { showAddCategoryDialog = true },
-        onDeleteCategoryClick = { viewModel.deleteCategory(it) },
+        onCategoryManagementClick = { showCategorySheet = true },
+        onParseRulesClick = { showParseRulesDialog = true },
+        onBackupClick = { showBackupDialog = true },
         onAboutClick = { showAboutDialog = true },
         modifier = modifier,
     )
+
+    if (showCategorySheet) {
+        val categories = (uiState as? SettingsUiState.Success)?.categories ?: emptyList()
+        CategoryManagementSheet(
+            categories = categories,
+            onDismissRequest = { showCategorySheet = false },
+            onAddCategoryClick = { showAddCategoryDialog = true },
+            onDeleteCategory = { viewModel.deleteCategory(it) },
+        )
+    }
 
     if (showAddCategoryDialog) {
         val icons = (uiState as? SettingsUiState.Success)?.availableIcons ?: emptyList()
@@ -76,6 +111,14 @@ fun SettingsScreen(
         )
     }
 
+    if (showParseRulesDialog) {
+        ParseRulesDialog(onDismissRequest = { showParseRulesDialog = false })
+    }
+
+    if (showBackupDialog) {
+        BackupAndRestoreDialog(onDismissRequest = { showBackupDialog = false })
+    }
+
     if (showAboutDialog) {
         val version = (uiState as? SettingsUiState.Success)?.appVersion ?: "1.0.0"
         AboutDialog(
@@ -85,25 +128,17 @@ fun SettingsScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsContent(
     uiState: SettingsUiState,
-    onAddCategoryClick: () -> Unit,
-    onDeleteCategoryClick: (Long) -> Unit,
+    onCategoryManagementClick: () -> Unit,
+    onParseRulesClick: () -> Unit,
+    onBackupClick: () -> Unit,
     onAboutClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("系统设置") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                ),
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = IosBg,
         modifier = modifier,
     ) { innerPadding ->
         when (uiState) {
@@ -114,7 +149,7 @@ fun SettingsContent(
                         .padding(innerPadding),
                     contentAlignment = Alignment.Center,
                 ) {
-                    CircularProgressIndicator()
+                    CircularProgressIndicator(color = Color(0xFF007AFF))
                 }
             }
 
@@ -122,154 +157,97 @@ fun SettingsContent(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
+                        .statusBarsPadding()
                         .padding(innerPadding),
-                    contentPadding = PaddingValues(16.dp),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    // 常规设置组: 存储信息与关于
-                    item(key = "general_section") {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                            ),
+                    // 大标题“设置”
+                    item(key = "header_title") {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(44.dp),
+                            contentAlignment = Alignment.CenterStart,
                         ) {
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Storage,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary,
-                                        )
-                                        Text(text = "数据存储")
-                                    }
-                                    Text(
-                                        text = "本地 SQLite 沙盒",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable { onAboutClick() }
-                                        .padding(16.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Info,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary,
-                                        )
-                                        Text(text = "关于 Ledger")
-                                    }
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
-                                        contentDescription = "查看关于",
-                                        tint = MaterialTheme.colorScheme.outline,
-                                        modifier = Modifier.size(16.dp),
-                                    )
-                                }
-                            }
+                            Text(
+                                text = "设置",
+                                fontSize = 28.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = IosLabel,
+                                letterSpacing = (-0.6).sp,
+                            )
                         }
                     }
 
-                    // 分类管理组头部
-                    item(key = "category_section_header") {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
+                    // 分组 1: 卡片管理、账单解析规则、数据备份和恢复
+                    item(key = "group_1") {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .shadow(
+                                    elevation = 2.dp,
+                                    shape = RoundedCornerShape(16.dp),
+                                    ambientColor = Color.Black.copy(alpha = 0.04f),
+                                    spotColor = Color.Black.copy(alpha = 0.04f),
+                                ),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = IosCard),
                         ) {
-                            Text(
-                                text = "分类管理 (${uiState.categories.size})",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            IconButton(onClick = onAddCategoryClick) {
-                                Icon(
-                                    imageVector = Icons.Default.Add,
-                                    contentDescription = "添加新分类",
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                SettingsRowItem(
+                                    icon = Icons.Default.CreditCard,
+                                    iconBgColor = Color(0xFFFF9500),
+                                    title = "卡片管理",
+                                    onClick = onCategoryManagementClick,
+                                )
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(start = 58.dp),
+                                    thickness = 0.5.dp,
+                                    color = IosSeparator,
+                                )
+                                SettingsRowItem(
+                                    icon = Icons.Default.Code,
+                                    iconBgColor = Color(0xFF5856D6),
+                                    title = "账单解析规则",
+                                    onClick = onParseRulesClick,
+                                )
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(start = 58.dp),
+                                    thickness = 0.5.dp,
+                                    color = IosSeparator,
+                                )
+                                SettingsRowItem(
+                                    icon = Icons.Default.CloudUpload,
+                                    iconBgColor = Color(0xFF34C759),
+                                    title = "数据备份和恢复",
+                                    onClick = onBackupClick,
                                 )
                             }
                         }
                     }
 
-                    // 分类列表
-                    items(
-                        items = uiState.categories,
-                        key = { it.category.id },
-                    ) { categoryWithIcon ->
-                        val cat = categoryWithIcon.category
+                    // 分组 2: 关于
+                    item(key = "group_2") {
                         Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .shadow(
+                                    elevation = 2.dp,
+                                    shape = RoundedCornerShape(16.dp),
+                                    ambientColor = Color.Black.copy(alpha = 0.04f),
+                                    spotColor = Color.Black.copy(alpha = 0.04f),
+                                ),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = IosCard),
                         ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Category,
-                                        contentDescription = cat.name,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(24.dp),
-                                    )
-                                    Column {
-                                        Text(
-                                            text = cat.name,
-                                            style = MaterialTheme.typography.bodyLarge,
-                                        )
-                                        Text(
-                                            text = if (cat.type == CategoryType.EXPENSE) "支出分类" else "收入分类",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        )
-                                    }
-                                }
-
-                                if (!cat.isSystem) {
-                                    IconButton(onClick = { onDeleteCategoryClick(cat.id) }) {
-                                        Icon(
-                                            imageVector = Icons.Default.DeleteOutline,
-                                            contentDescription = "删除分类",
-                                            tint = MaterialTheme.colorScheme.outline,
-                                            modifier = Modifier.size(20.dp),
-                                        )
-                                    }
-                                } else {
-                                    Text(
-                                        text = "内置",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.outline,
-                                        modifier = Modifier.padding(end = 8.dp),
-                                    )
-                                }
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                SettingsRowItem(
+                                    icon = Icons.Default.Info,
+                                    iconBgColor = Color(0xFF007AFF),
+                                    title = "关于",
+                                    onClick = onAboutClick,
+                                )
                             }
                         }
                     }
@@ -277,6 +255,271 @@ fun SettingsContent(
             }
         }
     }
+}
+
+@Composable
+fun SettingsRowItem(
+    icon: ImageVector,
+    iconBgColor: Color,
+    title: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(iconBgColor),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+            Text(
+                text = title,
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Normal,
+                color = IosLabel,
+            )
+        }
+
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+            contentDescription = null,
+            tint = IosSecondaryLabel.copy(alpha = 0.35f),
+            modifier = Modifier.size(14.dp),
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CategoryManagementSheet(
+    categories: List<CategoryWithIcon>,
+    onDismissRequest: () -> Unit,
+    onAddCategoryClick: () -> Unit,
+    onDeleteCategory: (Long) -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismissRequest,
+        sheetState = sheetState,
+        containerColor = IosBg,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "卡片与分类管理",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = IosLabel,
+                )
+                IconButton(onClick = onAddCategoryClick) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "添加分类",
+                        tint = Color(0xFF007AFF),
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = IosCard),
+            ) {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(360.dp),
+                ) {
+                    items(
+                        items = categories,
+                        key = { it.category.id },
+                    ) { categoryWithIcon ->
+                        val cat = categoryWithIcon.category
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column {
+                                Text(
+                                    text = cat.name,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = IosLabel,
+                                )
+                                Text(
+                                    text = if (cat.type == CategoryType.EXPENSE) "支出分类" else "收入分类",
+                                    fontSize = 12.sp,
+                                    color = IosSecondaryLabel,
+                                )
+                            }
+
+                            if (!cat.isSystem) {
+                                IconButton(onClick = { onDeleteCategory(cat.id) }) {
+                                    Icon(
+                                        imageVector = Icons.Default.DeleteOutline,
+                                        contentDescription = "删除",
+                                        tint = Color(0xFFFF3B30),
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                }
+                            } else {
+                                Text(
+                                    text = "系统内置",
+                                    fontSize = 12.sp,
+                                    color = IosSecondaryLabel.copy(alpha = 0.6f),
+                                    modifier = Modifier.padding(end = 8.dp),
+                                )
+                            }
+                        }
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            thickness = 0.5.dp,
+                            color = IosSeparator,
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+fun ParseRulesDialog(
+    onDismissRequest: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        icon = {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFF5856D6)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Code,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(26.dp),
+                )
+            }
+        },
+        title = {
+            Text(
+                text = "账单解析规则",
+                fontWeight = FontWeight.Bold,
+                color = IosLabel,
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "支持智能解析微信支付通知、支付宝账单、银行扣款短信。",
+                    fontSize = 14.sp,
+                    color = IosLabel,
+                )
+                Text(
+                    text = "• 自动提取交易金额、交易对手与商户分类\n• 本地离线正规匹配，零网络上传保护隐私\n• 智能对应至绑定的默认扣款卡账户",
+                    fontSize = 13.sp,
+                    color = IosSecondaryLabel,
+                    lineHeight = 18.sp,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text("了解", color = Color(0xFF007AFF), fontWeight = FontWeight.Bold)
+            }
+        },
+    )
+}
+
+@Composable
+fun BackupAndRestoreDialog(
+    onDismissRequest: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        icon = {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFF34C759)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CloudUpload,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(26.dp),
+                )
+            }
+        },
+        title = {
+            Text(
+                text = "数据备份和恢复",
+                fontWeight = FontWeight.Bold,
+                color = IosLabel,
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "本地 SQLite 沙盒数据库状态良好。",
+                    fontSize = 14.sp,
+                    color = IosLabel,
+                )
+                Text(
+                    text = "所有记账明细、账户及分类数据仅存储在您的设备受保护存储中。您可以随时导出加密备份文件或进行数据迁移恢复。",
+                    fontSize = 13.sp,
+                    color = IosSecondaryLabel,
+                    lineHeight = 18.sp,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text("完成", color = Color(0xFF007AFF), fontWeight = FontWeight.Bold)
+            }
+        },
+    )
 }
 
 @Preview(showBackground = true)
@@ -288,17 +531,18 @@ fun SettingsContentPreview() {
                 categories = listOf(
                     CategoryWithIcon(
                         category = Category(id = 1L, name = "餐饮食品", type = CategoryType.EXPENSE, iconId = 1L, isSystem = true),
-                        icon = Icon(id = 1L, keyName = "ic_food", displayName = "餐饮", iconUri = "res://"),
+                        icon = ModelIcon(id = 1L, keyName = "ic_food", displayName = "餐饮", iconUri = "res://"),
                     ),
                     CategoryWithIcon(
                         category = Category(id = 2L, name = "外设数码", type = CategoryType.EXPENSE, iconId = 1L, isSystem = false),
-                        icon = Icon(id = 1L, keyName = "ic_shopping", displayName = "数码", iconUri = "res://"),
+                        icon = ModelIcon(id = 1L, keyName = "ic_shopping", displayName = "数码", iconUri = "res://"),
                     ),
                 ),
                 availableIcons = emptyList(),
             ),
-            onAddCategoryClick = {},
-            onDeleteCategoryClick = {},
+            onCategoryManagementClick = {},
+            onParseRulesClick = {},
+            onBackupClick = {},
             onAboutClick = {},
         )
     }

@@ -809,7 +809,7 @@ fun DayGroupSection(
             ) {
                 if (dayGroup.totalExpense > 0) {
                     Text(
-                        text = "- ",
+                        text = "– ",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = IosRed,
@@ -902,12 +902,12 @@ fun DayTransactionRowItem(
     }
 
     val amountText = when (tx.type) {
-        TransactionType.EXPENSE -> "-${tx.amount.toFormattedAmount(showSymbol = true)}"
-        TransactionType.INCOME -> "+${tx.amount.toFormattedAmount(showSymbol = true)}"
+        TransactionType.EXPENSE -> "– ${tx.amount.toFormattedAmount(showSymbol = true)}"
+        TransactionType.INCOME -> "+ ${tx.amount.toFormattedAmount(showSymbol = true)}"
         TransactionType.TRANSFER -> tx.amount.toFormattedAmount(showSymbol = true)
     }
     val amountColor = when (tx.type) {
-        TransactionType.EXPENSE -> IosRed
+        TransactionType.EXPENSE -> IosLabel
         TransactionType.INCOME -> IosGreen
         TransactionType.TRANSFER -> IosLabel
     }
