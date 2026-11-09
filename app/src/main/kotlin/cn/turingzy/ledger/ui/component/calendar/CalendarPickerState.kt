@@ -1,4 +1,4 @@
-package cn.turingzy.ledger.ui.feature.ledger
+package cn.turingzy.ledger.ui.component.calendar
 
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue

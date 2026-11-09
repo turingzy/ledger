@@ -226,7 +226,7 @@ class AnalyticsViewModelTest {
                 assertEquals(scope, selected.timeScope)
                 assertEquals(expectedStart, selected.periodStart)
                 if (scope == AnalyticsTimeScope.WEEK) {
-                    assertEquals("2020.12.28 - 2021.1.3", selected.periodDisplay)
+                    assertEquals("2020 12.28-2021 01.03", selected.periodDisplay)
                 }
 
                 val nextStart = when (scope) {
@@ -260,6 +260,43 @@ class AnalyticsViewModelTest {
                 testDispatcher.scheduler.advanceUntilIdle()
                 assertEquals(expectedStart, (awaitItem() as AnalyticsUiState.Success).periodStart)
             }
+        }
+    }
+
+    @Test
+    fun selectRange_queriesExactBoundariesAndScopeChangeRestoresCalendarPeriod() = runTest {
+        coEvery { transactionRepository.getAmountSum(any(), any(), any()) } returns flowOf(0L)
+        coEvery { transactionRepository.getTransactionsBetween(any(), any()) } returns flowOf(emptyList())
+        viewModel = AnalyticsViewModel(transactionRepository)
+        val start = LocalDate.of(2024, 2, 27)
+        val end = LocalDate.of(2024, 3, 4)
+        val zone = ZoneId.systemDefault()
+
+        viewModel.uiState.test {
+            awaitItem()
+            testDispatcher.scheduler.advanceUntilIdle()
+            awaitItem()
+
+            viewModel.selectRange(start, end)
+            testDispatcher.scheduler.advanceUntilIdle()
+            val selected = awaitItem() as AnalyticsUiState.Success
+            assertEquals(start, selected.periodStart)
+            assertEquals(end, selected.periodEnd)
+            assertEquals("2024 02.27-03.04", selected.periodDisplay)
+            assertEquals(start, selected.trendPoints.first().date)
+            assertEquals(end, selected.trendPoints.last().date)
+            assertEquals(7, selected.trendPoints.size)
+            val startMillis = start.atStartOfDay(zone).toInstant().toEpochMilli()
+            val endMillis = end.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
+            coVerify { transactionRepository.getTransactionsBetween(startMillis, endMillis) }
+            coVerify { transactionRepository.getAmountSum(TransactionType.EXPENSE, startMillis, endMillis) }
+            coVerify { transactionRepository.getAmountSum(TransactionType.INCOME, startMillis, endMillis) }
+
+            viewModel.setTimeScope(AnalyticsTimeScope.WEEK)
+            testDispatcher.scheduler.advanceUntilIdle()
+            val reset = awaitItem() as AnalyticsUiState.Success
+            assertEquals(LocalDate.now().with(java.time.DayOfWeek.MONDAY), reset.periodStart)
+            assertEquals(reset.periodStart.plusDays(6), reset.periodEnd)
         }
     }
 

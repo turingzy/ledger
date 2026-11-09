@@ -78,6 +78,24 @@ class AnalyticsChartDataTest {
         assertEquals(0.25f, analyticsRatio(1L, 4L), 0.000001f)
     }
 
+    @Test
+    fun customTrend_crossesYearAndExcludesDatesOutsidePartialMonths() {
+        val start = LocalDate.of(2025, 12, 20)
+        val end = LocalDate.of(2026, 2, 5)
+        val entries = listOf(
+            transaction(start.minusDays(1), TransactionType.EXPENSE, 100L),
+            transaction(start, TransactionType.EXPENSE, 200L),
+            transaction(end, TransactionType.INCOME, 300L),
+            transaction(end.plusDays(1), TransactionType.INCOME, 400L),
+        )
+        val result = buildAnalyticsTrend(entries, AnalyticsTimeScope.YEAR, start, zone, end)
+        assertEquals(3, result.size)
+        assertEquals(LocalDate.of(2025, 12, 1), result.first().date)
+        assertEquals(LocalDate.of(2026, 2, 1), result.last().date)
+        assertEquals(200L, result.sumOf { it.expense })
+        assertEquals(300L, result.sumOf { it.income })
+    }
+
     private fun transaction(
         date: LocalDate,
         type: TransactionType,

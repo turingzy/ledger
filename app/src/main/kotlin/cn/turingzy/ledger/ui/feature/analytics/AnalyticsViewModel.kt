@@ -15,11 +15,11 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import java.time.Instant
-import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
-import java.time.temporal.TemporalAdjusters
+import java.time.temporal.ChronoUnit
+import cn.turingzy.ledger.ui.component.calendar.CalendarSelection
 import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -40,11 +40,9 @@ class AnalyticsViewModel @Inject constructor(
     }.flatMapLatest { (selectedPeriod, catType) ->
         val scope = selectedPeriod.scope
         val zone = ZoneId.systemDefault()
-        val (startEpoch, endEpoch, periodDisplay) = calculateTimeRange(
-            scope,
-            selectedPeriod.anchor,
-            zone
-        )
+        val selection = selectedPeriod.selection
+        val startEpoch = selection.start.atStartOfDay(zone).toInstant().toEpochMilli()
+        val endEpoch = selection.end.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
 
         combine(
             transactionRepository.getAmountSum(TransactionType.EXPENSE, startEpoch, endEpoch),
@@ -55,13 +53,14 @@ class AnalyticsViewModel @Inject constructor(
             AnalyticsUiState.Success(
                 timeScope = scope,
                 categoryType = catType,
-                periodDisplay = periodDisplay,
+                periodDisplay = selection.displayRange(),
                 totalExpense = totalExpense,
                 totalIncome = totalIncome,
                 balance = totalIncome - totalExpense,
                 rankings = rankings,
-                periodStart = Instant.ofEpochMilli(startEpoch).atZone(zone).toLocalDate(),
-                trendPoints = buildAnalyticsTrend(transactions, scope, selectedPeriod.anchor, zone),
+                periodStart = selection.start,
+                periodEnd = selection.end,
+                trendPoints = buildAnalyticsTrend(transactions, scope, selection.start, zone, selection.end),
             )
         }
     }.stateIn(
@@ -71,7 +70,7 @@ class AnalyticsViewModel @Inject constructor(
     )
 
     fun setTimeScope(scope: AnalyticsTimeScope) {
-        if (period.value.scope == scope) return
+        if (period.value.scope == scope && period.value.customSelection == null) return
         period.value = AnalyticsPeriod(scope, LocalDate.now())
     }
 
@@ -86,60 +85,41 @@ class AnalyticsViewModel @Inject constructor(
             AnalyticsTimeScope.MONTH -> selected.anchor.plusMonths(delta.toLong())
             AnalyticsTimeScope.YEAR -> selected.anchor.plusYears(delta.toLong())
         }
-        period.value = selected.copy(anchor = anchor)
+        val custom = selected.customSelection?.let {
+            val days = ChronoUnit.DAYS.between(it.start, it.end) + 1
+            CalendarSelection(it.start.plusDays(days * delta), it.end.plusDays(days * delta))
+        }
+        period.value = selected.copy(anchor = anchor, customSelection = custom)
     }
 
     fun selectPeriod(date: LocalDate) {
-        period.value = period.value.copy(anchor = date)
+        period.value = period.value.copy(anchor = date, customSelection = null)
     }
 
-    private data class AnalyticsPeriod(val scope: AnalyticsTimeScope, val anchor: LocalDate)
-
-    private fun calculateTimeRange(
-        scope: AnalyticsTimeScope,
-        anchor: LocalDate,
-        zone: ZoneId,
-    ): Triple<Long, Long, String> {
-        return when (scope) {
-            AnalyticsTimeScope.WEEK -> {
-                val targetMonday = anchor.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-                val targetSunday = targetMonday.plusDays(6)
-
-                val start = targetMonday.atStartOfDay(zone).toInstant().toEpochMilli()
-                val end = targetSunday.atTime(23, 59, 59, 999_000_000).atZone(zone).toInstant()
-                    .toEpochMilli()
-                val endDisplay = if (targetMonday.year == targetSunday.year) {
-                    "${targetSunday.monthValue}.${targetSunday.dayOfMonth}"
-                } else {
-                    "${targetSunday.year}.${targetSunday.monthValue}.${targetSunday.dayOfMonth}"
-                }
-                val display =
-                    "${targetMonday.year}.${targetMonday.monthValue}.${targetMonday.dayOfMonth} - $endDisplay"
-                Triple(start, end, display)
-            }
-
-            AnalyticsTimeScope.MONTH -> {
-                val targetYm = YearMonth.from(anchor)
-
-                val start = targetYm.atDay(1).atStartOfDay(zone).toInstant().toEpochMilli()
-                val end =
-                    targetYm.atEndOfMonth().atTime(23, 59, 59, 999_000_000).atZone(zone).toInstant()
-                        .toEpochMilli()
-                val display = "${targetYm.year}年${targetYm.monthValue}月"
-                Triple(start, end, display)
-            }
-
-            AnalyticsTimeScope.YEAR -> {
-                val targetYear = anchor.year
-                val start =
-                    LocalDate.of(targetYear, 1, 1).atStartOfDay(zone).toInstant().toEpochMilli()
-                val end =
-                    LocalDate.of(targetYear, 12, 31).atTime(23, 59, 59, 999_000_000).atZone(zone)
-                        .toInstant().toEpochMilli()
-                val display = "${targetYear}年"
-                Triple(start, end, display)
-            }
+    fun selectRange(start: LocalDate, end: LocalDate) {
+        val selection = CalendarSelection(start, end)
+        val days = ChronoUnit.DAYS.between(start, end) + 1
+        val scope = when {
+            selection == CalendarSelection.year(start.year) -> AnalyticsTimeScope.YEAR
+            selection == CalendarSelection.month(YearMonth.from(start)) -> AnalyticsTimeScope.MONTH
+            days <= 7 -> AnalyticsTimeScope.WEEK
+            days <= 31 -> AnalyticsTimeScope.MONTH
+            else -> AnalyticsTimeScope.YEAR
         }
+        period.value = AnalyticsPeriod(scope, start, selection)
+    }
+
+    private data class AnalyticsPeriod(
+        val scope: AnalyticsTimeScope,
+        val anchor: LocalDate,
+        val customSelection: CalendarSelection? = null,
+    ) {
+        val selection: CalendarSelection
+            get() = customSelection ?: when (scope) {
+                AnalyticsTimeScope.WEEK -> CalendarSelection.week(anchor)
+                AnalyticsTimeScope.MONTH -> CalendarSelection.month(YearMonth.from(anchor))
+                AnalyticsTimeScope.YEAR -> CalendarSelection.year(anchor.year)
+            }
     }
 
     private fun calculateCategoryRankings(

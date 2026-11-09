@@ -37,12 +37,17 @@ sealed interface AnalyticsUiState {
     data class Success(
         val timeScope: AnalyticsTimeScope,
         val categoryType: CategoryType, // 支出分析 vs 收入分析
-        val periodDisplay: String, // e.g. "2026年11月"
+        val periodDisplay: String,
         val totalExpense: Long,
         val totalIncome: Long,
         val balance: Long,
         val rankings: List<CategoryExpenseRanking>,
         val periodStart: LocalDate,
+        val periodEnd: LocalDate = when (timeScope) {
+            AnalyticsTimeScope.WEEK -> periodStart.plusDays(6)
+            AnalyticsTimeScope.MONTH -> periodStart.withDayOfMonth(periodStart.lengthOfMonth())
+            AnalyticsTimeScope.YEAR -> LocalDate.of(periodStart.year, 12, 31)
+        },
         val trendPoints: List<AnalyticsTrendPoint> = emptyList(),
     ) : AnalyticsUiState
 }

@@ -37,8 +37,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Coffee
 import androidx.compose.material.icons.filled.DirectionsSubway
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Search
@@ -105,6 +103,10 @@ import cn.turingzy.ledger.ui.theme.IosSecondary
 import cn.turingzy.ledger.util.toFormattedAmount
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import cn.turingzy.ledger.ui.component.calendar.CalendarPickerState
+import cn.turingzy.ledger.ui.component.calendar.CalendarSelection
+import cn.turingzy.ledger.ui.component.calendar.CalendarRangeSelector
+import cn.turingzy.ledger.ui.component.calendar.MonthCalendarDatePickerCard
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
@@ -319,38 +321,14 @@ fun LedgerContent(
                                             modifier = Modifier.fillMaxWidth().padding(horizontal = 64.dp),
                                             contentAlignment = Alignment.Center,
                                         ) {
-                                            Row(
-                                                modifier = Modifier
-                                                    .clip(RoundedCornerShape(6.dp))
-                                                    .background(
-                                                        MaterialTheme.colorScheme.onSurface.copy(
-                                                            alpha = if (isDateDropdownOpen) 0.10f else 0f,
-                                                        ),
-                                                    )
-                                                    .clickable {
-                                                        if (!isDateDropdownOpen) calendarSession += 1
-                                                        isDateDropdownOpen = !isDateDropdownOpen
-                                                    }
-                                                    .padding(horizontal = 6.dp, vertical = 2.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(2.dp),
-                                            ) {
-                                                Text(
-                                                    text = (if (isDateDropdownOpen) calendarState.selection else confirmedSelection).displayRange(),
-                                                    modifier = Modifier.weight(1f, fill = false),
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis,
-                                                    fontSize = 17.sp,
-                                                    fontWeight = FontWeight.SemiBold,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                )
-                                                Icon(
-                                                    imageVector = if (isDateDropdownOpen) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                                                    contentDescription = "切换日期选择器",
-                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                    modifier = Modifier.size(18.dp),
-                                                )
-                                            }
+                                            CalendarRangeSelector(
+                                                selection = if (isDateDropdownOpen) calendarState.selection else confirmedSelection,
+                                                expanded = isDateDropdownOpen,
+                                                onClick = {
+                                                    if (!isDateDropdownOpen) calendarSession += 1
+                                                    isDateDropdownOpen = !isDateDropdownOpen
+                                                },
+                                            )
                                         }
 
                                         // 搜索按钮 (圆形点击水波纹反馈)
