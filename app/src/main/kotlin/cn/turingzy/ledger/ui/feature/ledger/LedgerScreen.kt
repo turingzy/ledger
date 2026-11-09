@@ -59,6 +59,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -109,6 +111,7 @@ import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -161,7 +164,7 @@ fun LedgerContent(
     uiState: LedgerUiState,
     onSelectWeek: (LocalDate) -> Unit,
     onSelectMonth: (year: Int, month: Int) -> Unit,
-    @Suppress("UNUSED_PARAMETER") onSelectYear: (year: Int) -> Unit,
+    onSelectYear: (year: Int) -> Unit,
     onSelectRange: (startDate: LocalDate, endDate: LocalDate) -> Unit,
     modifier: Modifier = Modifier,
     initialCalendarExpanded: Boolean = false,
@@ -170,6 +173,7 @@ fun LedgerContent(
     var isSearchActive by rememberSaveable { mutableStateOf(initialSearchActive) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
     var isDateDropdownOpen by rememberSaveable { mutableStateOf(initialCalendarExpanded) }
+    var calendarSession by remember { mutableIntStateOf(0) }
     val focusManager = LocalFocusManager.current
     val focusRequester = remember { FocusRequester() }
 
@@ -199,6 +203,18 @@ fun LedgerContent(
             }
 
             is LedgerUiState.Success -> {
+                val confirmedSelection = remember(uiState.filterStartDate, uiState.filterEndDate) {
+                    val start = uiState.filterStartDate
+                    val end = uiState.filterEndDate
+                    if (start != null && end != null && !end.isBefore(start)) {
+                        CalendarSelection(start, end)
+                    } else {
+                        CalendarSelection.week(LocalDate.now())
+                    }
+                }
+                val calendarState = remember(calendarSession) {
+                    CalendarPickerState(YearMonth.of(uiState.year, uiState.month), confirmedSelection)
+                }
                 // 根据搜索框动态过滤交易记录
                 val filteredDayGroups = remember(uiState.dayGroups, searchQuery) {
                     if (searchQuery.isBlank()) {
@@ -247,59 +263,60 @@ fun LedgerContent(
                                     exit = fadeOut(tween(durationMillis = 180)),
                                     modifier = Modifier.fillMaxWidth(),
                                 ) {
-                                    Row(
+                                    Box(
                                         modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically,
+                                        contentAlignment = Alignment.Center,
                                     ) {
-                                        // 账本 (1号字) 与 日期 (2号字)，底部平齐对齐
-                                        Row(
-                                            verticalAlignment = Alignment.Bottom,
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        Text(
+                                            text = "账本",
+                                            fontSize = 28.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            letterSpacing = (-0.6).sp,
+                                            modifier = Modifier.align(Alignment.CenterStart),
+                                        )
+                                        Box(
+                                            modifier = Modifier.fillMaxWidth().padding(horizontal = 64.dp),
+                                            contentAlignment = Alignment.Center,
                                         ) {
-                                            Text(
-                                                text = "账本",
-                                                fontSize = 28.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MaterialTheme.colorScheme.onSurface,
-                                                letterSpacing = (-0.6).sp,
-                                                modifier = Modifier.padding(bottom = 2.dp),
-                                            )
-
-                                            // 点击位置展开/折叠月日历视图选择器 (带有下箭头提示可点击，点击展开时出现背景框表示操作状态)
-                                            Box(
-                                                modifier = Modifier.padding(bottom = 2.dp),
+                                            Row(
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(6.dp))
+                                                    .background(
+                                                        MaterialTheme.colorScheme.onSurface.copy(
+                                                            alpha = if (isDateDropdownOpen) 0.10f else 0f,
+                                                        ),
+                                                    )
+                                                    .clickable {
+                                                        if (!isDateDropdownOpen) calendarSession += 1
+                                                        isDateDropdownOpen = !isDateDropdownOpen
+                                                    }
+                                                    .padding(horizontal = 6.dp, vertical = 2.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(2.dp),
                                             ) {
-                                                Row(
-                                                    modifier = Modifier
-                                                        .clip(RoundedCornerShape(6.dp))
-                                                        .background(
-                                                            if (isDateDropdownOpen) Color(0x1A000000) else Color.Transparent,
-                                                        )
-                                                        .clickable { isDateDropdownOpen = !isDateDropdownOpen }
-                                                        .padding(horizontal = 6.dp, vertical = 2.dp),
-                                                    verticalAlignment = Alignment.CenterVertically,
-                                                    horizontalArrangement = Arrangement.spacedBy(2.dp),
-                                                ) {
-                                                    Text(
-                                                        text = uiState.monthDisplay,
-                                                        fontSize = 17.sp,
-                                                        fontWeight = FontWeight.SemiBold,
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                    )
-                                                    Icon(
-                                                        imageVector = if (isDateDropdownOpen) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                                                        contentDescription = "切换日期选择器",
-                                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                        modifier = Modifier.size(18.dp),
-                                                    )
-                                                }
+                                                Text(
+                                                    text = (if (isDateDropdownOpen) calendarState.selection else confirmedSelection).displayRange(),
+                                                    modifier = Modifier.weight(1f, fill = false),
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    fontSize = 17.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                )
+                                                Icon(
+                                                    imageVector = if (isDateDropdownOpen) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                                    contentDescription = "切换日期选择器",
+                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    modifier = Modifier.size(18.dp),
+                                                )
                                             }
                                         }
 
                                         // 搜索按钮 (圆形点击水波纹反馈)
                                         Box(
                                             modifier = Modifier
+                                                .align(Alignment.CenterEnd)
                                                 .size(36.dp)
                                                 .clip(CircleShape)
                                                 .clickable(
@@ -425,29 +442,29 @@ fun LedgerContent(
                                 }
                             }
 
-                            // 月日历视图日期选择器卡片 (淡绿色背景伸缩框，左右滑动翻页切换月份，线条加黑，点击确认后切换)
                             AnimatedVisibility(
                                 visible = isDateDropdownOpen,
                                 enter = fadeIn(tween(250)) + expandVertically(tween(300)),
                                 exit = fadeOut(tween(200)) + shrinkVertically(tween(250)),
                             ) {
-                                MonthCalendarDatePickerCard(
-                                    currentYear = uiState.year,
-                                    currentMonth = uiState.month,
-                                    filterStartDate = uiState.filterStartDate,
-                                    filterEndDate = uiState.filterEndDate,
-                                    onMonthChanged = { year, month ->
-                                        onSelectMonth(year, month)
-                                    },
-                                    onConfirm = { startDate, endDate ->
-                                        if (ChronoUnit.DAYS.between(startDate, endDate) == 6L && startDate.dayOfWeek == DayOfWeek.MONDAY) {
-                                            onSelectWeek(startDate)
-                                        } else {
-                                            onSelectRange(startDate, endDate)
-                                        }
-                                        isDateDropdownOpen = false
-                                    },
-                                )
+                                key(calendarSession) {
+                                    MonthCalendarDatePickerCard(
+                                        state = calendarState,
+                                        onDismiss = { isDateDropdownOpen = false },
+                                        onConfirm = { startDate, endDate ->
+                                            if (ChronoUnit.DAYS.between(startDate, endDate) == 6L && startDate.dayOfWeek == DayOfWeek.MONDAY) {
+                                                onSelectWeek(startDate)
+                                            } else if (startDate.dayOfMonth == 1 && endDate == YearMonth.from(startDate).atEndOfMonth()) {
+                                                onSelectMonth(startDate.year, startDate.monthValue)
+                                            } else if (startDate == LocalDate.of(startDate.year, 1, 1) && endDate == LocalDate.of(startDate.year, 12, 31)) {
+                                                onSelectYear(startDate.year)
+                                            } else {
+                                                onSelectRange(startDate, endDate)
+                                            }
+                                            isDateDropdownOpen = false
+                                        },
+                                    )
+                                }
                             }
 
                             // 月度结余 Hero 大卡片 (整体向上移动，与顶栏间距减半至 5.dp)

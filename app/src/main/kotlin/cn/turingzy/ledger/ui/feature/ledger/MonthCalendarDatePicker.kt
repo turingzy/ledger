@@ -1,490 +1,341 @@
 package cn.turingzy.ledger.ui.feature.ledger
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import java.time.DayOfWeek
+import kotlinx.coroutines.delay
 import java.time.LocalDate
 import java.time.YearMonth
 
-private const val PAGER_BASE_PAGE = 1200
-private const val PAGER_TOTAL_PAGES = 2400
-
-private enum class CalendarDragHandle {
-    NONE, START, END, BOTH
-}
-
 @Composable
-fun MonthCalendarDatePickerCard(
-    currentYear: Int,
-    currentMonth: Int,
-    filterStartDate: LocalDate?,
-    filterEndDate: LocalDate?,
-    onMonthChanged: (year: Int, month: Int) -> Unit,
+internal fun MonthCalendarDatePickerCard(
+    state: CalendarPickerState,
+    onDismiss: () -> Unit,
     onConfirm: (startDate: LocalDate, endDate: LocalDate) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val initialYearMonth = remember { YearMonth.of(currentYear, currentMonth) }
-    val pagerState = rememberPagerState(
-        initialPage = PAGER_BASE_PAGE,
-    ) { PAGER_TOTAL_PAGES }
-
-    // 默认框选当前一周 (周一至周日)
-    var stagedStartDate by remember(filterStartDate) {
-        mutableStateOf(
-            filterStartDate ?: LocalDate.now().with(DayOfWeek.MONDAY),
-        )
-    }
-    var stagedEndDate by remember(filterEndDate) {
-        mutableStateOf(
-            filterEndDate ?: LocalDate.now().with(DayOfWeek.SUNDAY),
-        )
-    }
-
-    // 计算当前 Pager 所在的年月
-    val currentPagerYearMonth = remember(pagerState.currentPage) {
-        val monthOffset = (pagerState.currentPage - PAGER_BASE_PAGE).toLong()
-        initialYearMonth.plusMonths(monthOffset)
-    }
-
-    // 翻页时顶栏月份同步变化
-    LaunchedEffect(currentPagerYearMonth) {
-        if ((currentPagerYearMonth.year != currentYear) || (currentPagerYearMonth.monthValue != currentMonth)) {
-            onMonthChanged(currentPagerYearMonth.year, currentPagerYearMonth.monthValue)
+    val haptics = LocalHapticFeedback.current
+    LaunchedEffect(state.dragging, state.edgeDirection) {
+        if (!state.dragging || state.edgeDirection == 0) return@LaunchedEffect
+        delay(550)
+        while (state.dragging && state.edgeDirection != 0) {
+            state.turnAtEdge()
+            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            delay(650)
         }
     }
-
-    // 外部年份月份变动时同步更新 Pager 位置
-    LaunchedEffect(currentYear, currentMonth) {
-        val targetOffset = ((currentYear - initialYearMonth.year) * 12) + (currentMonth - initialYearMonth.monthValue)
-        val targetPage = PAGER_BASE_PAGE + targetOffset
-        if ((pagerState.currentPage != targetPage) && (targetPage in (0 until PAGER_TOTAL_PAGES))) {
-            pagerState.scrollToPage(targetPage)
-        }
-    }
-
-    // 卡片背景与主界面一致 (MaterialTheme.colorScheme.background)，线条加黑 (MaterialTheme.colorScheme.outline)
-    Box(
+    Column(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
             .background(MaterialTheme.colorScheme.background)
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outline,
-                shape = RoundedCornerShape(20.dp),
-            )
-            .padding(horizontal = 14.dp, vertical = 12.dp),
+            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(20.dp))
+            .pointerInput(state) {
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                    var scale = 1f
+                    var switched = false
+                    do {
+                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                        if (event.changes.count { it.pressed } >= 2) {
+                            scale *= event.calculateZoom()
+                            if (!switched) {
+                                val expand = scale > 1.25f
+                                val contract = scale < 0.80f
+                                if ((expand || contract) && state.zoom(expand = expand)) {
+                                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    switched = true
+                                }
+                            }
+                            event.changes.forEach { it.consume() }
+                        }
+                    } while (event.changes.any { it.pressed })
+                }
+            }
+            .padding(horizontal = 10.dp, vertical = 12.dp),
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            // 星期标题栏：一  二  三  四  五  六  日
+        CalendarHeader(state)
+        AnimatedContent(
+            targetState = state.view,
+            transitionSpec = {
+                (fadeIn(tween(180)) + scaleIn(tween(220), initialScale = 0.94f)) togetherWith
+                    (fadeOut(tween(120)) + scaleOut(tween(180), targetScale = 1.04f))
+            },
+            label = "calendarView",
+        ) { view ->
+            CalendarGrid(state, view)
+        }
+        CalendarFooter(state, onDismiss, onConfirm)
+    }
+}
+
+@Composable
+private fun CalendarHeader(state: CalendarPickerState) {
+    Column(
+        Modifier.fillMaxWidth().height(44.dp),
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Row(Modifier.fillMaxWidth().height(40.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (state.view == CalendarView.DAY) {
+                listOf("一", "二", "三", "四", "五", "六", "日").forEach { day ->
+                    Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                        Text(day, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            } else {
+                CalendarArrow("上一${if (state.view == CalendarView.YEAR) "组年份" else "年"}", false) {
+                    state.month = state.month.minusYears(if (state.view == CalendarView.YEAR) 12 else 1)
+                }
+                Box(
+                    Modifier.weight(1f).clip(RoundedCornerShape(8.dp)).clickable {
+                        state.view = if (state.view == CalendarView.MONTH) CalendarView.YEAR else CalendarView.MONTH
+                    }.padding(vertical = 8.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    val label = if (state.view == CalendarView.YEAR) {
+                        val first = state.month.year - Math.floorMod(state.month.year, 12)
+                        "$first – ${first + 11}年"
+                    } else "${state.month.year}年"
+                    Text(label, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+                }
+                CalendarArrow("下一${if (state.view == CalendarView.YEAR) "组年份" else "年"}", true) {
+                    state.month = state.month.plusYears(if (state.view == CalendarView.YEAR) 12 else 1)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CalendarGrid(state: CalendarPickerState, view: CalendarView) {
+    // Keep the outgoing animation's cells fixed while the new view is composed.
+    val dates = remember(state.month, view) {
+        val snapshot = CalendarPickerState(state.month, state.selection)
+        snapshot.view = view
+        snapshot.gridDates()
+    }
+    val columns = if (view == CalendarView.DAY) 7 else 4
+    val today = remember { LocalDate.now() }
+    val colors = MaterialTheme.colorScheme
+    val outlineAlpha by animateFloatAsState(if (state.editing) 1f else 0f, tween(160), label = "selectionOutline")
+    Column(
+        Modifier.fillMaxWidth().height(228.dp)
+            .onSizeChanged { state.gridSize = it }
+            .semantics {
+                contentDescription = when (view) {
+                    CalendarView.DAY -> "${state.month.year}年${state.month.monthValue}月，双指展开选择月份"
+                    CalendarView.MONTH -> "双指展开选择年份，捏合返回日期"
+                    CalendarView.YEAR -> "双指捏合返回月份"
+                }
+            }
+            .pointerInput(state, view) {
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    val initialDate = state.dateAt(down.position)
+                    val canDrag = state.beginDrag(initialDate)
+                    if (canDrag) down.consume()
+                    var moved = false
+                    var cancelled = false
+                    try {
+                        do {
+                            val event = awaitPointerEvent()
+                            val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                            if (event.changes.size > 1 || change.isConsumed) {
+                                cancelled = true
+                                break
+                            }
+                            if ((change.position - down.position).getDistance() > viewConfiguration.touchSlop) moved = true
+                            if (moved && canDrag && change.pressed) {
+                                state.dragging = true
+                                change.consume()
+                                state.drag(change.position)
+                            }
+                        } while (event.changes.any { it.pressed })
+                        if (!moved && !cancelled) state.tap(initialDate)
+                    } finally {
+                        state.dragging = false
+                        state.edgeDirection = 0
+                    }
+                }
+            },
+    ) {
+        dates.chunked(columns).forEach { rowDates ->
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                Modifier.fillMaxWidth().weight(1f).drawBehind {
+                    if (view == CalendarView.YEAR) return@drawBehind
+                    val selected = rowDates.indices.filter { index ->
+                        val date = rowDates[index]
+                        if (view == CalendarView.DAY) date in state.selection else
+                            !YearMonth.from(date).isBefore(YearMonth.from(state.selection.start)) &&
+                                !YearMonth.from(date).isAfter(YearMonth.from(state.selection.end))
+                    }
+                    if (selected.isEmpty()) return@drawBehind
+                    val cellWidth = size.width / columns
+                    val inset = if (view == CalendarView.MONTH) 6.dp.toPx() else 0f
+                    val left = selected.first() * cellWidth + inset
+                    val selectionHeight = if (view == CalendarView.MONTH) 44.dp.toPx() else 32.dp.toPx()
+                    val height = minOf(size.height - 4.dp.toPx(), selectionHeight)
+                    val top = (size.height - height) / 2
+                    val width = selected.size * cellWidth - inset * 2
+                    val endpointWidth = minOf(cellWidth - inset, width)
+                    val radius = CornerRadius(minOf(height / 2, 18.dp.toPx()))
+                    drawRoundRect(colors.tertiary.copy(alpha = 0.14f), Offset(left, top), Size(width, height), radius)
+                    val firstDate = rowDates[selected.first()]
+                    val lastDate = rowDates[selected.last()]
+                    val starts = if (view == CalendarView.DAY) firstDate == state.selection.start else YearMonth.from(firstDate) == YearMonth.from(state.selection.start)
+                    val ends = if (view == CalendarView.DAY) lastDate == state.selection.end else YearMonth.from(lastDate) == YearMonth.from(state.selection.end)
+                    if (starts) drawRoundRect(colors.tertiary.copy(alpha = 0.28f), Offset(left, top), Size(endpointWidth, height), radius)
+                    if (ends && (!starts || selected.size > 1)) {
+                        drawRoundRect(colors.tertiary.copy(alpha = 0.28f), Offset(left + width - endpointWidth, top), Size(endpointWidth, height), radius)
+                    }
+                    if (outlineAlpha > 0f) {
+                        drawRoundRect(
+                            colors.tertiary.copy(alpha = outlineAlpha), Offset(left + 1.dp.toPx(), top),
+                            Size(width - 2.dp.toPx(), height), radius,
+                            style = Stroke(1.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(5.dp.toPx(), 3.dp.toPx()))),
+                        )
+                        if (starts) drawCircle(colors.tertiary, 3.dp.toPx(), Offset(left + 3.dp.toPx(), size.height / 2))
+                        if (ends) drawCircle(colors.tertiary, 3.dp.toPx(), Offset(left + width - 3.dp.toPx(), size.height / 2))
+                    }
+                },
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                val weekDayHeaders = listOf("一", "二", "三", "四", "五", "六", "日")
-                weekDayHeaders.forEach { header ->
+                rowDates.forEach { date ->
+                    val selected = when (view) {
+                        CalendarView.DAY -> date in state.selection
+                        CalendarView.MONTH -> !YearMonth.from(date).isBefore(YearMonth.from(state.selection.start)) && !YearMonth.from(date).isAfter(YearMonth.from(state.selection.end))
+                        CalendarView.YEAR -> date.year == state.month.year
+                    }
+                    val isCurrentPeriod = when (view) {
+                        CalendarView.DAY -> date == today
+                        CalendarView.MONTH -> YearMonth.from(date) == YearMonth.from(today)
+                        CalendarView.YEAR -> date.year == today.year
+                    }
                     Box(
-                        modifier = Modifier.weight(1f),
+                        Modifier.weight(1f).fillMaxSize().drawBehind {
+                            if (isCurrentPeriod) {
+                                drawCircle(colors.tertiary, 2.dp.toPx(), Offset(size.width / 2, size.height / 2 + 11.dp.toPx()))
+                            }
+                        },
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
-                            text = header,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center,
+                            text = when (view) {
+                                CalendarView.DAY -> date.dayOfMonth.toString()
+                                CalendarView.MONTH -> "${date.monthValue}月"
+                                CalendarView.YEAR -> "${date.year}"
+                            },
+                            fontSize = 14.sp,
+                            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                            color = if (view == CalendarView.DAY && YearMonth.from(date) != state.month && !selected) colors.onSurface.copy(alpha = 0.35f) else colors.onSurface,
                         )
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // 水平翻转月视图 (左右滑动翻页)
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(228.dp),
-            ) { page ->
-                val pageYearMonth = remember(page) {
-                    val monthOffset = (page - PAGER_BASE_PAGE).toLong()
-                    initialYearMonth.plusMonths(monthOffset)
-                }
-
-                MonthCalendarGrid(
-                    yearMonth = pageYearMonth,
-                    selectedStartDate = stagedStartDate,
-                    selectedEndDate = stagedEndDate,
-                    onSetStartDate = { stagedStartDate = it },
-                    onSetEndDate = { stagedEndDate = it },
-                )
-            }
-
-            // 底部操作区：去除具体天数提示，采用同顶栏日期风格的2号字，点击确认后生效
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                val rangeText = "${stagedStartDate.monthValue}.${stagedStartDate.dayOfMonth.toString().padStart(2, '0')} - ${stagedEndDate.monthValue}.${stagedEndDate.dayOfMonth.toString().padStart(2, '0')}"
-
-                Text(
-                    text = rangeText,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.tertiary)
-                        .clickable {
-                            onConfirm(stagedStartDate, stagedEndDate)
-                        }
-                        .padding(horizontal = 20.dp, vertical = 6.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = "确认",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onTertiary,
-                    )
-                }
-            }
         }
     }
 }
 
 @Composable
-private fun MonthCalendarGrid(
-    yearMonth: YearMonth,
-    selectedStartDate: LocalDate,
-    selectedEndDate: LocalDate,
-    onSetStartDate: (LocalDate) -> Unit,
-    onSetEndDate: (LocalDate) -> Unit,
-    modifier: Modifier = Modifier,
+private fun CalendarFooter(
+    state: CalendarPickerState,
+    onDismiss: () -> Unit,
+    onConfirm: (LocalDate, LocalDate) -> Unit,
 ) {
-    val firstOfMonth = remember(yearMonth) { yearMonth.atDay(1) }
-    val daysBefore = remember(firstOfMonth) { firstOfMonth.dayOfWeek.value - 1 }
-    val gridStartDate = remember(firstOfMonth, daysBefore) {
-        firstOfMonth.minusDays(daysBefore.toLong())
-    }
-
-    // 6 行 7 列 = 42 个日期
-    val weeks = remember(gridStartDate) {
-        (0 until 6).map { weekIndex ->
-            (0 until 7).map { dayIndex ->
-                gridStartDate.plusDays(((weekIndex * 7) + dayIndex).toLong())
-            }
-        }
-    }
-
-    var gridWidth by remember { mutableFloatStateOf(0f) }
-    var gridHeight by remember { mutableFloatStateOf(0f) }
-    var activeHandle by remember { mutableStateOf(CalendarDragHandle.NONE) }
-    var dragStartOffset by remember { mutableStateOf(Offset.Zero) }
-
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .onGloballyPositioned { coordinates ->
-                gridWidth = coordinates.size.width.toFloat()
-                gridHeight = coordinates.size.height.toFloat()
-            }
-            .pointerInput(selectedStartDate, selectedEndDate, weeks) {
-                detectDragGesturesAfterLongPress(
-                    onDragStart = { startOffset ->
-                        if (gridWidth > 0f && gridHeight > 0f) {
-                            dragStartOffset = startOffset
-                            val colWidth = gridWidth / 7f
-                            val rowHeight = gridHeight / 6f
-                            val col = (startOffset.x / colWidth).toInt().coerceIn(0, 6)
-                            val row = (startOffset.y / rowHeight).toInt().coerceIn(0, 5)
-                            val touchedDate = weeks[row][col]
-
-                            val isStart = touchedDate == selectedStartDate
-                            val isEnd = touchedDate == selectedEndDate
-
-                            activeHandle = when {
-                                isStart && isEnd -> CalendarDragHandle.BOTH
-                                isStart -> CalendarDragHandle.START
-                                isEnd -> CalendarDragHandle.END
-                                else -> CalendarDragHandle.NONE
-                            }
-                        }
-                    },
-                    onDrag = { change, _ ->
-                        change.consume()
-                        if (gridWidth > 0f && gridHeight > 0f && activeHandle != CalendarDragHandle.NONE) {
-                            val colWidth = gridWidth / 7f
-                            val rowHeight = gridHeight / 6f
-                            val col = (change.position.x / colWidth).toInt().coerceIn(0, 6)
-                            val row = (change.position.y / rowHeight).toInt().coerceIn(0, 5)
-                            val hoveredDate = weeks[row][col]
-
-                            when (activeHandle) {
-                                CalendarDragHandle.BOTH -> {
-                                    if (change.position.x < dragStartOffset.x) {
-                                        activeHandle = CalendarDragHandle.START
-                                        if (!hoveredDate.isAfter(selectedEndDate)) {
-                                            onSetStartDate(hoveredDate)
-                                        }
-                                    } else if (change.position.x > dragStartOffset.x) {
-                                        activeHandle = CalendarDragHandle.END
-                                        if (!hoveredDate.isBefore(selectedStartDate)) {
-                                            onSetEndDate(hoveredDate)
-                                        }
-                                    }
-                                }
-                                CalendarDragHandle.START -> {
-                                    // 随手指位置移动实时改变开始日期 (向左向右自由伸缩，不超过结束日期)
-                                    if (!hoveredDate.isAfter(selectedEndDate)) {
-                                        onSetStartDate(hoveredDate)
-                                    }
-                                }
-                                CalendarDragHandle.END -> {
-                                    // 随手指位置移动实时改变结束日期 (向右向左自由伸缩，不小于开始日期)
-                                    if (!hoveredDate.isBefore(selectedStartDate)) {
-                                        onSetEndDate(hoveredDate)
-                                    }
-                                }
-                                CalendarDragHandle.NONE -> {}
-                            }
-                        }
-                    },
-                    onDragEnd = {
-                        activeHandle = CalendarDragHandle.NONE
-                    },
-                    onDragCancel = {
-                        activeHandle = CalendarDragHandle.NONE
-                    },
-                )
-            },
+    Row(
+        Modifier.fillMaxWidth().padding(top = 8.dp),
+        horizontalArrangement = Arrangement.End,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.SpaceBetween,
+        IconButton(onClick = onDismiss, modifier = Modifier.size(40.dp)) {
+            Icon(
+                Icons.Default.Close,
+                contentDescription = "关闭日期选择器",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+        Spacer(Modifier.weight(1f))
+        Box(
+            Modifier.clip(RoundedCornerShape(8.dp))
+                .clickable { state.reset(LocalDate.now()) }
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            contentAlignment = Alignment.Center,
         ) {
-            weeks.forEach { weekDates ->
-                val weekStart = weekDates.first()
-                val weekEnd = weekDates.last()
-
-                // 判断此周行是否与选中的起止日期区间相交
-                val hasOverlap = !weekEnd.isBefore(selectedStartDate) && !weekStart.isAfter(selectedEndDate)
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(36.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    // 1. 伸缩框 (胶囊状浅薄荷绿，左右端深色全覆盖无缝隙，已移除外侧箭头)
-                    if (hasOverlap) {
-                        val startCol = if (selectedStartDate.isBefore(weekStart)) 0 else java.time.temporal.ChronoUnit.DAYS.between(weekStart, selectedStartDate).toInt().coerceIn(0, 6)
-                        val endCol = if (selectedEndDate.isAfter(weekEnd)) 6 else java.time.temporal.ChronoUnit.DAYS.between(weekStart, selectedEndDate).toInt().coerceIn(0, 6)
-                        val colSpan = ((endCol - startCol) + 1).coerceAtLeast(1)
-
-                        val isStartInThisRow = !selectedStartDate.isBefore(weekStart) && !selectedStartDate.isAfter(weekEnd)
-                        val isEndInThisRow = !selectedEndDate.isBefore(weekStart) && !selectedEndDate.isAfter(weekEnd)
-
-                        Row(
-                            modifier = Modifier.fillMaxSize(),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            if (startCol > 0) {
-                                Spacer(modifier = Modifier.weight(startCol.toFloat()))
-                            }
-
-                            Box(
-                                modifier = Modifier
-                                    .weight(colSpan.toFloat())
-                                    .height(34.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                // 浅薄荷绿整体胶囊底衬
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .clip(RoundedCornerShape(percent = 50))
-                                        .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.14f)),
-                                )
-
-                                // 起始与结束日期深色全覆盖 (无圆周留缝，完整贴合左右胶囊圆弧端)
-                                Row(
-                                    modifier = Modifier.fillMaxSize(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    if (isStartInThisRow) {
-                                        Box(
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .fillMaxHeight()
-                                                .clip(
-                                                    if (colSpan == 1) {
-                                                        RoundedCornerShape(percent = 50)
-                                                    } else {
-                                                        RoundedCornerShape(
-                                                            topStartPercent = 50,
-                                                            bottomStartPercent = 50,
-                                                            topEndPercent = 0,
-                                                            bottomEndPercent = 0,
-                                                        )
-                                                    },
-                                                )
-                                                .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.28f)),
-                                        )
-                                    } else {
-                                        Spacer(modifier = Modifier.weight(1f))
-                                    }
-
-                                    if (colSpan > 2) {
-                                        Spacer(modifier = Modifier.weight((colSpan - 2).toFloat()))
-                                    }
-
-                                    if (colSpan > 1) {
-                                        if (isEndInThisRow) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .weight(1f)
-                                                    .fillMaxHeight()
-                                                    .clip(
-                                                        RoundedCornerShape(
-                                                            topStartPercent = 0,
-                                                            bottomStartPercent = 0,
-                                                            topEndPercent = 50,
-                                                            bottomEndPercent = 50,
-                                                        ),
-                                                    )
-                                                    .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.28f)),
-                                            )
-                                        } else {
-                                            Spacer(modifier = Modifier.weight(1f))
-                                        }
-                                    }
-                                }
-                            }
-
-                            if (endCol < 6) {
-                                Spacer(modifier = Modifier.weight((6 - endCol).toFloat()))
-                            }
-                        }
-                    }
-
-                    // 2. 日期数字层 (7列平铺，仅展示日期，点击不触发伸缩框，完全通过长按拖拽随手改变)
-                    Row(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        val today = remember { LocalDate.now() }
-
-                        weekDates.forEach { date ->
-                            val isCurrentMonth = date.monthValue == yearMonth.monthValue
-                            val isToday = date == today
-                            val isSelected = !date.isBefore(selectedStartDate) && !date.isAfter(selectedEndDate)
-
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxHeight(),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center,
-                                ) {
-                                    Text(
-                                        text = date.dayOfMonth.toString(),
-                                        fontSize = 14.sp,
-                                        fontWeight = if (isSelected) FontWeight.SemiBold else if (isToday) FontWeight.SemiBold else FontWeight.Normal,
-                                        color = when {
-                                            isSelected -> MaterialTheme.colorScheme.onSurface
-                                            !isCurrentMonth -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
-                                            isToday -> MaterialTheme.colorScheme.tertiary
-                                            else -> MaterialTheme.colorScheme.onSurface
-                                        },
-                                        textAlign = TextAlign.Center,
-                                    )
-
-                                    if (isToday && !isSelected) {
-                                        Box(
-                                            modifier = Modifier
-                                                .padding(top = 1.dp)
-                                                .size(3.dp)
-                                                .clip(CircleShape)
-                                                .background(MaterialTheme.colorScheme.tertiary),
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            Text("重置", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Box(
+            Modifier.clip(RoundedCornerShape(8.dp))
+                .clickable { onConfirm(state.selection.start, state.selection.end) }
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text("确认", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.tertiary)
         }
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-fun MonthCalendarDatePickerCardPreview() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(16.dp),
-    ) {
-        MonthCalendarDatePickerCard(
-            currentYear = 2026,
-            currentMonth = 11,
-            filterStartDate = LocalDate.of(2026, 11, 2),
-            filterEndDate = LocalDate.of(2026, 11, 8),
-            onMonthChanged = { _, _ -> },
-            onConfirm = { _, _ -> },
+private fun CalendarArrow(description: String, forward: Boolean, onClick: () -> Unit) {
+    IconButton(onClick = onClick, modifier = Modifier.size(40.dp)) {
+        Icon(
+            if (forward) Icons.AutoMirrored.Filled.KeyboardArrowRight else Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+            contentDescription = description,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp),
         )
     }
 }
