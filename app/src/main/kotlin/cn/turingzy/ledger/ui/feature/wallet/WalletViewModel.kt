@@ -40,6 +40,8 @@ class WalletViewModel @Inject constructor(
         initialBalance: Long,
         cardNumber: String?,
         includeInTotal: Boolean = true,
+        currency: String = "CNY",
+        templateId: Long? = null,
     ) {
         viewModelScope.launch {
             val account = Account(
@@ -49,6 +51,8 @@ class WalletViewModel @Inject constructor(
                 currentBalance = initialBalance,
                 cardNumber = cardNumber?.trim()?.takeIf { it.isNotEmpty() },
                 includeInTotal = includeInTotal,
+                currency = currency,
+                templateId = templateId,
             )
             accountRepository.createAccount(account)
         }
