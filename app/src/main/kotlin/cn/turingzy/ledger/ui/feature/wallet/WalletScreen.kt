@@ -1,7 +1,5 @@
 package cn.turingzy.ledger.ui.feature.wallet
 
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -42,6 +40,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.ripple
+import cn.turingzy.ledger.ui.component.rememberBlurredBackdrop
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -61,12 +61,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -82,10 +80,6 @@ import cn.turingzy.ledger.model.Account
 import cn.turingzy.ledger.model.AccountType
 import cn.turingzy.ledger.model.AccountWithTemplate
 import cn.turingzy.ledger.model.CardTemplate
-import cn.turingzy.ledger.ui.theme.IosBg
-import cn.turingzy.ledger.ui.theme.IosCard
-import cn.turingzy.ledger.ui.theme.IosLabel
-import cn.turingzy.ledger.ui.theme.IosSecondaryLabel
 import cn.turingzy.ledger.util.toFormattedAmount
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -160,7 +154,7 @@ fun WalletContent(
     @Suppress("UNUSED_PARAMETER") onDeleteAccountClick: (Long) -> Unit = {},
 ) {
     Scaffold(
-        containerColor = IosBg,
+        containerColor = MaterialTheme.colorScheme.background,
         modifier = modifier
             .fillMaxSize()
             .statusBarsPadding(),
@@ -173,13 +167,13 @@ fun WalletContent(
                         .padding(innerPadding),
                     contentAlignment = Alignment.Center,
                 ) {
-                    CircularProgressIndicator(color = IosLabel)
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.onSurface)
                 }
             }
 
             is WalletUiState.Success -> {
                 val accounts = uiState.accounts
-                var isListView by remember { mutableStateOf(false) }
+                var isListView by rememberSaveable { mutableStateOf(false) }
 
                 LazyColumn(
                     modifier = Modifier
@@ -209,12 +203,12 @@ fun WalletContent(
                                         text = "钱包",
                                         fontSize = 28.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = IosLabel,
+                                        color = MaterialTheme.colorScheme.onSurface,
                                         letterSpacing = (-0.6).sp,
                                         modifier = Modifier.padding(bottom = 2.dp),
                                     )
 
-                                    // 添加按钮 (与账本顶栏图标按钮风格统一: 圆形水波纹反馈，无底色，IosSecondaryLabel 颜色，尺寸 24.dp)
+                                    // 添加按钮 (与账本顶栏图标按钮风格统一: 圆形水波纹反馈，无底色，MaterialTheme.colorScheme.onSurfaceVariant 颜色，尺寸 24.dp)
                                     Box(
                                         modifier = Modifier
                                             .size(36.dp)
@@ -230,7 +224,7 @@ fun WalletContent(
                                         Icon(
                                             imageVector = Icons.Default.Add,
                                             contentDescription = "添加账户",
-                                            tint = IosSecondaryLabel,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                             modifier = Modifier.size(24.dp),
                                         )
                                     }
@@ -258,7 +252,7 @@ fun WalletContent(
                                 text = "我的卡包",
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = IosSecondaryLabel,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
 
                             // 视图切换按钮 (默认卡片堆叠视图，点击切换为垂直平铺列表视图)
@@ -277,7 +271,7 @@ fun WalletContent(
                                 Icon(
                                     imageVector = if (isListView) Icons.Default.ViewCarousel else Icons.Default.ViewAgenda,
                                     contentDescription = if (isListView) "切换为卡片堆叠视图" else "切换为列表视图",
-                                    tint = IosSecondaryLabel,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(19.dp),
                                 )
                             }
@@ -302,7 +296,7 @@ fun WalletContent(
                                         .fillMaxWidth()
                                         .height(76.dp),
                                     shape = RoundedCornerShape(14.dp),
-                                    colors = CardDefaults.cardColors(containerColor = IosCard),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 ) {
                                     Box(
                                         modifier = Modifier.fillMaxSize(),
@@ -311,7 +305,7 @@ fun WalletContent(
                                         Text(
                                             text = "暂无卡片，点击右上角 '+' 添加",
                                             fontSize = 14.sp,
-                                            color = IosSecondaryLabel,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         )
                                     }
                                 }
@@ -347,21 +341,7 @@ fun WalletHeroCard(
 ) {
     val cardHeight = 152.dp
     val glassPanelHeight = 52.dp
-    val context = LocalContext.current
-
-    val blurredBackdrop = remember(context) {
-        try {
-            val original = BitmapFactory.decodeResource(context.resources, R.drawable.bg_wallet_card)
-            if (original != null) {
-                val scaled = Bitmap.createScaledBitmap(original, 240, 120, true)
-                fastBlurBitmap(scaled, radius = 4).asImageBitmap()
-            } else {
-                null
-            }
-        } catch (_: Exception) {
-            null
-        }
-    }
+    val blurredBackdrop = rememberBlurredBackdrop(R.drawable.bg_wallet_card)
 
     Box(
         modifier = modifier
@@ -597,7 +577,7 @@ fun SwipeableBankCardDeck(
                 .fillMaxWidth()
                 .height(194.dp),
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = IosCard),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         ) {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -606,7 +586,7 @@ fun SwipeableBankCardDeck(
                 Text(
                     text = "暂无卡片，点击右上角 '+' 添加",
                     fontSize = 14.sp,
-                    color = IosSecondaryLabel,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -1163,55 +1143,6 @@ fun CenturionSoldierBadge(
             )
         }
     }
-}
-
-/**
- * 盒式卷积模糊算法，用于将下采样位图快速平滑柔化，
- * 在任何设备和 Compose Preview 上百分百复刻 backdrop-filter 散焦质感。
- */
-private fun fastBlurBitmap(source: Bitmap, radius: Int): Bitmap {
-    val width = source.width
-    val height = source.height
-    val pixels = IntArray(width * height)
-    source.getPixels(pixels, 0, width, 0, 0, width, height)
-    val outPixels = IntArray(width * height)
-
-    for (y in 0 until height) {
-        val yOffset = y * width
-        for (x in 0 until width) {
-            var r = 0; var g = 0; var b = 0; var count = 0
-            val start = maxOf(0, x - radius)
-            val end = minOf(width - 1, x + radius)
-            for (i in start..end) {
-                val p = pixels[yOffset + i]
-                r += (p shr 16) and 0xFF
-                g += (p shr 8) and 0xFF
-                b += p and 0xFF
-                count++
-            }
-            outPixels[yOffset + x] = (0xFF shl 24) or ((r / count) shl 16) or ((g / count) shl 8) or (b / count)
-        }
-    }
-
-    for (x in 0 until width) {
-        for (y in 0 until height) {
-            var r = 0; var g = 0; var b = 0; var count = 0
-            val start = maxOf(0, y - radius)
-            val end = minOf(height - 1, y + radius)
-            for (i in start..end) {
-                val p = outPixels[i * width + x]
-                r += (p shr 16) and 0xFF
-                g += (p shr 8) and 0xFF
-                b += p and 0xFF
-                count++
-            }
-            pixels[y * width + x] = (0xFF shl 24) or ((r / count) shl 16) or ((g / count) shl 8) or (b / count)
-        }
-    }
-
-    val output = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-    output.setPixels(pixels, 0, width, 0, 0, width, height)
-    return output
 }
 
 @Preview(showBackground = true)

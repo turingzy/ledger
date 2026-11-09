@@ -61,11 +61,6 @@ import cn.turingzy.ledger.model.Category
 import cn.turingzy.ledger.model.CategoryType
 import cn.turingzy.ledger.model.CategoryWithIcon
 import cn.turingzy.ledger.model.Icon as ModelIcon
-import cn.turingzy.ledger.ui.theme.IosBg
-import cn.turingzy.ledger.ui.theme.IosCard
-import cn.turingzy.ledger.ui.theme.IosLabel
-import cn.turingzy.ledger.ui.theme.IosSecondaryLabel
-import cn.turingzy.ledger.ui.theme.IosSeparator
 
 @Composable
 fun SettingsScreen(
@@ -138,7 +133,7 @@ fun SettingsContent(
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
-        containerColor = IosBg,
+        containerColor = MaterialTheme.colorScheme.background,
         modifier = modifier
             .fillMaxSize()
             .statusBarsPadding(),
@@ -151,7 +146,7 @@ fun SettingsContent(
                         .padding(innerPadding),
                     contentAlignment = Alignment.Center,
                 ) {
-                    CircularProgressIndicator(color = Color(0xFF007AFF))
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             }
 
@@ -176,7 +171,7 @@ fun SettingsContent(
                                     text = "设置",
                                     fontSize = 28.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = IosLabel,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     letterSpacing = (-0.6).sp,
                                     modifier = Modifier.padding(bottom = 2.dp),
                                 )
@@ -192,19 +187,19 @@ fun SettingsContent(
                                         spotColor = Color.Black.copy(alpha = 0.04f),
                                     ),
                                 shape = RoundedCornerShape(16.dp),
-                                colors = CardDefaults.cardColors(containerColor = IosCard),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                             ) {
                                 Column(modifier = Modifier.fillMaxWidth()) {
                                     SettingsRowItem(
                                         icon = Icons.Default.CreditCard,
                                         iconBgColor = Color(0xFFFF9500),
-                                        title = "卡片管理",
+                                        title = "分类管理",
                                         onClick = onCategoryManagementClick,
                                     )
                                     HorizontalDivider(
                                         modifier = Modifier.padding(start = 58.dp),
                                         thickness = 0.5.dp,
-                                        color = IosSeparator,
+                                        color = MaterialTheme.colorScheme.outlineVariant,
                                     )
                                     SettingsRowItem(
                                         icon = Icons.Default.Code,
@@ -215,7 +210,7 @@ fun SettingsContent(
                                     HorizontalDivider(
                                         modifier = Modifier.padding(start = 58.dp),
                                         thickness = 0.5.dp,
-                                        color = IosSeparator,
+                                        color = MaterialTheme.colorScheme.outlineVariant,
                                     )
                                     SettingsRowItem(
                                         icon = Icons.Default.CloudUpload,
@@ -240,7 +235,7 @@ fun SettingsContent(
                                     spotColor = Color.Black.copy(alpha = 0.04f),
                                 ),
                             shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = IosCard),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         ) {
                             Column(modifier = Modifier.fillMaxWidth()) {
                                 SettingsRowItem(
@@ -275,6 +270,7 @@ fun SettingsRowItem(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(
+            modifier = Modifier.weight(1f).padding(end = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
@@ -296,14 +292,14 @@ fun SettingsRowItem(
                 text = title,
                 fontSize = 17.sp,
                 fontWeight = FontWeight.Normal,
-                color = IosLabel,
+                color = MaterialTheme.colorScheme.onSurface,
             )
         }
 
         Icon(
             imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
             contentDescription = null,
-            tint = IosSecondaryLabel.copy(alpha = 0.35f),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f),
             modifier = Modifier.size(14.dp),
         )
     }
@@ -322,7 +318,7 @@ fun CategoryManagementSheet(
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
-        containerColor = IosBg,
+        containerColor = MaterialTheme.colorScheme.background,
     ) {
         Column(
             modifier = Modifier
@@ -335,10 +331,10 @@ fun CategoryManagementSheet(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "卡片与分类管理",
+                    text = "分类管理",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = IosLabel,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
                 IconButton(onClick = onAddCategoryClick) {
                     Icon(
@@ -354,7 +350,7 @@ fun CategoryManagementSheet(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = IosCard),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             ) {
                 LazyColumn(
                     modifier = Modifier
@@ -378,12 +374,12 @@ fun CategoryManagementSheet(
                                     text = cat.name,
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Medium,
-                                    color = IosLabel,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                 )
                                 Text(
                                     text = if (cat.type == CategoryType.EXPENSE) "支出分类" else "收入分类",
                                     fontSize = 12.sp,
-                                    color = IosSecondaryLabel,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
 
@@ -400,7 +396,7 @@ fun CategoryManagementSheet(
                                 Text(
                                     text = "系统内置",
                                     fontSize = 12.sp,
-                                    color = IosSecondaryLabel.copy(alpha = 0.6f),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                                     modifier = Modifier.padding(end = 8.dp),
                                 )
                             }
@@ -408,7 +404,7 @@ fun CategoryManagementSheet(
                         HorizontalDivider(
                             modifier = Modifier.padding(horizontal = 16.dp),
                             thickness = 0.5.dp,
-                            color = IosSeparator,
+                            color = MaterialTheme.colorScheme.outlineVariant,
                         )
                     }
                 }
@@ -445,7 +441,7 @@ fun ParseRulesDialog(
             Text(
                 text = "账单解析规则",
                 fontWeight = FontWeight.Bold,
-                color = IosLabel,
+                color = MaterialTheme.colorScheme.onSurface,
             )
         },
         text = {
@@ -453,12 +449,12 @@ fun ParseRulesDialog(
                 Text(
                     text = "支持智能解析微信支付通知、支付宝账单、银行扣款短信。",
                     fontSize = 14.sp,
-                    color = IosLabel,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
                     text = "• 自动提取交易金额、交易对手与商户分类\n• 本地离线正规匹配，零网络上传保护隐私\n• 智能对应至绑定的默认扣款卡账户",
                     fontSize = 13.sp,
-                    color = IosSecondaryLabel,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = 18.sp,
                 )
             }
@@ -497,7 +493,7 @@ fun BackupAndRestoreDialog(
             Text(
                 text = "数据备份和恢复",
                 fontWeight = FontWeight.Bold,
-                color = IosLabel,
+                color = MaterialTheme.colorScheme.onSurface,
             )
         },
         text = {
@@ -505,12 +501,12 @@ fun BackupAndRestoreDialog(
                 Text(
                     text = "本地 SQLite 沙盒数据库状态良好。",
                     fontSize = 14.sp,
-                    color = IosLabel,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
                     text = "所有记账明细、账户及分类数据仅存储在您的设备受保护存储中。您可以随时导出加密备份文件或进行数据迁移恢复。",
                     fontSize = 13.sp,
-                    color = IosSecondaryLabel,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = 18.sp,
                 )
             }

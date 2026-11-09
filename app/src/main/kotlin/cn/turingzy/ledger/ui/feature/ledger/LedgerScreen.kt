@@ -1,7 +1,5 @@
 package cn.turingzy.ledger.ui.feature.ledger
 
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
@@ -56,6 +54,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.ripple
+import cn.turingzy.ledger.ui.component.rememberBlurredBackdrop
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -75,11 +75,10 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -98,17 +97,12 @@ import cn.turingzy.ledger.model.Icon as ModelIcon
 import cn.turingzy.ledger.model.Transaction
 import cn.turingzy.ledger.model.TransactionDetail
 import cn.turingzy.ledger.model.TransactionType
-import cn.turingzy.ledger.ui.theme.IosBg
 import cn.turingzy.ledger.ui.theme.IosBlue
-import cn.turingzy.ledger.ui.theme.IosCard
 import cn.turingzy.ledger.ui.theme.IosGreen
-import cn.turingzy.ledger.ui.theme.IosLabel
 import cn.turingzy.ledger.ui.theme.IosOrange
 import cn.turingzy.ledger.ui.theme.IosPurple
 import cn.turingzy.ledger.ui.theme.IosRed
 import cn.turingzy.ledger.ui.theme.IosSecondary
-import cn.turingzy.ledger.ui.theme.IosSecondaryLabel
-import cn.turingzy.ledger.ui.theme.IosSeparator
 import cn.turingzy.ledger.util.toFormattedAmount
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -173,9 +167,9 @@ fun LedgerContent(
     initialCalendarExpanded: Boolean = false,
     initialSearchActive: Boolean = false,
 ) {
-    var isSearchActive by remember { mutableStateOf(initialSearchActive) }
-    var searchQuery by remember { mutableStateOf("") }
-    var isDateDropdownOpen by remember { mutableStateOf(initialCalendarExpanded) }
+    var isSearchActive by rememberSaveable { mutableStateOf(initialSearchActive) }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    var isDateDropdownOpen by rememberSaveable { mutableStateOf(initialCalendarExpanded) }
     val focusManager = LocalFocusManager.current
     val focusRequester = remember { FocusRequester() }
 
@@ -187,7 +181,7 @@ fun LedgerContent(
     }
 
     Scaffold(
-        containerColor = IosBg,
+        containerColor = MaterialTheme.colorScheme.background,
         modifier = modifier
             .fillMaxSize()
             .statusBarsPadding(),
@@ -200,7 +194,7 @@ fun LedgerContent(
                         .padding(innerPadding),
                     contentAlignment = Alignment.Center,
                 ) {
-                    CircularProgressIndicator(color = IosLabel)
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.onSurface)
                 }
             }
 
@@ -212,12 +206,16 @@ fun LedgerContent(
                     } else {
                         uiState.dayGroups.mapNotNull { group ->
                             val matchedTxs = group.transactions.filter { tx ->
-                                tx.transaction.note?.contains(searchQuery, ignoreCase = true) == true ||
-                                    tx.category.category.name.contains(searchQuery, ignoreCase = true) ||
-                                    tx.account.name.contains(searchQuery, ignoreCase = true)
+                                tx.transaction.note?.contains(searchQuery.trim(), ignoreCase = true) == true ||
+                                    tx.category.category.name.contains(searchQuery.trim(), ignoreCase = true) ||
+                                    tx.account.name.contains(searchQuery.trim(), ignoreCase = true)
                             }
                             if (matchedTxs.isNotEmpty()) {
-                                group.copy(transactions = matchedTxs)
+                                group.copy(
+                                    transactions = matchedTxs,
+                                    totalExpense = matchedTxs.filter { it.transaction.type == TransactionType.EXPENSE }.sumOf { it.transaction.amount },
+                                    totalIncome = matchedTxs.filter { it.transaction.type == TransactionType.INCOME }.sumOf { it.transaction.amount },
+                                )
                             } else null
                         }
                     }
@@ -263,7 +261,7 @@ fun LedgerContent(
                                                 text = "账本",
                                                 fontSize = 28.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = IosLabel,
+                                                color = MaterialTheme.colorScheme.onSurface,
                                                 letterSpacing = (-0.6).sp,
                                                 modifier = Modifier.padding(bottom = 2.dp),
                                             )
@@ -287,12 +285,12 @@ fun LedgerContent(
                                                         text = uiState.monthDisplay,
                                                         fontSize = 17.sp,
                                                         fontWeight = FontWeight.SemiBold,
-                                                        color = IosSecondaryLabel,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                                     )
                                                     Icon(
                                                         imageVector = if (isDateDropdownOpen) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                                                         contentDescription = "切换日期选择器",
-                                                        tint = IosSecondaryLabel,
+                                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                                         modifier = Modifier.size(18.dp),
                                                     )
                                                 }
@@ -315,7 +313,7 @@ fun LedgerContent(
                                             Icon(
                                                 imageVector = Icons.Default.Search,
                                                 contentDescription = "搜索",
-                                                tint = IosSecondaryLabel,
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                                 modifier = Modifier.size(24.dp),
                                             )
                                         }
@@ -354,7 +352,7 @@ fun LedgerContent(
                                         Icon(
                                             imageVector = Icons.Default.Search,
                                             contentDescription = null,
-                                            tint = IosSecondaryLabel,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                             modifier = Modifier.size(24.dp),
                                         )
 
@@ -370,9 +368,9 @@ fun LedgerContent(
                                                 textStyle = TextStyle(
                                                     fontSize = 15.sp,
                                                     lineHeight = 22.sp,
-                                                    color = IosLabel,
+                                                    color = MaterialTheme.colorScheme.onSurface,
                                                 ),
-                                                cursorBrush = SolidColor(IosLabel),
+                                                cursorBrush = SolidColor(MaterialTheme.colorScheme.onSurface),
                                                 singleLine = true,
                                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                                                 keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
@@ -389,7 +387,7 @@ fun LedgerContent(
                                                                 text = "搜索账单备注、分类、账户",
                                                                 fontSize = 15.sp,
                                                                 lineHeight = 22.sp,
-                                                                color = IosSecondaryLabel,
+                                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                                                 modifier = Modifier.padding(start = 6.dp),
                                                             )
                                                         }
@@ -419,7 +417,7 @@ fun LedgerContent(
                                             Icon(
                                                 imageVector = Icons.Default.Close,
                                                 contentDescription = "关闭搜索",
-                                                tint = IosSecondaryLabel,
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                                 modifier = Modifier.size(24.dp),
                                             )
                                         }
@@ -471,7 +469,7 @@ fun LedgerContent(
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Text(
-                                    text = if (searchQuery.isNotBlank()) "未找到相关账单" else "本期暂无交易明细，点击右下角 '记一笔' 开始记账",
+                                    text = if (searchQuery.isNotBlank()) "未找到相关账单" else "本期暂无交易明细，点击右下角开始记账",
                                     fontSize = 14.sp,
                                     color = IosSecondary,
                                 )
@@ -500,23 +498,7 @@ fun SummaryHeroBanner(
 ) {
     val cardHeight = 152.dp
     val glassPanelHeight = 52.dp
-    val context = LocalContext.current
-
-    // 内存生成高质量适度高斯模糊底图 (保留底图山峦树木轮廓与光影层次，柔化高频杂纹)
-    val blurredBackdrop = remember(context) {
-        try {
-            val original = BitmapFactory.decodeResource(context.resources, R.drawable.bg_ledger_card)
-            if (original != null) {
-                // 适度下采样至 240x120 配合 radius = 4 轻柔卷积，保留底图的冷杉湖光可感知度
-                val scaled = Bitmap.createScaledBitmap(original, 240, 120, true)
-                fastBlurBitmap(scaled, radius = 4).asImageBitmap()
-            } else {
-                null
-            }
-        } catch (_: Exception) {
-            null
-        }
-    }
+    val blurredBackdrop = rememberBlurredBackdrop(R.drawable.bg_ledger_card)
 
     Box(
         modifier = modifier
@@ -732,57 +714,6 @@ fun SummaryHeroBanner(
     }
 }
 
-/**
- * 盒式卷积模糊算法，用于将下采样位图快速平滑柔化，
- * 彻底消除高频边缘（树枝、波纹），在任何设备和 Compose Preview 上百分百复刻 backdrop-filter: blur(25px) 散焦质感。
- */
-private fun fastBlurBitmap(source: Bitmap, radius: Int): Bitmap {
-    val width = source.width
-    val height = source.height
-    val pixels = IntArray(width * height)
-    source.getPixels(pixels, 0, width, 0, 0, width, height)
-    val outPixels = IntArray(width * height)
-
-    // 水平方向卷积
-    for (y in 0 until height) {
-        val yOffset = y * width
-        for (x in 0 until width) {
-            var r = 0; var g = 0; var b = 0; var count = 0
-            val start = maxOf(0, x - radius)
-            val end = minOf(width - 1, x + radius)
-            for (i in start..end) {
-                val p = pixels[yOffset + i]
-                r += (p shr 16) and 0xFF
-                g += (p shr 8) and 0xFF
-                b += p and 0xFF
-                count++
-            }
-            outPixels[yOffset + x] = (0xFF shl 24) or ((r / count) shl 16) or ((g / count) shl 8) or (b / count)
-        }
-    }
-
-    // 垂直方向卷积
-    for (x in 0 until width) {
-        for (y in 0 until height) {
-            var r = 0; var g = 0; var b = 0; var count = 0
-            val start = maxOf(0, y - radius)
-            val end = minOf(height - 1, y + radius)
-            for (i in start..end) {
-                val p = outPixels[i * width + x]
-                r += (p shr 16) and 0xFF
-                g += (p shr 8) and 0xFF
-                b += p and 0xFF
-                count++
-            }
-            pixels[y * width + x] = (0xFF shl 24) or ((r / count) shl 16) or ((g / count) shl 8) or (b / count)
-        }
-    }
-
-    val output = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-    output.setPixels(pixels, 0, width, 0, 0, width, height)
-    return output
-}
-
 @Composable
 fun DayGroupSection(
     dayGroup: DayTransactionGroup,
@@ -800,7 +731,7 @@ fun DayGroupSection(
                 text = dayGroup.displayDate,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = IosSecondaryLabel,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             Row(
@@ -818,7 +749,7 @@ fun DayGroupSection(
                         text = dayGroup.totalExpense.toFormattedAmount(showSymbol = true),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = IosSecondaryLabel,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 if (dayGroup.totalExpense > 0 && dayGroup.totalIncome > 0) {
@@ -826,7 +757,7 @@ fun DayGroupSection(
                         text = " / ",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Normal,
-                        color = IosSecondaryLabel,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 if (dayGroup.totalIncome > 0) {
@@ -840,7 +771,7 @@ fun DayGroupSection(
                         text = dayGroup.totalIncome.toFormattedAmount(showSymbol = true),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = IosSecondaryLabel,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 if (dayGroup.totalExpense == 0L && dayGroup.totalIncome == 0L) {
@@ -848,7 +779,7 @@ fun DayGroupSection(
                         text = "¥0.00",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = IosSecondaryLabel,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -863,7 +794,7 @@ fun DayGroupSection(
                     spotColor = Color.Black.copy(alpha = 0.04f),
                 )
                 .clip(RoundedCornerShape(16.dp))
-                .background(IosCard),
+                .background(MaterialTheme.colorScheme.surface),
         ) {
             dayGroup.transactions.forEachIndexed { index, detail ->
                 DayTransactionRowItem(detail = detail)
@@ -871,7 +802,7 @@ fun DayGroupSection(
                     HorizontalDivider(
                         modifier = Modifier.padding(start = 66.dp),
                         thickness = 0.5.dp,
-                        color = IosSeparator,
+                        color = MaterialTheme.colorScheme.outlineVariant,
                     )
                 }
             }
@@ -907,21 +838,21 @@ fun DayTransactionRowItem(
         TransactionType.TRANSFER -> tx.amount.toFormattedAmount(showSymbol = true)
     }
     val amountColor = when (tx.type) {
-        TransactionType.EXPENSE -> IosLabel
+        TransactionType.EXPENSE -> MaterialTheme.colorScheme.onSurface
         TransactionType.INCOME -> IosGreen
-        TransactionType.TRANSFER -> IosLabel
+        TransactionType.TRANSFER -> MaterialTheme.colorScheme.onSurface
     }
 
     // 1:1 复刻设计图 (40dp 圆角图标 + 分类名称1号字 + 账户独立字色无背景框 + 备注2号字 + 金额1号字 + 时间2号字)
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clickable { }
             .padding(horizontal = 14.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(
+            modifier = Modifier.weight(1f).padding(end = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -948,9 +879,11 @@ fun DayTransactionRowItem(
                 // 分类名称：1号字
                 Text(
                     text = detail.category.category.name,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = IosLabel,
+                    color = MaterialTheme.colorScheme.onSurface,
                     letterSpacing = (-0.2).sp,
                 )
                 // 账户 (单纯改变颜色为 IosBlue，无背景框) 与 备注 (2号字)
@@ -960,6 +893,8 @@ fun DayTransactionRowItem(
                 ) {
                     Text(
                         text = detail.account.name,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium,
                         color = IosBlue,
@@ -968,9 +903,11 @@ fun DayTransactionRowItem(
                     if (!tx.note.isNullOrBlank()) {
                         Text(
                             text = tx.note,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Normal,
-                            color = IosSecondaryLabel,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -993,7 +930,7 @@ fun DayTransactionRowItem(
                 text = timeStr,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Normal,
-                color = IosSecondaryLabel,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

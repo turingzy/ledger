@@ -22,6 +22,7 @@ private val DarkColorScheme = darkColorScheme(
     surfaceVariant = SurfaceVariantDark,
     onSurfaceVariant = Color(0xFFEBEBF5),
     outline = OutlineDark,
+    outlineVariant = OutlineDark,
     error = Color(0xFFFF453A),
 )
 
@@ -40,6 +41,7 @@ private val LightColorScheme = lightColorScheme(
     surfaceVariant = SurfaceVariantLight,
     onSurfaceVariant = Color(0xFF636366),
     outline = OutlineLight,
+    outlineVariant = IosSeparator,
     error = IosRed,
 )
 

@@ -27,6 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,9 +44,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cn.turingzy.ledger.model.CategoryType
-import cn.turingzy.ledger.ui.theme.IosBg
-import cn.turingzy.ledger.ui.theme.IosLabel
-import cn.turingzy.ledger.ui.theme.IosSecondaryLabel
 import java.time.LocalDate
 
 @Composable
@@ -74,7 +72,7 @@ fun AnalyticsContent(
     onPeriodSelected: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var showPeriodPicker by remember { mutableStateOf(false) }
+    var showPeriodPicker by rememberSaveable { mutableStateOf(false) }
 
     if (showPeriodPicker && uiState is AnalyticsUiState.Success) {
         AnalyticsPeriodPicker(
@@ -89,7 +87,7 @@ fun AnalyticsContent(
     }
 
     Scaffold(
-        containerColor = IosBg,
+        containerColor = MaterialTheme.colorScheme.background,
         modifier = modifier
             .fillMaxSize()
             .statusBarsPadding(),
@@ -102,7 +100,7 @@ fun AnalyticsContent(
                         .padding(innerPadding),
                     contentAlignment = Alignment.Center,
                 ) {
-                    CircularProgressIndicator(color = Color(0xFF007AFF))
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             }
 
@@ -128,7 +126,7 @@ fun AnalyticsContent(
                                     text = "统计",
                                     fontSize = 28.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = IosLabel,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     letterSpacing = (-0.6).sp,
                                     modifier = Modifier.padding(bottom = 2.dp),
                                 )
@@ -146,7 +144,7 @@ fun AnalyticsContent(
                                     Icon(
                                         imageVector = Icons.Default.Share,
                                         contentDescription = "导出分享",
-                                        tint = IosSecondaryLabel,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.size(24.dp),
                                     )
                                 }
@@ -187,7 +185,7 @@ fun AnalyticsContent(
                                 text = uiState.periodDisplay,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = IosLabel,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(8.dp))
                                     .clickable { showPeriodPicker = true }
