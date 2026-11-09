@@ -1,7 +1,6 @@
 package cn.turingzy.ledger.ui.feature.wallet
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,67 +13,59 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ViewAgenda
-import androidx.compose.material.icons.filled.ViewCarousel
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import cn.turingzy.ledger.model.LedgerCardAppearance
+import cn.turingzy.ledger.ui.component.CardBackgroundDialog
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.ripple
-import cn.turingzy.ledger.ui.component.rememberBlurredBackdrop
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.BlurredEdgeTreatment
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cn.turingzy.ledger.ui.component.SummaryCard
+import cn.turingzy.ledger.ui.component.SummaryCardContent
 import cn.turingzy.ledger.R
 import cn.turingzy.ledger.model.Account
 import cn.turingzy.ledger.model.AccountType
@@ -82,7 +73,6 @@ import cn.turingzy.ledger.model.AccountWithTemplate
 import cn.turingzy.ledger.model.CardTemplate
 import cn.turingzy.ledger.util.toFormattedAmount
 import kotlinx.coroutines.launch
-import kotlin.math.abs
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -90,23 +80,59 @@ fun WalletScreen(
     modifier: Modifier = Modifier,
     viewModel: WalletViewModel = hiltViewModel(),
 ) {
+    val cardViewModel: WalletCardViewModel = hiltViewModel()
+    val cardUiState by cardViewModel.uiState.collectAsStateWithLifecycle()
+    val background = remember(cardUiState.background) { cardUiState.background?.asImageBitmap() }
+    var showBackgroundDialog by rememberSaveable { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(cardUiState.error) {
+        val error = cardUiState.error ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(error)
+        cardViewModel.clearError()
+    }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     var showAddSheet by remember { mutableStateOf(false) }
-    var accountToAdjust by remember { mutableStateOf<Account?>(null) }
+    var selectedAccount by remember { mutableStateOf<Account?>(null) }
     val addSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
 
     WalletContent(
         uiState = uiState,
         onAddAccountClick = { showAddSheet = true },
-        onAdjustBalanceClick = { account -> accountToAdjust = account },
+        onAdjustBalanceClick = { account -> selectedAccount = account },
         modifier = modifier,
+        cardAppearance = cardUiState.appearance,
+        cardBackground = background,
+        cardSettingsEnabled = !cardUiState.loading && !cardUiState.importing,
+        onUploadCardBackground = { showBackgroundDialog = true },
+        onCardTransparencyEnabledChange = cardViewModel::setTransparencyEnabled,
+        onCardTransparencyChange = cardViewModel::setTransparencyPercent,
+        snackbarHostState = snackbarHostState,
     )
+
+    if (showBackgroundDialog) {
+        CardBackgroundDialog(
+            onDismiss = { showBackgroundDialog = false },
+            onRestoreDefault = {
+                showBackgroundDialog = false
+                cardViewModel.resetBackground()
+            },
+            onLocalImage = { uri ->
+                showBackgroundDialog = false
+                cardViewModel.importBackground(uri)
+            },
+            onImageUrl = { url ->
+                showBackgroundDialog = false
+                cardViewModel.importBackgroundUrl(url)
+            },
+        )
+    }
 
     if (showAddSheet) {
         AddAccountSheet(
             sheetState = addSheetState,
+            templates = (uiState as? WalletUiState.Success)?.templates.orEmpty(),
             onDismissRequest = {
                 scope.launch { addSheetState.hide() }.invokeOnCompletion {
                     if (!addSheetState.isVisible) {
@@ -114,7 +140,7 @@ fun WalletScreen(
                     }
                 }
             },
-            onConfirm = { name, type, balance, cardNo, includeInTotal, currency, templateId ->
+            onConfirm = { name, type, balance, cardNo, includeInTotal, currency, templateId, sortOrder ->
                 viewModel.createAccount(
                     name = name,
                     type = type,
@@ -123,6 +149,7 @@ fun WalletScreen(
                     includeInTotal = includeInTotal,
                     currency = currency,
                     templateId = templateId,
+                    sortOrder = sortOrder,
                 )
                 scope.launch { addSheetState.hide() }.invokeOnCompletion {
                     if (!addSheetState.isVisible) {
@@ -133,14 +160,14 @@ fun WalletScreen(
         )
     }
 
-    accountToAdjust?.let { account ->
-        AdjustBalanceDialog(
+    selectedAccount?.let { selected ->
+        val details = (uiState as? WalletUiState.Success)?.accounts?.firstOrNull { it.account.id == selected.id }
+        val account = details?.account ?: selected
+        AccountDetailsSheet(
             account = account,
-            onDismissRequest = { accountToAdjust = null },
-            onConfirm = { newBalance ->
-                viewModel.adjustBalance(account.id, newBalance)
-                accountToAdjust = null
-            },
+            templates = (uiState as? WalletUiState.Success)?.templates.orEmpty(),
+            onDismissRequest = { selectedAccount = null },
+            onSave = viewModel::updateAccountInfo,
         )
     }
 }
@@ -152,8 +179,16 @@ fun WalletContent(
     onAdjustBalanceClick: (Account) -> Unit,
     modifier: Modifier = Modifier,
     @Suppress("UNUSED_PARAMETER") onDeleteAccountClick: (Long) -> Unit = {},
+    cardAppearance: LedgerCardAppearance = LedgerCardAppearance(),
+    cardBackground: ImageBitmap? = null,
+    cardSettingsEnabled: Boolean = true,
+    onUploadCardBackground: () -> Unit = {},
+    onCardTransparencyEnabledChange: (Boolean) -> Unit = {},
+    onCardTransparencyChange: (Int) -> Unit = {},
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background,
         modifier = modifier
             .fillMaxSize()
@@ -174,6 +209,7 @@ fun WalletContent(
             is WalletUiState.Success -> {
                 val accounts = uiState.accounts
                 var isListView by rememberSaveable { mutableStateOf(false) }
+                var selectedAccountId by rememberSaveable { mutableStateOf<Long?>(null) }
 
                 LazyColumn(
                     modifier = Modifier
@@ -231,10 +267,15 @@ fun WalletContent(
                                 }
                             }
 
-                            // 资产卡片 (与账本卡片质感风格保持绝对一致：专属底图 + 毛玻璃通透底栏总支出与总收入)
                             WalletHeroCard(
                                 totalAsset = uiState.totalAsset,
                                 totalDebt = uiState.totalDebt,
+                                appearance = cardAppearance,
+                                background = cardBackground,
+                                settingsEnabled = cardSettingsEnabled,
+                                onUploadBackground = onUploadCardBackground,
+                                onTransparencyEnabledChange = onCardTransparencyEnabledChange,
+                                onTransparencyChange = onCardTransparencyChange,
                             )
                         }
                     }
@@ -244,7 +285,7 @@ fun WalletContent(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 4.dp),
+                                .padding(start = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
@@ -255,72 +296,43 @@ fun WalletContent(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
 
-                            // 视图切换按钮 (默认卡片堆叠视图，点击切换为垂直平铺列表视图)
                             Box(
                                 modifier = Modifier
-                                    .size(32.dp)
+                                    .size(36.dp)
                                     .clip(CircleShape)
                                     .clickable(
                                         interactionSource = remember { MutableInteractionSource() },
-                                        indication = ripple(bounded = true, radius = 16.dp),
+                                        indication = ripple(bounded = true, radius = 18.dp),
                                     ) {
                                         isListView = !isListView
                                     },
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Icon(
-                                    imageVector = if (isListView) Icons.Default.ViewCarousel else Icons.Default.ViewAgenda,
-                                    contentDescription = if (isListView) "切换为卡片堆叠视图" else "切换为列表视图",
+                                    painter = painterResource(if (isListView) R.drawable.ic_view_carousel else R.drawable.ic_view_agenda),
+                                    contentDescription = if (isListView) "切换为卡片堆叠视图" else "切换为纵向层叠视图",
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(19.dp),
+                                    modifier = Modifier.size(24.dp),
                                 )
                             }
                         }
                     }
 
-                    if (!isListView) {
-                        // 1. 卡片堆叠视图 (默认)
-                        item(key = "stacked_bank_cards") {
+                    item(key = "bank_cards") {
+                        if (isListView) {
+                            VerticalBankCardDeck(
+                                accounts = accounts,
+                                onAdjustClick = onAdjustBalanceClick,
+                                selectedAccountId = selectedAccountId,
+                                onSelectedAccountChange = { selectedAccountId = it },
+                            )
+                        } else {
                             SwipeableBankCardDeck(
                                 accounts = accounts,
                                 onAdjustClick = onAdjustBalanceClick,
+                                selectedAccountId = selectedAccountId,
+                                onSelectedAccountChange = { selectedAccountId = it },
                             )
-                        }
-                    } else {
-                        // 2. 卡片列表视图：垂直平铺流式布局 (Vertical Stacked List / Expanded List View)
-                        // 所有银行卡纵向垂直平铺依次展开，卡片宽度与上方资产卡片等宽对齐，高度收敛为两行内容
-                        if (accounts.isEmpty()) {
-                            item(key = "empty_cards_list") {
-                                Card(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(76.dp),
-                                    shape = RoundedCornerShape(14.dp),
-                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                                ) {
-                                    Box(
-                                        modifier = Modifier.fillMaxSize(),
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        Text(
-                                            text = "暂无卡片，点击右上角 '+' 添加",
-                                            fontSize = 14.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        )
-                                    }
-                                }
-                            }
-                        } else {
-                            items(
-                                items = accounts,
-                                key = { "compact_${it.account.id}" },
-                            ) { item ->
-                                CompactBankCardItem(
-                                    account = item.account,
-                                    template = item.template,
-                                    onAdjustClick = { onAdjustBalanceClick(item.account) },
-                                )
-                            }
                         }
                     }
                 }
@@ -329,346 +341,47 @@ fun WalletContent(
     }
 }
 
-/**
- * 钱包顶部总资产 Hero 卡片 (与账本卡片质感风格保持绝对一致：专属底图 + 磨砂玻璃通透底栏)
- * 底部透明层展示：左侧红色总支出、右侧绿色总收入
- */
 @Composable
 fun WalletHeroCard(
     totalAsset: Long,
     totalDebt: Long,
     modifier: Modifier = Modifier,
+    appearance: LedgerCardAppearance = LedgerCardAppearance(),
+    background: ImageBitmap? = null,
+    settingsEnabled: Boolean = true,
+    onUploadBackground: () -> Unit = {},
+    onTransparencyEnabledChange: (Boolean) -> Unit = {},
+    onTransparencyChange: (Int) -> Unit = {},
 ) {
-    val cardHeight = 152.dp
-    val glassPanelHeight = 52.dp
-    val blurredBackdrop = rememberBlurredBackdrop(R.drawable.bg_wallet_card)
-
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(cardHeight)
-            .shadow(
-                elevation = 12.dp,
-                shape = RoundedCornerShape(20.dp),
-                spotColor = Color.Black.copy(alpha = 0.18f),
-            )
-            .clip(RoundedCornerShape(20.dp))
-            .border(
-                width = 0.5.dp,
-                color = Color.White.copy(alpha = 0.25f),
-                shape = RoundedCornerShape(20.dp),
-            ),
+    SummaryCard(
+        modifier = modifier,
+        defaultBackgroundRes = R.drawable.bg_wallet_card,
+        appearance = appearance,
+        background = background,
+        settingsEnabled = settingsEnabled,
+        onUploadBackground = onUploadBackground,
+        onTransparencyEnabledChange = onTransparencyEnabledChange,
+        onTransparencyChange = onTransparencyChange,
     ) {
-        // 全局底层清晰风景背景图 (完整呈现底图风光，采用 bg_wallet_card)
-        Image(
-            painter = painterResource(R.drawable.bg_wallet_card),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            alignment = BiasAlignment(0f, -0.2f),
-            modifier = Modifier.fillMaxSize(),
+        SummaryCardContent(
+            title = "总资产",
+            amount = totalAsset,
+            leftAmount = totalDebt,
+            rightAmount = totalAsset + totalDebt,
+            leftLabel = "总支出",
+            rightLabel = "总收入",
         )
-
-        // 上半区通透微弱暗调渐变 (保障金额文字在亮部背景下的清晰可读性)
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0x380F172A),
-                            Color(0x0A0F172A),
-                            Color(0x1A0F172A),
-                        ),
-                    ),
-                ),
-        )
-
-        // 上半部: 总资产展示 (严格与下方总支出对齐在 18.dp 左内边距基准线)
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 18.dp, end = 18.dp, top = 14.dp),
-        ) {
-            Text(
-                text = "总资产",
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color.White,
-                style = TextStyle(
-                    shadow = androidx.compose.ui.graphics.Shadow(
-                        color = Color.Black.copy(alpha = 0.50f),
-                        offset = Offset(0f, 1.5f),
-                        blurRadius = 6f,
-                    ),
-                ),
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = totalAsset.toFormattedAmount(showSymbol = true, useGrouping = true),
-                fontSize = 26.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                letterSpacing = (-0.6).sp,
-                style = TextStyle(
-                    shadow = androidx.compose.ui.graphics.Shadow(
-                        color = Color.Black.copy(alpha = 0.55f),
-                        offset = Offset(0f, 3f),
-                        blurRadius = 12f,
-                    ),
-                ),
-            )
-        }
-
-        // 下半部: 半透明深色毛玻璃面板 (与账本卡片样式完全一致: 左边红色总支出、右边绿色总收入)
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(glassPanelHeight)
-                .align(Alignment.BottomCenter)
-                .clip(RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp)),
-        ) {
-            // 1. 背景模糊层
-            if (blurredBackdrop != null) {
-                Image(
-                    bitmap = blurredBackdrop,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    alignment = BiasAlignment(0f, 0.7f),
-                    modifier = Modifier.fillMaxSize(),
-                )
-            } else {
-                Image(
-                    painter = painterResource(R.drawable.bg_wallet_card),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    alignment = BiasAlignment(0f, -0.2f),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(cardHeight + 40.dp)
-                        .offset(y = -(cardHeight - glassPanelHeight) - 20.dp)
-                        .blur(
-                            radius = 20.dp,
-                            edgeTreatment = BlurredEdgeTreatment.Unbounded,
-                        ),
-                )
-            }
-
-            // 2. 通透深色半透明滤镜 (与账本卡片一致)
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color(0x590E222D),
-                                Color(0x730C1E27),
-                                Color(0x8C09161D),
-                            ),
-                        ),
-                    ),
-            )
-
-            // 3. 毛玻璃顶部微光分割线
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(0.5.dp)
-                    .background(Color.White.copy(alpha = 0.32f)),
-            )
-
-            // 4. 下半部内容：总支出与总收入 (严格对齐 prototype.html: 左边红色总支出、右边绿色总收入)
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 18.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                // 总支出：左对齐 (卡片背景 2号字，语义红色)
-                Column(
-                    horizontalAlignment = Alignment.Start,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    Text(
-                        text = "总支出",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color.White.copy(alpha = 0.70f),
-                        style = TextStyle(
-                            shadow = androidx.compose.ui.graphics.Shadow(
-                                color = Color.Black.copy(alpha = 0.70f),
-                                offset = Offset(0f, 1.5f),
-                                blurRadius = 4f,
-                            ),
-                        ),
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = totalDebt.toFormattedAmount(showSymbol = true, useGrouping = true),
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFFF453A),
-                        style = TextStyle(
-                            shadow = androidx.compose.ui.graphics.Shadow(
-                                color = Color.Black.copy(alpha = 0.75f),
-                                offset = Offset(0f, 2f),
-                                blurRadius = 6f,
-                            ),
-                        ),
-                    )
-                }
-
-                // 总收入：右对齐 (卡片背景 2号字，语义绿色)
-                Column(
-                    horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    Text(
-                        text = "总收入",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color.White.copy(alpha = 0.70f),
-                        style = TextStyle(
-                            shadow = androidx.compose.ui.graphics.Shadow(
-                                color = Color.Black.copy(alpha = 0.70f),
-                                offset = Offset(0f, 1.5f),
-                                blurRadius = 4f,
-                            ),
-                        ),
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    val totalIncome = totalAsset + totalDebt
-                    Text(
-                        text = totalIncome.toFormattedAmount(showSymbol = true, useGrouping = true),
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF30D158),
-                        style = TextStyle(
-                            shadow = androidx.compose.ui.graphics.Shadow(
-                                color = Color.Black.copy(alpha = 0.75f),
-                                offset = Offset(0f, 2f),
-                                blurRadius = 6f,
-                            ),
-                        ),
-                    )
-                }
-            }
-        }
     }
 }
 
-/**
- * 银行卡 3D 层叠循环轮播卡包 (Card Deck Infinite Carousel)
- * - 宽度对齐 (Width Alignment)：多张卡片堆叠时的总体宽度，以及单张卡片展开时的宽度，严格与上方“资产卡片”等宽对齐
- * - 堆叠视觉 (Stacked Visuals)：未选中的底层卡片在主卡两侧微微漏出边缘，形成递进深度感
- * - 交互方式 (Interaction)：中央主卡支持点击；基于原生 HorizontalPager 实现左右无缝循环滑动翻阅 (Infinite Carousel)，滑动到头自动循环，永无尽头
- * - 只有两张卡片时：第一张卡片的左右两翼均为第二张卡片，无缝对称循环
- * - 纯实体质感：卡片全实体不透明 (alpha = 1f)，绝无半透明透视；采用原生 120fps 弹性缓动，自然流畅无任何卡顿
- */
-@Composable
-fun SwipeableBankCardDeck(
-    accounts: List<AccountWithTemplate>,
-    onAdjustClick: (Account) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    if (accounts.isEmpty()) {
-        Card(
-            modifier = modifier
-                .fillMaxWidth()
-                .height(194.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        ) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = "暂无卡片，点击右上角 '+' 添加",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-        return
-    }
-
-    val n = accounts.size
-    val coroutineScope = rememberCoroutineScope()
-
-    if (n == 1) {
-        // 单张卡片展开时的宽度，严格与上方“资产卡片”保持等宽对齐
-        val item = accounts[0]
-        BankCardItem(
-            account = item.account,
-            template = item.template,
-            onAdjustClick = { onAdjustClick(item.account) },
-            modifier = modifier
-                .fillMaxWidth()
-                .height(194.dp),
-        )
-    } else {
-        // 多张卡片堆叠时：基于 HorizontalPager 实现原生 120fps 顺滑无缝循环
-        // initialPage 取大数并整除 n，确保初始卡片为 accounts[0]，且向左向右均可无限滑动
-        val initialPage = ((10000 / n) / 2) * n
-        val pagerState = rememberPagerState(
-            initialPage = initialPage,
-            pageCount = { 10000 },
-        )
-
-        val peekWidth = 14.dp
-
-        HorizontalPager(
-            state = pagerState,
-            contentPadding = PaddingValues(horizontal = peekWidth),
-            pageSpacing = 0.dp,
-            modifier = modifier
-                .fillMaxWidth()
-                .height(202.dp),
-        ) { page ->
-            val accountWithTemplate = accounts[page % n]
-
-            BankCardItem(
-                account = accountWithTemplate.account,
-                template = accountWithTemplate.template,
-                onAdjustClick = {
-                    if (page == pagerState.currentPage) {
-                        onAdjustClick(accountWithTemplate.account)
-                    } else {
-                        coroutineScope.launch {
-                            pagerState.animateScrollToPage(page)
-                        }
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(194.dp)
-                    .graphicsLayer {
-                        val pageOffset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction)
-                        val absOffset = abs(pageOffset).coerceIn(0f, 1f)
-                        val scale = 1f - (0.06f * absOffset)
-                        val originX = if (pageOffset > 0f) 1f else if (pageOffset < 0f) 0f else 0.5f
-
-                        scaleX = scale
-                        scaleY = scale
-                        transformOrigin = TransformOrigin(originX, 0.5f)
-                        shadowElevation = (10f - absOffset * 6f).dp.toPx()
-                        alpha = 1f
-                    },
-            )
-        }
-    }
-}
-
-/**
- * 单张实体质感银行卡卡面 (对齐 prototype.html 现实银行卡物理排版细节)
- */
 @Composable
 fun BankCardItem(
     account: Account,
     @Suppress("UNUSED_PARAMETER") template: CardTemplate?,
     onAdjustClick: () -> Unit,
     modifier: Modifier = Modifier,
+    showDetails: Boolean = true,
+    showBackPlaceholder: Boolean = false,
 ) {
     val isCenturion = account.templateId == 2L || account.name.contains("百夫长") || account.name.contains("运通")
 
@@ -699,13 +412,16 @@ fun BankCardItem(
                 .background(Brush.linearGradient(cardGradients))
                 .padding(horizontal = 20.dp, vertical = 16.dp),
         ) {
+            if (!showDetails) {
+                if (showBackPlaceholder) BankCardBackPlaceholder()
+                return@Box
+            }
+
             Column(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.SpaceBetween,
             ) {
-                // 顶部行：
                 if (isCenturion) {
-                    // 百夫长黑金卡专用纯正雕刻标题 (对齐 prototype.html)
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -718,7 +434,7 @@ fun BankCardItem(
                             letterSpacing = 2.sp,
                         )
                         Text(
-                            text = "CENTURION · 私人银行",
+                            text = "CENTURION",
                             fontSize = 8.sp,
                             fontWeight = FontWeight.Medium,
                             color = Color(0xFFE5E5EA).copy(alpha = 0.65f),
@@ -726,105 +442,57 @@ fun BankCardItem(
                         )
                     }
                 } else {
-                    // 标准银行卡排版：机构品牌与卡种标识 + 芯片与闪付波纹
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Text(
-                                text = account.name,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White,
-                            )
-                        }
+                        Text(
+                            text = account.name,
+                            modifier = Modifier.weight(1f),
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                        )
 
-                        // 闪付非接触波纹标识
-                        ContactlessWaveIcon()
+                        if (account.type == AccountType.DEBIT || account.type == AccountType.CREDIT) {
+                            ContactlessWaveIcon()
+                        }
                     }
                 }
 
-                // 中间区域：
                 if (isCenturion) {
-                    // 罗马百夫长战士徽章浮雕
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 2.dp),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
                         contentAlignment = Alignment.Center,
                     ) {
                         CenturionSoldierBadge()
                     }
-                } else {
-                    // 芯片 + 当前余额直观展示
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 2.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        EmvChip()
-
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text(
-                                text = if (account.type == AccountType.CREDIT) "当前欠款" else "当前可用余额",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Color.White.copy(alpha = 0.70f),
-                            )
-                            Spacer(modifier = Modifier.height(1.dp))
-                            Text(
-                                text = account.currentBalance.toFormattedAmount(showSymbol = true, useGrouping = true),
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White,
-                                letterSpacing = (-0.5).sp,
-                            )
-                        }
-                    }
+                } else if (account.type == AccountType.DEBIT || account.type == AccountType.CREDIT) {
+                    EmvChip()
                 }
 
-                // 底部行：卡号掩码、持卡人姓名、银联芯片徽章 (1:1 还原 prototype.html)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.Bottom,
                 ) {
-                    Column {
-                        val cardDisplay = account.cardNumber?.let {
-                            if (it.length >= 4) "•••• •••• •••• ${it.takeLast(4)}" else it
-                        } ?: "•••• •••• •••• 5288"
-
+                    val cardNumber = account.cardNumber?.takeIf { it.isNotBlank() }
+                    if (cardNumber != null) {
                         Text(
-                            text = cardDisplay,
+                            text = "•••• ${cardNumber.takeLast(4)}",
                             fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onPrimary,
                             letterSpacing = 1.5.sp,
                         )
-
-                        if (!isCenturion) {
-                            Text(
-                                text = "ZHANG YU · VALID 12/30",
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Color.White.copy(alpha = 0.65f),
-                                letterSpacing = 0.8.sp,
-                                modifier = Modifier.padding(top = 2.dp),
-                            )
-                        }
-                    }
-
-                    if (isCenturion) {
-                        UnionPayBadge(label = "百夫长")
                     } else {
-                        UnionPayBadge(label = "银联")
+                        Spacer(Modifier.weight(1f))
+                    }
+                    if (!isCenturion && (account.type == AccountType.DEBIT || account.type == AccountType.CREDIT)) {
+                        UnionPayBadge()
                     }
                 }
             }
@@ -832,134 +500,18 @@ fun BankCardItem(
     }
 }
 
-/**
- * 紧凑银行卡卡面 (卡片列表视图模式专用：两行内容垂直平铺流式布局)
- * - 宽度严格与上方资产卡片等宽对齐 (fillMaxWidth)
- * - 高度紧凑为两行内容 (76.dp)
- * - 第一行：卡片名称 + 账户类型微徽章 (左) | 账户余额 (右)
- * - 第二行：卡号尾号掩码 (左) | 银联/百夫长标识 (右)
- */
 @Composable
-fun CompactBankCardItem(
-    account: Account,
-    @Suppress("UNUSED_PARAMETER") template: CardTemplate?,
-    onAdjustClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val isCenturion = account.templateId == 2L || account.name.contains("百夫长") || account.name.contains("运通")
-
-    val cardGradients = when {
-        isCenturion -> listOf(Color(0xFF0D0E11), Color(0xFF141519), Color(0xFF08080A))
-        account.templateId == 1L -> listOf(Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)) // 经典深蓝
-        account.templateId == 3L -> listOf(Color(0xFF075E37), Color(0xFF03361E)) // 翡翠绿 (微信)
-        account.type == AccountType.CREDIT -> listOf(Color(0xFF2D143D), Color(0xFF1A0D26)) // 尊贵紫 (白金信用卡)
-        account.type == AccountType.WALLET && account.name.contains("支付宝") -> listOf(Color(0xFF0A438C), Color(0xFF052148)) // 皇家科技蓝
-        else -> listOf(Color(0xFF1C1C1E), Color(0xFF121214)) // 黑曜金 (金葵花/储蓄卡)
-    }
-
-    val typeLabel = when (account.type) {
-        AccountType.DEBIT -> "储蓄卡"
-        AccountType.CREDIT -> "信用卡"
-        AccountType.WALLET -> "电子钱包"
-        AccountType.CASH -> "现金"
-    }
-
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(76.dp)
-            .shadow(
-                elevation = 6.dp,
-                shape = RoundedCornerShape(14.dp),
-                ambientColor = Color.Black.copy(alpha = 0.25f),
-                spotColor = Color.Black.copy(alpha = 0.25f),
-            )
-            .clickable(onClick = onAdjustClick),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = cardGradients.first()),
+private fun BankCardBackPlaceholder() {
+    val white = MaterialTheme.colorScheme.onPrimary
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Brush.linearGradient(cardGradients))
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-        ) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.SpaceBetween,
-            ) {
-                // 第一行 (Line 1): 账户名称 + 类型微胶囊 (左) | 当前余额/欠款 (右)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        Text(
-                            text = account.name,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            letterSpacing = (-0.2).sp,
-                        )
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(Color.White.copy(alpha = 0.16f))
-                                .padding(horizontal = 5.dp, vertical = 1.5.dp),
-                        ) {
-                            Text(
-                                text = typeLabel,
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Color.White.copy(alpha = 0.88f),
-                            )
-                        }
-                    }
-
-                    Text(
-                        text = account.currentBalance.toFormattedAmount(showSymbol = true, useGrouping = true),
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        letterSpacing = (-0.4).sp,
-                    )
-                }
-
-                // 第二行 (Line 2): 尾号掩码 (左) | 银联/百夫长芯片徽章 (右)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    val cardDisplay = account.cardNumber?.let {
-                        if (it.length >= 4) "•••• •••• •••• ${it.takeLast(4)}" else it
-                    } ?: "•••• •••• •••• 5288"
-
-                    Text(
-                        text = cardDisplay,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color.White.copy(alpha = 0.70f),
-                        letterSpacing = 1.sp,
-                    )
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        if (isCenturion) {
-                            UnionPayBadge(label = "百夫长")
-                        } else {
-                            UnionPayBadge(label = "银联")
-                        }
-                    }
-                }
-            }
+        Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            Box(Modifier.size(width = 50.dp, height = 11.dp).clip(CircleShape).background(white.copy(alpha = 0.60f)))
+            Box(Modifier.size(width = 34.dp, height = 5.dp).clip(CircleShape).background(white.copy(alpha = 0.35f)))
         }
+        Box(Modifier.size(width = 52.dp, height = 10.dp).clip(CircleShape).background(white.copy(alpha = 0.45f)))
     }
 }
 
@@ -1015,10 +567,7 @@ fun UnionPayBadge(
     label: String = "银联",
 ) {
     Row(
-        modifier = modifier
-            .clip(RoundedCornerShape(6.dp))
-            .background(Color.White.copy(alpha = 0.14f))
-            .padding(horizontal = 6.dp, vertical = 3.dp),
+        modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(5.dp),
     ) {
@@ -1196,59 +745,6 @@ fun WalletContentPreview() {
             onAdjustBalanceClick = {},
             onDeleteAccountClick = {},
         )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun CompactBankCardListPreview() {
-    MaterialTheme {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            CompactBankCardItem(
-                account = Account(
-                    id = 1L,
-                    name = "美国运通 · 百夫长黑金卡",
-                    type = AccountType.DEBIT,
-                    initialBalance = 10000000L,
-                    currentBalance = 11850000L,
-                    cardNumber = "3759876543215288",
-                    templateId = 2L,
-                ),
-                template = null,
-                onAdjustClick = {},
-            )
-            CompactBankCardItem(
-                account = Account(
-                    id = 2L,
-                    name = "微信支付",
-                    type = AccountType.WALLET,
-                    initialBalance = 200000L,
-                    currentBalance = 1235000L,
-                    cardNumber = "8820",
-                    templateId = 3L,
-                ),
-                template = null,
-                onAdjustClick = {},
-            )
-            CompactBankCardItem(
-                account = Account(
-                    id = 3L,
-                    name = "招商银行 · 经典白金卡",
-                    type = AccountType.CREDIT,
-                    initialBalance = 0L,
-                    currentBalance = 1400000L,
-                    cardNumber = "4392258877619012",
-                    templateId = 1L,
-                ),
-                template = null,
-                onAdjustClick = {},
-            )
-        }
     }
 }
 

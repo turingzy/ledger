@@ -79,5 +79,28 @@ class DefaultAccountRepositoryTest {
             accountDao.softDeleteAccount(5L)
         }
     }
+    @Test
+    fun updateAccountInfoOnlyUsesTheMetadataQuery() = runTest(testDispatcher) {
+        val edited = Account(
+            id = 10L,
+            name = "工资卡",
+            type = AccountType.DEBIT,
+            initialBalance = 12000L,
+            currentBalance = 99999L,
+            currency = "USD",
+            templateId = 42L,
+            cardNumber = "1234",
+            includeInTotal = false,
+            sortOrder = 3,
+        )
+        repository.updateAccountInfo(edited)
+
+        coVerify(exactly = 1) {
+            accountDao.updateAccountInfo(10L, "工资卡", AccountType.DEBIT, 12000L, 42L, "1234", false, 3)
+        }
+        coVerify(exactly = 0) { accountDao.updateAccount(any()) }
+        coVerify(exactly = 0) { accountDao.updateBalance(any(), any()) }
+    }
+
 }
 

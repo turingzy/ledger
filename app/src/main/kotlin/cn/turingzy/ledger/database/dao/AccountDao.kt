@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
+import cn.turingzy.ledger.model.AccountType
 import cn.turingzy.ledger.database.model.AccountEntity
 import cn.turingzy.ledger.database.model.PopulatedAccount
 import kotlinx.coroutines.flow.Flow
@@ -21,6 +22,26 @@ interface AccountDao {
 
     @Update
     suspend fun updateAccount(account: AccountEntity)
+
+    @Query(
+        """
+        UPDATE tb_account
+        SET name = :name, type = :type, initial_balance = :initialBalance,
+            template_id = :templateId, card_number = :cardNumber,
+            include_in_total = :includeInTotal, sort_order = :sortOrder
+        WHERE account_id = :accountId AND is_deleted = 0
+        """,
+    )
+    suspend fun updateAccountInfo(
+        accountId: Long,
+        name: String,
+        type: AccountType,
+        initialBalance: Long,
+        templateId: Long?,
+        cardNumber: String?,
+        includeInTotal: Boolean,
+        sortOrder: Int,
+    ): Int
 
     @Query("UPDATE tb_account SET is_deleted = 1 WHERE account_id = :id")
     suspend fun softDeleteAccount(id: Long): Int

@@ -1,4 +1,4 @@
-package cn.turingzy.ledger.ui.feature.ledger
+package cn.turingzy.ledger.ui.component
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,12 +21,14 @@ import androidx.compose.ui.unit.sp
 import cn.turingzy.ledger.util.toFormattedAmount
 
 @Composable
-internal fun SummaryCardFront(
-    cardMonthDisplay: String,
-    balance: Long,
-    expense: Long,
-    income: Long,
+fun SummaryCardContent(
+    title: String,
+    amount: Long,
+    leftAmount: Long,
+    rightAmount: Long,
     modifier: Modifier = Modifier,
+    leftLabel: String = "支出",
+    rightLabel: String = "收入",
 ) {
     Box(modifier.fillMaxSize()) {
         Column(
@@ -35,7 +37,7 @@ internal fun SummaryCardFront(
                 .padding(start = 18.dp, end = 18.dp, top = 14.dp),
         ) {
             Text(
-                text = cardMonthDisplay.ifBlank { "结余" },
+                text = title,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onPrimary,
@@ -49,7 +51,7 @@ internal fun SummaryCardFront(
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = balance.toFormattedAmount(showSymbol = true, useGrouping = true),
+                text = amount.toFormattedAmount(showSymbol = true, useGrouping = true),
                 fontSize = 26.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimary,
@@ -82,7 +84,7 @@ internal fun SummaryCardFront(
                     verticalArrangement = Arrangement.Center,
                 ) {
                     Text(
-                        text = "支出",
+                        text = leftLabel,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.70f),
@@ -96,7 +98,7 @@ internal fun SummaryCardFront(
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = expense.toFormattedAmount(showSymbol = true, useGrouping = true),
+                        text = leftAmount.toFormattedAmount(showSymbol = true, useGrouping = true),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.error,
@@ -115,7 +117,7 @@ internal fun SummaryCardFront(
                     verticalArrangement = Arrangement.Center,
                 ) {
                     Text(
-                        text = "收入",
+                        text = rightLabel,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.70f),
@@ -129,7 +131,7 @@ internal fun SummaryCardFront(
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = income.toFormattedAmount(showSymbol = true, useGrouping = true),
+                        text = rightAmount.toFormattedAmount(showSymbol = true, useGrouping = true),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.tertiary,

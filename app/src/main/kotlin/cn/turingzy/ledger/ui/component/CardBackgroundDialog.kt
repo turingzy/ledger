@@ -1,4 +1,4 @@
-package cn.turingzy.ledger.ui.feature.ledger
+package cn.turingzy.ledger.ui.component
 
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult

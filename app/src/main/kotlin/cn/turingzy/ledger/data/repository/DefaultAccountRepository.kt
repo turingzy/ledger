@@ -53,6 +53,21 @@ class DefaultAccountRepository @Inject constructor(
         }
     }
 
+    override suspend fun updateAccountInfo(account: Account) {
+        withContext(ioDispatcher) {
+            accountDao.updateAccountInfo(
+                accountId = account.id,
+                name = account.name,
+                type = account.type,
+                initialBalance = account.initialBalance,
+                templateId = account.templateId,
+                cardNumber = account.cardNumber,
+                includeInTotal = account.includeInTotal,
+                sortOrder = account.sortOrder,
+            )
+        }
+    }
+
     override suspend fun deleteAccount(id: Long) {
         withContext(ioDispatcher) {
             accountDao.softDeleteAccount(id)

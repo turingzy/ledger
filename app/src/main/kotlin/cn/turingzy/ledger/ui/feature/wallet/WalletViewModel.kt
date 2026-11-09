@@ -2,6 +2,7 @@ package cn.turingzy.ledger.ui.feature.wallet
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import cn.turingzy.ledger.data.repository.CardTemplateRepository
 import cn.turingzy.ledger.data.repository.AccountRepository
 import cn.turingzy.ledger.model.Account
 import cn.turingzy.ledger.model.AccountType
@@ -16,17 +17,20 @@ import javax.inject.Inject
 @HiltViewModel
 class WalletViewModel @Inject constructor(
     private val accountRepository: AccountRepository,
+    private val cardTemplateRepository: CardTemplateRepository,
 ) : ViewModel() {
 
     val uiState: StateFlow<WalletUiState> = combine(
         accountRepository.getTotalAsset(),
         accountRepository.getTotalCreditDebt(),
         accountRepository.getAccountsStream(),
-    ) { totalAsset, totalDebt, accounts ->
+        cardTemplateRepository.getTemplatesStream(),
+    ) { totalAsset, totalDebt, accounts, templates ->
         WalletUiState.Success(
             totalAsset = totalAsset,
             totalDebt = totalDebt,
             accounts = accounts,
+            templates = templates,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -42,6 +46,7 @@ class WalletViewModel @Inject constructor(
         includeInTotal: Boolean = true,
         currency: String = "CNY",
         templateId: Long? = null,
+        sortOrder: Int = 0,
     ) {
         viewModelScope.launch {
             val account = Account(
@@ -53,8 +58,15 @@ class WalletViewModel @Inject constructor(
                 includeInTotal = includeInTotal,
                 currency = currency,
                 templateId = templateId,
+                sortOrder = sortOrder,
             )
             accountRepository.createAccount(account)
+        }
+    }
+
+    fun updateAccountInfo(account: Account) {
+        viewModelScope.launch {
+            accountRepository.updateAccountInfo(account)
         }
     }
 

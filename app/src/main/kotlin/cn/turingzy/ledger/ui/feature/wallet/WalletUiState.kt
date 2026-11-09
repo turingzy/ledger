@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.wallet
 
+import cn.turingzy.ledger.model.CardTemplate
 import cn.turingzy.ledger.model.AccountWithTemplate
 
 sealed interface WalletUiState {
@@ -9,5 +10,6 @@ sealed interface WalletUiState {
         val totalAsset: Long,
         val totalDebt: Long,
         val accounts: List<AccountWithTemplate>,
+        val templates: List<CardTemplate> = emptyList(),
     ) : WalletUiState
 }

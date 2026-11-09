@@ -36,7 +36,7 @@ class LedgerCardViewModelTest {
     @Before
     fun setup() {
         Dispatchers.setMain(dispatcher)
-        every { repository.appearance } returns stored
+        every { repository.appearance() } returns stored
     }
 
     @After

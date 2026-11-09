@@ -1,6 +1,8 @@
 package cn.turingzy.ledger.ui.feature.wallet
 
 import app.cash.turbine.test
+import cn.turingzy.ledger.data.repository.CardTemplateRepository
+import cn.turingzy.ledger.model.CardTemplate
 import cn.turingzy.ledger.data.repository.AccountRepository
 import cn.turingzy.ledger.model.Account
 import cn.turingzy.ledger.model.AccountType
@@ -24,6 +26,7 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class WalletViewModelTest {
 
+    private val templateRepository: CardTemplateRepository = mockk()
     private val accountRepository: AccountRepository = mockk(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var viewModel: WalletViewModel
@@ -31,6 +34,7 @@ class WalletViewModelTest {
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
+        coEvery { templateRepository.getTemplatesStream() } returns flowOf(emptyList())
     }
 
     @After
@@ -51,11 +55,13 @@ class WalletViewModelTest {
             ),
         )
 
+        val templates = listOf(CardTemplate(id = 42L, name = "自定义卡面", coverUri = "file:///card.png"))
+        coEvery { templateRepository.getTemplatesStream() } returns flowOf(templates)
         coEvery { accountRepository.getTotalAsset() } returns flowOf(50000L)
         coEvery { accountRepository.getTotalCreditDebt() } returns flowOf(0L)
         coEvery { accountRepository.getAccountsStream() } returns flowOf(testAccounts)
 
-        viewModel = WalletViewModel(accountRepository)
+        viewModel = WalletViewModel(accountRepository, templateRepository)
 
         viewModel.uiState.test {
             // First emission is Loading
@@ -70,6 +76,7 @@ class WalletViewModelTest {
             assertEquals(0L, success.totalDebt)
             assertEquals(1, success.accounts.size)
             assertEquals("Cash", success.accounts.first().account.name)
+            assertEquals(templates, success.templates)
         }
     }
 
@@ -79,7 +86,7 @@ class WalletViewModelTest {
         coEvery { accountRepository.getTotalCreditDebt() } returns flowOf(0L)
         coEvery { accountRepository.getAccountsStream() } returns flowOf(emptyList())
 
-        viewModel = WalletViewModel(accountRepository)
+        viewModel = WalletViewModel(accountRepository, templateRepository)
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.createAccount(
@@ -87,7 +94,10 @@ class WalletViewModelTest {
             type = AccountType.DEBIT,
             initialBalance = 100000L,
             cardNumber = "1234",
-            includeInTotal = true,
+            includeInTotal = false,
+            currency = "USD",
+            templateId = 42L,
+            sortOrder = 7,
         )
 
         testDispatcher.scheduler.advanceUntilIdle()
@@ -100,7 +110,10 @@ class WalletViewModelTest {
                         it.initialBalance == 100000L &&
                         it.currentBalance == 100000L &&
                         it.cardNumber == "1234" &&
-                        it.includeInTotal
+                        !it.includeInTotal &&
+                        it.currency == "USD" &&
+                        it.templateId == 42L &&
+                        it.sortOrder == 7
                 },
             )
         }
@@ -112,7 +125,7 @@ class WalletViewModelTest {
         coEvery { accountRepository.getTotalCreditDebt() } returns flowOf(0L)
         coEvery { accountRepository.getAccountsStream() } returns flowOf(emptyList())
 
-        viewModel = WalletViewModel(accountRepository)
+        viewModel = WalletViewModel(accountRepository, templateRepository)
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.adjustBalance(accountId = 5L, newBalance = 88000L)
@@ -130,7 +143,7 @@ class WalletViewModelTest {
         coEvery { accountRepository.getTotalCreditDebt() } returns flowOf(0L)
         coEvery { accountRepository.getAccountsStream() } returns flowOf(emptyList())
 
-        viewModel = WalletViewModel(accountRepository)
+        viewModel = WalletViewModel(accountRepository, templateRepository)
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.deleteAccount(accountId = 10L)
@@ -141,4 +154,19 @@ class WalletViewModelTest {
             accountRepository.deleteAccount(10L)
         }
     }
+    @Test
+    fun updateAccountInfoUsesMetadataSaveInsteadOfBalanceAdjustment() = runTest {
+        coEvery { accountRepository.getTotalAsset() } returns flowOf(0L)
+        coEvery { accountRepository.getTotalCreditDebt() } returns flowOf(0L)
+        coEvery { accountRepository.getAccountsStream() } returns flowOf(emptyList())
+        viewModel = WalletViewModel(accountRepository, templateRepository)
+        val edited = Account(id = 10L, name = "新名称", type = AccountType.DEBIT, currentBalance = 500L)
+
+        viewModel.updateAccountInfo(edited)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) { accountRepository.updateAccountInfo(edited) }
+        coVerify(exactly = 0) { accountRepository.adjustBalance(any(), any()) }
+    }
+
 }

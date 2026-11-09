@@ -85,6 +85,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cn.turingzy.ledger.ui.component.CardBackgroundDialog
 import cn.turingzy.ledger.R
 import cn.turingzy.ledger.model.Account
 import cn.turingzy.ledger.model.AccountType

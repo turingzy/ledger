@@ -1,4 +1,4 @@
-package cn.turingzy.ledger.ui.feature.ledger
+package cn.turingzy.ledger.ui.component
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
