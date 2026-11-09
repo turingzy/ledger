@@ -1,6 +1,7 @@
 package cn.turingzy.ledger.ui.feature.analytics
 
 import cn.turingzy.ledger.model.CategoryType
+import java.time.LocalDate
 
 enum class AnalyticsTimeScope {
     WEEK,
@@ -12,7 +13,22 @@ data class CategoryExpenseRanking(
     val categoryId: Long,
     val categoryName: String,
     val totalAmount: Long,
-    val percentage: Float, // 0.0 ~ 1.0
+    val percentage: Float,
+    val transactions: List<AnalyticsTransaction> = emptyList(),
+)
+
+data class AnalyticsTransaction(
+    val id: Long,
+    val date: LocalDate,
+    val note: String,
+    val accountName: String,
+    val amount: Long,
+)
+
+data class AnalyticsTrendPoint(
+    val date: LocalDate,
+    val expense: Long,
+    val income: Long,
 )
 
 sealed interface AnalyticsUiState {
@@ -26,5 +42,7 @@ sealed interface AnalyticsUiState {
         val totalIncome: Long,
         val balance: Long,
         val rankings: List<CategoryExpenseRanking>,
+        val periodStart: LocalDate,
+        val trendPoints: List<AnalyticsTrendPoint> = emptyList(),
     ) : AnalyticsUiState
 }

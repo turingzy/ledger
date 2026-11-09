@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
+import java.time.Instant
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -27,21 +28,23 @@ class AnalyticsViewModel @Inject constructor(
     private val transactionRepository: TransactionRepository,
 ) : ViewModel() {
 
-    private val timeScope = MutableStateFlow(AnalyticsTimeScope.MONTH)
+    private val period =
+        MutableStateFlow(AnalyticsPeriod(AnalyticsTimeScope.MONTH, LocalDate.now()))
     private val categoryType = MutableStateFlow(CategoryType.EXPENSE)
-    private val periodOffset = MutableStateFlow(0) // 偏移量: 0 代表当前周期, -1 代表上一周期, 1 代表下一周期
 
     val uiState: StateFlow<AnalyticsUiState> = combine(
-        timeScope,
+        period,
         categoryType,
-        periodOffset,
-    ) { scope, catType, offset ->
-        Triple(scope, catType, offset)
-    }.flatMapLatest { (scope, catType, offset) ->
+    ) { selectedPeriod, catType ->
+        selectedPeriod to catType
+    }.flatMapLatest { (selectedPeriod, catType) ->
+        val scope = selectedPeriod.scope
         val zone = ZoneId.systemDefault()
-        val now = LocalDate.now(zone)
-
-        val (startEpoch, endEpoch, periodDisplay) = calculateTimeRange(scope, offset, now, zone)
+        val (startEpoch, endEpoch, periodDisplay) = calculateTimeRange(
+            scope,
+            selectedPeriod.anchor,
+            zone
+        )
 
         combine(
             transactionRepository.getAmountSum(TransactionType.EXPENSE, startEpoch, endEpoch),
@@ -57,6 +60,8 @@ class AnalyticsViewModel @Inject constructor(
                 totalIncome = totalIncome,
                 balance = totalIncome - totalExpense,
                 rankings = rankings,
+                periodStart = Instant.ofEpochMilli(startEpoch).atZone(zone).toLocalDate(),
+                trendPoints = buildAnalyticsTrend(transactions, scope, selectedPeriod.anchor, zone),
             )
         }
     }.stateIn(
@@ -66,8 +71,8 @@ class AnalyticsViewModel @Inject constructor(
     )
 
     fun setTimeScope(scope: AnalyticsTimeScope) {
-        timeScope.value = scope
-        periodOffset.value = 0
+        if (period.value.scope == scope) return
+        period.value = AnalyticsPeriod(scope, LocalDate.now())
     }
 
     fun setCategoryType(type: CategoryType) {
@@ -75,41 +80,62 @@ class AnalyticsViewModel @Inject constructor(
     }
 
     fun navigatePeriod(delta: Int) {
-        periodOffset.value += delta
+        val selected = period.value
+        val anchor = when (selected.scope) {
+            AnalyticsTimeScope.WEEK -> selected.anchor.plusWeeks(delta.toLong())
+            AnalyticsTimeScope.MONTH -> selected.anchor.plusMonths(delta.toLong())
+            AnalyticsTimeScope.YEAR -> selected.anchor.plusYears(delta.toLong())
+        }
+        period.value = selected.copy(anchor = anchor)
     }
+
+    fun selectPeriod(date: LocalDate) {
+        period.value = period.value.copy(anchor = date)
+    }
+
+    private data class AnalyticsPeriod(val scope: AnalyticsTimeScope, val anchor: LocalDate)
 
     private fun calculateTimeRange(
         scope: AnalyticsTimeScope,
-        offset: Int,
-        now: LocalDate,
+        anchor: LocalDate,
         zone: ZoneId,
     ): Triple<Long, Long, String> {
         return when (scope) {
             AnalyticsTimeScope.WEEK -> {
-                val currentMonday = now.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-                val targetMonday = currentMonday.plusWeeks(offset.toLong())
+                val targetMonday = anchor.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
                 val targetSunday = targetMonday.plusDays(6)
 
                 val start = targetMonday.atStartOfDay(zone).toInstant().toEpochMilli()
-                val end = targetSunday.atTime(23, 59, 59, 999_000_000).atZone(zone).toInstant().toEpochMilli()
-                val display = "${targetMonday.monthValue}.${targetMonday.dayOfMonth} - ${targetSunday.monthValue}.${targetSunday.dayOfMonth}"
+                val end = targetSunday.atTime(23, 59, 59, 999_000_000).atZone(zone).toInstant()
+                    .toEpochMilli()
+                val endDisplay = if (targetMonday.year == targetSunday.year) {
+                    "${targetSunday.monthValue}.${targetSunday.dayOfMonth}"
+                } else {
+                    "${targetSunday.year}.${targetSunday.monthValue}.${targetSunday.dayOfMonth}"
+                }
+                val display =
+                    "${targetMonday.year}.${targetMonday.monthValue}.${targetMonday.dayOfMonth} - $endDisplay"
                 Triple(start, end, display)
             }
 
             AnalyticsTimeScope.MONTH -> {
-                val currentYm = YearMonth.from(now)
-                val targetYm = currentYm.plusMonths(offset.toLong())
+                val targetYm = YearMonth.from(anchor)
 
                 val start = targetYm.atDay(1).atStartOfDay(zone).toInstant().toEpochMilli()
-                val end = targetYm.atEndOfMonth().atTime(23, 59, 59, 999_000_000).atZone(zone).toInstant().toEpochMilli()
+                val end =
+                    targetYm.atEndOfMonth().atTime(23, 59, 59, 999_000_000).atZone(zone).toInstant()
+                        .toEpochMilli()
                 val display = "${targetYm.year}年${targetYm.monthValue}月"
                 Triple(start, end, display)
             }
 
             AnalyticsTimeScope.YEAR -> {
-                val targetYear = now.year + offset
-                val start = LocalDate.of(targetYear, 1, 1).atStartOfDay(zone).toInstant().toEpochMilli()
-                val end = LocalDate.of(targetYear, 12, 31).atTime(23, 59, 59, 999_000_000).atZone(zone).toInstant().toEpochMilli()
+                val targetYear = anchor.year
+                val start =
+                    LocalDate.of(targetYear, 1, 1).atStartOfDay(zone).toInstant().toEpochMilli()
+                val end =
+                    LocalDate.of(targetYear, 12, 31).atTime(23, 59, 59, 999_000_000).atZone(zone)
+                        .toInstant().toEpochMilli()
                 val display = "${targetYear}年"
                 Triple(start, end, display)
             }
@@ -125,7 +151,8 @@ class AnalyticsViewModel @Inject constructor(
             CategoryType.INCOME -> TransactionType.INCOME
         }
 
-        val filtered = transactions.filter { it.transaction.type == targetTxType }
+        val filtered =
+            transactions.filter { !it.transaction.isDeleted && it.transaction.type == targetTxType }
         val totalAmount = filtered.sumOf { it.transaction.amount }
 
         if (totalAmount <= 0L) return emptyList()
@@ -135,12 +162,24 @@ class AnalyticsViewModel @Inject constructor(
             .map { (catId, txList) ->
                 val catName = txList.first().category.category.name
                 val catTotal = txList.sumOf { it.transaction.amount }
-                val percentage = catTotal.toFloat() / totalAmount.toFloat()
+                val percentage = analyticsRatio(catTotal, totalAmount)
                 CategoryExpenseRanking(
                     categoryId = catId,
                     categoryName = catName,
                     totalAmount = catTotal,
                     percentage = percentage,
+                    transactions = txList.sortedByDescending { it.transaction.transactionTime }
+                        .map { detail ->
+                            AnalyticsTransaction(
+                                id = detail.transaction.id,
+                                date = Instant.ofEpochMilli(detail.transaction.transactionTime)
+                                    .atZone(ZoneId.systemDefault()).toLocalDate(),
+                                note = detail.transaction.note.orEmpty()
+                                    .ifBlank { detail.category.category.name },
+                                accountName = detail.account.name,
+                                amount = detail.transaction.amount,
+                            )
+                        },
                 )
             }
             .sortedByDescending { it.totalAmount }
