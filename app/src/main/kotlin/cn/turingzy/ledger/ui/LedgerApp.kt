@@ -52,7 +52,7 @@ fun LedgerApp(
                 .padding(innerPadding.let { androidx.compose.foundation.layout.PaddingValues(0.dp) })
                 .background(MaterialTheme.colorScheme.background),
         ) {
-            // 主内容区域，底部预留 72.dp 防止被悬浮胶囊底栏遮挡，顶部由内层 Screen 自主控制状态栏间距
+            // 主内容区域，底部预留抽屉底栏与导航栏间距，防止内容被遮挡
             LedgerNavHost(
                 navController = navController,
                 showRecordSheet = showGlobalRecordSheet,
@@ -60,20 +60,21 @@ fun LedgerApp(
                 onNavigateToRecord = { showGlobalRecordSheet = true },
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(bottom = 72.dp),
+                    .navigationBarsPadding()
+                    .padding(bottom = 56.dp),
             )
 
-            // 右侧悬浮“记一笔”胶囊按钮 (仅在账本Tab呈现，位于底栏上方)
+            // 右侧悬浮“记一笔”胶囊按钮 (仅在账本Tab呈现，位于抽屉底栏上方)
             LedgerFloatingActionButton(
                 visible = isLedgerTab,
                 onClick = { showGlobalRecordSheet = true },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .navigationBarsPadding()
-                    .padding(end = 16.dp, bottom = 80.dp),
+                    .padding(end = 16.dp, bottom = 72.dp),
             )
 
-            // 底部磨砂胶囊导航栏
+            // 底部沉浸式贴边抽屉导航栏（紧贴屏幕最底部，左右及底边无缝贴合）
             LedgerBottomBar(
                 destinations = TopLevelDestination.entries,
                 currentDestination = currentTopLevelDestination,
@@ -92,9 +93,7 @@ fun LedgerApp(
                         Route.Settings -> navController.navigate(Route.Settings, navOptions)
                     }
                 },
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding(),
+                modifier = Modifier.align(Alignment.BottomCenter),
             )
         }
     }

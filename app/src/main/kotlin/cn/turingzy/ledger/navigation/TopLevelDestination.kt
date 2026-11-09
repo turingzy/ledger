@@ -1,10 +1,5 @@
 package cn.turingzy.ledger.navigation
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBalanceWallet
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.AccountBalanceWallet
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
 import cn.turingzy.ledger.ui.component.LedgerIcons
 import kotlinx.serialization.Serializable
@@ -43,14 +38,14 @@ enum class TopLevelDestination(
         route = Route.Analytics,
     ),
     WALLET(
-        selectedIcon = Icons.Filled.AccountBalanceWallet,
-        unselectedIcon = Icons.Outlined.AccountBalanceWallet,
+        selectedIcon = LedgerIcons.WalletFilled,
+        unselectedIcon = LedgerIcons.WalletOutline,
         labelText = "钱包",
         route = Route.Wallet,
     ),
     SETTINGS(
-        selectedIcon = Icons.Filled.Settings,
-        unselectedIcon = Icons.Outlined.Settings,
+        selectedIcon = LedgerIcons.SettingsFilled,
+        unselectedIcon = LedgerIcons.SettingsOutline,
         labelText = "设置",
         route = Route.Settings,
     ),
