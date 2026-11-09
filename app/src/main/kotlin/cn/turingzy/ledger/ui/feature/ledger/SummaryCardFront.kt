@@ -1,6 +1,5 @@
 package cn.turingzy.ledger.ui.feature.ledger
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -71,11 +70,6 @@ internal fun SummaryCardFront(
                 .height(52.dp)
                 .align(Alignment.BottomCenter),
         ) {
-            Box(
-                Modifier.fillMaxWidth().height(0.5.dp)
-                    .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.32f)),
-            )
-
             Row(
                 modifier = Modifier
                     .fillMaxSize()

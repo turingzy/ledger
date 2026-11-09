@@ -137,7 +137,7 @@ fun SummaryHeroBanner(
         }
         IconButton(
             onClick = { backVisible = !backVisible },
-            modifier = Modifier.align(Alignment.TopEnd).padding(top = 18.dp, end = 12.dp).size(36.dp),
+            modifier = Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 12.dp).size(36.dp),
         ) {
             Icon(
                 imageVector = if (backVisible) Icons.Default.Close else Icons.Default.MoreHoriz,
@@ -172,9 +172,9 @@ private fun SummaryCardSettings(
         disabledInactiveTrackColor = colors.tertiary.copy(alpha = 0.12f),
     )
     Box(modifier) {
-        Column(Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, top = 16.dp)) {
+        Column(Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, top = 6.dp)) {
             Row(Modifier.fillMaxWidth().height(40.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("透明", Modifier.width(64.dp), fontSize = 13.sp, color = colors.onPrimary)
+                Text("透明", Modifier.width(52.dp), fontSize = 13.sp, color = colors.onPrimary)
                 Box(Modifier.weight(1f).height(40.dp)) {
                     Switch(
                         checked = appearance.transparencyEnabled,
@@ -203,7 +203,7 @@ private fun SummaryCardSettings(
                 }
             }
             Row(Modifier.fillMaxWidth().height(40.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("透明度", Modifier.width(64.dp), fontSize = 13.sp, color = colors.onPrimary)
+                Text("透明度", Modifier.width(52.dp), fontSize = 13.sp, color = colors.onPrimary)
                 BoxWithConstraints(Modifier.weight(1f).height(40.dp)) {
                     Slider(
                         value = appearance.transparencyPercent.toFloat(),

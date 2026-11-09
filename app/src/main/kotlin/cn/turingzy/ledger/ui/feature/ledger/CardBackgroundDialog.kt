@@ -4,6 +4,11 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -23,15 +28,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -42,11 +46,17 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import cn.turingzy.ledger.util.parseImageUrl
 
 private enum class BackgroundSource { URL, LOCAL, DEFAULT }
@@ -79,33 +89,56 @@ internal fun CardBackgroundDialog(
     }
 
     BasicAlertDialog(onDismissRequest = onDismiss) {
-        Surface(shape = RoundedCornerShape(28.dp), color = colors.surfaceContainerHigh) {
+        Surface(shape = RoundedCornerShape(28.dp), color = colors.background) {
             Column(
                 Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp),
             ) {
                 Text("更换卡片背景", style = MaterialTheme.typography.titleLarge)
                 Spacer(Modifier.height(20.dp))
-                OutlinedTextField(
-                    value = url,
-                    onValueChange = {
-                        url = it
-                        source = BackgroundSource.URL
-                    },
-                    placeholder = { Text("https://…") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = colors.tertiary,
-                        cursorColor = colors.tertiary,
-                    ),
-                    isError = source == BackgroundSource.URL && url.isNotBlank() && !validUrl,
-                    supportingText = if (source == BackgroundSource.URL && url.isNotBlank() && !validUrl) {
-                        { Text("请输入有效的 HTTPS 图片地址") }
-                    } else null,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                Box(
+                    Modifier.fillMaxWidth().height(44.dp)
+                        .clip(RoundedCornerShape(22.dp))
+                        .background(colors.surfaceVariant)
+                        .border(1.dp, colors.outline, RoundedCornerShape(22.dp))
+                        .padding(horizontal = 12.dp),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    BasicTextField(
+                        value = url,
+                        onValueChange = {
+                            url = it
+                            source = BackgroundSource.URL
+                        },
+                        singleLine = true,
+                        textStyle = TextStyle(fontSize = 15.sp, lineHeight = 22.sp, color = colors.onSurface),
+                        cursorBrush = SolidColor(colors.onSurface),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                        modifier = Modifier.fillMaxWidth().semantics { contentDescription = "图片 URL" },
+                        decorationBox = { innerTextField ->
+                            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
+                                if (url.isEmpty()) {
+                                    Text(
+                                        "https://…",
+                                        modifier = Modifier.padding(start = 6.dp),
+                                        fontSize = 15.sp,
+                                        lineHeight = 22.sp,
+                                        color = colors.onSurfaceVariant,
+                                    )
+                                }
+                                innerTextField()
+                            }
+                        },
+                    )
+                }
+                if (source == BackgroundSource.URL && url.isNotBlank() && !validUrl) {
+                    Text(
+                        "请输入有效的 HTTPS 图片地址",
+                        modifier = Modifier.padding(start = 12.dp, top = 4.dp),
+                        fontSize = 12.sp,
+                        color = colors.error,
+                    )
+                }
                 Spacer(Modifier.height(16.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     BackgroundSourceButton(
@@ -136,14 +169,6 @@ internal fun CardBackgroundDialog(
                     Spacer(Modifier.weight(1f))
                     TextButton(
                         onClick = {
-                            url = ""
-                            localUri = null
-                            source = BackgroundSource.URL
-                        },
-                        colors = ButtonDefaults.textButtonColors(contentColor = colors.onSurfaceVariant),
-                    ) { Text("重置") }
-                    TextButton(
-                        onClick = {
                             when (source) {
                                 BackgroundSource.URL -> onImageUrl(url.trim())
                                 BackgroundSource.LOCAL -> localUri?.let { onLocalImage(Uri.parse(it)) }
@@ -171,20 +196,23 @@ private fun BackgroundSourceButton(
     modifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.colorScheme
-    FilledTonalButton(
+    OutlinedButton(
         onClick = onClick,
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
-        colors = ButtonDefaults.filledTonalButtonColors(
-            containerColor = if (selected) colors.tertiary.copy(alpha = 0.18f) else colors.surfaceVariant,
+        border = BorderStroke(1.dp, colors.outline),
+        colors = ButtonDefaults.outlinedButtonColors(
+            containerColor = if (selected) colors.tertiary.copy(alpha = 0.10f) else colors.background,
             contentColor = if (selected) colors.tertiary else colors.onSurfaceVariant,
         ),
     ) {
-        if (selected) {
-            Icon(Icons.Default.Check, contentDescription = "已选择", modifier = Modifier.size(16.dp))
-            Spacer(Modifier.width(4.dp))
-        }
         Text(label, maxLines = 1)
+        Spacer(Modifier.weight(1f))
+        Icon(
+            imageVector = if (selected) Icons.Default.Check else Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = if (selected) "已选择" else null,
+            modifier = Modifier.size(16.dp),
+        )
     }
 }
