@@ -172,6 +172,7 @@ fun LedgerContent(
 ) {
     var isSearchActive by rememberSaveable { mutableStateOf(initialSearchActive) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
+    var submittedSearchQuery by rememberSaveable { mutableStateOf("") }
     var isDateDropdownOpen by rememberSaveable { mutableStateOf(initialCalendarExpanded) }
     var calendarSession by remember { mutableIntStateOf(0) }
     val focusManager = LocalFocusManager.current
@@ -215,16 +216,15 @@ fun LedgerContent(
                 val calendarState = remember(calendarSession) {
                     CalendarPickerState(YearMonth.of(uiState.year, uiState.month), confirmedSelection)
                 }
-                // 根据搜索框动态过滤交易记录
-                val filteredDayGroups = remember(uiState.dayGroups, searchQuery) {
-                    if (searchQuery.isBlank()) {
+                val filteredDayGroups = remember(uiState.dayGroups, submittedSearchQuery) {
+                    if (submittedSearchQuery.isBlank()) {
                         uiState.dayGroups
                     } else {
                         uiState.dayGroups.mapNotNull { group ->
                             val matchedTxs = group.transactions.filter { tx ->
-                                tx.transaction.note?.contains(searchQuery.trim(), ignoreCase = true) == true ||
-                                    tx.category.category.name.contains(searchQuery.trim(), ignoreCase = true) ||
-                                    tx.account.name.contains(searchQuery.trim(), ignoreCase = true)
+                                tx.transaction.note?.contains(submittedSearchQuery, ignoreCase = true) == true ||
+                                    tx.category.category.name.contains(submittedSearchQuery, ignoreCase = true) ||
+                                    tx.account.name.contains(submittedSearchQuery, ignoreCase = true)
                             }
                             if (matchedTxs.isNotEmpty()) {
                                 group.copy(
@@ -390,7 +390,12 @@ fun LedgerContent(
                                                 cursorBrush = SolidColor(MaterialTheme.colorScheme.onSurface),
                                                 singleLine = true,
                                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                                                keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
+                                                keyboardActions = KeyboardActions(
+                                                    onSearch = {
+                                                        submittedSearchQuery = searchQuery.trim()
+                                                        focusManager.clearFocus()
+                                                    },
+                                                ),
                                                 modifier = Modifier
                                                     .fillMaxWidth()
                                                     .focusRequester(focusRequester),
@@ -427,6 +432,7 @@ fun LedgerContent(
                                                 ) {
                                                     isSearchActive = false
                                                     searchQuery = ""
+                                                    submittedSearchQuery = ""
                                                     focusManager.clearFocus()
                                                 },
                                             contentAlignment = Alignment.Center,
@@ -486,7 +492,7 @@ fun LedgerContent(
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Text(
-                                    text = if (searchQuery.isNotBlank()) "未找到相关账单" else "本期暂无交易明细，点击右下角开始记账",
+                                    text = if (submittedSearchQuery.isNotBlank()) "未找到相关账单" else "本期暂无交易明细，点击右下角开始记账",
                                     fontSize = 14.sp,
                                     color = IosSecondary,
                                 )
