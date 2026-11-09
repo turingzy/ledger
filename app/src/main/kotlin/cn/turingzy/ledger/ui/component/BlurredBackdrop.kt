@@ -7,18 +7,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 @Composable
-internal fun rememberBlurredBackdrop(@DrawableRes resourceId: Int): ImageBitmap? {
+internal fun rememberBlurredBackdrop(@DrawableRes resourceId: Int, source: ImageBitmap? = null): ImageBitmap? {
     val resources = LocalContext.current.resources
-    val backdrop by produceState<ImageBitmap?>(null, resources, resourceId) {
+    val backdrop by produceState<ImageBitmap?>(null, resources, resourceId, source) {
         // 位图解码与卷积属于 CPU 工作，避免阻塞页面首帧和导航动画。
         value = withContext(Dispatchers.Default) {
-            val original = BitmapFactory.decodeResource(resources, resourceId)
+            val original = source?.asAndroidBitmap() ?: BitmapFactory.decodeResource(resources, resourceId)
                 ?: return@withContext null
             try {
                 val scaled = Bitmap.createScaledBitmap(original, 240, 120, true)
@@ -28,7 +29,7 @@ internal fun rememberBlurredBackdrop(@DrawableRes resourceId: Int): ImageBitmap?
                     if (scaled !== original) scaled.recycle()
                 }
             } finally {
-                original.recycle()
+                if (source == null) original.recycle()
             }
         }
     }

@@ -9,7 +9,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,7 +23,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -54,8 +52,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.ripple
-import cn.turingzy.ledger.ui.component.rememberBlurredBackdrop
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import cn.turingzy.ledger.model.LedgerCardAppearance
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -66,20 +68,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.BlurredEdgeTreatment
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -125,6 +121,16 @@ fun LedgerScreen(
     viewModel: LedgerViewModel = hiltViewModel(),
     onNavigateToRecord: () -> Unit = {},
 ) {
+    val cardViewModel: LedgerCardViewModel = hiltViewModel()
+    val cardUiState by cardViewModel.uiState.collectAsStateWithLifecycle()
+    val background = remember(cardUiState.background) { cardUiState.background?.asImageBitmap() }
+    var showBackgroundDialog by rememberSaveable { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(cardUiState.error) {
+        val error = cardUiState.error ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(error)
+        cardViewModel.clearError()
+    }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val categories by viewModel.categories.collectAsStateWithLifecycle()
     val accounts by viewModel.accounts.collectAsStateWithLifecycle()
@@ -139,7 +145,32 @@ fun LedgerScreen(
         onSelectYear = { year -> viewModel.setYear(year) },
         onSelectRange = { start, end -> viewModel.setRange(start, end) },
         modifier = modifier,
+        cardAppearance = cardUiState.appearance,
+        cardBackground = background,
+        cardSettingsEnabled = !cardUiState.loading && !cardUiState.importing,
+        onUploadCardBackground = { showBackgroundDialog = true },
+        onCardTransparencyEnabledChange = cardViewModel::setTransparencyEnabled,
+        onCardTransparencyChange = cardViewModel::setTransparencyPercent,
+        snackbarHostState = snackbarHostState,
     )
+
+    if (showBackgroundDialog) {
+        CardBackgroundDialog(
+            onDismiss = { showBackgroundDialog = false },
+            onRestoreDefault = {
+                showBackgroundDialog = false
+                cardViewModel.resetBackground()
+            },
+            onLocalImage = { uri ->
+                showBackgroundDialog = false
+                cardViewModel.importBackground(uri)
+            },
+            onImageUrl = { url ->
+                showBackgroundDialog = false
+                cardViewModel.importBackgroundUrl(url)
+            },
+        )
+    }
 
     if (showRecordSheet) {
         RecordTransactionSheet(
@@ -169,6 +200,13 @@ fun LedgerContent(
     modifier: Modifier = Modifier,
     initialCalendarExpanded: Boolean = false,
     initialSearchActive: Boolean = false,
+    cardAppearance: LedgerCardAppearance = LedgerCardAppearance(),
+    cardBackground: ImageBitmap? = null,
+    cardSettingsEnabled: Boolean = true,
+    onUploadCardBackground: () -> Unit = {},
+    onCardTransparencyEnabledChange: (Boolean) -> Unit = {},
+    onCardTransparencyChange: (Int) -> Unit = {},
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     var isSearchActive by rememberSaveable { mutableStateOf(initialSearchActive) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
@@ -186,6 +224,7 @@ fun LedgerContent(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background,
         modifier = modifier
             .fillMaxSize()
@@ -479,6 +518,12 @@ fun LedgerContent(
                                 balance = uiState.monthBalance,
                                 expense = uiState.monthExpense,
                                 income = uiState.monthIncome,
+                                appearance = cardAppearance,
+                                background = cardBackground,
+                                settingsEnabled = cardSettingsEnabled,
+                                onUploadBackground = onUploadCardBackground,
+                                onTransparencyEnabledChange = onCardTransparencyEnabledChange,
+                                onTransparencyChange = onCardTransparencyChange,
                             )
                         }
                     }
@@ -505,232 +550,6 @@ fun LedgerContent(
                             }
                         }
                     }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun SummaryHeroBanner(
-    cardMonthDisplay: String,
-    balance: Long,
-    expense: Long,
-    income: Long,
-    modifier: Modifier = Modifier,
-) {
-    val cardHeight = 152.dp
-    val glassPanelHeight = 52.dp
-    val blurredBackdrop = rememberBlurredBackdrop(R.drawable.bg_ledger_card)
-
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(cardHeight)
-            .shadow(
-                elevation = 12.dp,
-                shape = RoundedCornerShape(20.dp),
-                spotColor = Color.Black.copy(alpha = 0.18f),
-            )
-            .clip(RoundedCornerShape(20.dp))
-            .border(
-                width = 0.5.dp,
-                color = Color.White.copy(alpha = 0.25f),
-                shape = RoundedCornerShape(20.dp),
-            ),
-    ) {
-        // 全局底层清晰风景背景图 (完整呈现山川水色与通透度)
-        Image(
-            painter = painterResource(R.drawable.bg_ledger_card),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            alignment = BiasAlignment(0f, -0.2f),
-            modifier = Modifier.fillMaxSize(),
-        )
-
-        // 上半区通透微弱暗调渐变 (保障结余文字在亮部背景下的清晰可读性)
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0x380F172A),
-                            Color(0x0A0F172A),
-                            Color(0x1A0F172A),
-                        ),
-                    ),
-                ),
-        )
-
-        // 上半部: 结余展示 (严格与下方支出对齐在 18.dp 左内边距基准线)
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 18.dp, end = 18.dp, top = 14.dp),
-        ) {
-            // 卡片背景 1号字：加大结余标签，突出核心资产维度
-            Text(
-                text = cardMonthDisplay.ifBlank { "结余" },
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color.White,
-                style = TextStyle(
-                    shadow = androidx.compose.ui.graphics.Shadow(
-                        color = Color.Black.copy(alpha = 0.50f),
-                        offset = androidx.compose.ui.geometry.Offset(0f, 1.5f),
-                        blurRadius = 6f,
-                    ),
-                ),
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = balance.toFormattedAmount(showSymbol = true, useGrouping = true),
-                fontSize = 26.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                letterSpacing = (-0.6).sp,
-                style = TextStyle(
-                    shadow = androidx.compose.ui.graphics.Shadow(
-                        color = Color.Black.copy(alpha = 0.55f),
-                        offset = androidx.compose.ui.geometry.Offset(0f, 3f),
-                        blurRadius = 12f,
-                    ),
-                ),
-            )
-        }
-
-        // 下半部: 半透明深色毛玻璃面板 (兼具背景图可感知度与朦胧散焦质感)
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(glassPanelHeight)
-                .align(Alignment.BottomCenter)
-                .clip(RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp)),
-        ) {
-            // 1. 背景模糊层 (保留背景图色彩轮廓与光影层次)
-            if (blurredBackdrop != null) {
-                Image(
-                    bitmap = blurredBackdrop,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    alignment = BiasAlignment(0f, 0.7f),
-                    modifier = Modifier.fillMaxSize(),
-                )
-            } else {
-                Image(
-                    painter = painterResource(R.drawable.bg_ledger_card),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    alignment = BiasAlignment(0f, -0.2f),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(cardHeight + 40.dp)
-                        .offset(y = -(cardHeight - glassPanelHeight) - 20.dp)
-                        .blur(
-                            radius = 20.dp,
-                            edgeTreatment = BlurredEdgeTreatment.Unbounded,
-                        ),
-                )
-            }
-
-            // 2. 通透深色半透明滤镜 (35%~55% 通透度：既能充分感受背景图冷杉湖水光彩，又突出前景金额)
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color(0x590E222D), // 顶部 35% 通透深湖青，充分透出底图
-                                Color(0x730C1E27), // 中部 45% 朦胧过渡
-                                Color(0x8C09161D), // 底部 55% 沉浸底衬，保障金额清晰可读
-                            ),
-                        ),
-                    ),
-            )
-
-            // 3. 毛玻璃顶部微光分割线 (0.5dp solid rgba(255, 255, 255, 0.32))
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(0.5.dp)
-                    .background(Color.White.copy(alpha = 0.32f)),
-            )
-
-            // 4. 下半部内容：支出与收入 (严格沿左/右辅助线对齐，千分位千分格式)
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 18.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                // 支出：左对齐 (卡片背景 2号字)
-                Column(
-                    horizontalAlignment = Alignment.Start,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    Text(
-                        text = "支出",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color.White.copy(alpha = 0.70f),
-                        style = TextStyle(
-                            shadow = androidx.compose.ui.graphics.Shadow(
-                                color = Color.Black.copy(alpha = 0.70f),
-                                offset = androidx.compose.ui.geometry.Offset(0f, 1.5f),
-                                blurRadius = 4f,
-                            ),
-                        ),
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = expense.toFormattedAmount(showSymbol = true, useGrouping = true),
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFFF453A),
-                        style = TextStyle(
-                            shadow = androidx.compose.ui.graphics.Shadow(
-                                color = Color.Black.copy(alpha = 0.75f),
-                                offset = androidx.compose.ui.geometry.Offset(0f, 2f),
-                                blurRadius = 6f,
-                            ),
-                        ),
-                    )
-                }
-
-                // 收入：右对齐 (卡片背景 2号字)
-                Column(
-                    horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    Text(
-                        text = "收入",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color.White.copy(alpha = 0.70f),
-                        style = TextStyle(
-                            shadow = androidx.compose.ui.graphics.Shadow(
-                                color = Color.Black.copy(alpha = 0.70f),
-                                offset = androidx.compose.ui.geometry.Offset(0f, 1.5f),
-                                blurRadius = 4f,
-                            ),
-                        ),
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = income.toFormattedAmount(showSymbol = true, useGrouping = true),
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF30D158),
-                        style = TextStyle(
-                            shadow = androidx.compose.ui.graphics.Shadow(
-                                color = Color.Black.copy(alpha = 0.75f),
-                                offset = androidx.compose.ui.geometry.Offset(0f, 2f),
-                                blurRadius = 6f,
-                            ),
-                        ),
-                    )
                 }
             }
         }
