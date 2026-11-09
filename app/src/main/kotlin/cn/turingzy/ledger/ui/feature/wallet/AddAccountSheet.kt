@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.UnfoldMore
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -48,6 +49,10 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.ripple
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -67,13 +72,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cn.turingzy.ledger.model.AccountType
-import cn.turingzy.ledger.ui.theme.IosBg
-import cn.turingzy.ledger.ui.theme.IosBlue
-import cn.turingzy.ledger.ui.theme.IosCard
-import cn.turingzy.ledger.ui.theme.IosGreen
-import cn.turingzy.ledger.ui.theme.IosLabel
-import cn.turingzy.ledger.ui.theme.IosSecondaryLabel
-import cn.turingzy.ledger.ui.theme.IosSeparator
 import cn.turingzy.ledger.util.AmountFormatter
 
 private enum class AccountTab(val title: String) {
@@ -141,7 +139,7 @@ fun AddAccountSheet(
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
-        containerColor = IosBg,
+        containerColor = MaterialTheme.colorScheme.background,
         shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
         dragHandle = null,
         modifier = modifier,
@@ -167,24 +165,28 @@ fun AddAccountSheetContent(
     ) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var selectedTab by remember { mutableStateOf(AccountTab.ASSET) }
-    var selectedInstitution by remember { mutableStateOf("招商银行") }
-    var name by remember { mutableStateOf("招商银行储蓄卡") }
-    var cardNumber by remember { mutableStateOf("6821") }
-    var balanceText by remember { mutableStateOf("50000.00") }
-    var includeInTotal by remember { mutableStateOf(true) }
-    var selectedCurrency by remember { mutableStateOf("CNY") }
-    var selectedCurrencyDisplay by remember { mutableStateOf("CNY 人民币") }
-    var selectedTheme by remember { mutableStateOf(DefaultThemeOptions.first()) }
+    var selectedTab by rememberSaveable { mutableStateOf(AccountTab.ASSET) }
+    var selectedInstitution by rememberSaveable { mutableStateOf("招商银行") }
+    var name by rememberSaveable { mutableStateOf("招商银行储蓄卡") }
+    var cardNumber by rememberSaveable { mutableStateOf("") }
+    var balanceText by rememberSaveable { mutableStateOf("") }
+    var includeInTotal by rememberSaveable { mutableStateOf(true) }
+    var selectedCurrency by rememberSaveable { mutableStateOf("CNY") }
+    var selectedCurrencyDisplay by rememberSaveable { mutableStateOf("CNY 人民币") }
+    var selectedThemeName by rememberSaveable { mutableStateOf(DefaultThemeOptions.first().name) }
+    val selectedTheme = DefaultThemeOptions.first { it.name == selectedThemeName }
 
     var isInstitutionMenuExpanded by remember { mutableStateOf(false) }
     var isCurrencyMenuExpanded by remember { mutableStateOf(false) }
     var isThemeMenuExpanded by remember { mutableStateOf(false) }
 
-    var isNoteExpanded by remember { mutableStateOf(false) }
-    var note by remember { mutableStateOf("") }
+    var isNoteExpanded by rememberSaveable { mutableStateOf(false) }
+    var note by rememberSaveable { mutableStateOf("") }
 
-    val isNameValid = name.isNotBlank()
+    val focusManager = LocalFocusManager.current
+    val parsedBalance = if (balanceText.isBlank()) 0L else AmountFormatter.parseToCents(balanceText)
+    val isBalanceValid = parsedBalance != null
+    val canConfirm = name.isNotBlank() && isBalanceValid
 
     val currentAccountType = when (selectedTab) {
         AccountTab.DEBT -> AccountType.CREDIT
@@ -217,7 +219,7 @@ fun AddAccountSheetContent(
                     modifier = Modifier
                         .size(32.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFFE5E5EA))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = ripple(bounded = true, radius = 16.dp),
@@ -228,7 +230,7 @@ fun AddAccountSheetContent(
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "取消",
-                        tint = IosLabel,
+                        tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(16.dp),
                     )
                 }
@@ -238,7 +240,7 @@ fun AddAccountSheetContent(
                     text = "新建",
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
-                    color = IosLabel,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
 
                 // 右侧蓝色圆形完成按钮
@@ -246,15 +248,16 @@ fun AddAccountSheetContent(
                     modifier = Modifier
                         .size(32.dp)
                         .clip(CircleShape)
-                        .background(if (isNameValid) IosBlue else IosBlue.copy(alpha = 0.4f))
+                        .background(if (canConfirm) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
                         .clickable(
-                            enabled = isNameValid,
+                            enabled = canConfirm,
                             interactionSource = remember { MutableInteractionSource() },
                             indication = ripple(bounded = true, radius = 16.dp),
                             onClick = {
-                                val cents = AmountFormatter.parseToCents(balanceText) ?: 0L
+                                val cents = parsedBalance ?: return@clickable
+                                focusManager.clearFocus()
                                 onConfirm(
-                                    name,
+                                    name.trim(),
                                     currentAccountType,
                                     cents,
                                     cardNumber.trim().takeIf { it.isNotEmpty() },
@@ -281,7 +284,7 @@ fun AddAccountSheetContent(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
                     .clip(RoundedCornerShape(9.dp))
-                    .background(Color(0xFFE5E5EA))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                     .padding(2.dp),
             ) {
                 Row(modifier = Modifier.fillMaxWidth()) {
@@ -323,7 +326,7 @@ fun AddAccountSheetContent(
                                 text = tab.title,
                                 fontSize = 13.sp,
                                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                color = if (isSelected) IosLabel else IosSecondaryLabel,
+                                color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -336,7 +339,7 @@ fun AddAccountSheetContent(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
                 shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.cardColors(containerColor = IosCard),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     // 1. 计入总资产看板
@@ -351,16 +354,16 @@ fun AddAccountSheetContent(
                             text = "计入总资产看板",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Medium,
-                            color = IosLabel,
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
                         Switch(
                             checked = includeInTotal,
                             onCheckedChange = { includeInTotal = it },
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = Color.White,
-                                checkedTrackColor = IosGreen,
+                                checkedTrackColor = MaterialTheme.colorScheme.tertiary,
                                 uncheckedThumbColor = Color.White,
-                                uncheckedTrackColor = Color(0xFFE5E5EA),
+                                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                                 uncheckedBorderColor = Color.Transparent,
                             ),
                         )
@@ -369,7 +372,7 @@ fun AddAccountSheetContent(
                     HorizontalDivider(
                         modifier = Modifier.padding(start = 16.dp),
                         thickness = 0.5.dp,
-                        color = IosSeparator,
+                        color = MaterialTheme.colorScheme.outlineVariant,
                     )
 
                     // 2. 开户机构
@@ -384,14 +387,14 @@ fun AddAccountSheetContent(
                             text = "开户机构",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Medium,
-                            color = IosLabel,
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
 
                         Box {
                             Row(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(Color(0xFFEFEFF4))
+                                    .background(MaterialTheme.colorScheme.surfaceContainerLow)
                                     .clickable { isInstitutionMenuExpanded = true }
                                     .padding(horizontal = 10.dp, vertical = 6.dp),
                                 verticalAlignment = Alignment.CenterVertically,
@@ -401,12 +404,12 @@ fun AddAccountSheetContent(
                                     text = selectedInstitution,
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Medium,
-                                    color = IosLabel,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                 )
                                 Icon(
                                     imageVector = Icons.Default.KeyboardArrowDown,
                                     contentDescription = "选择开户机构",
-                                    tint = IosSecondaryLabel,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(16.dp),
                                 )
                             }
@@ -442,7 +445,7 @@ fun AddAccountSheetContent(
                     HorizontalDivider(
                         modifier = Modifier.padding(start = 16.dp),
                         thickness = 0.5.dp,
-                        color = IosSeparator,
+                        color = MaterialTheme.colorScheme.outlineVariant,
                     )
 
                     // 3. 账户名称
@@ -457,14 +460,14 @@ fun AddAccountSheetContent(
                             text = "账户名称",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Medium,
-                            color = IosLabel,
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
 
                         Box(
                             modifier = Modifier
                                 .widthIn(min = 120.dp, max = 220.dp)
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(Color(0xFFEFEFF4))
+                                .background(MaterialTheme.colorScheme.surfaceContainerLow)
                                 .padding(horizontal = 10.dp, vertical = 6.dp),
                             contentAlignment = Alignment.CenterEnd,
                         ) {
@@ -475,16 +478,16 @@ fun AddAccountSheetContent(
                                 textStyle = TextStyle(
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = IosLabel,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     textAlign = TextAlign.End,
                                 ),
-                                cursorBrush = SolidColor(IosBlue),
+                                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                                 decorationBox = { innerTextField ->
                                     if (name.isEmpty()) {
                                         Text(
                                             text = "输入名称",
                                             fontSize = 14.sp,
-                                            color = IosSecondaryLabel,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             textAlign = TextAlign.End,
                                             modifier = Modifier.fillMaxWidth(),
                                         )
@@ -498,7 +501,7 @@ fun AddAccountSheetContent(
                     HorizontalDivider(
                         modifier = Modifier.padding(start = 16.dp),
                         thickness = 0.5.dp,
-                        color = IosSeparator,
+                        color = MaterialTheme.colorScheme.outlineVariant,
                     )
 
                     // 4. 卡号尾号
@@ -513,7 +516,7 @@ fun AddAccountSheetContent(
                             text = "卡号尾号",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Medium,
-                            color = IosLabel,
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
 
                         Row(
@@ -524,14 +527,14 @@ fun AddAccountSheetContent(
                                 text = "· · · ·",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = IosSecondaryLabel,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
 
                             Box(
                                 modifier = Modifier
                                     .width(72.dp)
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(Color(0xFFEFEFF4))
+                                    .background(MaterialTheme.colorScheme.surfaceContainerLow)
                                     .padding(horizontal = 8.dp, vertical = 6.dp),
                                 contentAlignment = Alignment.Center,
                             ) {
@@ -547,17 +550,17 @@ fun AddAccountSheetContent(
                                     textStyle = TextStyle(
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = IosLabel,
+                                        color = MaterialTheme.colorScheme.onSurface,
                                         textAlign = TextAlign.Center,
                                     ),
-                                    cursorBrush = SolidColor(IosBlue),
+                                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                                     decorationBox = { innerTextField ->
                                         if (cardNumber.isEmpty()) {
                                             Text(
                                                 text = "6821",
                                                 fontSize = 14.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = IosSecondaryLabel.copy(alpha = 0.4f),
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
                                                 textAlign = TextAlign.Center,
                                                 modifier = Modifier.fillMaxWidth(),
                                             )
@@ -572,7 +575,7 @@ fun AddAccountSheetContent(
                     HorizontalDivider(
                         modifier = Modifier.padding(start = 16.dp),
                         thickness = 0.5.dp,
-                        color = IosSeparator,
+                        color = MaterialTheme.colorScheme.outlineVariant,
                     )
 
                     // 5. 结算币种
@@ -587,7 +590,7 @@ fun AddAccountSheetContent(
                             text = "结算币种",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Medium,
-                            color = IosLabel,
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
 
                         Box {
@@ -601,12 +604,12 @@ fun AddAccountSheetContent(
                                 Text(
                                     text = selectedCurrencyDisplay,
                                     fontSize = 14.sp,
-                                    color = IosSecondaryLabel,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                                 Icon(
                                     imageVector = Icons.Default.UnfoldMore,
                                     contentDescription = "选择币种",
-                                    tint = IosSecondaryLabel,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(16.dp),
                                 )
                             }
@@ -637,7 +640,7 @@ fun AddAccountSheetContent(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
                 shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.cardColors(containerColor = IosCard),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             ) {
                 Row(
                     modifier = Modifier
@@ -650,7 +653,7 @@ fun AddAccountSheetContent(
                         text = "当前可用余额",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Medium,
-                        color = IosLabel,
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
 
                     Row(
@@ -661,14 +664,14 @@ fun AddAccountSheetContent(
                             text = "¥",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
-                            color = IosLabel,
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
 
                         Box(
                             modifier = Modifier
                                 .widthIn(min = 90.dp, max = 150.dp)
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(Color(0xFFEFEFF4))
+                                .background(MaterialTheme.colorScheme.surfaceContainerLow)
                                 .padding(horizontal = 10.dp, vertical = 6.dp),
                             contentAlignment = Alignment.CenterEnd,
                         ) {
@@ -680,21 +683,22 @@ fun AddAccountSheetContent(
                                     }
                                 },
                                 singleLine = true,
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
+                                keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                                 textStyle = TextStyle(
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = IosLabel,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     textAlign = TextAlign.End,
                                 ),
-                                cursorBrush = SolidColor(IosBlue),
+                                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                                 decorationBox = { innerTextField ->
                                     if (balanceText.isEmpty()) {
                                         Text(
                                             text = "0.00",
                                             fontSize = 15.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = IosSecondaryLabel.copy(alpha = 0.4f),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
                                             textAlign = TextAlign.End,
                                             modifier = Modifier.fillMaxWidth(),
                                         )
@@ -707,13 +711,22 @@ fun AddAccountSheetContent(
                 }
             }
 
+            if (!isBalanceValid) {
+                Text(
+                    "请输入有效余额，金额不能超出支持范围",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                )
+            }
+
             // 表单卡片 3：卡面主题色
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
                 shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.cardColors(containerColor = IosCard),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             ) {
                 Row(
                     modifier = Modifier
@@ -726,7 +739,7 @@ fun AddAccountSheetContent(
                         text = "卡面主题色",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Medium,
-                        color = IosLabel,
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
 
                     Box {
@@ -747,13 +760,13 @@ fun AddAccountSheetContent(
                             Text(
                                 text = selectedTheme.name,
                                 fontSize = 14.sp,
-                                color = IosSecondaryLabel,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
 
                             Icon(
                                 imageVector = Icons.Default.UnfoldMore,
                                 contentDescription = "选择主题",
-                                tint = IosSecondaryLabel,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(16.dp),
                             )
                         }
@@ -774,7 +787,7 @@ fun AddAccountSheetContent(
                                     },
                                     text = { Text(theme.name, fontSize = 14.sp) },
                                     onClick = {
-                                        selectedTheme = theme
+                                        selectedThemeName = theme.name
                                         isThemeMenuExpanded = false
                                     },
                                 )
@@ -790,7 +803,7 @@ fun AddAccountSheetContent(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
                 shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.cardColors(containerColor = IosCard),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Row(
@@ -804,7 +817,7 @@ fun AddAccountSheetContent(
                         Text(
                             text = if (note.isBlank()) "添加备注与账户用途..." else note,
                             fontSize = 14.sp,
-                            color = if (note.isBlank()) IosSecondaryLabel else IosLabel,
+                            color = if (note.isBlank()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                             maxLines = 1,
                             modifier = Modifier.weight(1f, fill = false),
                         )
@@ -816,12 +829,12 @@ fun AddAccountSheetContent(
                             Text(
                                 text = "详细信息",
                                 fontSize = 13.sp,
-                                color = IosSecondaryLabel,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
                                 contentDescription = "展开备注",
-                                tint = IosSecondaryLabel,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(12.dp),
                             )
                         }
@@ -839,7 +852,7 @@ fun AddAccountSheetContent(
                         ) {
                             HorizontalDivider(
                                 thickness = 0.5.dp,
-                                color = IosSeparator,
+                                color = MaterialTheme.colorScheme.outlineVariant,
                             )
                             Spacer(modifier = Modifier.height(10.dp))
                             BasicTextField(
@@ -847,21 +860,21 @@ fun AddAccountSheetContent(
                                 onValueChange = { note = it },
                                 textStyle = TextStyle(
                                     fontSize = 14.sp,
-                                    color = IosLabel,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                 ),
-                                cursorBrush = SolidColor(IosBlue),
+                                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .heightIn(min = 60.dp)
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(Color(0xFFEFEFF4))
+                                    .background(MaterialTheme.colorScheme.surfaceContainerLow)
                                     .padding(10.dp),
                                 decorationBox = { innerTextField ->
                                     if (note.isEmpty()) {
                                         Text(
                                             text = "请输入备注或账户用途说明...",
                                             fontSize = 14.sp,
-                                            color = IosSecondaryLabel,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         )
                                     }
                                     innerTextField()
@@ -881,7 +894,7 @@ private fun AddAccountSheetContentPreview() {
         AddAccountSheetContent(
             onDismissRequest = {},
             onConfirm = { _, _, _, _, _, _, _ -> },
-            modifier = Modifier.background(IosBg),
+            modifier = Modifier.background(MaterialTheme.colorScheme.background),
         )
     }
 }

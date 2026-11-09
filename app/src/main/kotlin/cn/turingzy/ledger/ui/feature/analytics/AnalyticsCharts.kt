@@ -296,7 +296,7 @@ internal fun CategoryBreakdownCard(
     val selected = uiState.rankings.find { it.categoryId == expandedId }
     val detail = uiState.rankings.find { it.categoryId == detailId }
     if (detail != null) {
-        ModalBottomSheet(onDismissRequest = { detailId = null }) {
+        ModalBottomSheet(onDismissRequest = { detailId = null }, containerColor = colors.surface) {
             Text(
                 detail.categoryName,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
@@ -515,7 +515,9 @@ internal fun CategoryBreakdownCard(
                                     .background(colors.surfaceVariant.copy(alpha = 0.35f))
                                     .padding(horizontal = 12.dp)
                             ) {
-                                ranking.transactions.take(5).forEach { AnalyticsTransactionRow(it) }
+                                ranking.transactions.take(5).forEach { transaction ->
+                                    androidx.compose.runtime.key(transaction.id) { AnalyticsTransactionRow(transaction) }
+                                }
                                 if (ranking.transactions.size > 5) TextButton(
                                     onClick = {
                                         detailId = ranking.categoryId
@@ -539,7 +541,7 @@ private fun AnalyticsTransactionRow(transaction: AnalyticsTransaction) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(transaction.note, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(transaction.note.ifBlank { "无备注" }, fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text(
                 "${transaction.date.format(DateTimeFormatter.ofPattern("M月d日"))} · ${transaction.accountName}",
                 fontSize = 11.sp,

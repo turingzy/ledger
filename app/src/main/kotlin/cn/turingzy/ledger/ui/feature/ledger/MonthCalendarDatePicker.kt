@@ -20,6 +20,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -39,9 +40,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cn.turingzy.ledger.ui.theme.IosBg
-import cn.turingzy.ledger.ui.theme.IosLabel
-import cn.turingzy.ledger.ui.theme.IosSecondaryLabel
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -102,15 +100,15 @@ fun MonthCalendarDatePickerCard(
         }
     }
 
-    // 卡片背景与主界面一致 (IosBg)，线条加黑 (Color(0x4D000000))
+    // 卡片背景与主界面一致 (MaterialTheme.colorScheme.background)，线条加黑 (MaterialTheme.colorScheme.outline)
     Box(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
-            .background(IosBg)
+            .background(MaterialTheme.colorScheme.background)
             .border(
                 width = 1.dp,
-                color = Color(0x4D000000),
+                color = MaterialTheme.colorScheme.outline,
                 shape = RoundedCornerShape(20.dp),
             )
             .padding(horizontal = 14.dp, vertical = 12.dp),
@@ -132,7 +130,7 @@ fun MonthCalendarDatePickerCard(
                             text = header,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium,
-                            color = IosSecondaryLabel,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center,
                         )
                     }
@@ -176,13 +174,13 @@ fun MonthCalendarDatePickerCard(
                     text = rangeText,
                     fontSize = 17.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = IosSecondaryLabel,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFF34C759))
+                        .background(MaterialTheme.colorScheme.tertiary)
                         .clickable {
                             onConfirm(stagedStartDate, stagedEndDate)
                         }
@@ -193,7 +191,7 @@ fun MonthCalendarDatePickerCard(
                         text = "确认",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onTertiary,
                     )
                 }
             }
@@ -352,7 +350,7 @@ private fun MonthCalendarGrid(
                                     modifier = Modifier
                                         .fillMaxSize()
                                         .clip(RoundedCornerShape(percent = 50))
-                                        .background(Color(0xFFCEF0DA)),
+                                        .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.14f)),
                                 )
 
                                 // 起始与结束日期深色全覆盖 (无圆周留缝，完整贴合左右胶囊圆弧端)
@@ -377,7 +375,7 @@ private fun MonthCalendarGrid(
                                                         )
                                                     },
                                                 )
-                                                .background(Color(0xFFA1E3B8)),
+                                                .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.28f)),
                                         )
                                     } else {
                                         Spacer(modifier = Modifier.weight(1f))
@@ -401,7 +399,7 @@ private fun MonthCalendarGrid(
                                                             bottomEndPercent = 50,
                                                         ),
                                                     )
-                                                    .background(Color(0xFFA1E3B8)),
+                                                    .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.28f)),
                                             )
                                         } else {
                                             Spacer(modifier = Modifier.weight(1f))
@@ -444,10 +442,10 @@ private fun MonthCalendarGrid(
                                         fontSize = 14.sp,
                                         fontWeight = if (isSelected) FontWeight.SemiBold else if (isToday) FontWeight.SemiBold else FontWeight.Normal,
                                         color = when {
-                                            !isCurrentMonth -> Color(0x38000000)
-                                            isSelected -> IosLabel
-                                            isToday -> Color(0xFF34C759)
-                                            else -> IosLabel
+                                            isSelected -> MaterialTheme.colorScheme.onSurface
+                                            !isCurrentMonth -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
+                                            isToday -> MaterialTheme.colorScheme.tertiary
+                                            else -> MaterialTheme.colorScheme.onSurface
                                         },
                                         textAlign = TextAlign.Center,
                                     )
@@ -458,7 +456,7 @@ private fun MonthCalendarGrid(
                                                 .padding(top = 1.dp)
                                                 .size(3.dp)
                                                 .clip(CircleShape)
-                                                .background(Color(0xFF34C759)),
+                                                .background(MaterialTheme.colorScheme.tertiary),
                                         )
                                     }
                                 }
@@ -477,7 +475,7 @@ fun MonthCalendarDatePickerCardPreview() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(IosBg)
+            .background(MaterialTheme.colorScheme.background)
             .padding(16.dp),
     ) {
         MonthCalendarDatePickerCard(

@@ -1,5 +1,7 @@
 package cn.turingzy.ledger.ui.feature.analytics
 
+import androidx.compose.animation.animateColorAsState
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -245,13 +247,13 @@ private fun PeriodCell(
     description: String = label,
 ) {
     val colors = MaterialTheme.colorScheme
+    val background by animateColorAsState(
+        if (selected) colors.primary.copy(alpha = 0.13f) else colors.surfaceVariant.copy(alpha = 0.25f),
+        label = "periodSelection",
+    )
     Box(
         modifier.height(40.dp).clip(RoundedCornerShape(10.dp))
-            .background(
-                if (selected) colors.primary.copy(alpha = 0.13f) else colors.surfaceVariant.copy(
-                    alpha = 0.25f
-                )
-            )
+            .background(background)
             .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
             .semantics { contentDescription = description },
         contentAlignment = Alignment.Center,

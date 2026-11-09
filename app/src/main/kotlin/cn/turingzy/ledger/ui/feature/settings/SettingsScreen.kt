@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -203,7 +205,7 @@ fun SettingsContent(
                                     )
                                     SettingsRowItem(
                                         icon = Icons.Default.Code,
-                                        iconBgColor = Color(0xFF5856D6),
+                                        iconBgColor = MaterialTheme.colorScheme.secondary,
                                         title = "账单解析规则",
                                         onClick = onParseRulesClick,
                                     )
@@ -214,7 +216,7 @@ fun SettingsContent(
                                     )
                                     SettingsRowItem(
                                         icon = Icons.Default.CloudUpload,
-                                        iconBgColor = Color(0xFF34C759),
+                                        iconBgColor = MaterialTheme.colorScheme.tertiary,
                                         title = "数据备份和恢复",
                                         onClick = onBackupClick,
                                     )
@@ -240,7 +242,7 @@ fun SettingsContent(
                             Column(modifier = Modifier.fillMaxWidth()) {
                                 SettingsRowItem(
                                     icon = Icons.Default.Info,
-                                    iconBgColor = Color(0xFF007AFF),
+                                    iconBgColor = MaterialTheme.colorScheme.primary,
                                     title = "关于",
                                     onClick = onAboutClick,
                                 )
@@ -314,6 +316,23 @@ fun CategoryManagementSheet(
     onDeleteCategory: (Long) -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var categoryToDelete by remember { mutableStateOf<Category?>(null) }
+    categoryToDelete?.let { category ->
+        AlertDialog(
+            onDismissRequest = { categoryToDelete = null },
+            title = { Text("删除分类") },
+            text = { Text("确定删除“${category.name}”分类吗？") },
+            confirmButton = {
+                TextButton(onClick = {
+                    onDeleteCategory(category.id)
+                    categoryToDelete = null
+                }) { Text("删除", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { categoryToDelete = null }) { Text("取消") }
+            },
+        )
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
@@ -340,7 +359,7 @@ fun CategoryManagementSheet(
                     Icon(
                         imageVector = Icons.Default.Add,
                         contentDescription = "添加分类",
-                        tint = Color(0xFF007AFF),
+                        tint = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
@@ -355,8 +374,18 @@ fun CategoryManagementSheet(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(360.dp),
+                        .heightIn(max = 360.dp),
                 ) {
+                    if (categories.isEmpty()) {
+                        item(key = "empty_categories") {
+                            Text(
+                                "暂无分类，点击右上角添加",
+                                modifier = Modifier.padding(24.dp),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                     items(
                         items = categories,
                         key = { it.category.id },
@@ -369,9 +398,11 @@ fun CategoryManagementSheet(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Column {
+                            Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
                                 Text(
                                     text = cat.name,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.onSurface,
@@ -384,11 +415,11 @@ fun CategoryManagementSheet(
                             }
 
                             if (!cat.isSystem) {
-                                IconButton(onClick = { onDeleteCategory(cat.id) }) {
+                                IconButton(onClick = { categoryToDelete = cat }) {
                                     Icon(
                                         imageVector = Icons.Default.DeleteOutline,
                                         contentDescription = "删除",
-                                        tint = Color(0xFFFF3B30),
+                                        tint = MaterialTheme.colorScheme.error,
                                         modifier = Modifier.size(20.dp),
                                     )
                                 }
@@ -426,13 +457,13 @@ fun ParseRulesDialog(
                 modifier = Modifier
                     .size(48.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFF5856D6)),
+                    .background(MaterialTheme.colorScheme.secondaryContainer),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = Icons.Default.Code,
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
                     modifier = Modifier.size(26.dp),
                 )
             }
@@ -447,12 +478,12 @@ fun ParseRulesDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = "支持智能解析微信支付通知、支付宝账单、银行扣款短信。",
+                    text = "账单解析功能尚未开放。",
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
-                    text = "• 自动提取交易金额、交易对手与商户分类\n• 本地离线正规匹配，零网络上传保护隐私\n• 智能对应至绑定的默认扣款卡账户",
+                    text = "当前请通过“记一笔”手动记录收支。后续开放后，可在这里配置账单解析规则。",
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = 18.sp,
@@ -461,7 +492,7 @@ fun ParseRulesDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismissRequest) {
-                Text("了解", color = Color(0xFF007AFF), fontWeight = FontWeight.Bold)
+                Text("了解", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
             }
         },
     )
@@ -478,13 +509,13 @@ fun BackupAndRestoreDialog(
                 modifier = Modifier
                     .size(48.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFF34C759)),
+                    .background(MaterialTheme.colorScheme.tertiaryContainer),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = Icons.Default.CloudUpload,
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
                     modifier = Modifier.size(26.dp),
                 )
             }
@@ -499,12 +530,12 @@ fun BackupAndRestoreDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = "本地 SQLite 沙盒数据库状态良好。",
+                    text = "账目数据保存在当前设备中。",
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
-                    text = "所有记账明细、账户及分类数据仅存储在您的设备受保护存储中。您可以随时导出加密备份文件或进行数据迁移恢复。",
+                    text = "应用内手动备份、导出和恢复功能尚未开放，此处暂未提供数据迁移操作。",
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = 18.sp,
@@ -513,7 +544,7 @@ fun BackupAndRestoreDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismissRequest) {
-                Text("完成", color = Color(0xFF007AFF), fontWeight = FontWeight.Bold)
+                Text("完成", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
             }
         },
     )

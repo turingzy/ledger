@@ -10,8 +10,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import cn.turingzy.ledger.model.Account
@@ -25,31 +26,42 @@ fun AdjustBalanceDialog(
     onConfirm: (newBalance: Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var balanceText by remember {
+    var balanceText by rememberSaveable(account.id) {
         mutableStateOf(account.currentBalance.toFormattedAmount(showSymbol = false))
     }
+
+    val parsedBalance = AmountFormatter.parseToCents(balanceText)
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
         title = {
-            Text(text = "校准余额 - ${account.name}")
+            Text(text = "校准余额")
         },
         text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp),
+            ) {
+                Text(account.name, style = androidx.compose.material3.MaterialTheme.typography.bodyMedium)
                 OutlinedTextField(
                     value = balanceText,
                     onValueChange = { balanceText = it },
                     label = { Text("最新实际余额 (元)") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true,
+                    isError = balanceText.isNotBlank() && parsedBalance == null,
+                    supportingText = {
+                        Text(if (balanceText.isNotBlank() && parsedBalance == null) "请输入有效金额" else "当前余额：${account.currentBalance.toFormattedAmount(showSymbol = true)}")
+                    },
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
         },
         confirmButton = {
             TextButton(
+                enabled = parsedBalance != null,
                 onClick = {
-                    val cents = AmountFormatter.parseToCents(balanceText)
+                    val cents = parsedBalance
                     if (cents != null) {
                         onConfirm(cents)
                     }

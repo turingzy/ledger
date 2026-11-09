@@ -20,6 +20,10 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.Icon as MaterialIcon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,14 +44,14 @@ fun AddCategoryDialog(
     onConfirm: (name: String, type: CategoryType, iconId: Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var name by remember { mutableStateOf("") }
-    var selectedType by remember { mutableStateOf(CategoryType.EXPENSE) }
+    var name by rememberSaveable { mutableStateOf("") }
+    var selectedType by rememberSaveable { mutableStateOf(CategoryType.EXPENSE) }
     var selectedIconId by remember(availableIcons) {
         mutableStateOf(availableIcons.firstOrNull()?.id ?: 1L)
     }
     var iconMenuExpanded by remember { mutableStateOf(false) }
 
-    val isNameValid = name.isNotBlank()
+    val isNameValid = name.isNotBlank() && availableIcons.any { it.id == selectedIconId }
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
@@ -113,7 +117,7 @@ fun AddCategoryDialog(
                     onExpandedChange = { iconMenuExpanded = it },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    val currentIconName = availableIcons.firstOrNull { it.id == selectedIconId }?.displayName ?: "系统图标"
+                    val currentIconName = availableIcons.firstOrNull { it.id == selectedIconId }?.displayName ?: "暂无可用图标"
                     OutlinedTextField(
                         value = currentIconName,
                         onValueChange = {},
@@ -131,6 +135,11 @@ fun AddCategoryDialog(
                         availableIcons.forEach { icon ->
                             DropdownMenuItem(
                                 text = { Text(icon.displayName) },
+                                trailingIcon = {
+                                    if (icon.id == selectedIconId) {
+                                        MaterialIcon(Icons.Default.Check, contentDescription = "已选择", tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                },
                                 onClick = {
                                     selectedIconId = icon.id
                                     iconMenuExpanded = false
@@ -145,7 +154,7 @@ fun AddCategoryDialog(
             TextButton(
                 onClick = {
                     if (isNameValid) {
-                        onConfirm(name, selectedType, selectedIconId)
+                        onConfirm(name.trim(), selectedType, selectedIconId)
                     }
                 },
                 enabled = isNameValid,

@@ -1,5 +1,27 @@
 package cn.turingzy.ledger.ui.feature.ledger
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
+import cn.turingzy.ledger.util.toFormattedAmount
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -51,7 +73,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.TextStyle
@@ -67,10 +88,6 @@ import cn.turingzy.ledger.model.CategoryType
 import cn.turingzy.ledger.model.CategoryWithIcon
 import cn.turingzy.ledger.model.Icon as ModelIcon
 import cn.turingzy.ledger.model.TransactionType
-import cn.turingzy.ledger.ui.theme.IosCard
-import cn.turingzy.ledger.ui.theme.IosGreen
-import cn.turingzy.ledger.ui.theme.IosLabel
-import cn.turingzy.ledger.ui.theme.IosSecondaryLabel
 import cn.turingzy.ledger.util.AmountFormatter
 
 data class QuickCategoryItem(
@@ -96,16 +113,24 @@ fun RecordTransactionSheet(
     ) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var expression by remember { mutableStateOf("") }
-    var note by remember { mutableStateOf("") }
+    var expression by rememberSaveable { mutableStateOf("") }
+    var note by rememberSaveable { mutableStateOf("") }
 
     // 默认选择支出首项 "餐饮"
-    var selectedCategoryName by remember { mutableStateOf("餐饮") }
-    var selectedType by remember { mutableStateOf(TransactionType.EXPENSE) }
+    var selectedCategoryName by rememberSaveable { mutableStateOf("餐饮") }
+    var selectedType by rememberSaveable { mutableStateOf(TransactionType.EXPENSE) }
 
-    var selectedAccountId by remember(accounts) {
-        mutableLongStateOf(accounts.firstOrNull()?.account?.id ?: 1L)
+    var selectedAccountId by rememberSaveable {
+        mutableLongStateOf(accounts.firstOrNull()?.account?.id ?: 0L)
     }
+
+    LaunchedEffect(accounts) {
+        if (accounts.none { it.account.id == selectedAccountId }) {
+            selectedAccountId = accounts.firstOrNull()?.account?.id ?: 0L
+        }
+    }
+
+    var validationMessage by remember { mutableStateOf<String?>(null) }
 
     // 计算是否有正在输入的算式运算符 (+ 或 -)
     val hasPendingCalculation = remember(expression) {
@@ -115,7 +140,7 @@ fun RecordTransactionSheet(
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
-        containerColor = IosCard,
+        containerColor = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         dragHandle = {
             Box(
@@ -124,7 +149,7 @@ fun RecordTransactionSheet(
                     .width(36.dp)
                     .height(5.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFFE5E5EA)),
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest),
             )
         },
         modifier = modifier,
@@ -136,39 +161,64 @@ fun RecordTransactionSheet(
             selectedAccountId = selectedAccountId,
             hasPendingCalculation = hasPendingCalculation,
             accounts = accounts,
-            onExpressionChange = { expression = it },
+            onExpressionChange = {
+                expression = it
+                validationMessage = null
+            },
             onNoteChange = { note = it },
             onCategorySelect = { item ->
                 selectedCategoryName = item.name
                 selectedType = item.type
+                validationMessage = null
             },
-            onAccountSelect = { selectedAccountId = it },
-            onConfirmAction = {
-                if (hasPendingCalculation) {
-                    // 处于计算中状态，点击执行求值
-                    expression = evaluateMathExpression(expression)
-                } else {
-                    // 无待计算公式，点击“完成”进行保存
-                    val evaluated = evaluateMathExpression(expression)
-                    val amountCents = AmountFormatter.parseToCents(evaluated) ?: 0L
-                    if (amountCents > 0L) {
-                        val matchedCatId = categories.firstOrNull {
-                            it.category.name.contains(selectedCategoryName) || selectedCategoryName.contains(it.category.name)
-                        }?.category?.id
-                            ?: categories.firstOrNull { it.category.type == CategoryType.EXPENSE }?.category?.id
-                            ?: 1L
-
-                        val toAccId = accounts.firstOrNull { it.account.id != selectedAccountId }?.account?.id
-                        onConfirm(
-                            selectedType,
-                            amountCents,
-                            selectedAccountId,
-                            if (selectedType == TransactionType.TRANSFER) toAccId else null,
-                            matchedCatId,
-                            note.takeIf { it.isNotBlank() },
-                        )
-                    }
+            onAccountSelect = {
+                selectedAccountId = it
+                validationMessage = null
+            },
+            selectedType = selectedType,
+            validationMessage = validationMessage,
+            onConfirmAction = confirm@{
+                val evaluated = evaluateMathExpression(expression)
+                val amountCents = AmountFormatter.parseToCents(evaluated)
+                if (amountCents == null) {
+                    validationMessage = "请输入有效金额，金额不能超出支持范围"
+                    return@confirm
                 }
+                if (hasPendingCalculation) {
+                    expression = evaluated
+                    validationMessage = null
+                    return@confirm
+                }
+                if (amountCents <= 0L) {
+                    validationMessage = "记账金额需大于 0"
+                    return@confirm
+                }
+                if (accounts.none { it.account.id == selectedAccountId }) {
+                    validationMessage = "请先在钱包中添加账户"
+                    return@confirm
+                }
+                val categoryType = if (selectedType == TransactionType.INCOME) CategoryType.INCOME else CategoryType.EXPENSE
+                val matchingCategories = categories.filter { it.category.type == categoryType }
+                val matchedCatId = matchingCategories.firstOrNull {
+                    it.category.name.contains(selectedCategoryName) || selectedCategoryName.contains(it.category.name)
+                }?.category?.id ?: matchingCategories.firstOrNull()?.category?.id
+                if (matchedCatId == null) {
+                    validationMessage = "请先添加对应的收支分类"
+                    return@confirm
+                }
+                val toAccId = accounts.firstOrNull { it.account.id != selectedAccountId }?.account?.id
+                if (selectedType == TransactionType.TRANSFER && toAccId == null) {
+                    validationMessage = "转账需要至少两个账户"
+                    return@confirm
+                }
+                onConfirm(
+                    selectedType,
+                    amountCents,
+                    selectedAccountId,
+                    if (selectedType == TransactionType.TRANSFER) toAccId else null,
+                    matchedCatId,
+                    note.trim().takeIf { it.isNotBlank() },
+                )
             },
         )
     }
@@ -191,12 +241,18 @@ fun RecordTransactionContent(
     onAccountSelect: (Long) -> Unit,
     onConfirmAction: () -> Unit,
     modifier: Modifier = Modifier,
+    selectedType: TransactionType = TransactionType.EXPENSE,
+    validationMessage: String? = null,
 ) {
+    val focusManager = LocalFocusManager.current
+    val expressionScrollState = rememberScrollState()
+    LaunchedEffect(expression) { expressionScrollState.animateScrollTo(expressionScrollState.maxValue) }
     var accountMenuExpanded by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
             .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
             .navigationBarsPadding()
             .padding(bottom = 12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -212,14 +268,27 @@ fun RecordTransactionContent(
                 text = "¥ ",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
-                color = IosLabel,
+                color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
                 text = expression.ifEmpty { "0" },
+                maxLines = 1,
+                softWrap = false,
+                modifier = Modifier.weight(1f).horizontalScroll(expressionScrollState),
+                style = TextStyle(fontFeatureSettings = "tnum"),
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
-                color = IosLabel,
+                color = MaterialTheme.colorScheme.onSurface,
                 letterSpacing = (-0.5).sp,
+            )
+        }
+
+        if (validationMessage != null) {
+            Text(
+                text = validationMessage,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(horizontal = 20.dp),
             )
         }
 
@@ -241,6 +310,7 @@ fun RecordTransactionContent(
                     QuickCategoryItem("娱乐", Icons.Default.SportsEsports, TransactionType.EXPENSE),
                     QuickCategoryItem("更多", Icons.Default.MoreHoriz, TransactionType.EXPENSE),
                 ),
+                selectedType = selectedType,
                 selectedCategory = selectedCategoryName,
                 onSelect = onCategorySelect,
             )
@@ -256,6 +326,7 @@ fun RecordTransactionContent(
                     QuickCategoryItem("其他", Icons.Default.AccountBalanceWallet, TransactionType.INCOME),
                     QuickCategoryItem("更多", Icons.Default.MoreHoriz, TransactionType.INCOME),
                 ),
+                selectedType = selectedType,
                 selectedCategory = selectedCategoryName,
                 onSelect = onCategorySelect,
             )
@@ -271,6 +342,7 @@ fun RecordTransactionContent(
                     QuickCategoryItem("现金", Icons.Default.Paid, TransactionType.TRANSFER),
                     QuickCategoryItem("更多", Icons.Default.MoreHoriz, TransactionType.TRANSFER),
                 ),
+                selectedType = selectedType,
                 selectedCategory = selectedCategoryName,
                 onSelect = onCategorySelect,
             )
@@ -283,7 +355,7 @@ fun RecordTransactionContent(
                 .padding(horizontal = 16.dp)
                 .height(40.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(Color(0xFFF2F2F7))
+                .background(MaterialTheme.colorScheme.surfaceContainerLow)
                 .padding(horizontal = 12.dp),
             contentAlignment = Alignment.CenterStart,
         ) {
@@ -295,7 +367,7 @@ fun RecordTransactionContent(
                 Icon(
                     imageVector = Icons.Default.Edit,
                     contentDescription = "备注",
-                    tint = IosSecondaryLabel,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(16.dp),
                 )
 
@@ -304,17 +376,19 @@ fun RecordTransactionContent(
                     onValueChange = onNoteChange,
                     textStyle = TextStyle(
                         fontSize = 13.sp,
-                        color = IosLabel,
+                        color = MaterialTheme.colorScheme.onSurface,
                     ),
-                    cursorBrush = SolidColor(Color(0xFF007AFF)),
+                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                     singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                     modifier = Modifier.fillMaxWidth(),
                     decorationBox = { innerTextField ->
                         if (note.isEmpty()) {
                             Text(
                                 text = "添加备注 (如: 晚餐便当)...",
                                 fontSize = 13.sp,
-                                color = IosSecondaryLabel.copy(alpha = 0.6f),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                             )
                         }
                         innerTextField()
@@ -332,27 +406,33 @@ fun RecordTransactionContent(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             val currentAccount = accounts.firstOrNull { it.account.id == selectedAccountId }?.account
-            val accountDisplayName = currentAccount?.name ?: "招商银行卡"
+            val accountDisplayName = currentAccount?.name ?: "请先添加账户"
 
-            Box {
+            Box(modifier = Modifier.weight(1f, fill = false)) {
                 Row(
                     modifier = Modifier
                         .clip(RoundedCornerShape(6.dp))
-                        .clickable { accountMenuExpanded = true }
+                        .clickable(enabled = accounts.isNotEmpty()) {
+                            focusManager.clearFocus()
+                            accountMenuExpanded = true
+                        }
                         .padding(vertical = 4.dp, horizontal = 2.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     Text(
                         text = accountDisplayName,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,
-                        color = IosSecondaryLabel,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
                         text = "▾",
                         fontSize = 12.sp,
-                        color = IosSecondaryLabel,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
 
@@ -362,7 +442,12 @@ fun RecordTransactionContent(
                 ) {
                     accounts.forEach { acc ->
                         DropdownMenuItem(
-                            text = { Text(acc.account.name) },
+                            text = { Text(acc.account.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                            trailingIcon = {
+                                if (acc.account.id == selectedAccountId) {
+                                    Icon(Icons.Default.Check, contentDescription = "已选择", tint = MaterialTheme.colorScheme.primary)
+                                }
+                            },
                             onClick = {
                                 onAccountSelect(acc.account.id)
                                 accountMenuExpanded = false
@@ -376,7 +461,7 @@ fun RecordTransactionContent(
                 text = "今天",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
-                color = IosSecondaryLabel,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
@@ -384,15 +469,22 @@ fun RecordTransactionContent(
         BuiltInKeypad(
             hasPendingCalculation = hasPendingCalculation,
             onNumberClick = { digit ->
-                onExpressionChange(expression + digit)
+                focusManager.clearFocus()
+                val lastNumber = expression.split('+', '-').last()
+                val decimalPlaces = lastNumber.substringAfter('.', "").length
+                if (expression.length < 80 && (!lastNumber.contains('.') || decimalPlaces < 2)) {
+                    onExpressionChange(expression + digit)
+                }
             },
             onDotClick = {
+                focusManager.clearFocus()
                 val lastNumberPart = expression.split('+', '-').lastOrNull() ?: ""
                 if (!lastNumberPart.contains('.')) {
                     onExpressionChange(expression + if (lastNumberPart.isEmpty()) "0." else ".")
                 }
             },
             onOperatorClick = { op ->
+                focusManager.clearFocus()
                 if (expression.isNotEmpty()) {
                     val lastChar = expression.last()
                     if (lastChar == '+' || lastChar == '-') {
@@ -403,11 +495,15 @@ fun RecordTransactionContent(
                 }
             },
             onBackspaceClick = {
+                focusManager.clearFocus()
                 if (expression.isNotEmpty()) {
                     onExpressionChange(expression.dropLast(1))
                 }
             },
-            onActionClick = onConfirmAction,
+            onActionClick = {
+                focusManager.clearFocus()
+                onConfirmAction()
+            },
         )
     }
 }
@@ -422,6 +518,7 @@ fun CategoryRowSection(
     selectedCategory: String,
     onSelect: (QuickCategoryItem) -> Unit,
     modifier: Modifier = Modifier,
+    selectedType: TransactionType = TransactionType.EXPENSE,
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -432,20 +529,25 @@ fun CategoryRowSection(
             text = title,
             fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
-            color = IosSecondaryLabel,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(start = 2.dp),
         )
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().selectableGroup(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
             items.forEach { item ->
-                val isSelected = item.name == selectedCategory
+                val isSelected = item.name == selectedCategory && item.type == selectedType
+                val backgroundColor by animateColorAsState(
+                    if (isSelected) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.surfaceContainerLow,
+                    animationSpec = tween(160), label = "categoryBackground",
+                )
                 Column(
                     modifier = Modifier
-                        .clickable { onSelect(item) }
+                        .clip(RoundedCornerShape(12.dp))
+                        .selectable(selected = isSelected, role = Role.RadioButton, onClick = { onSelect(item) })
                         .padding(horizontal = 2.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -454,25 +556,13 @@ fun CategoryRowSection(
                         modifier = Modifier
                             .size(42.dp)
                             .clip(CircleShape)
-                            .background(if (isSelected) IosGreen else Color(0xFFF2F2F7))
-                            .then(
-                                if (isSelected) {
-                                    Modifier.shadow(
-                                        elevation = 4.dp,
-                                        shape = CircleShape,
-                                        ambientColor = IosGreen.copy(alpha = 0.35f),
-                                        spotColor = IosGreen.copy(alpha = 0.35f),
-                                    )
-                                } else {
-                                    Modifier
-                                },
-                            ),
+                            .background(backgroundColor),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             imageVector = item.icon,
                             contentDescription = item.name,
-                            tint = if (isSelected) Color.White else Color(0xFF3C3C43),
+                            tint = if (isSelected) MaterialTheme.colorScheme.onTertiary else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(20.dp),
                         )
                     }
@@ -481,7 +571,7 @@ fun CategoryRowSection(
                         text = item.name,
                         fontSize = 11.sp,
                         fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                        color = if (isSelected) IosGreen else IosSecondaryLabel,
+                        color = if (isSelected) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -575,12 +665,12 @@ fun BuiltInKeypad(
                     .weight(1f)
                     .height(keyHeight * 2 + spacing)
                     .clip(RoundedCornerShape(14.dp))
-                    .background(IosGreen)
+                    .background(MaterialTheme.colorScheme.tertiary)
                     .shadow(
                         elevation = 4.dp,
                         shape = RoundedCornerShape(14.dp),
-                        ambientColor = IosGreen.copy(alpha = 0.35f),
-                        spotColor = IosGreen.copy(alpha = 0.35f),
+                        ambientColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.35f),
+                        spotColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.35f),
                     )
                     .clickable(onClick = onActionClick),
                 contentAlignment = Alignment.Center,
@@ -589,7 +679,7 @@ fun BuiltInKeypad(
                     text = if (hasPendingCalculation) "=" else "完成",
                     fontSize = if (hasPendingCalculation) 24.sp else 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onTertiary,
                 )
             }
         }
@@ -602,18 +692,22 @@ fun KeypadButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(if (pressed) 0.94f else 1f, tween(90), label = "keyPress")
     Box(
         modifier = modifier
+            .graphicsLayer { scaleX = scale; scaleY = scale }
             .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFFF2F2F7))
-            .clickable(onClick = onClick),
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .clickable(interactionSource = interactionSource, indication = androidx.compose.material3.ripple(), role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = text,
             fontSize = 20.sp,
             fontWeight = FontWeight.Medium,
-            color = IosLabel,
+            color = MaterialTheme.colorScheme.onSurface,
         )
     }
 }
@@ -624,60 +718,23 @@ fun KeypadIconButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(if (pressed) 0.94f else 1f, tween(90), label = "keyPress")
     Box(
         modifier = modifier
+            .graphicsLayer { scaleX = scale; scaleY = scale }
             .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFFF2F2F7))
-            .clickable(onClick = onClick),
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .clickable(interactionSource = interactionSource, indication = androidx.compose.material3.ripple(), role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = null,
-            tint = IosLabel,
+            contentDescription = "删除最后一位",
+            tint = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.size(20.dp),
         )
-    }
-}
-
-/**
- * 基础算式安全求值 (支持 + 与 - 连续计算，如 1+5=6, 10.5-2.5=8)
- */
-fun evaluateMathExpression(expr: String): String {
-    val trimmed = expr.trim()
-    if (trimmed.isEmpty()) return ""
-
-    return try {
-        var result = 0.0
-        var currentToken = ""
-        var currentOperator = '+'
-
-        for (i in trimmed.indices) {
-            val char = trimmed[i]
-            if (char.isDigit() || char == '.') {
-                currentToken += char
-            } else if (char == '+' || char == '-') {
-                if (currentToken.isNotEmpty()) {
-                    val num = currentToken.toDoubleOrNull() ?: 0.0
-                    result = if (currentOperator == '+') result + num else result - num
-                    currentToken = ""
-                }
-                currentOperator = char
-            }
-        }
-
-        if (currentToken.isNotEmpty()) {
-            val num = currentToken.toDoubleOrNull() ?: 0.0
-            result = if (currentOperator == '+') result + num else result - num
-        }
-
-        if (result % 1.0 == 0.0) {
-            result.toLong().toString()
-        } else {
-            String.format(java.util.Locale.US, "%.2f", result).trimEnd('0').trimEnd('.')
-        }
-    } catch (_: Exception) {
-        trimmed
     }
 }
 
