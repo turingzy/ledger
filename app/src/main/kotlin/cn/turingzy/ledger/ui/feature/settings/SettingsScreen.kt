@@ -139,7 +139,9 @@ fun SettingsContent(
 ) {
     Scaffold(
         containerColor = IosBg,
-        modifier = modifier,
+        modifier = modifier
+            .fillMaxSize()
+            .statusBarsPadding(),
     ) { innerPadding ->
         when (uiState) {
             SettingsUiState.Loading -> {
@@ -155,74 +157,73 @@ fun SettingsContent(
 
             is SettingsUiState.Success -> {
                 LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .statusBarsPadding()
-                        .padding(innerPadding),
+                    modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    // 大标题“设置”
-                    item(key = "header_title") {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(44.dp),
-                            contentAlignment = Alignment.CenterStart,
+                    item(key = "header_and_settings") {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(5.dp),
                         ) {
-                            Text(
-                                text = "设置",
-                                fontSize = 28.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = IosLabel,
-                                letterSpacing = (-0.6).sp,
-                            )
-                        }
-                    }
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(44.dp),
+                                contentAlignment = Alignment.CenterStart,
+                            ) {
+                                Text(
+                                    text = "设置",
+                                    fontSize = 28.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = IosLabel,
+                                    letterSpacing = (-0.6).sp,
+                                    modifier = Modifier.padding(bottom = 2.dp),
+                                )
+                            }
 
-                    // 分组 1: 卡片管理、账单解析规则、数据备份和恢复
-                    item(key = "group_1") {
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .shadow(
-                                    elevation = 2.dp,
-                                    shape = RoundedCornerShape(16.dp),
-                                    ambientColor = Color.Black.copy(alpha = 0.04f),
-                                    spotColor = Color.Black.copy(alpha = 0.04f),
-                                ),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = IosCard),
-                        ) {
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                SettingsRowItem(
-                                    icon = Icons.Default.CreditCard,
-                                    iconBgColor = Color(0xFFFF9500),
-                                    title = "卡片管理",
-                                    onClick = onCategoryManagementClick,
-                                )
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(start = 58.dp),
-                                    thickness = 0.5.dp,
-                                    color = IosSeparator,
-                                )
-                                SettingsRowItem(
-                                    icon = Icons.Default.Code,
-                                    iconBgColor = Color(0xFF5856D6),
-                                    title = "账单解析规则",
-                                    onClick = onParseRulesClick,
-                                )
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(start = 58.dp),
-                                    thickness = 0.5.dp,
-                                    color = IosSeparator,
-                                )
-                                SettingsRowItem(
-                                    icon = Icons.Default.CloudUpload,
-                                    iconBgColor = Color(0xFF34C759),
-                                    title = "数据备份和恢复",
-                                    onClick = onBackupClick,
-                                )
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .shadow(
+                                        elevation = 2.dp,
+                                        shape = RoundedCornerShape(16.dp),
+                                        ambientColor = Color.Black.copy(alpha = 0.04f),
+                                        spotColor = Color.Black.copy(alpha = 0.04f),
+                                    ),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = IosCard),
+                            ) {
+                                Column(modifier = Modifier.fillMaxWidth()) {
+                                    SettingsRowItem(
+                                        icon = Icons.Default.CreditCard,
+                                        iconBgColor = Color(0xFFFF9500),
+                                        title = "卡片管理",
+                                        onClick = onCategoryManagementClick,
+                                    )
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(start = 58.dp),
+                                        thickness = 0.5.dp,
+                                        color = IosSeparator,
+                                    )
+                                    SettingsRowItem(
+                                        icon = Icons.Default.Code,
+                                        iconBgColor = Color(0xFF5856D6),
+                                        title = "账单解析规则",
+                                        onClick = onParseRulesClick,
+                                    )
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(start = 58.dp),
+                                        thickness = 0.5.dp,
+                                        color = IosSeparator,
+                                    )
+                                    SettingsRowItem(
+                                        icon = Icons.Default.CloudUpload,
+                                        iconBgColor = Color(0xFF34C759),
+                                        title = "数据备份和恢复",
+                                        onClick = onBackupClick,
+                                    )
+                                }
                             }
                         }
                     }
