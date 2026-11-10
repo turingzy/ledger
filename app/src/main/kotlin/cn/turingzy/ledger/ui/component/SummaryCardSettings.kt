@@ -30,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -75,6 +76,7 @@ internal fun SummaryCardSettings(
                             checkedBorderColor = colors.tertiary,
                         ),
                         modifier = Modifier.align(Alignment.CenterStart).padding(start = 10.dp)
+                            .scale(0.72f)
                             .semantics { contentDescription = "透明开关" },
                     )
                     IconButton(
@@ -105,10 +107,10 @@ internal fun SummaryCardSettings(
                         thumb = {
                             SliderDefaults.Thumb(
                                 interactionSource = sliderInteractions,
-                                modifier = Modifier.requiredSize(20.dp).clip(CircleShape),
+                                modifier = Modifier.requiredSize(16.dp).clip(CircleShape),
                                 colors = sliderColors,
                                 enabled = sliderEnabled,
-                                thumbSize = DpSize(20.dp, 20.dp),
+                                thumbSize = DpSize(16.dp, 16.dp),
                             )
                         },
                         track = { sliderState ->
