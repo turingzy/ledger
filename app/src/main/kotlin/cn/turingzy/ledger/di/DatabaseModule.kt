@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
+import cn.turingzy.ledger.database.migration.Migration1To2
 import cn.turingzy.ledger.database.LedgerDatabase
 import cn.turingzy.ledger.database.dao.AccountDao
 import cn.turingzy.ledger.database.dao.BackupConfigDao
@@ -43,7 +44,7 @@ object DatabaseModule {
             context,
             LedgerDatabase::class.java,
             DATABASE_NAME,
-        ).addCallback(
+        ).addMigrations(Migration1To2).addCallback(
             object : RoomDatabase.Callback() {
                 override fun onCreate(db: SupportSQLiteDatabase) {
                     super.onCreate(db)

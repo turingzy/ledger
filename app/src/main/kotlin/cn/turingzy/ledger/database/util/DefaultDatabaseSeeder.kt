@@ -46,7 +46,7 @@ object DefaultDatabaseSeeder {
                 CategoryEntity(categoryId = 8, name = "工资", type = CategoryType.INCOME, iconId = 7, sortOrder = 1, isSystem = true),
                 CategoryEntity(categoryId = 9, name = "理财收益", type = CategoryType.INCOME, iconId = 8, sortOrder = 2, isSystem = true),
                 CategoryEntity(categoryId = 10, name = "其他收入", type = CategoryType.INCOME, iconId = 10, sortOrder = 3, isSystem = true),
-                CategoryEntity(categoryId = 11, name = "转账", type = CategoryType.EXPENSE, iconId = 9, sortOrder = 99, isSystem = true),
+                CategoryEntity(categoryId = 11, name = "转账", type = CategoryType.TRANSFER, iconId = 9, sortOrder = 99, isSystem = true),
             )
             database.categoryDao().insertCategories(defaultCategories)
 

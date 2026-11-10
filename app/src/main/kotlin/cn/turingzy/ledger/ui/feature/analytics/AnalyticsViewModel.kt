@@ -185,6 +185,7 @@ class AnalyticsViewModel @Inject constructor(
         val targetTxType = when (targetCatType) {
             CategoryType.EXPENSE -> TransactionType.EXPENSE
             CategoryType.INCOME -> TransactionType.INCOME
+            CategoryType.TRANSFER -> TransactionType.TRANSFER
         }
 
         val filtered =

@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.analytics
 
+import cn.turingzy.ledger.ui.component.LedgerSegmentedControl
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -264,7 +265,7 @@ internal fun CategoryBreakdownCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text("分类占比", fontSize = 17.sp, fontWeight = FontWeight.Bold)
-            AnalyticsSegmentedControl(
+            LedgerSegmentedControl(
                 labels = listOf("支出", "收入"),
                 selectedIndex = if (uiState.categoryType == CategoryType.EXPENSE) 0 else 1,
                 onSelect = { onCategoryTypeChange(if (it == 0) CategoryType.EXPENSE else CategoryType.INCOME) },

@@ -197,13 +197,17 @@ fun RecordTransactionSheet(
                     validationMessage = "请先在钱包中添加账户"
                     return@confirm
                 }
-                val categoryType = if (selectedType == TransactionType.INCOME) CategoryType.INCOME else CategoryType.EXPENSE
+                val categoryType = when (selectedType) {
+                    TransactionType.EXPENSE -> CategoryType.EXPENSE
+                    TransactionType.INCOME -> CategoryType.INCOME
+                    TransactionType.TRANSFER -> CategoryType.TRANSFER
+                }
                 val matchingCategories = categories.filter { it.category.type == categoryType }
                 val matchedCatId = matchingCategories.firstOrNull {
                     it.category.name.contains(selectedCategoryName) || selectedCategoryName.contains(it.category.name)
                 }?.category?.id ?: matchingCategories.firstOrNull()?.category?.id
                 if (matchedCatId == null) {
-                    validationMessage = "请先添加对应的收支分类"
+                    validationMessage = "请先添加对应的分类"
                     return@confirm
                 }
                 val toAccId = accounts.firstOrNull { it.account.id != selectedAccountId }?.account?.id

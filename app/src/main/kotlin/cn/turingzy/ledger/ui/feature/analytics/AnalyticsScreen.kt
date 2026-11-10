@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.analytics
 
+import cn.turingzy.ledger.ui.component.LedgerSegmentedControl
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.background
@@ -194,7 +195,7 @@ fun AnalyticsTimeScopeSelector(
     onScopeSelected: (AnalyticsTimeScope) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    AnalyticsSegmentedControl(
+    LedgerSegmentedControl(
         labels = listOf("周", "月", "3个月", "年"),
         selectedIndex = AnalyticsTimeScope.entries.indexOf(currentScope),
         onSelect = { onScopeSelected(AnalyticsTimeScope.entries[it]) },

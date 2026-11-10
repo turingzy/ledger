@@ -1,4 +1,4 @@
-package cn.turingzy.ledger.ui.feature.analytics
+package cn.turingzy.ledger.ui.component
 
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
@@ -32,11 +32,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-internal fun AnalyticsSegmentedControl(
+internal fun LedgerSegmentedControl(
     labels: List<String>,
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     height: Dp = 36.dp,
     fontSize: TextUnit = 14.sp,
 ) {
@@ -52,7 +53,7 @@ internal fun AnalyticsSegmentedControl(
         val offset by animateDpAsState(
             targetValue = segmentWidth * selectedIndex,
             animationSpec = tween(durationMillis = 220),
-            label = "analyticsSelectionOffset",
+            label = "segmentSelectionOffset",
         )
         Box(
             modifier = Modifier
@@ -71,6 +72,7 @@ internal fun AnalyticsSegmentedControl(
                         .fillMaxHeight()
                         .selectable(
                             selected = selected,
+                            enabled = enabled,
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
                             role = Role.Tab,

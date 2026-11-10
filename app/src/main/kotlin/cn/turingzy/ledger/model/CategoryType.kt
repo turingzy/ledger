@@ -6,5 +6,6 @@ import kotlinx.serialization.Serializable
 enum class CategoryType {
     EXPENSE,
     INCOME,
+    TRANSFER,
 }
 

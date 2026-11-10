@@ -7,41 +7,31 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.CreditCard
-import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.ImportExport
+import androidx.compose.material.icons.filled.DashboardCustomize
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -71,18 +61,22 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    var showAddCategoryDialog by remember { mutableStateOf(false) }
+    var parseRulePreviews by remember { mutableStateOf<List<ParseRulePreview>>(emptyList()) }
     var showCategorySheet by remember { mutableStateOf(false) }
-    var showParseRulesDialog by remember { mutableStateOf(false) }
-    var showBackupDialog by remember { mutableStateOf(false) }
-    var showAboutDialog by remember { mutableStateOf(false) }
+    var showParseRulesSheet by remember { mutableStateOf(false) }
+    var showBackupSheet by remember { mutableStateOf(false) }
+    var showAboutSheet by remember { mutableStateOf(false) }
+    var showCardManagementSheet by remember { mutableStateOf(false) }
+    var showBillTransferSheet by remember { mutableStateOf(false) }
 
     SettingsContent(
         uiState = uiState,
         onCategoryManagementClick = { showCategorySheet = true },
-        onParseRulesClick = { showParseRulesDialog = true },
-        onBackupClick = { showBackupDialog = true },
-        onAboutClick = { showAboutDialog = true },
+        onParseRulesClick = { showParseRulesSheet = true },
+        onCardManagementClick = { showCardManagementSheet = true },
+        onBillTransferClick = { showBillTransferSheet = true },
+        onBackupClick = { showBackupSheet = true },
+        onAboutClick = { showAboutSheet = true },
         modifier = modifier,
     )
 
@@ -91,36 +85,47 @@ fun SettingsScreen(
         CategoryManagementSheet(
             categories = categories,
             onDismissRequest = { showCategorySheet = false },
-            onAddCategoryClick = { showAddCategoryDialog = true },
-            onDeleteCategory = { viewModel.deleteCategory(it) },
+            availableIcons = (uiState as? SettingsUiState.Success)?.availableIcons.orEmpty(),
+            onSaveCategory = viewModel::saveCategory,
+            onDeleteCategory = viewModel::deleteManagedCategory,
         )
     }
 
-    if (showAddCategoryDialog) {
-        val icons = (uiState as? SettingsUiState.Success)?.availableIcons ?: emptyList()
-        AddCategoryDialog(
-            availableIcons = icons,
-            onDismissRequest = { showAddCategoryDialog = false },
-            onConfirm = { name, type, iconId ->
-                viewModel.createCategory(name, type, iconId)
-                showAddCategoryDialog = false
+    if (showParseRulesSheet) {
+        ParseRulesSheet(
+            accounts = (uiState as? SettingsUiState.Success)?.accounts.orEmpty(),
+            categories = (uiState as? SettingsUiState.Success)?.categories.orEmpty(),
+            rules = parseRulePreviews,
+            onSaveRule = { rule ->
+                parseRulePreviews = if (parseRulePreviews.any { it.id == rule.id }) {
+                    parseRulePreviews.map { if (it.id == rule.id) rule else it }
+                } else parseRulePreviews + rule
             },
+            onDeleteRule = { id -> parseRulePreviews = parseRulePreviews.filterNot { it.id == id } },
+            onDismissRequest = { showParseRulesSheet = false },
         )
     }
 
-    if (showParseRulesDialog) {
-        ParseRulesDialog(onDismissRequest = { showParseRulesDialog = false })
+    if (showBackupSheet) {
+        BackupAndRestoreSheet(onDismissRequest = { showBackupSheet = false })
     }
 
-    if (showBackupDialog) {
-        BackupAndRestoreDialog(onDismissRequest = { showBackupDialog = false })
+    if (showCardManagementSheet) {
+        CardTemplateManagementSheet(
+            templates = (uiState as? SettingsUiState.Success)?.cardTemplates.orEmpty(),
+            onDismissRequest = { showCardManagementSheet = false },
+        )
     }
 
-    if (showAboutDialog) {
+    if (showBillTransferSheet) {
+        BillTransferSheet(rules = parseRulePreviews, onDismissRequest = { showBillTransferSheet = false })
+    }
+
+    if (showAboutSheet) {
         val version = (uiState as? SettingsUiState.Success)?.appVersion ?: "1.0.0"
-        AboutDialog(
+        AboutSheet(
             versionName = version,
-            onDismissRequest = { showAboutDialog = false },
+            onDismissRequest = { showAboutSheet = false },
         )
     }
 }
@@ -130,6 +135,8 @@ fun SettingsContent(
     uiState: SettingsUiState,
     onCategoryManagementClick: () -> Unit,
     onParseRulesClick: () -> Unit,
+    onCardManagementClick: () -> Unit,
+    onBillTransferClick: () -> Unit,
     onBackupClick: () -> Unit,
     onAboutClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -204,6 +211,17 @@ fun SettingsContent(
                                         color = MaterialTheme.colorScheme.outlineVariant,
                                     )
                                     SettingsRowItem(
+                                        icon = Icons.Default.DashboardCustomize,
+                                        iconBgColor = MaterialTheme.colorScheme.primary,
+                                        title = "卡片管理",
+                                        onClick = onCardManagementClick,
+                                    )
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(start = 58.dp),
+                                        thickness = 0.5.dp,
+                                        color = MaterialTheme.colorScheme.outlineVariant,
+                                    )
+                                    SettingsRowItem(
                                         icon = Icons.Default.Code,
                                         iconBgColor = MaterialTheme.colorScheme.secondary,
                                         title = "账单解析规则",
@@ -215,18 +233,17 @@ fun SettingsContent(
                                         color = MaterialTheme.colorScheme.outlineVariant,
                                     )
                                     SettingsRowItem(
-                                        icon = Icons.Default.CloudUpload,
+                                        icon = Icons.Default.ImportExport,
                                         iconBgColor = MaterialTheme.colorScheme.tertiary,
-                                        title = "数据备份和恢复",
-                                        onClick = onBackupClick,
+                                        title = "账单导入与导出",
+                                        onClick = onBillTransferClick,
                                     )
                                 }
                             }
                         }
                     }
 
-                    // 分组 2: 关于
-                    item(key = "group_2") {
+                    item(key = "backup_and_about") {
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -240,6 +257,17 @@ fun SettingsContent(
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         ) {
                             Column(modifier = Modifier.fillMaxWidth()) {
+                                SettingsRowItem(
+                                    icon = Icons.Default.CloudUpload,
+                                    iconBgColor = MaterialTheme.colorScheme.tertiary,
+                                    title = "备份与恢复",
+                                    onClick = onBackupClick,
+                                )
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(start = 58.dp),
+                                    thickness = 0.5.dp,
+                                    color = MaterialTheme.colorScheme.outlineVariant,
+                                )
                                 SettingsRowItem(
                                     icon = Icons.Default.Info,
                                     iconBgColor = MaterialTheme.colorScheme.primary,
@@ -307,249 +335,6 @@ fun SettingsRowItem(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun CategoryManagementSheet(
-    categories: List<CategoryWithIcon>,
-    onDismissRequest: () -> Unit,
-    onAddCategoryClick: () -> Unit,
-    onDeleteCategory: (Long) -> Unit,
-) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    var categoryToDelete by remember { mutableStateOf<Category?>(null) }
-    categoryToDelete?.let { category ->
-        AlertDialog(
-            onDismissRequest = { categoryToDelete = null },
-            title = { Text("删除分类") },
-            text = { Text("确定删除“${category.name}”分类吗？") },
-            confirmButton = {
-                TextButton(onClick = {
-                    onDeleteCategory(category.id)
-                    categoryToDelete = null
-                }) { Text("删除", color = MaterialTheme.colorScheme.error) }
-            },
-            dismissButton = {
-                TextButton(onClick = { categoryToDelete = null }) { Text("取消") }
-            },
-        )
-    }
-
-    ModalBottomSheet(
-        onDismissRequest = onDismissRequest,
-        sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.background,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = "分类管理",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                IconButton(onClick = onAddCategoryClick) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "添加分类",
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            ) {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 360.dp),
-                ) {
-                    if (categories.isEmpty()) {
-                        item(key = "empty_categories") {
-                            Text(
-                                "暂无分类，点击右上角添加",
-                                modifier = Modifier.padding(24.dp),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                    items(
-                        items = categories,
-                        key = { it.category.id },
-                    ) { categoryWithIcon ->
-                        val cat = categoryWithIcon.category
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                                Text(
-                                    text = cat.name,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                )
-                                Text(
-                                    text = if (cat.type == CategoryType.EXPENSE) "支出分类" else "收入分类",
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-
-                            if (!cat.isSystem) {
-                                IconButton(onClick = { categoryToDelete = cat }) {
-                                    Icon(
-                                        imageVector = Icons.Default.DeleteOutline,
-                                        contentDescription = "删除",
-                                        tint = MaterialTheme.colorScheme.error,
-                                        modifier = Modifier.size(20.dp),
-                                    )
-                                }
-                            } else {
-                                Text(
-                                    text = "系统内置",
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                    modifier = Modifier.padding(end = 8.dp),
-                                )
-                            }
-                        }
-                        HorizontalDivider(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            thickness = 0.5.dp,
-                            color = MaterialTheme.colorScheme.outlineVariant,
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-        }
-    }
-}
-
-@Composable
-fun ParseRulesDialog(
-    onDismissRequest: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismissRequest,
-        icon = {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.secondaryContainer),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Code,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier.size(26.dp),
-                )
-            }
-        },
-        title = {
-            Text(
-                text = "账单解析规则",
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = "账单解析功能尚未开放。",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = "当前请通过“记一笔”手动记录收支。后续开放后，可在这里配置账单解析规则。",
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    lineHeight = 18.sp,
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismissRequest) {
-                Text("了解", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-            }
-        },
-    )
-}
-
-@Composable
-fun BackupAndRestoreDialog(
-    onDismissRequest: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismissRequest,
-        icon = {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.tertiaryContainer),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Default.CloudUpload,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                    modifier = Modifier.size(26.dp),
-                )
-            }
-        },
-        title = {
-            Text(
-                text = "数据备份和恢复",
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = "账目数据保存在当前设备中。",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = "应用内手动备份、导出和恢复功能尚未开放，此处暂未提供数据迁移操作。",
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    lineHeight = 18.sp,
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismissRequest) {
-                Text("完成", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-            }
-        },
-    )
-}
-
 @Preview(showBackground = true)
 @Composable
 fun SettingsContentPreview() {
@@ -570,6 +355,8 @@ fun SettingsContentPreview() {
             ),
             onCategoryManagementClick = {},
             onParseRulesClick = {},
+            onCardManagementClick = {},
+            onBillTransferClick = {},
             onBackupClick = {},
             onAboutClick = {},
         )

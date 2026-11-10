@@ -29,7 +29,7 @@ import cn.turingzy.ledger.database.model.TransactionEntity
         ParseRuleEntity::class,
         BackupConfigEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = false,
 )
 @TypeConverters(RoomTypeConverters::class)
