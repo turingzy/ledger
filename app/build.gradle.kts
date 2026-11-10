@@ -50,6 +50,7 @@ dependencies {
     testImplementation(libs.turbine)
     testImplementation(libs.mockk)
 
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

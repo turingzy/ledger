@@ -232,6 +232,7 @@ class AnalyticsViewModelTest {
                 val nextStart = when (scope) {
                     AnalyticsTimeScope.WEEK -> expectedStart.plusWeeks(1)
                     AnalyticsTimeScope.MONTH -> expectedStart.plusMonths(1)
+                    AnalyticsTimeScope.THREE_MONTHS -> expectedStart.plusMonths(3)
                     AnalyticsTimeScope.YEAR -> expectedStart.plusYears(1)
                 }
                 val startMillis = expectedStart.atStartOfDay(zone).toInstant().toEpochMilli()
@@ -297,6 +298,60 @@ class AnalyticsViewModelTest {
             val reset = awaitItem() as AnalyticsUiState.Success
             assertEquals(LocalDate.now().with(java.time.DayOfWeek.MONDAY), reset.periodStart)
             assertEquals(reset.periodStart.plusDays(6), reset.periodEnd)
+        }
+    }
+
+    @Test
+    fun confirmedCalendarMonth_navigatesByMonthAcrossLeapDay() = runTest {
+        coEvery { transactionRepository.getAmountSum(any(), any(), any()) } returns flowOf(0L)
+        coEvery { transactionRepository.getTransactionsBetween(any(), any()) } returns flowOf(emptyList())
+        viewModel = AnalyticsViewModel(transactionRepository)
+
+        viewModel.uiState.test {
+            awaitItem()
+            testDispatcher.scheduler.advanceUntilIdle()
+            awaitItem()
+            viewModel.selectRange(LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 31))
+            testDispatcher.scheduler.advanceUntilIdle()
+            awaitItem()
+            viewModel.navigatePeriod(1)
+            testDispatcher.scheduler.advanceUntilIdle()
+            val february = awaitItem() as AnalyticsUiState.Success
+            assertEquals(LocalDate.of(2024, 2, 1), february.periodStart)
+            assertEquals(LocalDate.of(2024, 2, 29), february.periodEnd)
+            viewModel.navigatePeriod(-1)
+            testDispatcher.scheduler.advanceUntilIdle()
+            val january = awaitItem() as AnalyticsUiState.Success
+            assertEquals(LocalDate.of(2024, 1, 1), january.periodStart)
+            assertEquals(LocalDate.of(2024, 1, 31), january.periodEnd)
+        }
+    }
+
+    @Test
+    fun threeMonthScope_navigatesWholeMonthsAcrossYearBoundary() = runTest {
+        coEvery { transactionRepository.getAmountSum(any(), any(), any()) } returns flowOf(0L)
+        coEvery { transactionRepository.getTransactionsBetween(any(), any()) } returns flowOf(emptyList())
+        viewModel = AnalyticsViewModel(transactionRepository)
+
+        viewModel.uiState.test {
+            awaitItem()
+            testDispatcher.scheduler.advanceUntilIdle()
+            awaitItem()
+            viewModel.selectRange(LocalDate.of(2023, 12, 1), LocalDate.of(2024, 2, 29))
+            testDispatcher.scheduler.advanceUntilIdle()
+            val selected = awaitItem() as AnalyticsUiState.Success
+            assertEquals(AnalyticsTimeScope.THREE_MONTHS, selected.timeScope)
+            assertEquals(3, selected.trendPoints.size)
+            viewModel.navigatePeriod(1)
+            testDispatcher.scheduler.advanceUntilIdle()
+            val next = awaitItem() as AnalyticsUiState.Success
+            assertEquals(LocalDate.of(2024, 3, 1), next.periodStart)
+            assertEquals(LocalDate.of(2024, 5, 31), next.periodEnd)
+            viewModel.navigatePeriod(-1)
+            testDispatcher.scheduler.advanceUntilIdle()
+            val previous = awaitItem() as AnalyticsUiState.Success
+            assertEquals(selected.periodStart, previous.periodStart)
+            assertEquals(selected.periodEnd, previous.periodEnd)
         }
     }
 

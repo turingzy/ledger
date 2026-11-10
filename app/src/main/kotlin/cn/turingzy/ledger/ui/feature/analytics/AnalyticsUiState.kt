@@ -6,6 +6,7 @@ import java.time.LocalDate
 enum class AnalyticsTimeScope {
     WEEK,
     MONTH,
+    THREE_MONTHS,
     YEAR,
 }
 
@@ -46,6 +47,7 @@ sealed interface AnalyticsUiState {
         val periodEnd: LocalDate = when (timeScope) {
             AnalyticsTimeScope.WEEK -> periodStart.plusDays(6)
             AnalyticsTimeScope.MONTH -> periodStart.withDayOfMonth(periodStart.lengthOfMonth())
+            AnalyticsTimeScope.THREE_MONTHS -> periodStart.plusMonths(3).minusDays(1)
             AnalyticsTimeScope.YEAR -> LocalDate.of(periodStart.year, 12, 31)
         },
         val trendPoints: List<AnalyticsTrendPoint> = emptyList(),

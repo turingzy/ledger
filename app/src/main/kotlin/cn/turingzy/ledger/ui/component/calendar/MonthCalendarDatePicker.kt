@@ -178,7 +178,7 @@ private fun CalendarGrid(state: CalendarPickerState, view: CalendarView) {
                 contentDescription = when (view) {
                     CalendarView.DAY -> "${state.month.year}年${state.month.monthValue}月，双指展开选择月份"
                     CalendarView.MONTH -> "双指展开选择年份，捏合返回日期"
-                    CalendarView.YEAR -> "双指捏合返回月份"
+                    CalendarView.YEAR -> "点击已选年份后拖动两端选择连续年份，双指捏合返回月份"
                 }
             }
             .pointerInput(state, view) {
@@ -215,18 +215,20 @@ private fun CalendarGrid(state: CalendarPickerState, view: CalendarView) {
         dates.chunked(columns).forEach { rowDates ->
             Row(
                 Modifier.fillMaxWidth().weight(1f).drawBehind {
-                    if (view == CalendarView.YEAR) return@drawBehind
                     val selected = rowDates.indices.filter { index ->
                         val date = rowDates[index]
-                        if (view == CalendarView.DAY) date in state.selection else
-                            !YearMonth.from(date).isBefore(YearMonth.from(state.selection.start)) &&
+                        when (view) {
+                            CalendarView.DAY -> date in state.selection
+                            CalendarView.MONTH -> !YearMonth.from(date).isBefore(YearMonth.from(state.selection.start)) &&
                                 !YearMonth.from(date).isAfter(YearMonth.from(state.selection.end))
+                            CalendarView.YEAR -> date.year in state.selection.start.year..state.selection.end.year
+                        }
                     }
                     if (selected.isEmpty()) return@drawBehind
                     val cellWidth = size.width / columns
-                    val inset = if (view == CalendarView.MONTH) 6.dp.toPx() else 0f
+                    val inset = if (view == CalendarView.DAY) 0f else 6.dp.toPx()
                     val left = selected.first() * cellWidth + inset
-                    val selectionHeight = if (view == CalendarView.MONTH) 44.dp.toPx() else 32.dp.toPx()
+                    val selectionHeight = if (view == CalendarView.DAY) 32.dp.toPx() else 44.dp.toPx()
                     val height = minOf(size.height - 4.dp.toPx(), selectionHeight)
                     val top = (size.height - height) / 2
                     val width = selected.size * cellWidth - inset * 2
@@ -235,8 +237,16 @@ private fun CalendarGrid(state: CalendarPickerState, view: CalendarView) {
                     drawRoundRect(colors.tertiary.copy(alpha = 0.14f), Offset(left, top), Size(width, height), radius)
                     val firstDate = rowDates[selected.first()]
                     val lastDate = rowDates[selected.last()]
-                    val starts = if (view == CalendarView.DAY) firstDate == state.selection.start else YearMonth.from(firstDate) == YearMonth.from(state.selection.start)
-                    val ends = if (view == CalendarView.DAY) lastDate == state.selection.end else YearMonth.from(lastDate) == YearMonth.from(state.selection.end)
+                    val starts = when (view) {
+                        CalendarView.DAY -> firstDate == state.selection.start
+                        CalendarView.MONTH -> YearMonth.from(firstDate) == YearMonth.from(state.selection.start)
+                        CalendarView.YEAR -> firstDate.year == state.selection.start.year
+                    }
+                    val ends = when (view) {
+                        CalendarView.DAY -> lastDate == state.selection.end
+                        CalendarView.MONTH -> YearMonth.from(lastDate) == YearMonth.from(state.selection.end)
+                        CalendarView.YEAR -> lastDate.year == state.selection.end.year
+                    }
                     if (starts) drawRoundRect(colors.tertiary.copy(alpha = 0.28f), Offset(left, top), Size(endpointWidth, height), radius)
                     if (ends && (!starts || selected.size > 1)) {
                         drawRoundRect(colors.tertiary.copy(alpha = 0.28f), Offset(left + width - endpointWidth, top), Size(endpointWidth, height), radius)
@@ -257,7 +267,7 @@ private fun CalendarGrid(state: CalendarPickerState, view: CalendarView) {
                     val selected = when (view) {
                         CalendarView.DAY -> date in state.selection
                         CalendarView.MONTH -> !YearMonth.from(date).isBefore(YearMonth.from(state.selection.start)) && !YearMonth.from(date).isAfter(YearMonth.from(state.selection.end))
-                        CalendarView.YEAR -> date.year == state.month.year
+                        CalendarView.YEAR -> date.year in state.selection.start.year..state.selection.end.year
                     }
                     val isCurrentPeriod = when (view) {
                         CalendarView.DAY -> date == today

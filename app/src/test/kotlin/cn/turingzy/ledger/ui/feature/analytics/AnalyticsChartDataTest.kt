@@ -96,6 +96,24 @@ class AnalyticsChartDataTest {
         assertEquals(300L, result.sumOf { it.income })
     }
 
+    @Test
+    fun threeMonthTrend_includesCurrentMonthAndPreviousTwoMonths() {
+        val anchor = LocalDate.of(2024, 2, 29)
+        val result = buildAnalyticsTrend(
+            listOf(
+                transaction(LocalDate.of(2023, 11, 30), TransactionType.EXPENSE, 100L),
+                transaction(LocalDate.of(2023, 12, 1), TransactionType.EXPENSE, 200L),
+                transaction(anchor, TransactionType.INCOME, 300L),
+            ),
+            AnalyticsTimeScope.THREE_MONTHS, anchor, zone,
+        )
+        assertEquals(3, result.size)
+        assertEquals(LocalDate.of(2023, 12, 1), result.first().date)
+        assertEquals(LocalDate.of(2024, 2, 1), result.last().date)
+        assertEquals(200L, result.sumOf { it.expense })
+        assertEquals(300L, result.sumOf { it.income })
+    }
+
     private fun transaction(
         date: LocalDate,
         type: TransactionType,

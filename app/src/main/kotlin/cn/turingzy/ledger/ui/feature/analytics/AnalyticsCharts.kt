@@ -1,12 +1,9 @@
 package cn.turingzy.ledger.ui.feature.analytics
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,9 +11,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -25,222 +19,184 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cn.turingzy.ledger.model.CategoryType
 import cn.turingzy.ledger.util.toFormattedAmount
-import java.math.BigDecimal
-import java.math.RoundingMode
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-import kotlin.math.atan2
-import kotlin.math.roundToInt
 
 @Composable
 internal fun TrendLineChartCard(
     points: List<AnalyticsTrendPoint>,
+    periodStart: LocalDate,
+    periodEnd: LocalDate,
     scope: AnalyticsTimeScope,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var showExpense by rememberSaveable { mutableStateOf(true) }
     var showIncome by rememberSaveable { mutableStateOf(true) }
-    var selectedIndex by remember(points) { mutableIntStateOf((points.size - 1).coerceAtLeast(0)) }
-    val expenseAlpha by animateFloatAsState(
-        if (showExpense) 1f else 0f,
-        label = "expenseVisibility"
-    )
+    var showBalance by rememberSaveable { mutableStateOf(true) }
+    val expenseAlpha by animateFloatAsState(if (showExpense) 1f else 0f, label = "expenseVisibility")
     val incomeAlpha by animateFloatAsState(if (showIncome) 1f else 0f, label = "incomeVisibility")
-    val selected = points.getOrNull(selectedIndex)
-    val maximum = points.maxOfOrNull { maxOf(it.expense, it.income) }?.coerceAtLeast(100L) ?: 100L
-    val hasData = points.any { it.expense > 0L || it.income > 0L }
+    val balanceAlpha by animateFloatAsState(if (showBalance) 1f else 0f, label = "balanceVisibility")
+    val scale = remember(points) { trendValueScale(points) }
+    val amountUnit = remember(scale) { trendAmountUnit(scale) }
+    val ticks = remember(points, periodStart, periodEnd, scope) {
+        trendTimeTicks(points, periodStart, periodEnd, scope)
+    }
+    val anomalies = remember(points) { expenseAnomalyIndices(points) }
     val colors = MaterialTheme.colorScheme
-    AnalyticsChartCard(modifier) {
+    AnalyticsChartCard(modifier, contentSpacing = 10.dp) {
         Row(
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text("收支走势", fontSize = 17.sp, fontWeight = FontWeight.Bold)
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 TrendLegend("支出", colors.error, showExpense) { showExpense = it }
                 TrendLegend("收入", colors.tertiary, showIncome) { showIncome = it }
+                TrendLegend("净结余", colors.primary, showBalance) { showBalance = it }
             }
         }
-        Column(
-            Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
-                .background(colors.surfaceVariant.copy(alpha = 0.4f)).padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Text(
-                selected?.date?.format(DateTimeFormatter.ofPattern(if (scope == AnalyticsTimeScope.YEAR) "yyyy年M月" else "yyyy年M月d日"))
-                    ?: "所选周期", color = colors.onSurfaceVariant, fontSize = 12.sp
-            )
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                if (showExpense) Text(
-                    "支出 ${(selected?.expense ?: 0L).toFormattedAmount(true)}",
-                    color = colors.error,
-                    fontSize = 13.sp
-                )
-                if (showIncome) Text(
-                    "收入 ${(selected?.income ?: 0L).toFormattedAmount(true)}",
-                    color = colors.tertiary,
-                    fontSize = 13.sp
-                )
-                if (!showExpense && !showIncome) Text(
-                    "点击上方图例显示折线",
-                    fontSize = 13.sp,
-                    color = colors.onSurfaceVariant
-                )
-            }
-        }
-        if (!hasData || (!showExpense && !showIncome)) {
-            Box(Modifier.fillMaxWidth().height(180.dp), contentAlignment = Alignment.Center) {
-                Text(
-                    if (hasData) "折线已隐藏" else "这个周期暂无收支记录",
-                    color = colors.onSurfaceVariant,
-                    fontSize = 14.sp
-                )
-            }
-        } else {
-            Row(
-                Modifier.fillMaxWidth().height(180.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Canvas(
-                    Modifier.weight(1f).fillMaxHeight()
-                        .semantics {
-                            contentDescription = "收支趋势图，点击或左右滑动查看日期对应的收支金额"
-                        }
-                        .pointerInput(points) {
-                            detectTapGestures { position ->
-                                selectedIndex =
-                                    ((position.x - 6.dp.toPx()) / (size.width - 12.dp.toPx()) * (points.size - 1)).roundToInt()
-                                        .coerceIn(points.indices)
-                            }
-                        }
-                        .pointerInput(points) {
-                            detectHorizontalDragGestures { change, _ ->
-                                change.consume()
-                                selectedIndex =
-                                    ((change.position.x - 6.dp.toPx()) / (size.width - 12.dp.toPx()) * (points.size - 1)).roundToInt()
-                                        .coerceIn(points.indices)
-                            }
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(Modifier.fillMaxWidth()) {
+                Column(Modifier.weight(1f)) {
+                    Canvas(
+                        Modifier.fillMaxWidth().height(208.dp).semantics {
+                            contentDescription = "收支走势图，支出、收入和净结余共用金额坐标；圆环标记相对异常支出，共${anomalies.size}处"
                         },
-                ) {
-                    val inset = 6.dp.toPx()
-                    val width = size.width - inset * 2
-                    val height = size.height - inset * 2
-                    repeat(5) { index ->
-                        val y = inset + height * index / 4
-                        drawLine(
-                            colors.outline.copy(alpha = 0.25f),
-                            Offset(inset, y),
-                            Offset(inset + width, y),
-                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 6f))
-                        )
-                    }
-                    fun drawSeries(amounts: List<Long>, color: Color, alpha: Float) {
-                        if (alpha <= 0f) return
-                        val positions = amounts.mapIndexed { index, amount ->
-                            Offset(
-                                inset + width * index / (points.size - 1).coerceAtLeast(1),
-                                inset + height * (1 - analyticsRatio(amount, maximum))
+                    ) {
+                        val inset = 10.dp.toPx()
+                        val width = (size.width - inset - 4.dp.toPx()).coerceAtLeast(0f)
+                        val height = (size.height - inset * 2).coerceAtLeast(0f)
+                        fun y(amount: Long) = inset + height * (1 - scale.fraction(amount))
+                        fun x(index: Int) = inset + width * if (points.size == 1) 0.5f else
+                            index.toFloat() / points.lastIndex.coerceAtLeast(1)
+                        repeat(5) { index ->
+                            val gridY = inset + height * index / 4
+                            drawLine(
+                                colors.outlineVariant, Offset(inset, gridY), Offset(inset + width, gridY),
+                                strokeWidth = 1.dp.toPx(),
                             )
                         }
-                        val path = Path().apply {
-                            positions.forEachIndexed { index, point ->
-                                if (index == 0) moveTo(point.x, point.y) else {
-                                    val previous = positions[index - 1]
-                                    val midX = (previous.x + point.x) / 2
-                                    cubicTo(midX, previous.y, midX, point.y, point.x, point.y)
+                        ticks.forEach { tick ->
+                            val gridX = inset + width * tick.fraction
+                            drawLine(
+                                colors.outlineVariant,
+                                Offset(gridX, inset), Offset(gridX, inset + height),
+                                strokeWidth = 1.dp.toPx(),
+                            )
+                        }
+                        drawLine(
+                            colors.outlineVariant,
+                            Offset(inset, y(0L)), Offset(inset + width, y(0L)),
+                            strokeWidth = 1.dp.toPx(),
+                        )
+                        fun drawSeries(amounts: List<Long>, color: Color, alpha: Float) {
+                            if (alpha <= 0f || amounts.isEmpty()) return
+                            val path = Path().apply {
+                                amounts.forEachIndexed { index, amount ->
+                                    if (index == 0) moveTo(x(index), y(amount)) else lineTo(x(index), y(amount))
                                 }
                             }
-                        }
-                        val fill = Path().apply {
-                            addPath(path)
-                            lineTo(positions.last().x, inset + height)
-                            lineTo(positions.first().x, inset + height)
-                            close()
-                        }
-                        drawPath(
-                            fill,
-                            Brush.verticalGradient(
-                                listOf(
-                                    color.copy(alpha = 0.16f * alpha),
-                                    color.copy(alpha = 0f)
-                                )
+                            drawPath(
+                                path, color.copy(alpha = alpha),
+                                style = Stroke(2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round),
                             )
-                        )
-                        drawPath(
-                            path,
-                            color.copy(alpha = alpha),
-                            style = Stroke(2.5.dp.toPx(), cap = StrokeCap.Round)
-                        )
-                        val point = positions[selectedIndex]
-                        drawCircle(colors.surface, 5.dp.toPx(), point)
-                        drawCircle(
-                            color.copy(alpha = alpha),
-                            5.dp.toPx(),
-                            point,
-                            style = Stroke(2.dp.toPx())
-                        )
+                            amounts.forEachIndexed { index, amount ->
+                                if (amounts.size <= 12) drawCircle(color.copy(alpha = alpha), 2.5.dp.toPx(), Offset(x(index), y(amount)))
+                            }
+                        }
+                        drawSeries(points.map { it.income - it.expense }, colors.primary, balanceAlpha)
+                        drawSeries(points.map { it.income }, colors.tertiary, incomeAlpha)
+                        drawSeries(points.map { it.expense }, colors.error, expenseAlpha)
+                        if (expenseAlpha > 0f) {
+                            anomalies.forEach { index ->
+                                val center = Offset(x(index), y(points[index].expense))
+                                drawCircle(colors.error.copy(alpha = 0.12f * expenseAlpha), 9.dp.toPx(), center)
+                                drawCircle(colors.surface.copy(alpha = expenseAlpha), 5.dp.toPx(), center)
+                                drawCircle(colors.error.copy(alpha = expenseAlpha), 5.dp.toPx(), center, style = Stroke(2.dp.toPx()))
+                            }
+                        }
                     }
+                    TrendTimeAxis(ticks)
+                }
+                TrendAmountAxis(scale, amountUnit)
+            }
+        }
+    }
+}
 
-                    val selectedX =
-                        inset + width * selectedIndex / (points.size - 1).coerceAtLeast(1)
-                    drawLine(
-                        colors.onSurfaceVariant.copy(alpha = 0.3f),
-                        Offset(selectedX, inset),
-                        Offset(selectedX, inset + height),
-                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(5f, 5f))
-                    )
-                    drawSeries(points.map { it.expense }, colors.error, expenseAlpha)
-                    drawSeries(points.map { it.income }, colors.tertiary, incomeAlpha)
-                }
-                Column(
-                    Modifier.fillMaxHeight(),
-                    verticalArrangement = Arrangement.SpaceBetween,
-                    horizontalAlignment = Alignment.End
-                ) {
-                    (4 downTo 0).forEach { level ->
-                        Text(
-                            axisAmount(maximum / 4 * level),
-                            fontSize = 10.sp,
-                            color = colors.onSurfaceVariant
-                        )
-                    }
+@Composable
+private fun TrendAmountAxis(scale: TrendValueScale, unit: TrendAmountUnit) {
+    val amounts = remember(scale) { listOf(0L) + scale.ticks.filter { it != 0L } }
+    val inset = with(LocalDensity.current) { 10.dp.toPx() }
+    Layout(
+        content = {
+            amounts.forEach { amount ->
+                Text(
+                    if (amount == 0L) "0 ${unit.label}" else unit.format(amount),
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
+            }
+        },
+        modifier = Modifier.height(208.dp),
+    ) { measurables, constraints ->
+        val labels = measurables.map { it.measure(constraints.copy(minWidth = 0, minHeight = 0)) }
+        val width = labels.maxOf { it.width }.coerceIn(constraints.minWidth, constraints.maxWidth)
+        layout(width, constraints.maxHeight) {
+            val height = constraints.maxHeight - inset * 2
+            val zeroCenter = inset + height * (1 - scale.fraction(0L))
+            labels.forEachIndexed { index, label ->
+                val center = inset + height * (1 - scale.fraction(amounts[index]))
+                if (index == 0 || kotlin.math.abs(center - zeroCenter) >= (label.height + labels.first().height) / 2f) {
+                    label.placeRelative(width - label.width, (center - label.height / 2).toInt())
                 }
             }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                val indices = (0..4).map { it * (points.size - 1) / 4 }.distinct()
-                indices.forEach { index ->
-                    Text(
-                        points[index].date.format(DateTimeFormatter.ofPattern("M/d")),
-                        fontSize = 10.sp,
-                        color = colors.onSurfaceVariant
-                    )
-                }
+        }
+    }
+}
+
+@Composable
+private fun TrendTimeAxis(ticks: List<TrendTimeTick>) {
+    val inset = with(LocalDensity.current) { 10.dp.roundToPx() }
+    Layout(
+        content = {
+            ticks.forEach { tick ->
+                Text(tick.label, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
             }
-            Text(
-                "点击图例显隐 · 点击或滑动图表查看金额",
-                fontSize = 11.sp,
-                color = colors.onSurfaceVariant
-            )
+        },
+        modifier = Modifier.fillMaxWidth().height(20.dp),
+    ) { measurables, constraints ->
+        val labels = measurables.map { it.measure(constraints.copy(minWidth = 0, minHeight = 0)) }
+        layout(constraints.maxWidth, constraints.maxHeight) {
+            labels.forEachIndexed { index, label ->
+                val rightInset = 4.dp.toPx()
+                val center = inset + (constraints.maxWidth - inset - rightInset) * ticks[index].fraction
+                val left = (center - label.width / 2).toInt().coerceIn(0, (constraints.maxWidth - label.width).coerceAtLeast(0))
+                label.placeRelative(left, 0)
+            }
         }
     }
 }
@@ -250,23 +206,35 @@ private fun TrendLegend(
     label: String,
     color: Color,
     checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
+    onCheckedChange: (Boolean) -> Unit,
 ) {
-    val foreground = if (checked) color else MaterialTheme.colorScheme.onSurfaceVariant
-    Row(
-        Modifier.clip(RoundedCornerShape(12.dp))
-            .background(if (checked) color.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant)
-            .toggleable(value = checked, role = Role.Checkbox, onValueChange = onCheckedChange)
-            .padding(horizontal = 10.dp, vertical = 7.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(5.dp),
-    ) {
-        Box(Modifier.size(6.dp).background(foreground, CircleShape))
-        Text(label, fontSize = 12.sp, color = foreground, fontWeight = FontWeight.Medium)
+    val alpha = if (checked) 1f else 0.25f
+    val surface = MaterialTheme.colorScheme.surface
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Canvas(
+            Modifier.size(36.dp)
+                .clip(CircleShape)
+                .semantics { contentDescription = label }
+                .toggleable(value = checked, role = Role.Checkbox, onValueChange = onCheckedChange),
+        ) {
+            val center = Offset(size.width / 2, size.height / 2)
+            drawLine(
+                color.copy(alpha = alpha),
+                Offset(8.dp.toPx(), center.y), Offset(size.width - 8.dp.toPx(), center.y),
+                strokeWidth = 2.dp.toPx(), cap = StrokeCap.Round,
+            )
+            drawCircle(surface, 4.dp.toPx(), center)
+            drawCircle(color.copy(alpha = alpha), 4.dp.toPx(), center, style = Stroke(2.dp.toPx()))
+        }
+        Text(
+            label,
+            fontSize = 11.sp,
+            color = if (checked) color else MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+        )
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun CategoryBreakdownCard(
     uiState: AnalyticsUiState.Success,
@@ -274,11 +242,6 @@ internal fun CategoryBreakdownCard(
     modifier: Modifier = Modifier,
 ) {
     var expandedId by remember(
-        uiState.categoryType,
-        uiState.periodStart,
-        uiState.timeScope
-    ) { mutableStateOf<Long?>(null) }
-    var detailId by remember(
         uiState.categoryType,
         uiState.periodStart,
         uiState.timeScope
@@ -294,30 +257,6 @@ internal fun CategoryBreakdownCard(
     val total =
         if (uiState.categoryType == CategoryType.EXPENSE) uiState.totalExpense else uiState.totalIncome
     val selected = uiState.rankings.find { it.categoryId == expandedId }
-    val detail = uiState.rankings.find { it.categoryId == detailId }
-    if (detail != null) {
-        ModalBottomSheet(onDismissRequest = { detailId = null }, containerColor = colors.surface) {
-            Text(
-                detail.categoryName,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                "${detail.transactions.size} 笔 · ${detail.totalAmount.toFormattedAmount(true)}",
-                modifier = Modifier.padding(horizontal = 20.dp),
-                color = colors.onSurfaceVariant
-            )
-            LazyColumn(
-                Modifier.fillMaxWidth().heightIn(max = 480.dp).padding(horizontal = 20.dp),
-                contentPadding = PaddingValues(vertical = 16.dp)
-            ) {
-                items(
-                    detail.transactions,
-                    key = { it.id }) { transaction -> AnalyticsTransactionRow(transaction) }
-            }
-        }
-    }
     AnalyticsChartCard(modifier) {
         Row(
             Modifier.fillMaxWidth(),
@@ -344,187 +283,97 @@ internal fun CategoryBreakdownCard(
         } else {
             Row(
                 Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Box(Modifier.size(140.dp), contentAlignment = Alignment.Center) {
-                    Canvas(
-                        Modifier.fillMaxSize()
-                        .semantics {
-                            contentDescription = "分类占比环形图，点击扇区展开对应分类明细"
+                Text(
+                    selected?.categoryName ?: if (uiState.categoryType == CategoryType.EXPENSE) "总支出" else "总收入",
+                    modifier = Modifier.weight(1f),
+                    fontSize = 13.sp,
+                    color = colors.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    (selected?.totalAmount ?: total).toFormattedAmount(true),
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+            val segments = remember(uiState.rankings) { categoryStackSegments(uiState.rankings) }
+            Canvas(
+                Modifier.fillMaxWidth().height(28.dp)
+                    .clip(RoundedCornerShape(5.dp))
+                    .semantics { contentDescription = "分类占比堆叠条，点击色块展开对应分类明细" }
+                    .pointerInput(segments) {
+                        detectTapGestures { position ->
+                            val fraction = position.x / size.width
+                            val hit = segments.firstOrNull { fraction >= it.start && fraction < it.end }
+                            expandedId = if (expandedId == hit?.categoryId) null else hit?.categoryId
                         }
-                        .pointerInput(uiState.rankings) {
-                            detectTapGestures { position ->
-                                val dx = position.x - size.width / 2f
-                                val dy = position.y - size.height / 2f
-                                val distance = kotlin.math.sqrt(dx * dx + dy * dy)
-                                val radius = size.width / 2f - 12.dp.toPx()
-                                if (distance < radius - 16.dp.toPx() || distance > radius + 16.dp.toPx()) return@detectTapGestures
-                                val angle =
-                                    ((atan2(dy, dx) * 180f / Math.PI.toFloat()) + 450f) % 360f
-                                var accumulated = 0f
-                                val hit = uiState.rankings.firstOrNull {
-                                    accumulated += it.percentage * 360f
-                                    angle < accumulated
-                                }
-                                expandedId = hit?.categoryId
-                            }
-                        }) {
-                        val inset = 12.dp.toPx()
-                        val arcSize = Size(size.width - inset * 2, size.height - inset * 2)
-                        var angle = -90f
-                        uiState.rankings.forEachIndexed { index, ranking ->
-                            val sweep = ranking.percentage * 360f
-                            val active = expandedId == null || expandedId == ranking.categoryId
-                            drawArc(
-                                color = palette[index % palette.size].copy(alpha = if (active) 1f else 0.25f),
-                                startAngle = angle + minOf(1f, sweep / 4),
-                                sweepAngle = (sweep - minOf(2f, sweep / 2)).coerceAtLeast(0f),
-                                useCenter = false,
-                                topLeft = Offset(inset, inset),
-                                size = arcSize,
-                                style = Stroke(
-                                    if (expandedId == ranking.categoryId) 23.dp.toPx() else 18.dp.toPx(),
-                                    cap = StrokeCap.Butt
-                                ),
-                            )
-                            angle += sweep
-                        }
-                    }
-                    Column(
-                        Modifier.width(96.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            selected?.categoryName
-                                ?: if (uiState.categoryType == CategoryType.EXPENSE) "总支出" else "总收入",
-                            fontSize = 11.sp,
-                            color = colors.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            axisAmount(selected?.totalAmount ?: total),
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            softWrap = false
-                        )
-                        if (selected != null) Text(
-                            percent(selected.percentage),
-                            fontSize = 11.sp,
-                            color = colors.primary
-                        )
-                    }
-                }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    uiState.rankings.take(4).forEachIndexed { index, ranking ->
-                        Row(
-                            Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable {
-                                expandedId =
-                                    if (expandedId == ranking.categoryId) null else ranking.categoryId
-                            }.padding(vertical = 7.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Box(
-                                Modifier.size(7.dp)
-                                    .background(palette[index % palette.size], CircleShape)
-                            )
-                            Text(
-                                ranking.categoryName,
-                                Modifier.weight(1f),
-                                fontSize = 12.sp,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Text(
-                                percent(ranking.percentage),
-                                fontSize = 12.sp,
-                                color = colors.onSurfaceVariant
-                            )
-                        }
-                    }
-                    if (uiState.rankings.size > 4) Text(
-                        "另有 ${uiState.rankings.size - 4} 个分类，见下方",
-                        fontSize = 10.sp,
-                        color = colors.onSurfaceVariant
+                    },
+            ) {
+                drawRect(colors.surfaceVariant)
+                segments.forEach { segment ->
+                    val active = expandedId == null || expandedId == segment.categoryId
+                    drawRect(
+                        color = palette[segment.colorIndex % palette.size].copy(alpha = if (active) 1f else 0.3f),
+                        topLeft = Offset(size.width * segment.start, 0f),
+                        size = Size(size.width * (segment.end - segment.start), size.height),
                     )
                 }
+                segments.zipWithNext().forEach { (left, right) ->
+                    val separatorWidth = minOf(
+                        1.dp.toPx(),
+                        size.width * (left.end - left.start) / 3,
+                        size.width * (right.end - right.start) / 3,
+                    )
+                    val x = size.width * left.end
+                    drawLine(colors.surface, Offset(x, 0f), Offset(x, size.height), strokeWidth = separatorWidth)
+                }
             }
-            Text("点击分类或环形扇区展开明细", fontSize = 11.sp, color = colors.onSurfaceVariant)
-            uiState.rankings.forEachIndexed { index, ranking ->
-                key(ranking.categoryId) {
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth().height(240.dp).semantics { contentDescription = "分类列表" },
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                uiState.rankings.forEachIndexed { index, ranking ->
                     val expanded = expandedId == ranking.categoryId
-                    Column(
-                        Modifier.fillMaxWidth().animateContentSize(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Column(
-                            Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable {
-                                expandedId = if (expanded) null else ranking.categoryId
-                            }.padding(vertical = 8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                    item(key = "category-${ranking.categoryId}") {
+                        Row(
+                            Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
+                                .semantics { stateDescription = if (expanded) "已展开" else "已收起" }
+                                .clickable(
+                                    role = Role.Button,
+                                    onClickLabel = if (expanded) "收起分类明细" else "展开分类明细",
+                                ) { expandedId = if (expanded) null else ranking.categoryId }
+                                .padding(start = 4.dp, top = 10.dp, bottom = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            Row(
-                                Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Box(
-                                    Modifier.size(8.dp)
-                                        .background(palette[index % palette.size], CircleShape)
-                                )
-                                Text(
-                                    ranking.categoryName,
-                                    Modifier.weight(1f),
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Column(horizontalAlignment = Alignment.End) {
-                                    Text(
-                                        ranking.totalAmount.toFormattedAmount(true),
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                    Text(
-                                        "${percent(ranking.percentage)} · ${ranking.transactions.size}笔",
-                                        fontSize = 11.sp,
-                                        color = colors.onSurfaceVariant
-                                    )
-                                }
-                                Icon(
-                                    if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                                    if (expanded) "收起分类明细" else "展开分类明细",
-                                    Modifier.size(18.dp),
-                                    tint = colors.onSurfaceVariant
-                                )
-                            }
-                            LinearProgressIndicator(
-                                progress = { ranking.percentage },
-                                modifier = Modifier.fillMaxWidth().height(5.dp).clip(CircleShape),
-                                color = palette[index % palette.size],
-                                trackColor = colors.surfaceVariant,
-                                drawStopIndicator = {})
+                            Box(Modifier.size(8.dp).background(palette[index % palette.size], CircleShape))
+                            Text(
+                                "${ranking.categoryName}（${percent(ranking.percentage)}）",
+                                Modifier.weight(1f),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            Text(
+                                ranking.totalAmount.toFormattedAmount(true),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                            )
                         }
-                        AnimatedVisibility(expanded) {
-                            Column(
-                                Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
-                                    .background(colors.surfaceVariant.copy(alpha = 0.35f))
-                                    .padding(horizontal = 12.dp)
-                            ) {
-                                ranking.transactions.take(5).forEach { transaction ->
-                                    androidx.compose.runtime.key(transaction.id) { AnalyticsTransactionRow(transaction) }
-                                }
-                                if (ranking.transactions.size > 5) TextButton(
-                                    onClick = {
-                                        detailId = ranking.categoryId
-                                    },
-                                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                                ) { Text("查看全部 ${ranking.transactions.size} 笔") }
-                            }
+                    }
+                    if (expanded) {
+                        items(ranking.transactions, key = { "transaction-${it.id}" }) { transaction ->
+                            AnalyticsTransactionRow(
+                                transaction = transaction,
+                                showYear = uiState.periodStart.year != uiState.periodEnd.year,
+                                modifier = Modifier.padding(start = 24.dp),
+                            )
                         }
                     }
                 }
@@ -534,26 +383,45 @@ internal fun CategoryBreakdownCard(
 }
 
 @Composable
-private fun AnalyticsTransactionRow(transaction: AnalyticsTransaction) {
+private fun AnalyticsTransactionRow(
+    transaction: AnalyticsTransaction,
+    showYear: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val colors = MaterialTheme.colorScheme
     Row(
-        Modifier.fillMaxWidth().padding(vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier.fillMaxWidth().padding(vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(transaction.note.ifBlank { "无备注" }, fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        Box(Modifier.size(5.dp).background(colors.onSurface, CircleShape))
+        Row(
+            Modifier.weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Text(
-                "${transaction.date.format(DateTimeFormatter.ofPattern("M月d日"))} · ${transaction.accountName}",
-                fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                transaction.accountName,
+                Modifier.weight(1f, fill = false),
+                style = MaterialTheme.typography.bodySmall,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                transaction.date.format(DateTimeFormatter.ofPattern(if (showYear) "yyyy.MM.dd" else "MM.dd")),
+                style = MaterialTheme.typography.bodySmall,
+                color = colors.onSurface,
+                maxLines = 1,
             )
         }
         Text(
             transaction.amount.toFormattedAmount(true),
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Medium
+            modifier = Modifier.width(96.dp),
+            textAlign = TextAlign.End,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Medium,
+            color = colors.onSurface,
+            maxLines = 1,
         )
     }
 }
@@ -564,6 +432,7 @@ private fun percent(ratio: Float): String =
 @Composable
 private fun AnalyticsChartCard(
     modifier: Modifier = Modifier,
+    contentSpacing: Dp = 16.dp,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Card(
@@ -573,18 +442,8 @@ private fun AnalyticsChartCard(
     ) {
         Column(
             Modifier.fillMaxWidth().padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(contentSpacing),
             content = content
         )
     }
-}
-
-private fun axisAmount(amount: Long): String = when {
-    amount >= 10_000_000_000L -> BigDecimal.valueOf(amount).movePointLeft(10)
-        .setScale(1, RoundingMode.HALF_UP).toPlainString() + "亿"
-
-    amount >= 1_000_000L -> BigDecimal.valueOf(amount).movePointLeft(6)
-        .setScale(1, RoundingMode.HALF_UP).toPlainString() + "万"
-
-    else -> amount.toFormattedAmount()
 }

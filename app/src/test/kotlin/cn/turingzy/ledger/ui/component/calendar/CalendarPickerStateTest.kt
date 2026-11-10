@@ -40,13 +40,74 @@ class CalendarPickerStateTest {
     }
 
     @Test
-    fun choosingYearOnlyNavigatesAndDoesNotChangeSelection() {
+    fun choosingYearSelectsWholeYearAndKeepsYearView() {
         val state = state()
         state.view = CalendarView.YEAR
         state.tap(LocalDate.of(2028, 1, 1))
         assertEquals(YearMonth.of(2028, 11), state.month)
+        assertEquals(CalendarView.YEAR, state.view)
+        assertEquals(CalendarSelection.year(2028), state.selection)
+        assertTrue(state.isSelected(LocalDate.of(2028, 1, 1)))
+        assertFalse(state.isSelected(LocalDate.of(2026, 1, 1)))
+        state.month = state.month.plusYears(12)
+        assertFalse(state.isSelected(LocalDate.of(2040, 1, 1)))
+        assertEquals(CalendarSelection.year(2028), state.selection)
+    }
+
+    @Test
+    fun singleYearCanExpandAndShrinkFromEitherBoundary() {
+        val state = state()
+        state.view = CalendarView.YEAR
+        state.tap(LocalDate.of(2029, 1, 1))
+        state.tap(LocalDate.of(2029, 1, 1))
+        assertTrue(state.editing)
+        assertTrue(state.beginDrag(LocalDate.of(2029, 1, 1)))
+        state.drag(Offset(440f, 100f))
+        assertEquals(CalendarSelection(LocalDate.of(2029, 1, 1), LocalDate.of(2030, 12, 31)), state.selection)
+        assertFalse(state.beginDrag(LocalDate.of(2028, 1, 1)))
+        assertTrue(state.beginDrag(LocalDate.of(2029, 1, 1)))
+        state.drag(Offset(80f, 100f))
+        assertEquals(CalendarSelection(LocalDate.of(2028, 1, 1), LocalDate.of(2030, 12, 31)), state.selection)
+        assertFalse(state.beginDrag(LocalDate.of(2029, 1, 1)))
+        assertTrue(state.beginDrag(LocalDate.of(2030, 1, 1)))
+        state.drag(Offset(260f, 100f))
+        assertEquals(CalendarSelection(LocalDate.of(2028, 1, 1), LocalDate.of(2029, 12, 31)), state.selection)
+    }
+
+    @Test
+    fun yearDragContinuesAcrossYearPages() {
+        val state = state()
+        state.view = CalendarView.YEAR
+        state.tap(LocalDate.of(2039, 1, 1))
+        state.tap(LocalDate.of(2039, 1, 1))
+        assertTrue(state.beginDrag(LocalDate.of(2039, 1, 1)))
+        state.drag(Offset(650f, 610f))
+        assertEquals(1, state.edgeDirection)
+        state.turnAtEdge()
+        assertEquals(CalendarSelection(LocalDate.of(2039, 1, 1), LocalDate.of(2051, 12, 31)), state.selection)
+        state.drag(Offset(80f, 100f))
+        assertEquals(CalendarSelection(LocalDate.of(2039, 1, 1), LocalDate.of(2040, 12, 31)), state.selection)
+    }
+
+    @Test
+    fun resetPreservesThreeMonthPeriodAcrossYearAndLeapDay() {
+        val today = LocalDate.of(2024, 2, 29)
+        val state = CalendarPickerState(
+            initialMonth = YearMonth.of(2026, 11),
+            initialSelection = initial,
+            resetSelection = { date ->
+                val month = YearMonth.from(date)
+                CalendarSelection(month.minusMonths(2).atDay(1), month.atEndOfMonth())
+            },
+        )
+        state.view = CalendarView.MONTH
+        state.reset(today)
+        assertEquals(CalendarSelection(LocalDate.of(2023, 12, 1), today), state.selection)
+        assertEquals(YearMonth.of(2024, 2), state.month)
         assertEquals(CalendarView.MONTH, state.view)
-        assertEquals(initial, state.selection)
+        state.view = CalendarView.YEAR
+        state.reset(today)
+        assertEquals(CalendarSelection(LocalDate.of(2023, 12, 1), today), state.selection)
     }
 
     @Test

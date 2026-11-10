@@ -83,6 +83,7 @@ class AnalyticsViewModel @Inject constructor(
         val anchor = when (selected.scope) {
             AnalyticsTimeScope.WEEK -> selected.anchor.plusWeeks(delta.toLong())
             AnalyticsTimeScope.MONTH -> selected.anchor.plusMonths(delta.toLong())
+            AnalyticsTimeScope.THREE_MONTHS -> selected.anchor.plusMonths(delta.toLong() * 3)
             AnalyticsTimeScope.YEAR -> selected.anchor.plusYears(delta.toLong())
         }
         val custom = selected.customSelection?.let {
@@ -102,11 +103,14 @@ class AnalyticsViewModel @Inject constructor(
         val scope = when {
             selection == CalendarSelection.year(start.year) -> AnalyticsTimeScope.YEAR
             selection == CalendarSelection.month(YearMonth.from(start)) -> AnalyticsTimeScope.MONTH
+            start.dayOfMonth == 1 && end == start.plusMonths(3).minusDays(1) -> AnalyticsTimeScope.THREE_MONTHS
             days <= 7 -> AnalyticsTimeScope.WEEK
             days <= 31 -> AnalyticsTimeScope.MONTH
             else -> AnalyticsTimeScope.YEAR
         }
-        period.value = AnalyticsPeriod(scope, start, selection)
+        val anchor = if (scope == AnalyticsTimeScope.THREE_MONTHS) end else start
+        val selected = AnalyticsPeriod(scope, anchor)
+        period.value = selected.copy(customSelection = selection.takeUnless { it == selected.selection })
     }
 
     private data class AnalyticsPeriod(
@@ -118,6 +122,10 @@ class AnalyticsViewModel @Inject constructor(
             get() = customSelection ?: when (scope) {
                 AnalyticsTimeScope.WEEK -> CalendarSelection.week(anchor)
                 AnalyticsTimeScope.MONTH -> CalendarSelection.month(YearMonth.from(anchor))
+                AnalyticsTimeScope.THREE_MONTHS -> CalendarSelection(
+                    YearMonth.from(anchor).minusMonths(2).atDay(1),
+                    YearMonth.from(anchor).atEndOfMonth(),
+                )
                 AnalyticsTimeScope.YEAR -> CalendarSelection.year(anchor.year)
             }
     }

@@ -49,6 +49,15 @@ class CalendarSelectionTest {
         assertEquals(range("2026-03-01", "2026-03-31"), selection.resize(date("2026-01-01"), false, true))
     }
 
+    @Test
+    fun yearResizeSnapsToWholeYearsAndPreventsCrossedHandles() {
+        val selection = range("2028-02-07", "2030-06-13")
+        assertEquals(range("2027-01-01", "2030-12-31"), selection.resizeYears(date("2027-06-10"), true))
+        assertEquals(range("2028-01-01", "2032-12-31"), selection.resizeYears(date("2032-02-29"), false))
+        assertEquals(range("2030-01-01", "2030-12-31"), selection.resizeYears(date("2035-01-01"), true))
+        assertEquals(range("2028-01-01", "2028-12-31"), selection.resizeYears(date("2025-01-01"), false))
+    }
+
     private fun date(value: String) = LocalDate.parse(value)
     private fun range(start: String, end: String) = CalendarSelection(date(start), date(end))
 }

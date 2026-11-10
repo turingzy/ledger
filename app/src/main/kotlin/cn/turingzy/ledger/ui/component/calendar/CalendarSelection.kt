@@ -33,6 +33,12 @@ internal data class CalendarSelection(val start: LocalDate, val end: LocalDate) 
         }
     }
 
+    fun resizeYears(date: LocalDate, startHandle: Boolean): CalendarSelection {
+        val firstYear = if (startHandle) minOf(date.year, end.year) else start.year
+        val lastYear = if (startHandle) end.year else maxOf(date.year, start.year)
+        return CalendarSelection(LocalDate.of(firstYear, 1, 1), LocalDate.of(lastYear, 12, 31))
+    }
+
     companion object {
         private val RANGE_START_FORMAT = DateTimeFormatter.ofPattern("yyyy MM.dd")
         private val RANGE_END_FORMAT = DateTimeFormatter.ofPattern("MM.dd")

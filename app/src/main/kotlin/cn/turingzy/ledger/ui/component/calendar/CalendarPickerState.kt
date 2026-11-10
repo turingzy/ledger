@@ -14,7 +14,11 @@ import kotlin.math.floor
 internal enum class CalendarView { DAY, MONTH, YEAR }
 
 @Stable
-internal class CalendarPickerState(initialMonth: YearMonth, initialSelection: CalendarSelection) {
+internal class CalendarPickerState(
+    initialMonth: YearMonth,
+    initialSelection: CalendarSelection,
+    private val resetSelection: ((LocalDate) -> CalendarSelection)? = null,
+) {
     var month by mutableStateOf(initialMonth)
     var selection by mutableStateOf(initialSelection)
     var view by mutableStateOf(CalendarView.DAY)
@@ -44,7 +48,7 @@ internal class CalendarPickerState(initialMonth: YearMonth, initialSelection: Ca
     }
 
     fun reset(today: LocalDate) {
-        selection = when (view) {
+        selection = resetSelection?.invoke(today) ?: when (view) {
             CalendarView.DAY -> CalendarSelection.week(today)
             CalendarView.MONTH -> CalendarSelection.month(YearMonth.from(today))
             CalendarView.YEAR -> CalendarSelection.year(today.year)
@@ -86,27 +90,29 @@ internal class CalendarPickerState(initialMonth: YearMonth, initialSelection: Ca
         CalendarView.DAY -> date in selection
         CalendarView.MONTH -> !YearMonth.from(date).isBefore(YearMonth.from(selection.start)) &&
             !YearMonth.from(date).isAfter(YearMonth.from(selection.end))
-        CalendarView.YEAR -> date.year == month.year
+        CalendarView.YEAR -> date.year in selection.start.year..selection.end.year
     }
 
     fun tap(date: LocalDate) {
-        if (view == CalendarView.YEAR) {
-            month = month.withYear(date.year)
-            view = CalendarView.MONTH
-            return
-        }
         if (isSelected(date)) {
             editing = !editing
         } else {
-            selection = if (view == CalendarView.DAY) CalendarSelection.week(date) else CalendarSelection.month(YearMonth.from(date))
+            selection = when (view) {
+                CalendarView.DAY -> CalendarSelection.week(date)
+                CalendarView.MONTH -> CalendarSelection.month(YearMonth.from(date))
+                CalendarView.YEAR -> {
+                    month = month.withYear(date.year)
+                    CalendarSelection.year(date.year)
+                }
+            }
             editing = false
         }
     }
 
     fun beginDrag(date: LocalDate): Boolean {
-        if (!editing || view == CalendarView.YEAR) return false
-        val isStart = if (view == CalendarView.MONTH) YearMonth.from(date) == YearMonth.from(selection.start) else date == selection.start
-        val isEnd = if (view == CalendarView.MONTH) YearMonth.from(date) == YearMonth.from(selection.end) else date == selection.end
+        if (!editing) return false
+        val isStart = samePeriod(date, selection.start)
+        val isEnd = samePeriod(date, selection.end)
         if (!isStart && !isEnd) return false
         sharedHandle = isStart && isEnd
         startHandle = isStart && !isEnd
@@ -116,7 +122,7 @@ internal class CalendarPickerState(initialMonth: YearMonth, initialSelection: Ca
     fun drag(position: Offset) {
         pointer = position
         val date = dateAt(position)
-        val sameBoundary = if (view == CalendarView.MONTH) YearMonth.from(date) == YearMonth.from(selection.start) else date == selection.start
+        val sameBoundary = samePeriod(date, selection.start)
         if (sharedHandle && !sameBoundary) {
             startHandle = date.isBefore(selection.start)
             sharedHandle = false
@@ -127,13 +133,31 @@ internal class CalendarPickerState(initialMonth: YearMonth, initialSelection: Ca
             position.y > gridSize.height - edge || position.x > gridSize.width -> 1
             else -> 0
         }
-        selection = selection.resize(date, startHandle, view == CalendarView.MONTH)
+        resizeSelection(date)
     }
 
     fun turnAtEdge() {
-        month = if (view == CalendarView.DAY) month.plusMonths(edgeDirection.toLong()) else month.plusYears(edgeDirection.toLong())
+        month = when (view) {
+            CalendarView.DAY -> month.plusMonths(edgeDirection.toLong())
+            CalendarView.MONTH -> month.plusYears(edgeDirection.toLong())
+            CalendarView.YEAR -> month.plusYears(edgeDirection.toLong() * 12)
+        }
         val date = dateAt(pointer)
-        selection = selection.resize(date, startHandle, view == CalendarView.MONTH)
+        resizeSelection(date)
+    }
+
+    private fun samePeriod(date: LocalDate, boundary: LocalDate): Boolean = when (view) {
+        CalendarView.DAY -> date == boundary
+        CalendarView.MONTH -> YearMonth.from(date) == YearMonth.from(boundary)
+        CalendarView.YEAR -> date.year == boundary.year
+    }
+
+    private fun resizeSelection(date: LocalDate) {
+        selection = if (view == CalendarView.YEAR) {
+            selection.resizeYears(date, startHandle)
+        } else {
+            selection.resize(date, startHandle, view == CalendarView.MONTH)
+        }
     }
 }
 

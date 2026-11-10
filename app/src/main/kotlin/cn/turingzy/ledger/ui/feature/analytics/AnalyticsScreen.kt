@@ -6,28 +6,29 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.ripple
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
@@ -49,6 +50,7 @@ import cn.turingzy.ledger.model.CategoryType
 import cn.turingzy.ledger.ui.component.calendar.CalendarPickerState
 import cn.turingzy.ledger.ui.component.calendar.CalendarRangeSelector
 import cn.turingzy.ledger.ui.component.calendar.CalendarSelection
+import cn.turingzy.ledger.ui.component.calendar.CalendarView
 import cn.turingzy.ledger.ui.component.calendar.MonthCalendarDatePickerCard
 import java.time.YearMonth
 import java.time.LocalDate
@@ -65,6 +67,7 @@ fun AnalyticsScreen(
         onTimeScopeChange = { viewModel.setTimeScope(it) },
         onCategoryTypeChange = { viewModel.setCategoryType(it) },
         onPeriodSelected = viewModel::selectRange,
+        onNavigatePeriod = viewModel::navigatePeriod,
         modifier = modifier,
     )
 }
@@ -75,6 +78,7 @@ fun AnalyticsContent(
     onTimeScopeChange: (AnalyticsTimeScope) -> Unit,
     onCategoryTypeChange: (CategoryType) -> Unit,
     onPeriodSelected: (LocalDate, LocalDate) -> Unit,
+    onNavigatePeriod: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var showPeriodPicker by rememberSaveable { mutableStateOf(false) }
@@ -102,15 +106,30 @@ fun AnalyticsContent(
                 val confirmedSelection = remember(uiState.periodStart, uiState.periodEnd) {
                     CalendarSelection(uiState.periodStart, uiState.periodEnd)
                 }
-                val calendarState = remember(confirmedSelection, calendarSession) {
-                    CalendarPickerState(YearMonth.from(confirmedSelection.start), confirmedSelection)
+                val calendarState = remember(confirmedSelection, uiState.timeScope, calendarSession) {
+                    CalendarPickerState(
+                        initialMonth = YearMonth.from(confirmedSelection.start),
+                        initialSelection = confirmedSelection,
+                        resetSelection = if (uiState.timeScope == AnalyticsTimeScope.THREE_MONTHS) {
+                            { today ->
+                                val month = YearMonth.from(today)
+                                CalendarSelection(month.minusMonths(2).atDay(1), month.atEndOfMonth())
+                            }
+                        } else null,
+                    ).apply {
+                        view = when (uiState.timeScope) {
+                            AnalyticsTimeScope.WEEK -> CalendarView.DAY
+                            AnalyticsTimeScope.MONTH, AnalyticsTimeScope.THREE_MONTHS -> CalendarView.MONTH
+                            AnalyticsTimeScope.YEAR -> CalendarView.YEAR
+                        }
+                    }
                 }
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
+                Column(
+                    modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                        .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
-                    item(key = "header_and_time_scope") {
+                    key("header_and_time_scope") {
                         Column(
                             modifier = Modifier.fillMaxWidth(),
                             verticalArrangement = Arrangement.spacedBy(5.dp),
@@ -120,18 +139,32 @@ fun AnalyticsContent(
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Text(
-                                    text = "统计",
+                                    text = "分析",
                                     fontSize = 28.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface,
                                     letterSpacing = (-0.6).sp,
                                     modifier = Modifier.align(Alignment.CenterStart),
                                 )
+                            }
 
-                                Box(
-                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 64.dp),
-                                    contentAlignment = Alignment.Center,
-                                ) {
+                            AnalyticsTimeScopeSelector(
+                                currentScope = uiState.timeScope,
+                                onScopeSelected = {
+                                    showPeriodPicker = false
+                                    onTimeScopeChange(it)
+                                },
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                PeriodNavigationArrow(forward = false, onClick = {
+                                    showPeriodPicker = false
+                                    onNavigatePeriod(-1)
+                                })
+                                Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                                     CalendarRangeSelector(
                                         selection = if (showPeriodPicker) calendarState.selection else confirmedSelection,
                                         expanded = showPeriodPicker,
@@ -141,25 +174,10 @@ fun AnalyticsContent(
                                         },
                                     )
                                 }
-
-                                Box(
-                                    modifier = Modifier
-                                        .align(Alignment.CenterEnd)
-                                        .size(36.dp)
-                                        .clip(CircleShape)
-                                        .clickable(
-                                            interactionSource = remember { MutableInteractionSource() },
-                                            indication = ripple(bounded = true, radius = 18.dp),
-                                        ) { /* 导出报表 */ },
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Share,
-                                        contentDescription = "导出分享",
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.size(24.dp),
-                                    )
-                                }
+                                PeriodNavigationArrow(forward = true, onClick = {
+                                    showPeriodPicker = false
+                                    onNavigatePeriod(1)
+                                })
                             }
 
                             AnimatedVisibility(
@@ -178,24 +196,19 @@ fun AnalyticsContent(
                                     )
                                 }
                             }
-
-                            AnalyticsTimeScopeSelector(
-                                currentScope = uiState.timeScope,
-                                onScopeSelected = {
-                                    showPeriodPicker = false
-                                    onTimeScopeChange(it)
-                                },
-                            )
                         }
                     }
 
-                    // 卡片 1: 收支走势图卡片
-                    item(key = "trend_chart_card") {
-                        TrendLineChartCard(points = uiState.trendPoints, scope = uiState.timeScope)
+                    key("trend_chart_card") {
+                        TrendLineChartCard(
+                            points = uiState.trendPoints,
+                            periodStart = uiState.periodStart,
+                            periodEnd = uiState.periodEnd,
+                            scope = uiState.timeScope,
+                        )
                     }
 
-                    // 卡片 2: 支出分类占比 (环形图 + 类别排行榜)
-                    item(key = "category_breakdown_card") {
+                    key("category_breakdown_card") {
                         CategoryBreakdownCard(
                             uiState = uiState,
                             onCategoryTypeChange = onCategoryTypeChange,
@@ -214,11 +227,34 @@ fun AnalyticsTimeScopeSelector(
     modifier: Modifier = Modifier,
 ) {
     AnalyticsSegmentedControl(
-        labels = listOf("周", "月", "年"),
+        labels = listOf("周", "月", "3个月", "年"),
         selectedIndex = AnalyticsTimeScope.entries.indexOf(currentScope),
         onSelect = { onScopeSelected(AnalyticsTimeScope.entries[it]) },
         modifier = modifier.fillMaxWidth(),
     )
+}
+
+@Composable
+private fun PeriodNavigationArrow(
+    forward: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .size(28.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = if (forward) Icons.AutoMirrored.Filled.ArrowForward else Icons.AutoMirrored.Filled.ArrowBack,
+            contentDescription = if (forward) "下一周期" else "上一周期",
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(16.dp),
+        )
+    }
 }
 
 @Preview(showBackground = true)
@@ -239,6 +275,7 @@ fun AnalyticsContentPreview() {
             onTimeScopeChange = {},
             onCategoryTypeChange = {},
             onPeriodSelected = { _, _ -> },
+            onNavigatePeriod = {},
         )
     }
 }

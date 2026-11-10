@@ -25,8 +25,9 @@ internal fun buildAnalyticsTrend(
     zone: ZoneId,
     endDate: LocalDate? = null,
 ): List<AnalyticsTrendPoint> {
+    val monthly = scope == AnalyticsTimeScope.YEAR || scope == AnalyticsTimeScope.THREE_MONTHS
     val dates = if (endDate != null) {
-        if (scope == AnalyticsTimeScope.YEAR) {
+        if (monthly) {
             val firstMonth = YearMonth.from(anchor)
             List(ChronoUnit.MONTHS.between(firstMonth, YearMonth.from(endDate)).toInt() + 1) {
                 firstMonth.plusMonths(it.toLong()).atDay(1)
@@ -45,16 +46,21 @@ internal fun buildAnalyticsTrend(
             List(month.lengthOfMonth()) { month.atDay(it + 1) }
         }
 
+        AnalyticsTimeScope.THREE_MONTHS -> {
+            val firstMonth = YearMonth.from(anchor).minusMonths(2)
+            List(3) { firstMonth.plusMonths(it.toLong()).atDay(1) }
+        }
+
         AnalyticsTimeScope.YEAR -> List(12) { LocalDate.of(anchor.year, it + 1, 1) }
     }
     val rangeStart = if (endDate != null) anchor else dates.first()
-    val rangeEnd = endDate ?: if (scope == AnalyticsTimeScope.YEAR) YearMonth.from(dates.last()).atEndOfMonth() else dates.last()
+    val rangeEnd = endDate ?: if (monthly) YearMonth.from(dates.last()).atEndOfMonth() else dates.last()
     val grouped = transactions.filter {
         val date = Instant.ofEpochMilli(it.transaction.transactionTime).atZone(zone).toLocalDate()
         !it.transaction.isDeleted && !date.isBefore(rangeStart) && !date.isAfter(rangeEnd)
     }.groupBy {
         val date = Instant.ofEpochMilli(it.transaction.transactionTime).atZone(zone).toLocalDate()
-        if (scope == AnalyticsTimeScope.YEAR) date.withDayOfMonth(1) else date
+        if (monthly) date.withDayOfMonth(1) else date
     }
     return dates.map { date ->
         val entries = grouped[date].orEmpty()
