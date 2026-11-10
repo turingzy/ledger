@@ -28,6 +28,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.time.YearMonth
+import java.time.ZoneId
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LedgerViewModelTest {
@@ -87,6 +89,14 @@ class LedgerViewModelTest {
             val successItem = awaitItem()
             assertTrue(successItem is LedgerUiState.Success)
             val success = successItem as LedgerUiState.Success
+            val month = YearMonth.now()
+            val zone = ZoneId.systemDefault()
+            val start = month.atDay(1).atStartOfDay(zone).toInstant().toEpochMilli()
+            val end = month.atEndOfMonth().atTime(23, 59, 59, 999_000_000).atZone(zone).toInstant().toEpochMilli()
+            assertEquals(DateFilterType.MONTH, success.filterType)
+            assertEquals(month.atDay(1), success.filterStartDate)
+            assertEquals(month.atEndOfMonth(), success.filterEndDate)
+            coVerify { transactionRepository.getTransactionsBetween(start, end) }
             assertEquals(4500L, success.monthExpense)
             assertEquals(-4500L, success.monthBalance)
             assertEquals(1, success.dayGroups.size)

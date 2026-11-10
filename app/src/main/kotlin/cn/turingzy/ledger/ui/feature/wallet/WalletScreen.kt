@@ -1,6 +1,7 @@
 package cn.turingzy.ledger.ui.feature.wallet
 
-import androidx.compose.foundation.Canvas
+import cn.turingzy.ledger.ui.component.MaterialSymbols
+import cn.turingzy.ledger.ui.theme.IosYellow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,8 +22,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -51,13 +50,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -85,7 +80,8 @@ fun WalletScreen(
     val background = remember(cardUiState.background) { cardUiState.background?.asImageBitmap() }
     var showBackgroundDialog by rememberSaveable { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
-    LaunchedEffect(cardUiState.error) {
+    LaunchedEffect(cardUiState.error, showBackgroundDialog) {
+        if (showBackgroundDialog) return@LaunchedEffect
         val error = cardUiState.error ?: return@LaunchedEffect
         snackbarHostState.showSnackbar(error)
         cardViewModel.clearError()
@@ -105,26 +101,28 @@ fun WalletScreen(
         cardAppearance = cardUiState.appearance,
         cardBackground = background,
         cardSettingsEnabled = !cardUiState.loading && !cardUiState.importing,
-        onUploadCardBackground = { showBackgroundDialog = true },
-        onCardTransparencyEnabledChange = cardViewModel::setTransparencyEnabled,
+        onUploadCardBackground = {
+            cardViewModel.clearError()
+            showBackgroundDialog = true
+        },
         onCardTransparencyChange = cardViewModel::setTransparencyPercent,
         snackbarHostState = snackbarHostState,
     )
 
     if (showBackgroundDialog) {
         CardBackgroundDialog(
-            onDismiss = { showBackgroundDialog = false },
-            onRestoreDefault = {
+            defaultFilename = "bg_wallet_card.jpg",
+            preparedFilename = cardUiState.preparedBackground,
+            busy = cardUiState.importing,
+            error = cardUiState.error,
+            onDismiss = {
+                cardViewModel.clearError()
+                cardViewModel.discardPreparedBackground()
                 showBackgroundDialog = false
-                cardViewModel.resetBackground()
             },
-            onLocalImage = { uri ->
-                showBackgroundDialog = false
-                cardViewModel.importBackground(uri)
-            },
-            onImageUrl = { url ->
-                showBackgroundDialog = false
-                cardViewModel.importBackgroundUrl(url)
+            onLocalImage = cardViewModel::prepareBackground,
+            onConfirm = { restoreDefault ->
+                cardViewModel.applyBackground(restoreDefault) { showBackgroundDialog = false }
             },
         )
     }
@@ -183,7 +181,6 @@ fun WalletContent(
     cardBackground: ImageBitmap? = null,
     cardSettingsEnabled: Boolean = true,
     onUploadCardBackground: () -> Unit = {},
-    onCardTransparencyEnabledChange: (Boolean) -> Unit = {},
     onCardTransparencyChange: (Int) -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
@@ -258,7 +255,7 @@ fun WalletContent(
                                         contentAlignment = Alignment.Center,
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Default.Add,
+                                            imageVector = MaterialSymbols.Add,
                                             contentDescription = "添加账户",
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                             modifier = Modifier.size(24.dp),
@@ -274,7 +271,6 @@ fun WalletContent(
                                 background = cardBackground,
                                 settingsEnabled = cardSettingsEnabled,
                                 onUploadBackground = onUploadCardBackground,
-                                onTransparencyEnabledChange = onCardTransparencyEnabledChange,
                                 onTransparencyChange = onCardTransparencyChange,
                             )
                         }
@@ -309,7 +305,7 @@ fun WalletContent(
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Icon(
-                                    painter = painterResource(if (isListView) R.drawable.ic_view_carousel else R.drawable.ic_view_agenda),
+                                    imageVector = if (isListView) MaterialSymbols.ViewCarousel else MaterialSymbols.ViewAgenda,
                                     contentDescription = if (isListView) "切换为卡片堆叠视图" else "切换为纵向层叠视图",
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(24.dp),
@@ -350,7 +346,6 @@ fun WalletHeroCard(
     background: ImageBitmap? = null,
     settingsEnabled: Boolean = true,
     onUploadBackground: () -> Unit = {},
-    onTransparencyEnabledChange: (Boolean) -> Unit = {},
     onTransparencyChange: (Int) -> Unit = {},
 ) {
     SummaryCard(
@@ -360,7 +355,6 @@ fun WalletHeroCard(
         background = background,
         settingsEnabled = settingsEnabled,
         onUploadBackground = onUploadBackground,
-        onTransparencyEnabledChange = onTransparencyEnabledChange,
         onTransparencyChange = onTransparencyChange,
     ) {
         SummaryCardContent(
@@ -515,47 +509,14 @@ private fun BankCardBackPlaceholder() {
     }
 }
 
-/**
- * 实体卡 EMV 金属安全芯片
- */
 @Composable
 fun EmvChip(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .size(width = 32.dp, height = 22.dp)
-            .clip(RoundedCornerShape(4.dp))
-            .background(
-                Brush.linearGradient(
-                    colors = listOf(
-                        Color(0xFFFFE082),
-                        Color(0xFFFFB300),
-                        Color(0xFFFFA000),
-                    ),
-                ),
-            )
-            .border(0.8.dp, Color(0xFFFF8F00), RoundedCornerShape(4.dp)),
-    ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            drawLine(
-                color = Color(0x40000000),
-                start = Offset(0f, size.height / 2f),
-                end = Offset(size.width, size.height / 2f),
-                strokeWidth = 0.8f,
-            )
-            drawLine(
-                color = Color(0x40000000),
-                start = Offset(size.width * 0.35f, 0f),
-                end = Offset(size.width * 0.35f, size.height),
-                strokeWidth = 0.8f,
-            )
-            drawLine(
-                color = Color(0x40000000),
-                start = Offset(size.width * 0.65f, 0f),
-                end = Offset(size.width * 0.65f, size.height),
-                strokeWidth = 0.8f,
-            )
-        }
-    }
+    Icon(
+        imageVector = MaterialSymbols.Memory,
+        contentDescription = null,
+        modifier = modifier.size(width = 32.dp, height = 22.dp),
+        tint = IosYellow,
+    )
 }
 
 /**
@@ -589,108 +550,28 @@ fun UnionPayBadge(
     }
 }
 
-/**
- * 非接触式闪付波纹标识 (Contactless)
- */
 @Composable
 fun ContactlessWaveIcon(modifier: Modifier = Modifier) {
-    Canvas(modifier = modifier.size(18.dp)) {
-        val cx = size.width * 0.2f
-        val cy = size.height * 0.5f
-
-        val stroke = Stroke(width = 1.4.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
-        drawArc(
-            color = Color.White.copy(alpha = 0.8f),
-            startAngle = -45f,
-            sweepAngle = 90f,
-            useCenter = false,
-            topLeft = Offset(cx - 3.dp.toPx(), cy - 3.dp.toPx()),
-            size = androidx.compose.ui.geometry.Size(6.dp.toPx(), 6.dp.toPx()),
-            style = stroke,
-        )
-        drawArc(
-            color = Color.White.copy(alpha = 0.8f),
-            startAngle = -45f,
-            sweepAngle = 90f,
-            useCenter = false,
-            topLeft = Offset(cx - 6.dp.toPx(), cy - 6.dp.toPx()),
-            size = androidx.compose.ui.geometry.Size(12.dp.toPx(), 12.dp.toPx()),
-            style = stroke,
-        )
-        drawArc(
-            color = Color.White.copy(alpha = 0.8f),
-            startAngle = -45f,
-            sweepAngle = 90f,
-            useCenter = false,
-            topLeft = Offset(cx - 9.dp.toPx(), cy - 9.dp.toPx()),
-            size = androidx.compose.ui.geometry.Size(18.dp.toPx(), 18.dp.toPx()),
-            style = stroke,
-        )
-    }
+    Icon(
+        imageVector = MaterialSymbols.Contactless,
+        contentDescription = null,
+        modifier = modifier.size(18.dp),
+        tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
+    )
 }
 
-/**
- * 百夫长罗马头盔战士浮雕徽章 (纯 Compose 绘制双银环与战士剪影轮廓)
- */
 @Composable
-fun CenturionSoldierBadge(
-    modifier: Modifier = Modifier,
-) {
+fun CenturionSoldierBadge(modifier: Modifier = Modifier) {
     Box(
-        modifier = modifier
-            .size(46.dp)
-            .clip(CircleShape)
-            .background(Color(0xFF1A1C20)),
+        modifier = modifier.size(46.dp).clip(CircleShape).background(MaterialTheme.colorScheme.scrim),
         contentAlignment = Alignment.Center,
     ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val center = Offset(size.width / 2f, size.height / 2f)
-
-            // 外银环
-            drawCircle(
-                brush = Brush.sweepGradient(
-                    colors = listOf(
-                        Color(0xFF71717A),
-                        Color(0xFFE4E4E7),
-                        Color(0xFF52525B),
-                        Color(0xFFE4E4E7),
-                        Color(0xFF71717A),
-                    ),
-                    center = center,
-                ),
-                radius = size.width * 0.46f,
-                style = Stroke(width = 1.5.dp.toPx()),
-            )
-
-            // 内银环
-            drawCircle(
-                color = Color(0x66FFFFFF),
-                radius = size.width * 0.38f,
-                style = Stroke(width = 0.8.dp.toPx()),
-            )
-
-            // 罗马战士头盔与侧颜剪影
-            val headPath = Path().apply {
-                val cx = size.width * 0.5f
-                val cy = size.height * 0.5f
-                val r = size.width * 0.24f
-
-                moveTo(cx - r * 0.6f, cy - r * 0.7f)
-                cubicTo(cx - r * 0.3f, cy - r * 1.1f, cx + r * 0.4f, cy - r * 1.0f, cx + r * 0.6f, cy - r * 0.6f)
-                lineTo(cx + r * 0.4f, cy - r * 0.2f)
-                lineTo(cx + r * 0.5f, cy + r * 0.1f)
-                lineTo(cx + r * 0.3f, cy + r * 0.3f)
-                lineTo(cx + r * 0.4f, cy + r * 0.5f)
-                lineTo(cx + r * 0.1f, cy + r * 0.7f)
-                lineTo(cx - r * 0.4f, cy + r * 0.7f)
-                lineTo(cx - r * 0.5f, cy + r * 0.3f)
-                close()
-            }
-            drawPath(
-                path = headPath,
-                color = Color(0xFFE4E4E7),
-            )
-        }
+        Icon(
+            imageVector = MaterialSymbols.ShieldPerson,
+            contentDescription = null,
+            modifier = Modifier.size(30.dp),
+            tint = MaterialTheme.colorScheme.onPrimary,
+        )
     }
 }
 

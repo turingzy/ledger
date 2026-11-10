@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.settings
 
+import cn.turingzy.ledger.ui.component.MaterialSymbols
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -20,8 +21,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -76,7 +75,7 @@ internal fun TemplateColorPickerSheet(
         onBack = onDismissRequest,
         action = {
             IconButton(onClick = { onConfirm(selection.color().hexString()) }, enabled = valid) {
-                Icon(Icons.Default.Check, "确认文字颜色", tint = colors.tertiary.copy(alpha = if (valid) 1f else 0.38f))
+                Icon(MaterialSymbols.Check, "确认文字颜色", tint = colors.tertiary.copy(alpha = if (valid) 1f else 0.38f))
             }
         },
     ) {

@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.ledger
 
+import cn.turingzy.ledger.ui.component.MaterialSymbols
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,9 +16,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -83,7 +81,7 @@ fun DatePickerBottomSheet(
             ) {
                 IconButton(onClick = { selectedYear -= 1 }) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        imageVector = MaterialSymbols.ArrowBack,
                         contentDescription = "上一年",
                         tint = IosLabel,
                     )
@@ -98,7 +96,7 @@ fun DatePickerBottomSheet(
 
                 IconButton(onClick = { selectedYear += 1 }) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        imageVector = MaterialSymbols.ArrowForward,
                         contentDescription = "下一年",
                         tint = IosLabel,
                     )

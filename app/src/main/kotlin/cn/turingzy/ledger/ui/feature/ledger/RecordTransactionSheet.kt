@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.ledger
 
+import cn.turingzy.ledger.ui.component.MaterialSymbols
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -25,11 +26,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -239,7 +235,7 @@ private fun RecordTransactionContent(
             key(type) { RecordCategoryPages(categories, selectedCategoryId, onCategorySelect) }
             Surface(shape = RoundedCornerShape(16.dp), color = colors.surfaceVariant.copy(alpha = 0.45f)) {
                 Row(Modifier.fillMaxWidth().heightIn(min = 40.dp).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Icon(Icons.Outlined.Edit, null, Modifier.size(16.dp), tint = colors.onSurfaceVariant)
+                    Icon(MaterialSymbols.Edit, null, Modifier.size(16.dp), tint = colors.onSurfaceVariant)
                     BasicTextField(
                         value = note, onValueChange = onNoteChange, singleLine = true,
                         textStyle = MaterialTheme.typography.bodyMedium.copy(color = colors.onSurface), cursorBrush = SolidColor(colors.onSurface),
@@ -308,11 +304,11 @@ private fun RecordInlineSelection(
             Text(title, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
             if (onConfirm != null) {
                 IconButton(onClick = onConfirm, enabled = canConfirm) {
-                    Icon(Icons.Default.Check, "确认时间", tint = colors.tertiary.copy(alpha = if (canConfirm) 1f else 0.38f))
+                    Icon(MaterialSymbols.Check, "确认时间", tint = colors.tertiary.copy(alpha = if (canConfirm) 1f else 0.38f))
                 }
             }
             IconButton(onClick = onClose) {
-                Icon(Icons.Default.Close, "收起$title", tint = colors.onSurfaceVariant)
+                Icon(MaterialSymbols.Close, "收起$title", tint = colors.onSurfaceVariant)
             }
         }
         content()
@@ -323,7 +319,7 @@ private fun RecordInlineSelection(
 private fun RecordSelector(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Row(modifier.clip(RoundedCornerShape(8.dp)).clickable(onClick = onClick).padding(vertical = 8.dp, horizontal = 2.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(label, Modifier.weight(1f, fill = false), maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Icon(Icons.Default.KeyboardArrowDown, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Icon(MaterialSymbols.ExpandMore, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -380,7 +376,7 @@ private fun RecordAccountChoices(accounts: List<AccountWithTemplate>, selectedId
             items(accounts, key = { it.account.id }) { item ->
                 Row(Modifier.fillMaxWidth().clickable { onSelect(item.account.id) }.padding(vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(item.account.name, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-                    if (item.account.id == selectedId) Icon(Icons.Default.Check, "已选择", tint = MaterialTheme.colorScheme.tertiary)
+                    if (item.account.id == selectedId) Icon(MaterialSymbols.Check, "已选择", tint = MaterialTheme.colorScheme.tertiary)
                 }
             }
         }

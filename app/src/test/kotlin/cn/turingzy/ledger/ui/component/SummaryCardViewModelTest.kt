@@ -20,7 +20,6 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Before
@@ -62,13 +61,10 @@ class SummaryCardViewModelTest {
     fun walletTransparencyChangesOnlyWriteWalletPreferences() = runTest {
         val viewModel = WalletCardViewModel(repository)
         runCurrent()
-        viewModel.setTransparencyEnabled(false)
         viewModel.setTransparencyPercent(80)
         runCurrent()
-        coVerify(exactly = 1) { repository.setTransparencyEnabled(false, SummaryCardTarget.WALLET) }
         coVerify(exactly = 1) { repository.setTransparencyPercent(80, SummaryCardTarget.WALLET) }
         coVerify(exactly = 0) { repository.setTransparencyPercent(any(), SummaryCardTarget.LEDGER) }
-        assertFalse(viewModel.uiState.value.appearance.transparencyEnabled)
         assertEquals(25, ledger.value.transparencyPercent)
     }
 
@@ -96,17 +92,19 @@ class SummaryCardViewModelTest {
     }
 
     @Test
-    fun localAndUrlImagesAreImportedIntoWalletConfiguration() = runTest {
+    fun preparedImageIsOnlyAppliedToWalletAfterConfirmation() = runTest {
         val uri = mockk<Uri>()
+        coEvery { repository.prepareBackground(uri, SummaryCardTarget.WALLET) } returns "unique.jpg"
         val viewModel = WalletCardViewModel(repository)
         runCurrent()
-        viewModel.importBackground(uri)
+        viewModel.prepareBackground(uri)
         runCurrent()
-        viewModel.importBackgroundUrl("https://example.com/wallet.jpg")
+        assertEquals("unique.jpg", viewModel.uiState.value.preparedBackground)
+        coVerify(exactly = 0) { repository.applyPreparedBackground(any(), any()) }
+        viewModel.applyBackground(restoreDefault = false)
         runCurrent()
-        coVerify(exactly = 1) { repository.importBackground(uri, SummaryCardTarget.WALLET) }
-        coVerify(exactly = 1) { repository.importBackgroundUrl("https://example.com/wallet.jpg", SummaryCardTarget.WALLET) }
-        coVerify(exactly = 0) { repository.importBackground(any(), SummaryCardTarget.LEDGER) }
-        coVerify(exactly = 0) { repository.importBackgroundUrl(any(), SummaryCardTarget.LEDGER) }
+        coVerify(exactly = 1) { repository.applyPreparedBackground("unique.jpg", SummaryCardTarget.WALLET) }
+        coVerify(exactly = 0) { repository.applyPreparedBackground(any(), SummaryCardTarget.LEDGER) }
+        assertNull(viewModel.uiState.value.preparedBackground)
     }
 }

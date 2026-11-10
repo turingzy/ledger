@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.analytics
 
+import cn.turingzy.ledger.ui.component.MaterialSymbols
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -28,8 +29,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.res.painterResource
-import cn.turingzy.ledger.R
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.input.pointer.pointerInput
@@ -74,7 +73,7 @@ internal fun AnalyticsCardMenu(
             contentAlignment = Alignment.Center,
         ) {
             Icon(
-                painter = painterResource(R.drawable.ic_menu),
+                imageVector = MaterialSymbols.Menu,
                 contentDescription = "管理分析卡片",
                 modifier = Modifier.size(24.dp),
                 tint = colors.onSurfaceVariant,
@@ -151,7 +150,7 @@ internal fun AnalyticsCardMenu(
                                     },
                                     contentAlignment = Alignment.Center,
                                 ) {
-                                    Icon(painterResource(R.drawable.ic_drag_indicator), null, tint = colors.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                                    Icon(MaterialSymbols.DragIndicator, null, tint = colors.onSurfaceVariant, modifier = Modifier.size(20.dp))
                                 }
                                 Text(
                                     card.title,

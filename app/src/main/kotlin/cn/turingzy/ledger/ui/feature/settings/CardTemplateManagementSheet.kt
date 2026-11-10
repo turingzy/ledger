@@ -1,11 +1,13 @@
 package cn.turingzy.ledger.ui.feature.settings
 
+import cn.turingzy.ledger.ui.component.MaterialSymbols
 import android.net.Uri
 import android.widget.ImageView
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
@@ -18,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -28,14 +31,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.DeleteOutline
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ripple
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -58,12 +58,14 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import cn.turingzy.ledger.ui.component.BankCardAspectRatio
 import cn.turingzy.ledger.ui.component.CardPageIndicator
+import cn.turingzy.ledger.ui.component.SummaryCardIconButton
 import cn.turingzy.ledger.R
 import cn.turingzy.ledger.model.CardTemplate
 import kotlinx.coroutines.launch
@@ -77,7 +79,9 @@ internal fun CardTemplateManagementSheet(
     val pagerState = rememberPagerState(pageCount = { drafts.size.coerceAtLeast(1) })
     val scope = rememberCoroutineScope()
     val selectedIndex = pagerState.currentPage.coerceAtMost(drafts.lastIndex)
-    var newTemplate by remember { mutableStateOf<CardTemplate?>(null) }
+    var newTemplate by remember {
+        mutableStateOf<CardTemplate?>(if (templates.isEmpty()) CardTemplate(id = -1L, name = "", coverUri = "") else null)
+    }
     val selected = newTemplate ?: drafts.getOrNull(selectedIndex)
     val focusManager = LocalFocusManager.current
     var uploadTarget by remember { mutableStateOf<Long?>(null) }
@@ -96,7 +100,7 @@ internal fun CardTemplateManagementSheet(
     SettingsBottomSheet(
         title = "卡片管理",
         onDismissRequest = onDismissRequest,
-        onBack = if (newTemplate != null) {
+        onBack = if (newTemplate != null && drafts.isNotEmpty()) {
             {
                 focusManager.clearFocus()
                 newTemplate = null
@@ -122,7 +126,7 @@ internal fun CardTemplateManagementSheet(
                 },
             ) {
                 Icon(
-                    if (creating) Icons.Default.Check else Icons.Default.Add,
+                    if (creating) MaterialSymbols.Check else MaterialSymbols.Add,
                     if (creating) "保存卡片模板预览" else "新增卡片模板",
                     tint = if (creating) {
                         MaterialTheme.colorScheme.tertiary.copy(alpha = if (canSave) 1f else 0.38f)
@@ -152,17 +156,24 @@ internal fun CardTemplateManagementSheet(
                 ) { page ->
                     TemplateCoverPreview(
                         template = drafts.getOrNull(page),
+                        onDelete = {
+                            drafts.getOrNull(page)?.let { drafts.remove(it) }
+                            if (drafts.isEmpty()) newTemplate = CardTemplate(id = -1L, name = "", coverUri = "")
+                        },
                         onUpload = {
                             uploadTarget = drafts.getOrNull(page)?.id
                             imagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                         },
                     )
                 }
-                CardPageIndicator(pageCount = drafts.size, currentPage = selectedIndex)
+            }
+            Box(Modifier.fillMaxWidth().height(6.dp)) {
+                if (newTemplate == null) {
+                    CardPageIndicator(pageCount = drafts.size, currentPage = selectedIndex)
+                }
             }
             TemplateDetailsPreview(
                 template = selected,
-                creating = newTemplate != null,
                 onNameChange = { name ->
                     if (newTemplate != null) newTemplate = newTemplate?.copy(name = name)
                     else selected?.let { drafts[selectedIndex] = it.copy(name = name) }
@@ -171,7 +182,6 @@ internal fun CardTemplateManagementSheet(
                     if (newTemplate != null) newTemplate = newTemplate?.copy(textColor = color)
                     else selected?.let { drafts[selectedIndex] = it.copy(textColor = color) }
                 },
-                onDelete = { if (selected != null) drafts.removeAt(selectedIndex) },
             )
         }
     }
@@ -181,6 +191,7 @@ internal fun CardTemplateManagementSheet(
 private fun TemplateCoverPreview(
     template: CardTemplate?,
     creating: Boolean = false,
+    onDelete: (() -> Unit)? = null,
     onUpload: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
@@ -191,17 +202,20 @@ private fun TemplateCoverPreview(
     ) {
         if (creating && template?.coverUri.isNullOrBlank()) {
             Box(
-                Modifier.fillMaxSize().background(Color.White).drawWithCache {
+                Modifier.fillMaxSize().background(colors.surface).clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = ripple(bounded = true),
+                    role = Role.Button,
+                    onClick = onUpload,
+                ).semantics { contentDescription = "上传卡片封面" }.drawWithCache {
                     val stroke = Stroke(width = 1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(8.dp.toPx(), 6.dp.toPx())))
                     onDrawBehind {
-                        drawRoundRect(Color.Black, cornerRadius = CornerRadius(24.dp.toPx()), style = stroke)
+                        drawRoundRect(colors.onSurface.copy(alpha = 0.4f), cornerRadius = CornerRadius(24.dp.toPx()), style = stroke)
                     }
                 },
                 contentAlignment = Alignment.Center,
             ) {
-                IconButton(onClick = onUpload, modifier = Modifier.size(64.dp)) {
-                    Icon(painterResource(R.drawable.ic_image_arrow_up), "上传卡片封面", Modifier.size(32.dp), tint = Color.Black)
-                }
+                Icon(MaterialSymbols.Image, contentDescription = null, modifier = Modifier.size(40.dp), tint = colors.onSurfaceVariant)
             }
         } else if (template != null) {
             if (template.coverUri.startsWith("content://")) {
@@ -218,13 +232,21 @@ private fun TemplateCoverPreview(
                     contentScale = ContentScale.Crop,
                 )
             }
-            IconButton(onClick = onUpload, modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)) {
-                Icon(
-                    painterResource(R.drawable.ic_image_arrow_up),
-                    "上传卡片封面",
-                    tint = Color.White,
+            if (onDelete != null) {
+                SummaryCardIconButton(
+                    imageVector = MaterialSymbols.Delete,
+                    contentDescription = "删除卡片模板",
+                    onClick = onDelete,
+                    contentColor = colors.error,
+                    modifier = Modifier.align(Alignment.TopStart).padding(top = 8.dp, start = 12.dp).size(36.dp),
                 )
             }
+            SummaryCardIconButton(
+                imageVector = MaterialSymbols.Upload,
+                contentDescription = "上传卡片封面",
+                onClick = onUpload,
+                modifier = Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 12.dp).size(36.dp),
+            )
         } else {
             Text("暂无卡片，点击右上角添加", color = colors.onSurfaceVariant)
         }
@@ -234,10 +256,8 @@ private fun TemplateCoverPreview(
 @Composable
 private fun TemplateDetailsPreview(
     template: CardTemplate?,
-    creating: Boolean,
     onNameChange: (String) -> Unit,
     onColorChange: (String) -> Unit,
-    onDelete: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
     var showColors by remember(template?.id) { mutableStateOf(false) }
@@ -287,19 +307,7 @@ private fun TemplateDetailsPreview(
                     Text(template?.textColor.orEmpty(), color = colors.onSurfaceVariant)
                 }
             }
-            if (!creating) {
-                HorizontalDivider(thickness = 0.5.dp, color = colors.outlineVariant)
-                Row(
-                    Modifier.fillMaxWidth().heightIn(min = 56.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text("是否删除")
-                    IconButton(onClick = onDelete, enabled = template != null) {
-                        Icon(Icons.Default.DeleteOutline, "删除卡片模板", tint = colors.error)
-                    }
-                }
-            }
+
         }
     }
     if (showColors && template != null) {

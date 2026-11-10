@@ -55,7 +55,7 @@ class LedgerViewModel @Inject constructor(
     accountRepository: AccountRepository,
 ) : ViewModel() {
 
-    private val dateFilter = MutableStateFlow<LedgerDateFilter>(LedgerDateFilter.Week(LocalDate.now()))
+    private val dateFilter = MutableStateFlow<LedgerDateFilter>(LedgerDateFilter.Month(YearMonth.now()))
 
     val categories: StateFlow<List<CategoryWithIcon>> = categoryRepository.getCategoriesStream()
         .stateIn(

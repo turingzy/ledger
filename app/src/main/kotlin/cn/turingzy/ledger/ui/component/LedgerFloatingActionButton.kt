@@ -30,11 +30,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cn.turingzy.ledger.R
 import cn.turingzy.ledger.ui.theme.IosFrostedBorder
 import cn.turingzy.ledger.ui.theme.IosFrostedGlass
 import cn.turingzy.ledger.ui.theme.IosLabel
@@ -93,7 +91,7 @@ fun LedgerFloatingActionButton(
                 color = IosLabel,
             )
             Icon(
-                painter = painterResource(R.drawable.ic_square_and_pencil),
+                imageVector = MaterialSymbols.EditSquare,
                 contentDescription = "记一笔",
                 tint = IosLabel,
                 modifier = Modifier.size(16.dp),

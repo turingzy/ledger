@@ -21,6 +21,7 @@ internal data class SummaryCardUiState(
     val loading: Boolean = true,
     val importing: Boolean = false,
     val error: String? = null,
+    val preparedBackground: String? = null,
 )
 
 internal open class SummaryCardViewModel(
@@ -51,39 +52,56 @@ internal open class SummaryCardViewModel(
         }
     }
 
-    fun setTransparencyEnabled(enabled: Boolean) {
-        _uiState.update { it.copy(appearance = it.appearance.copy(transparencyEnabled = enabled)) }
-        save { repository.setTransparencyEnabled(enabled, target) }
-    }
-
     fun setTransparencyPercent(percent: Int) {
         _uiState.update { it.copy(appearance = it.appearance.copy(transparencyPercent = percent)) }
         save { repository.setTransparencyPercent(percent, target) }
     }
 
     fun resetBackground() {
-        save { repository.resetBackground(target) }
+        applyBackground(restoreDefault = true)
     }
 
-    fun importBackground(uri: Uri) {
-        importImage { repository.importBackground(uri, target) }
+    fun prepareBackground(uri: Uri) {
+        backgroundOperation {
+            val filename = repository.prepareBackground(uri, target)
+            val previous = _uiState.value.preparedBackground
+            _uiState.update { it.copy(preparedBackground = filename) }
+            previous?.let { repository.discardPreparedBackground(it) }
+        }
     }
 
-    fun importBackgroundUrl(url: String) {
-        importImage { repository.importBackgroundUrl(url, target) }
+    fun discardPreparedBackground() {
+        val filename = _uiState.value.preparedBackground ?: return
+        _uiState.update { it.copy(preparedBackground = null) }
+        save { repository.discardPreparedBackground(filename) }
     }
 
-    private fun importImage(import: suspend () -> Unit) {
+    fun applyBackground(restoreDefault: Boolean, onSuccess: () -> Unit = {}) {
+        val filename = _uiState.value.preparedBackground
+        if (!restoreDefault && filename == null) return
+        backgroundOperation {
+            if (restoreDefault) {
+                repository.resetBackground(target)
+                filename?.let { repository.discardPreparedBackground(it) }
+            } else if (filename != null) {
+                repository.applyPreparedBackground(filename, target)
+            }
+            _uiState.update { it.copy(preparedBackground = null) }
+            onSuccess()
+        }
+    }
+
+    private fun backgroundOperation(action: suspend () -> Unit) {
         if (_uiState.value.importing) return
-        _uiState.update { it.copy(importing = true) }
+        _uiState.update { it.copy(importing = true, error = null) }
         viewModelScope.launch {
             try {
-                import()
+                action()
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Exception) {
-                Timber.e(error, "Unable to import card background")
-                _uiState.update { it.copy(error = "图片加载失败，请检查图片或链接后重试") }
+                Timber.e(error, "Unable to update card background")
+                _uiState.update { it.copy(error = "背景图片处理失败，请重试") }
             } finally {
                 _uiState.update { it.copy(importing = false) }
             }

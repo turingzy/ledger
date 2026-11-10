@@ -1,6 +1,6 @@
 package cn.turingzy.ledger.ui.feature.settings
 
-import androidx.compose.foundation.background
+import cn.turingzy.ledger.ui.component.MaterialSymbols
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,14 +16,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
-import androidx.compose.material.icons.filled.CloudUpload
-import androidx.compose.material.icons.filled.Code
-import androidx.compose.material.icons.filled.CreditCard
-import androidx.compose.material.icons.filled.ImportExport
-import androidx.compose.material.icons.filled.DashboardCustomize
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -39,7 +31,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -62,7 +53,6 @@ fun SettingsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     var parseRulePreviews by remember { mutableStateOf<List<ParseRulePreview>>(emptyList()) }
-    var showCategorySheet by remember { mutableStateOf(false) }
     var showParseRulesSheet by remember { mutableStateOf(false) }
     var showBackupSheet by remember { mutableStateOf(false) }
     var showAboutSheet by remember { mutableStateOf(false) }
@@ -71,7 +61,6 @@ fun SettingsScreen(
 
     SettingsContent(
         uiState = uiState,
-        onCategoryManagementClick = { showCategorySheet = true },
         onParseRulesClick = { showParseRulesSheet = true },
         onCardManagementClick = { showCardManagementSheet = true },
         onBillTransferClick = { showBillTransferSheet = true },
@@ -79,17 +68,6 @@ fun SettingsScreen(
         onAboutClick = { showAboutSheet = true },
         modifier = modifier,
     )
-
-    if (showCategorySheet) {
-        val categories = (uiState as? SettingsUiState.Success)?.categories ?: emptyList()
-        CategoryManagementSheet(
-            categories = categories,
-            onDismissRequest = { showCategorySheet = false },
-            availableIcons = (uiState as? SettingsUiState.Success)?.availableIcons.orEmpty(),
-            onSaveCategory = viewModel::saveCategory,
-            onDeleteCategory = viewModel::deleteManagedCategory,
-        )
-    }
 
     if (showParseRulesSheet) {
         ParseRulesSheet(
@@ -133,7 +111,6 @@ fun SettingsScreen(
 @Composable
 fun SettingsContent(
     uiState: SettingsUiState,
-    onCategoryManagementClick: () -> Unit,
     onParseRulesClick: () -> Unit,
     onCardManagementClick: () -> Unit,
     onBillTransferClick: () -> Unit,
@@ -200,19 +177,8 @@ fun SettingsContent(
                             ) {
                                 Column(modifier = Modifier.fillMaxWidth()) {
                                     SettingsRowItem(
-                                        icon = Icons.Default.CreditCard,
-                                        iconBgColor = Color(0xFFFF9500),
-                                        title = "分类管理",
-                                        onClick = onCategoryManagementClick,
-                                    )
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(start = 58.dp),
-                                        thickness = 0.5.dp,
-                                        color = MaterialTheme.colorScheme.outlineVariant,
-                                    )
-                                    SettingsRowItem(
-                                        icon = Icons.Default.DashboardCustomize,
-                                        iconBgColor = MaterialTheme.colorScheme.primary,
+                                        icon = MaterialSymbols.DashboardCustomize,
+                                        iconColor = MaterialTheme.colorScheme.primary,
                                         title = "卡片管理",
                                         onClick = onCardManagementClick,
                                     )
@@ -222,8 +188,8 @@ fun SettingsContent(
                                         color = MaterialTheme.colorScheme.outlineVariant,
                                     )
                                     SettingsRowItem(
-                                        icon = Icons.Default.Code,
-                                        iconBgColor = MaterialTheme.colorScheme.secondary,
+                                        icon = MaterialSymbols.Code,
+                                        iconColor = MaterialTheme.colorScheme.secondary,
                                         title = "账单解析规则",
                                         onClick = onParseRulesClick,
                                     )
@@ -233,8 +199,8 @@ fun SettingsContent(
                                         color = MaterialTheme.colorScheme.outlineVariant,
                                     )
                                     SettingsRowItem(
-                                        icon = Icons.Default.ImportExport,
-                                        iconBgColor = MaterialTheme.colorScheme.tertiary,
+                                        icon = MaterialSymbols.ImportExport,
+                                        iconColor = MaterialTheme.colorScheme.tertiary,
                                         title = "账单导入与导出",
                                         onClick = onBillTransferClick,
                                     )
@@ -258,8 +224,8 @@ fun SettingsContent(
                         ) {
                             Column(modifier = Modifier.fillMaxWidth()) {
                                 SettingsRowItem(
-                                    icon = Icons.Default.CloudUpload,
-                                    iconBgColor = MaterialTheme.colorScheme.tertiary,
+                                    icon = MaterialSymbols.CloudUpload,
+                                    iconColor = MaterialTheme.colorScheme.tertiary,
                                     title = "备份与恢复",
                                     onClick = onBackupClick,
                                 )
@@ -269,8 +235,8 @@ fun SettingsContent(
                                     color = MaterialTheme.colorScheme.outlineVariant,
                                 )
                                 SettingsRowItem(
-                                    icon = Icons.Default.Info,
-                                    iconBgColor = MaterialTheme.colorScheme.primary,
+                                    icon = MaterialSymbols.Info,
+                                    iconColor = MaterialTheme.colorScheme.primary,
                                     title = "关于",
                                     onClick = onAboutClick,
                                 )
@@ -286,7 +252,7 @@ fun SettingsContent(
 @Composable
 fun SettingsRowItem(
     icon: ImageVector,
-    iconBgColor: Color,
+    iconColor: Color,
     title: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -305,17 +271,14 @@ fun SettingsRowItem(
             horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(iconBgColor),
+                modifier = Modifier.size(32.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(18.dp),
+                    tint = iconColor,
+                    modifier = Modifier.size(24.dp),
                 )
             }
             Text(
@@ -327,7 +290,7 @@ fun SettingsRowItem(
         }
 
         Icon(
-            imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+            imageVector = MaterialSymbols.ChevronRight,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f),
             modifier = Modifier.size(14.dp),
@@ -351,9 +314,7 @@ fun SettingsContentPreview() {
                         icon = ModelIcon(id = 1L, keyName = "ic_shopping", displayName = "数码", iconUri = "res://"),
                     ),
                 ),
-                availableIcons = emptyList(),
             ),
-            onCategoryManagementClick = {},
             onParseRulesClick = {},
             onCardManagementClick = {},
             onBillTransferClick = {},

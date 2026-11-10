@@ -1,28 +1,17 @@
 package cn.turingzy.ledger.ui.component
 
-import androidx.compose.material.icons.Icons
 import androidx.compose.ui.graphics.vector.ImageVector
 import cn.turingzy.ledger.model.Icon as CategoryIcon
-import androidx.compose.material.icons.outlined.AccountBalance
-import androidx.compose.material.icons.outlined.DirectionsBus
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.LocalHospital
-import androidx.compose.material.icons.outlined.MoreHoriz
-import androidx.compose.material.icons.outlined.Payments
-import androidx.compose.material.icons.outlined.Restaurant
-import androidx.compose.material.icons.outlined.ShoppingBag
-import androidx.compose.material.icons.outlined.SwapHoriz
-import androidx.compose.material.icons.outlined.SportsEsports
 
 internal fun CategoryIcon.categoryGlyph(): ImageVector = when (keyName) {
-    "ic_food" -> Icons.Outlined.Restaurant
-    "ic_shopping" -> Icons.Outlined.ShoppingBag
-    "ic_transport" -> Icons.Outlined.DirectionsBus
-    "ic_entertainment" -> Icons.Outlined.SportsEsports
-    "ic_housing" -> Icons.Outlined.Home
-    "ic_medical" -> Icons.Outlined.LocalHospital
-    "ic_salary" -> Icons.Outlined.Payments
-    "ic_investment" -> Icons.Outlined.AccountBalance
-    "ic_transfer" -> Icons.Outlined.SwapHoriz
-    else -> Icons.Outlined.MoreHoriz
+    "ic_food" -> MaterialSymbols.Restaurant
+    "ic_shopping" -> MaterialSymbols.ShoppingBag
+    "ic_transport" -> MaterialSymbols.DirectionsBus
+    "ic_entertainment" -> MaterialSymbols.SportsEsports
+    "ic_housing" -> MaterialSymbols.Home
+    "ic_medical" -> MaterialSymbols.LocalHospital
+    "ic_salary" -> MaterialSymbols.Payments
+    "ic_investment" -> MaterialSymbols.AccountBalance
+    "ic_transfer" -> MaterialSymbols.SwapHoriz
+    else -> MaterialSymbols.MoreHoriz
 }

@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.wallet
 
+import cn.turingzy.ledger.ui.component.MaterialSymbols
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,8 +17,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -121,7 +120,7 @@ fun AddAccountSheetContent(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onDismissRequest) {
-                Icon(Icons.Default.Close, "取消添加账户", Modifier.size(24.dp), tint = colors.onSurfaceVariant)
+                Icon(MaterialSymbols.Close, "取消添加账户", Modifier.size(24.dp), tint = colors.onSurfaceVariant)
             }
             Text("添加账户", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
             AccountSaveButton(

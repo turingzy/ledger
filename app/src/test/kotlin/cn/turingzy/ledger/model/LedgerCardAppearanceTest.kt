@@ -11,13 +11,6 @@ class LedgerCardAppearanceTest {
         assertEquals(0f, LedgerCardAppearance(transparencyPercent = 100).overlayOpacity, 0f)
     }
 
-    @Test
-    fun disablingTransparencyMakesLayerOpaqueWithoutLosingSavedPercentage() {
-        val appearance = LedgerCardAppearance(transparencyEnabled = false, transparencyPercent = 75)
-        assertEquals(1f, appearance.overlayOpacity, 0f)
-        assertEquals(0.25f, appearance.copy(transparencyEnabled = true).overlayOpacity, 0f)
-    }
-
     @Test(expected = IllegalArgumentException::class)
     fun negativeTransparencyIsRejected() {
         LedgerCardAppearance(transparencyPercent = -1)

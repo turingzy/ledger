@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.settings
 
+import cn.turingzy.ledger.ui.component.MaterialSymbols
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -19,11 +20,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -116,7 +112,7 @@ internal fun ParseRulesSheet(
                     },
                 ) {
                     Icon(
-                        if (editing == null) Icons.Default.Add else Icons.Default.Check,
+                        if (editing == null) MaterialSymbols.Add else MaterialSymbols.Check,
                         if (editing == null) "新增解析规则" else "保存规则预览",
                         tint = if (editing == null) colors.onSurfaceVariant else colors.tertiary.copy(alpha = if (editing.valid) 1f else 0.38f),
                     )
@@ -147,7 +143,7 @@ internal fun ParseRulesSheet(
                                     Text(rule.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     Text("从第 ${rule.startRow} 行读取", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                                 }
-                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "编辑规则", tint = colors.onSurfaceVariant)
+                                Icon(MaterialSymbols.ChevronRight, "编辑规则", tint = colors.onSurfaceVariant)
                             }
                         }
                     }
@@ -173,7 +169,7 @@ internal fun ParseRulesSheet(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(option.label, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-                            if (selectedId == option.id) Icon(Icons.Default.Check, "已选择", tint = colors.tertiary)
+                            if (selectedId == option.id) Icon(MaterialSymbols.Check, "已选择", tint = colors.tertiary)
                         }
                     }
                 }
@@ -233,7 +229,7 @@ internal fun ParseRulesSheet(
                                         Row(Modifier.fillMaxWidth().heightIn(min = 56.dp), verticalAlignment = Alignment.CenterVertically) {
                                             Text("删除规则", Modifier.weight(1f))
                                             IconButton(onClick = { onDeleteRule(editing.id); draft = null }) {
-                                                Icon(Icons.Outlined.DeleteOutline, "删除规则预览", tint = colors.error)
+                                                Icon(MaterialSymbols.Delete, "删除规则预览", tint = colors.error)
                                             }
                                         }
                                     }
@@ -297,6 +293,6 @@ private fun RuleChoiceRow(label: String, value: String, onClick: () -> Unit) {
     ) {
         Text(label, Modifier.width(96.dp), style = MaterialTheme.typography.bodyLarge)
         Text(value, Modifier.weight(1f), textAlign = TextAlign.End, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Icon(MaterialSymbols.ChevronRight, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

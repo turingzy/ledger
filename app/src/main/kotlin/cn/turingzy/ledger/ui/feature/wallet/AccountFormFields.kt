@@ -1,9 +1,8 @@
 package cn.turingzy.ledger.ui.feature.wallet
 
+import cn.turingzy.ledger.ui.component.MaterialSymbols
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
@@ -31,7 +30,7 @@ internal fun AccountSaveButton(
     val color = MaterialTheme.colorScheme.tertiary
     IconButton(onClick = onClick, enabled = enabled, modifier = modifier) {
         Icon(
-            Icons.Default.Check,
+            MaterialSymbols.Check,
             contentDescription = "保存账户",
             modifier = Modifier.size(24.dp),
             tint = if (enabled) color else color.copy(alpha = 0.38f),

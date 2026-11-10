@@ -18,7 +18,6 @@ fun SummaryHeroBanner(
     background: ImageBitmap? = null,
     settingsEnabled: Boolean = true,
     onUploadBackground: () -> Unit = {},
-    onTransparencyEnabledChange: (Boolean) -> Unit = {},
     onTransparencyChange: (Int) -> Unit = {},
 ) {
     SummaryCard(
@@ -27,7 +26,6 @@ fun SummaryHeroBanner(
         background = background,
         settingsEnabled = settingsEnabled,
         onUploadBackground = onUploadBackground,
-        onTransparencyEnabledChange = onTransparencyEnabledChange,
         onTransparencyChange = onTransparencyChange,
     ) {
         SummaryCardContent(

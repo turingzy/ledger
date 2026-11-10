@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.component.calendar
 
+import cn.turingzy.ledger.ui.component.MaterialSymbols
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -25,10 +26,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -312,7 +309,7 @@ private fun CalendarFooter(
     ) {
         IconButton(onClick = onDismiss, modifier = Modifier.size(40.dp)) {
             Icon(
-                Icons.Default.Close,
+                MaterialSymbols.Close,
                 contentDescription = "关闭日期选择器",
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(20.dp),
@@ -342,7 +339,7 @@ private fun CalendarFooter(
 private fun CalendarArrow(description: String, forward: Boolean, onClick: () -> Unit) {
     IconButton(onClick = onClick, modifier = Modifier.size(40.dp)) {
         Icon(
-            if (forward) Icons.AutoMirrored.Filled.KeyboardArrowRight else Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+            if (forward) MaterialSymbols.ChevronRight else MaterialSymbols.ChevronLeft,
             contentDescription = description,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(20.dp),

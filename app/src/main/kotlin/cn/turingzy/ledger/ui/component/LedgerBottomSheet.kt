@@ -12,9 +12,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -58,7 +55,7 @@ internal fun LedgerBottomSheet(
         Box(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)) {
             IconButton(onClick = onBack ?: onDismissRequest, modifier = Modifier.align(Alignment.CenterStart)) {
                 Icon(
-                    if (onBack != null) Icons.AutoMirrored.Filled.ArrowBack else Icons.Default.Close,
+                    if (onBack != null) MaterialSymbols.ArrowBack else MaterialSymbols.Close,
                     if (onBack != null) "返回" else "关闭$title",
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

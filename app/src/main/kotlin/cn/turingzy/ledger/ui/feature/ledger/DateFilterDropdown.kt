@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.ledger
 
+import cn.turingzy.ledger.ui.component.MaterialSymbols
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -13,9 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -187,7 +185,7 @@ private fun WeekFilterPanel(
                 modifier = Modifier.size(28.dp),
             ) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    imageVector = MaterialSymbols.ArrowBack,
                     contentDescription = "上一周",
                     tint = IosLabel,
                     modifier = Modifier.size(16.dp),
@@ -206,7 +204,7 @@ private fun WeekFilterPanel(
                 modifier = Modifier.size(28.dp),
             ) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                    imageVector = MaterialSymbols.ArrowForward,
                     contentDescription = "下一周",
                     tint = IosLabel,
                     modifier = Modifier.size(16.dp),
@@ -281,7 +279,7 @@ private fun MonthFilterPanel(
                 modifier = Modifier.size(28.dp),
             ) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    imageVector = MaterialSymbols.ArrowBack,
                     contentDescription = "上一年",
                     tint = IosLabel,
                     modifier = Modifier.size(16.dp),
@@ -300,7 +298,7 @@ private fun MonthFilterPanel(
                 modifier = Modifier.size(28.dp),
             ) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                    imageVector = MaterialSymbols.ArrowForward,
                     contentDescription = "下一年",
                     tint = IosLabel,
                     modifier = Modifier.size(16.dp),

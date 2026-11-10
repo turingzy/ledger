@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.analytics
 
+import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.LedgerSegmentedControl
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -16,9 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -218,7 +216,7 @@ private fun PeriodNavigationArrow(
         contentAlignment = Alignment.Center,
     ) {
         Icon(
-            imageVector = if (forward) Icons.AutoMirrored.Filled.ArrowForward else Icons.AutoMirrored.Filled.ArrowBack,
+            imageVector = if (forward) MaterialSymbols.ArrowForward else MaterialSymbols.ArrowBack,
             contentDescription = if (forward) "下一周期" else "上一周期",
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(16.dp),

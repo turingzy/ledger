@@ -1,7 +1,7 @@
 package cn.turingzy.ledger.navigation
 
+import cn.turingzy.ledger.ui.component.MaterialSymbols
 import androidx.compose.ui.graphics.vector.ImageVector
-import cn.turingzy.ledger.ui.component.LedgerIcons
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -26,26 +26,26 @@ enum class TopLevelDestination(
     val route: Route,
 ) {
     LEDGER(
-        selectedIcon = LedgerIcons.LedgerFilled,
-        unselectedIcon = LedgerIcons.LedgerOutline,
+        selectedIcon = MaterialSymbols.BookFilled,
+        unselectedIcon = MaterialSymbols.Book,
         labelText = "账本",
         route = Route.Ledger,
     ),
     ANALYTICS(
-        selectedIcon = LedgerIcons.AnalyticsFilled,
-        unselectedIcon = LedgerIcons.AnalyticsOutline,
+        selectedIcon = MaterialSymbols.BarChartFilled,
+        unselectedIcon = MaterialSymbols.BarChart,
         labelText = "统计",
         route = Route.Analytics,
     ),
     WALLET(
-        selectedIcon = LedgerIcons.WalletFilled,
-        unselectedIcon = LedgerIcons.WalletOutline,
+        selectedIcon = MaterialSymbols.AccountBalanceWalletFilled,
+        unselectedIcon = MaterialSymbols.AccountBalanceWallet,
         labelText = "钱包",
         route = Route.Wallet,
     ),
     SETTINGS(
-        selectedIcon = LedgerIcons.SettingsFilled,
-        unselectedIcon = LedgerIcons.SettingsOutline,
+        selectedIcon = MaterialSymbols.SettingsFilled,
+        unselectedIcon = MaterialSymbols.Settings,
         labelText = "设置",
         route = Route.Settings,
     ),

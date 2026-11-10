@@ -5,11 +5,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.tween
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.MoreHoriz
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.getValue
@@ -53,7 +48,6 @@ fun SummaryCard(
     @DrawableRes defaultBackgroundRes: Int = R.drawable.bg_ledger_card,
     settingsEnabled: Boolean = true,
     onUploadBackground: () -> Unit = {},
-    onTransparencyEnabledChange: (Boolean) -> Unit = {},
     onTransparencyChange: (Int) -> Unit = {},
     content: @Composable BoxScope.() -> Unit,
 ) {
@@ -106,7 +100,6 @@ fun SummaryCard(
                     appearance = previewAppearance,
                     enabled = settingsEnabled,
                     onUploadBackground = onUploadBackground,
-                    onTransparencyEnabledChange = onTransparencyEnabledChange,
                     onTransparencyChange = { previewPercent = it },
                     onTransparencyChangeFinished = { onTransparencyChange(previewPercent.roundToInt()) },
                     modifier = Modifier.fillMaxSize(),
@@ -115,16 +108,11 @@ fun SummaryCard(
                 Box(Modifier.fillMaxSize(), content = content)
             }
         }
-        IconButton(
+        SummaryCardIconButton(
+            imageVector = if (settingsVisible) MaterialSymbols.Close else MaterialSymbols.MoreHoriz,
+            contentDescription = if (settingsVisible) "关闭卡片设置" else "更多卡片设置",
             onClick = { settingsVisible = !settingsVisible },
             modifier = Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 12.dp).size(36.dp),
-        ) {
-            Icon(
-                imageVector = if (settingsVisible) Icons.Default.Close else Icons.Default.MoreHoriz,
-                contentDescription = if (settingsVisible) "关闭卡片设置" else "更多卡片设置",
-                tint = colors.onPrimary,
-                modifier = Modifier.size(24.dp),
-            )
-        }
+        )
     }
 }

@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.settings
 
+import cn.turingzy.ledger.ui.component.MaterialSymbols
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
@@ -7,7 +8,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import kotlinx.coroutines.CancellationException
@@ -28,8 +28,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -269,7 +267,7 @@ private fun ExportDateRow(label: String, date: LocalDate, enabled: Boolean, onCl
     ) {
         Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
         Text(date.format(DateTimeFormatter.ofPattern("yyyy.MM.dd")), color = colors.onSurfaceVariant)
-        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "选择导出日期范围", tint = colors.onSurfaceVariant)
+        Icon(MaterialSymbols.ChevronRight, "选择导出日期范围", tint = colors.onSurfaceVariant)
     }
 }
 
@@ -284,7 +282,7 @@ private fun BillImportRow(label: String, value: String, enabled: Boolean, onClic
     ) {
         Text(label, Modifier.width(88.dp), style = MaterialTheme.typography.bodyLarge)
         Text(value, Modifier.weight(1f), textAlign = TextAlign.End, maxLines = 1, overflow = TextOverflow.Ellipsis, color = colors.onSurfaceVariant)
-        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = colors.onSurfaceVariant)
+        Icon(MaterialSymbols.ChevronRight, null, tint = colors.onSurfaceVariant)
     }
 }
 
@@ -295,7 +293,7 @@ private fun ImportRuleChoice(title: String, selected: Boolean, onClick: () -> Un
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(title, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-        if (selected) Icon(Icons.Default.Check, "已选择", tint = MaterialTheme.colorScheme.tertiary)
+        if (selected) Icon(MaterialSymbols.Check, "已选择", tint = MaterialTheme.colorScheme.tertiary)
     }
 }
 

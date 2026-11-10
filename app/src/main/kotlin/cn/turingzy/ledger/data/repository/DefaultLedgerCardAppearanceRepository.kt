@@ -18,7 +18,6 @@ import cn.turingzy.ledger.util.LedgerDispatchers
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.io.IOException
-import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
@@ -44,18 +43,16 @@ class DefaultLedgerCardAppearanceRepository @Inject constructor(
             val keys = keys(target)
             LedgerCardAppearance(
                 backgroundFile = preferences[keys.background],
-                transparencyEnabled = preferences[keys.enabled] ?: true,
-                transparencyPercent = (preferences[keys.percent] ?: 50).coerceIn(0, 100),
+                transparencyPercent = if (preferences[keys.enabled] == false) 0 else (preferences[keys.percent] ?: 50).coerceIn(0, 100),
             )
         }
 
-    override suspend fun setTransparencyEnabled(enabled: Boolean, target: SummaryCardTarget) {
-        context.ledgerCardStore.edit { it[keys(target).enabled] = enabled }
-    }
-
     override suspend fun setTransparencyPercent(percent: Int, target: SummaryCardTarget) {
         require(percent in 0..100)
-        context.ledgerCardStore.edit { it[keys(target).percent] = percent }
+        context.ledgerCardStore.edit {
+            it[keys(target).percent] = percent
+            it.remove(keys(target).enabled)
+        }
     }
 
     override suspend fun resetBackground(target: SummaryCardTarget): Unit = withContext(ioDispatcher) {
@@ -67,27 +64,51 @@ class DefaultLedgerCardAppearanceRepository @Inject constructor(
         removeBackgroundFile(previous)
     }
 
-    override suspend fun importBackgroundUrl(url: String, target: SummaryCardTarget): Unit = withContext(ioDispatcher) {
-        val download = File.createTempFile("ledger-background-", ".tmp", context.cacheDir)
+    override suspend fun prepareBackground(uri: Uri, target: SummaryCardTarget): String = withContext(ioDispatcher) {
+        val destination = createPreparedBackgroundFile(target)
+        var saved = false
         try {
-            CardBackgroundDownloader().download(url, download)
-            saveBackground(decode(ImageDecoder.createSource(download)), target)
+            val bitmap = decode(ImageDecoder.createSource(context.contentResolver, uri))
+            try {
+                destination.outputStream().use { output ->
+                    check(bitmap.compress(Bitmap.CompressFormat.JPEG, 92, output)) { "Unable to encode background" }
+                }
+            } finally {
+                bitmap.recycle()
+            }
+            saved = true
+            destination.name
         } finally {
-            if (download.exists() && !download.delete()) Timber.w("Unable to remove downloaded background")
+            if (!saved) removeFile(destination)
         }
     }
 
-    override suspend fun importBackground(uri: Uri, target: SummaryCardTarget): Unit = withContext(ioDispatcher) {
-        saveBackground(decode(ImageDecoder.createSource(context.contentResolver, uri)), target)
+    private fun createPreparedBackgroundFile(target: SummaryCardTarget): File {
+        val prefix = when (target) {
+            SummaryCardTarget.LEDGER -> "ledger"
+            SummaryCardTarget.WALLET -> "wallet"
+        }
+        var timestamp = System.currentTimeMillis()
+        while (true) {
+            val candidate = File(context.cacheDir, "$prefix-$timestamp.jpg")
+            if (candidate.createNewFile()) {
+                if (!File(context.filesDir, candidate.name).exists()) return candidate
+                removeFile(candidate)
+            }
+            timestamp++
+        }
     }
 
-    private suspend fun saveBackground(bitmap: Bitmap, target: SummaryCardTarget) {
-        val destination = File(context.filesDir, "ledger-card-${UUID.randomUUID()}.jpg")
+    override suspend fun discardPreparedBackground(filename: String): Unit = withContext(ioDispatcher) {
+        removeFile(File(context.cacheDir, filename))
+    }
+
+    override suspend fun applyPreparedBackground(filename: String, target: SummaryCardTarget): Unit = withContext(ioDispatcher) {
+        val prepared = File(context.cacheDir, filename)
+        val destination = File(context.filesDir, filename)
         var saved = false
         try {
-            destination.outputStream().use { output ->
-                check(bitmap.compress(Bitmap.CompressFormat.JPEG, 92, output)) { "Unable to encode background" }
-            }
+            prepared.copyTo(destination, overwrite = true)
             var previous: String? = null
             context.ledgerCardStore.edit {
                 previous = it[keys(target).background]
@@ -95,10 +116,14 @@ class DefaultLedgerCardAppearanceRepository @Inject constructor(
             }
             saved = true
             removeBackgroundFile(previous)
+            removeFile(prepared)
         } finally {
-            bitmap.recycle()
-            if (!saved && destination.exists() && !destination.delete()) Timber.w("Unable to remove incomplete ledger background")
+            if (!saved) removeFile(destination)
         }
+    }
+
+    private fun removeFile(file: File) {
+        if (file.exists() && !file.delete()) Timber.w("Unable to remove card background: %s", file.name)
     }
 
     private fun removeBackgroundFile(filename: String?) {

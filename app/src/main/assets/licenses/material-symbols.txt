@@ -1,4 +1,4 @@
-Material Symbols Rounded — view_carousel, view_agenda, menu and drag_indicator
+Material Symbols Rounded - interface icons, weight 400, grade 0, optical size 24; outlined and filled variants.
 Source: https://github.com/google/material-design-icons
 Copyright Google LLC
 

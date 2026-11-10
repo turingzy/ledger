@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -14,23 +13,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.IconButton
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.AddPhotoAlternate
-import androidx.compose.material3.Icon
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SliderDefaults
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -45,13 +37,12 @@ internal fun SummaryCardSettings(
     appearance: LedgerCardAppearance,
     enabled: Boolean,
     onUploadBackground: () -> Unit,
-    onTransparencyEnabledChange: (Boolean) -> Unit,
     onTransparencyChange: (Float) -> Unit,
     onTransparencyChangeFinished: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.colorScheme
-    val sliderEnabled = enabled && appearance.transparencyEnabled
+    val sliderEnabled = enabled
     val sliderInteractions = remember { MutableInteractionSource() }
     val sliderColors = SliderDefaults.colors(
         thumbColor = colors.tertiary,
@@ -62,38 +53,8 @@ internal fun SummaryCardSettings(
         disabledInactiveTrackColor = colors.tertiary.copy(alpha = 0.12f),
     )
     Box(modifier) {
-        Column(Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, top = 6.dp)) {
-            Row(Modifier.fillMaxWidth().height(40.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("透明", Modifier.width(52.dp), fontSize = 13.sp, color = colors.onPrimary)
-                Box(Modifier.weight(1f).height(40.dp)) {
-                    Switch(
-                        checked = appearance.transparencyEnabled,
-                        onCheckedChange = onTransparencyEnabledChange,
-                        enabled = enabled,
-                        colors = SwitchDefaults.colors(
-                            checkedTrackColor = colors.tertiary,
-                            checkedThumbColor = colors.onPrimary,
-                            checkedBorderColor = colors.tertiary,
-                        ),
-                        modifier = Modifier.align(Alignment.CenterStart).padding(start = 10.dp)
-                            .scale(0.72f)
-                            .semantics { contentDescription = "透明开关" },
-                    )
-                    IconButton(
-                        onClick = onUploadBackground,
-                        enabled = enabled,
-                        modifier = Modifier.align(Alignment.CenterEnd).padding(end = 38.dp).size(36.dp),
-                    ) {
-                        Icon(
-                            Icons.Outlined.AddPhotoAlternate,
-                            contentDescription = "更换卡片背景",
-                            tint = colors.onPrimary,
-                            modifier = Modifier.size(24.dp),
-                        )
-                    }
-                }
-            }
-            Row(Modifier.fillMaxWidth().height(40.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.fillMaxWidth().align(Alignment.Center).padding(horizontal = 18.dp)) {
+            Row(Modifier.fillMaxWidth().height(48.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text("透明度", Modifier.width(52.dp), fontSize = 13.sp, color = colors.onPrimary)
                 BoxWithConstraints(Modifier.weight(1f).height(40.dp)) {
                     Slider(
@@ -139,5 +100,12 @@ internal fun SummaryCardSettings(
                 }
             }
         }
+        SummaryCardIconButton(
+            imageVector = MaterialSymbols.AddPhotoAlternate,
+            contentDescription = "更换卡片背景",
+            onClick = onUploadBackground,
+            enabled = enabled,
+            modifier = Modifier.align(Alignment.TopStart).padding(top = 8.dp, start = 12.dp).size(36.dp),
+        )
     }
 }

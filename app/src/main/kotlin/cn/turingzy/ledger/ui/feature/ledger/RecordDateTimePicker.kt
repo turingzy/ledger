@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.ledger
 
+import cn.turingzy.ledger.ui.component.MaterialSymbols
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -19,9 +20,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -91,11 +89,11 @@ private fun RecordDateCalendar(selectedDate: LocalDate, onSelect: (LocalDate) ->
     Column {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = { month = month.minusMonths(1) }) {
-                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "上个月")
+                Icon(MaterialSymbols.ChevronLeft, "上个月")
             }
             Text("${month.year}年${month.monthValue}月", Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyLarge)
             IconButton(onClick = { month = month.plusMonths(1) }) {
-                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "下个月")
+                Icon(MaterialSymbols.ChevronRight, "下个月")
             }
         }
         Row(Modifier.fillMaxWidth()) {

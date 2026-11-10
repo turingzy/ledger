@@ -1,12 +1,12 @@
 package cn.turingzy.ledger.ui.feature.wallet
 
+import cn.turingzy.ledger.ui.component.MaterialSymbols
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.runtime.remember
@@ -32,8 +32,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -139,7 +137,7 @@ fun AccountDetailsContent(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onClose) {
-                Icon(Icons.Default.Close, "关闭账户详情", Modifier.size(24.dp), tint = colors.onSurfaceVariant)
+                Icon(MaterialSymbols.Close, "关闭账户详情", Modifier.size(24.dp), tint = colors.onSurfaceVariant)
             }
             Text("账户详情", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
             AccountSaveButton(
@@ -346,7 +344,7 @@ private fun <T> AccountInlineChoice(
                 style = MaterialTheme.typography.bodyMedium,
                 color = colors.onSurface,
             )
-            Icon(Icons.Default.KeyboardArrowDown, null, Modifier.size(16.dp), tint = colors.onSurfaceVariant)
+            Icon(MaterialSymbols.ExpandMore, null, Modifier.size(16.dp), tint = colors.onSurfaceVariant)
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             options.forEach { option ->

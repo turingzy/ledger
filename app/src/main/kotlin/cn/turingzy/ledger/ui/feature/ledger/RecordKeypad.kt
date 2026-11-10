@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.ledger
 
+import cn.turingzy.ledger.ui.component.MaterialSymbols
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -15,8 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -96,7 +95,7 @@ fun BuiltInKeypad(
                     KeypadButton(text = ".", onClick = onDotClick, modifier = Modifier.weight(1f).height(keyHeight))
                     KeypadButton(text = "0", onClick = { onNumberClick("0") }, modifier = Modifier.weight(1f).height(keyHeight))
                     KeypadIconButton(
-                        icon = Icons.AutoMirrored.Filled.Backspace,
+                        icon = MaterialSymbols.Backspace,
                         onClick = onBackspaceClick,
                         modifier = Modifier.weight(1f).height(keyHeight),
                     )
