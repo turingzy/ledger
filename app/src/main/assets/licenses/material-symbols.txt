@@ -1,4 +1,4 @@
-Material Symbols Rounded — view_carousel and view_agenda
+Material Symbols Rounded — view_carousel, view_agenda, menu and drag_indicator
 Source: https://github.com/google/material-design-icons
 Copyright Google LLC
 

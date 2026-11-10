@@ -1,6 +1,11 @@
 package cn.turingzy.ledger.ui.feature.analytics
 
 import app.cash.turbine.test
+import cn.turingzy.ledger.data.repository.AnalyticsCardSettingsRepository
+import cn.turingzy.ledger.model.AnalyticsCardSettings
+import cn.turingzy.ledger.model.AnalyticsCard
+import io.mockk.every
+import kotlinx.coroutines.flow.MutableStateFlow
 import cn.turingzy.ledger.data.repository.TransactionRepository
 import cn.turingzy.ledger.model.Account
 import cn.turingzy.ledger.model.AccountType
@@ -33,12 +38,15 @@ import java.time.ZoneId
 class AnalyticsViewModelTest {
 
     private val transactionRepository: TransactionRepository = mockk(relaxed = true)
+    private val settings = MutableStateFlow(AnalyticsCardSettings())
+    private val cardSettingsRepository: AnalyticsCardSettingsRepository = mockk(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var viewModel: AnalyticsViewModel
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
+        every { cardSettingsRepository.settings } returns settings
     }
 
     @After
@@ -115,7 +123,7 @@ class AnalyticsViewModelTest {
             )
         } returns flowOf(listOf(testTx1, testTx2))
 
-        viewModel = AnalyticsViewModel(transactionRepository)
+        viewModel = AnalyticsViewModel(transactionRepository, cardSettingsRepository)
 
         viewModel.uiState.test {
             assertEquals(AnalyticsUiState.Loading, awaitItem())
@@ -150,7 +158,7 @@ class AnalyticsViewModelTest {
             emptyList()
         )
 
-        viewModel = AnalyticsViewModel(transactionRepository)
+        viewModel = AnalyticsViewModel(transactionRepository, cardSettingsRepository)
 
         viewModel.uiState.test {
             assertEquals(AnalyticsUiState.Loading, awaitItem())
@@ -178,7 +186,7 @@ class AnalyticsViewModelTest {
             emptyList()
         )
 
-        viewModel = AnalyticsViewModel(transactionRepository)
+        viewModel = AnalyticsViewModel(transactionRepository, cardSettingsRepository)
 
         viewModel.uiState.test {
             assertEquals(AnalyticsUiState.Loading, awaitItem())
@@ -205,7 +213,7 @@ class AnalyticsViewModelTest {
         coEvery { transactionRepository.getTransactionsBetween(any(), any()) } returns flowOf(
             emptyList()
         )
-        viewModel = AnalyticsViewModel(transactionRepository)
+        viewModel = AnalyticsViewModel(transactionRepository, cardSettingsRepository)
         val zone = ZoneId.systemDefault()
         val cases = listOf(
             Triple(AnalyticsTimeScope.WEEK, LocalDate.of(2020, 12, 31), LocalDate.of(2020, 12, 28)),
@@ -268,7 +276,7 @@ class AnalyticsViewModelTest {
     fun selectRange_queriesExactBoundariesAndScopeChangeRestoresCalendarPeriod() = runTest {
         coEvery { transactionRepository.getAmountSum(any(), any(), any()) } returns flowOf(0L)
         coEvery { transactionRepository.getTransactionsBetween(any(), any()) } returns flowOf(emptyList())
-        viewModel = AnalyticsViewModel(transactionRepository)
+        viewModel = AnalyticsViewModel(transactionRepository, cardSettingsRepository)
         val start = LocalDate.of(2024, 2, 27)
         val end = LocalDate.of(2024, 3, 4)
         val zone = ZoneId.systemDefault()
@@ -305,7 +313,7 @@ class AnalyticsViewModelTest {
     fun confirmedCalendarMonth_navigatesByMonthAcrossLeapDay() = runTest {
         coEvery { transactionRepository.getAmountSum(any(), any(), any()) } returns flowOf(0L)
         coEvery { transactionRepository.getTransactionsBetween(any(), any()) } returns flowOf(emptyList())
-        viewModel = AnalyticsViewModel(transactionRepository)
+        viewModel = AnalyticsViewModel(transactionRepository, cardSettingsRepository)
 
         viewModel.uiState.test {
             awaitItem()
@@ -331,7 +339,7 @@ class AnalyticsViewModelTest {
     fun threeMonthScope_navigatesWholeMonthsAcrossYearBoundary() = runTest {
         coEvery { transactionRepository.getAmountSum(any(), any(), any()) } returns flowOf(0L)
         coEvery { transactionRepository.getTransactionsBetween(any(), any()) } returns flowOf(emptyList())
-        viewModel = AnalyticsViewModel(transactionRepository)
+        viewModel = AnalyticsViewModel(transactionRepository, cardSettingsRepository)
 
         viewModel.uiState.test {
             awaitItem()
@@ -352,6 +360,98 @@ class AnalyticsViewModelTest {
             val previous = awaitItem() as AnalyticsUiState.Success
             assertEquals(selected.periodStart, previous.periodStart)
             assertEquals(selected.periodEnd, previous.periodEnd)
+        }
+    }
+
+    @Test
+    fun comparisonQueriesPreviousMonthAndUpdatesWithSelectedRange() = runTest {
+        val zone = ZoneId.systemDefault()
+        val januaryStart = LocalDate.of(2024, 1, 1).atStartOfDay(zone).toInstant().toEpochMilli()
+        val januaryEnd = LocalDate.of(2024, 2, 1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
+        val februaryStart = LocalDate.of(2024, 2, 1).atStartOfDay(zone).toInstant().toEpochMilli()
+        val februaryEnd = LocalDate.of(2024, 3, 1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
+        coEvery { transactionRepository.getAmountSum(any(), any(), any()) } returns flowOf(0L)
+        coEvery { transactionRepository.getAmountSum(TransactionType.INCOME, januaryStart, januaryEnd) } returns flowOf(20000L)
+        coEvery { transactionRepository.getAmountSum(TransactionType.EXPENSE, januaryStart, januaryEnd) } returns flowOf(12000L)
+        coEvery { transactionRepository.getAmountSum(TransactionType.INCOME, februaryStart, februaryEnd) } returns flowOf(30000L)
+        coEvery { transactionRepository.getAmountSum(TransactionType.EXPENSE, februaryStart, februaryEnd) } returns flowOf(10000L)
+        coEvery { transactionRepository.getTransactionsBetween(any(), any()) } returns flowOf(emptyList())
+        viewModel = AnalyticsViewModel(transactionRepository, cardSettingsRepository)
+        viewModel.uiState.test {
+            awaitItem()
+            testDispatcher.scheduler.advanceUntilIdle()
+            awaitItem()
+            viewModel.selectRange(LocalDate.of(2024, 2, 1), LocalDate.of(2024, 2, 29))
+            testDispatcher.scheduler.advanceUntilIdle()
+            val february = awaitItem() as AnalyticsUiState.Success
+            val comparison = checkNotNull(february.comparison)
+            assertEquals(LocalDate.of(2024, 1, 1), comparison.periodStart)
+            assertEquals(LocalDate.of(2024, 1, 31), comparison.periodEnd)
+            assertEquals(20000L, comparison.totalIncome)
+            assertEquals(12000L, comparison.totalExpense)
+            assertEquals(8000L, comparison.balance)
+            assertEquals(30000L, february.totalIncome)
+            assertEquals(10000L, february.totalExpense)
+            viewModel.navigatePeriod(1)
+            testDispatcher.scheduler.advanceUntilIdle()
+            val march = awaitItem() as AnalyticsUiState.Success
+            val previous = checkNotNull(march.comparison)
+            assertEquals(LocalDate.of(2024, 2, 1), previous.periodStart)
+            assertEquals(LocalDate.of(2024, 2, 29), previous.periodEnd)
+            assertEquals(30000L, previous.totalIncome)
+            assertEquals(10000L, previous.totalExpense)
+        }
+    }
+
+    @Test
+    fun cardSettingsPersistVisibilityAndOrderWithoutReloadingStatistics() = runTest {
+        coEvery { transactionRepository.getAmountSum(any(), any(), any()) } returns flowOf(0L)
+        coEvery { transactionRepository.getTransactionsBetween(any(), any()) } returns flowOf(emptyList())
+        coEvery { cardSettingsRepository.setEnabled(any(), any()) } coAnswers {
+            settings.value = settings.value.withEnabled(firstArg(), secondArg())
+        }
+        coEvery { cardSettingsRepository.setOrder(any()) } coAnswers {
+            settings.value = settings.value.withOrder(firstArg())
+        }
+        viewModel = AnalyticsViewModel(transactionRepository, cardSettingsRepository)
+        viewModel.uiState.test {
+            awaitItem()
+            testDispatcher.scheduler.advanceUntilIdle()
+            awaitItem()
+            viewModel.setCardEnabled(AnalyticsCard.TREND, false)
+            testDispatcher.scheduler.advanceUntilIdle()
+            val disabled = awaitItem() as AnalyticsUiState.Success
+            assertTrue(AnalyticsCard.TREND !in disabled.cardSettings.enabledCards)
+            val order = listOf(AnalyticsCard.CATEGORIES, AnalyticsCard.COMPARISON, AnalyticsCard.TREND)
+            viewModel.setCardOrder(order)
+            testDispatcher.scheduler.advanceUntilIdle()
+            assertEquals(order, (awaitItem() as AnalyticsUiState.Success).cardSettings.order)
+            viewModel.setCardEnabled(AnalyticsCard.TREND, true)
+            testDispatcher.scheduler.advanceUntilIdle()
+            assertEquals(order, (awaitItem() as AnalyticsUiState.Success).cardSettings.enabledCards)
+            coVerify(exactly = 1) { transactionRepository.getTransactionsBetween(any(), any()) }
+            coVerify { cardSettingsRepository.setOrder(order) }
+        }
+    }
+
+    @Test
+    fun cardSettingsSaveFailureKeepsStoredSettingsAndReportsError() = runTest {
+        coEvery { transactionRepository.getAmountSum(any(), any(), any()) } returns flowOf(0L)
+        coEvery { transactionRepository.getTransactionsBetween(any(), any()) } returns flowOf(emptyList())
+        coEvery { cardSettingsRepository.setEnabled(any(), any()) } throws java.io.IOException("Test write failure")
+        viewModel = AnalyticsViewModel(transactionRepository, cardSettingsRepository)
+        viewModel.uiState.test {
+            awaitItem()
+            testDispatcher.scheduler.advanceUntilIdle()
+            awaitItem()
+            viewModel.setCardEnabled(AnalyticsCard.TREND, false)
+            testDispatcher.scheduler.advanceUntilIdle()
+            val failed = awaitItem() as AnalyticsUiState.Success
+            assertTrue(AnalyticsCard.TREND in failed.cardSettings.enabledCards)
+            assertEquals("卡片设置保存失败，请重试", failed.cardSettingsError)
+            viewModel.dismissCardSettingsError()
+            testDispatcher.scheduler.advanceUntilIdle()
+            assertEquals(null, (awaitItem() as AnalyticsUiState.Success).cardSettingsError)
         }
     }
 

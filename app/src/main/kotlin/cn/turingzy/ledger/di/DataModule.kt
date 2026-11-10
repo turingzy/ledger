@@ -16,6 +16,8 @@ import cn.turingzy.ledger.data.repository.ParseRuleRepository
 import cn.turingzy.ledger.data.repository.TransactionRepository
 import cn.turingzy.ledger.data.repository.DefaultLedgerCardAppearanceRepository
 import cn.turingzy.ledger.data.repository.LedgerCardAppearanceRepository
+import cn.turingzy.ledger.data.repository.AnalyticsCardSettingsRepository
+import cn.turingzy.ledger.data.repository.DefaultAnalyticsCardSettingsRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -25,6 +27,13 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 interface DataModule {
+
+    @Binds
+    @Singleton
+    fun bindsAnalyticsCardSettingsRepository(
+        impl: DefaultAnalyticsCardSettingsRepository,
+    ): AnalyticsCardSettingsRepository
+
 
     @Binds
     @Singleton

@@ -10,6 +10,8 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import cn.turingzy.ledger.model.CategoryType
 import java.time.LocalDate
+import androidx.compose.ui.unit.dp
+import org.junit.Assert.assertTrue
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -41,7 +43,7 @@ class AnalyticsInteractionTest {
     )
 
     @Test
-    fun expandingDetailsKeepsViewportHeightAndAllowsScrollingToLastEntry() {
+    fun expandingDetailsGrowsToHeightCapAndAllowsScrollingToLastEntry() {
         compose.setContent { MaterialTheme { CategoryBreakdownCard(sample(), {}) } }
         val list = compose.onNodeWithContentDescription("分类列表")
         val initialBounds = list.getUnclippedBoundsInRoot()
@@ -49,7 +51,8 @@ class AnalyticsInteractionTest {
         compose.onNodeWithText("测试工资（100.0%）").performClick()
         compose.waitForIdle()
         val expandedBounds = list.getUnclippedBoundsInRoot()
-        assertEquals(before, expandedBounds.bottom - expandedBounds.top)
+        assertTrue(before < 240.dp)
+        assertEquals(240.dp, expandedBounds.bottom - expandedBounds.top)
         list.performScrollToNode(hasText("测试账户19"))
         compose.onNodeWithText("测试账户19").assertExists()
     }

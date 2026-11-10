@@ -274,7 +274,7 @@ internal fun CategoryBreakdownCard(
             )
         }
         if (uiState.rankings.isEmpty()) {
-            Box(Modifier.fillMaxWidth().height(180.dp), contentAlignment = Alignment.Center) {
+            Box(Modifier.fillMaxWidth().padding(vertical = 20.dp), contentAlignment = Alignment.Center) {
                 Text(
                     "这个周期暂无分类记录",
                     color = colors.onSurfaceVariant
@@ -333,7 +333,7 @@ internal fun CategoryBreakdownCard(
                 }
             }
             LazyColumn(
-                modifier = Modifier.fillMaxWidth().height(240.dp).semantics { contentDescription = "分类列表" },
+                modifier = Modifier.fillMaxWidth().heightIn(max = 240.dp).semantics { contentDescription = "分类列表" },
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 uiState.rankings.forEachIndexed { index, ranking ->
@@ -430,7 +430,7 @@ private fun percent(ratio: Float): String =
     String.format(Locale.getDefault(), "%.1f%%", ratio * 100)
 
 @Composable
-private fun AnalyticsChartCard(
+internal fun AnalyticsChartCard(
     modifier: Modifier = Modifier,
     contentSpacing: Dp = 16.dp,
     content: @Composable ColumnScope.() -> Unit

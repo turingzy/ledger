@@ -28,6 +28,7 @@ internal fun CalendarRangeSelector(
     expanded: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    label: String = selection.displayRange(),
 ) {
     Row(
         modifier = modifier
@@ -39,7 +40,7 @@ internal fun CalendarRangeSelector(
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         Text(
-            text = selection.displayRange(),
+            text = label,
             modifier = Modifier.weight(1f, fill = false),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

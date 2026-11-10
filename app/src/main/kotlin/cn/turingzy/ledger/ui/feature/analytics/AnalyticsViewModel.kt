@@ -2,11 +2,17 @@ package cn.turingzy.ledger.ui.feature.analytics
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import cn.turingzy.ledger.data.repository.AnalyticsCardSettingsRepository
+import cn.turingzy.ledger.model.AnalyticsCard
+import cn.turingzy.ledger.model.AnalyticsCardSettings
 import cn.turingzy.ledger.data.repository.TransactionRepository
 import cn.turingzy.ledger.model.CategoryType
 import cn.turingzy.ledger.model.TransactionDetail
 import cn.turingzy.ledger.model.TransactionType
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
+import timber.log.Timber
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -26,13 +32,16 @@ import javax.inject.Inject
 @HiltViewModel
 class AnalyticsViewModel @Inject constructor(
     private val transactionRepository: TransactionRepository,
+    private val cardSettingsRepository: AnalyticsCardSettingsRepository,
 ) : ViewModel() {
 
     private val period =
         MutableStateFlow(AnalyticsPeriod(AnalyticsTimeScope.MONTH, LocalDate.now()))
     private val categoryType = MutableStateFlow(CategoryType.EXPENSE)
 
-    val uiState: StateFlow<AnalyticsUiState> = combine(
+    private val cardSettingsError = MutableStateFlow<String?>(null)
+
+    private val analyticsState = combine(
         period,
         categoryType,
     ) { selectedPeriod, catType ->
@@ -44,30 +53,69 @@ class AnalyticsViewModel @Inject constructor(
         val startEpoch = selection.start.atStartOfDay(zone).toInstant().toEpochMilli()
         val endEpoch = selection.end.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
 
+        val previousRange = previousAnalyticsRange(selection.start, selection.end)
+        val previousStart = previousRange.start.atStartOfDay(zone).toInstant().toEpochMilli()
+        val previousEnd = previousRange.end.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
         combine(
             transactionRepository.getAmountSum(TransactionType.EXPENSE, startEpoch, endEpoch),
             transactionRepository.getAmountSum(TransactionType.INCOME, startEpoch, endEpoch),
             transactionRepository.getTransactionsBetween(startEpoch, endEpoch),
-        ) { totalExpense, totalIncome, transactions ->
+            transactionRepository.getAmountSum(TransactionType.EXPENSE, previousStart, previousEnd),
+            transactionRepository.getAmountSum(TransactionType.INCOME, previousStart, previousEnd),
+        ) { totalExpense, totalIncome, transactions, previousExpense, previousIncome ->
             val rankings = calculateCategoryRankings(transactions, catType)
             AnalyticsUiState.Success(
                 timeScope = scope,
                 categoryType = catType,
-                periodDisplay = selection.displayRange(),
+                periodDisplay = selection.analyticsDisplayRange(),
                 totalExpense = totalExpense,
                 totalIncome = totalIncome,
                 balance = totalIncome - totalExpense,
                 rankings = rankings,
                 periodStart = selection.start,
                 periodEnd = selection.end,
+                comparison = AnalyticsComparison(previousRange.start, previousRange.end, previousExpense, previousIncome),
                 trendPoints = buildAnalyticsTrend(transactions, scope, selection.start, zone, selection.end),
             )
         }
+    }
+
+    val uiState: StateFlow<AnalyticsUiState> = combine<AnalyticsUiState.Success, AnalyticsCardSettings, String?, AnalyticsUiState>(
+        analyticsState,
+        cardSettingsRepository.settings,
+        cardSettingsError,
+    ) { state, settings, error ->
+        state.copy(cardSettings = settings, cardSettingsError = error)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = AnalyticsUiState.Loading,
     )
+
+    fun setCardEnabled(card: AnalyticsCard, enabled: Boolean) {
+        updateCardSettings { cardSettingsRepository.setEnabled(card, enabled) }
+    }
+
+    fun setCardOrder(order: List<AnalyticsCard>) {
+        updateCardSettings { cardSettingsRepository.setOrder(order) }
+    }
+
+    fun dismissCardSettingsError() {
+        cardSettingsError.value = null
+    }
+
+    private fun updateCardSettings(update: suspend () -> Unit) {
+        viewModelScope.launch {
+            try {
+                update()
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                Timber.e(error, "Unable to save analytics card settings")
+                cardSettingsError.value = "卡片设置保存失败，请重试"
+            }
+        }
+    }
 
     fun setTimeScope(scope: AnalyticsTimeScope) {
         if (period.value.scope == scope && period.value.customSelection == null) return
