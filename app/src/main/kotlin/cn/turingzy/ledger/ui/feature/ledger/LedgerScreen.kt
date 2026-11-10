@@ -181,8 +181,8 @@ fun LedgerScreen(
             categories = categories,
             accounts = accounts,
             onDismissRequest = onRecordSheetDismiss,
-            onConfirm = { type, amount, accountId, toAccountId, categoryId, note ->
-                viewModel.createTransaction(type, amount, accountId, toAccountId, categoryId, note)
+            onConfirm = { type, amount, accountId, toAccountId, categoryId, note, transactionTime ->
+                viewModel.createTransaction(type, amount, accountId, toAccountId, categoryId, note, transactionTime)
                 scope.launch { recordSheetState.hide() }.invokeOnCompletion {
                     if (!recordSheetState.isVisible) {
                         onRecordSheetDismiss()

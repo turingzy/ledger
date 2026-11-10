@@ -114,6 +114,7 @@ class LedgerViewModelTest {
             accountId = 1L,
             categoryId = 2L,
             note = "Coffee",
+            transactionTime = 1_700_000_000_000L,
         )
 
         testDispatcher.scheduler.advanceUntilIdle()
@@ -125,7 +126,8 @@ class LedgerViewModelTest {
                         it.amount == 3500L &&
                         it.accountId == 1L &&
                         it.categoryId == 2L &&
-                        it.note == "Coffee"
+                        it.note == "Coffee" &&
+                        it.transactionTime == 1_700_000_000_000L
                 },
             )
         }
