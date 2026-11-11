@@ -20,32 +20,27 @@ sealed interface Route {
 }
 
 enum class TopLevelDestination(
-    val selectedIcon: ImageVector,
-    val unselectedIcon: ImageVector,
+    val icon: ImageVector,
     val labelText: String,
     val route: Route,
 ) {
     LEDGER(
-        selectedIcon = MaterialSymbols.BookFilled,
-        unselectedIcon = MaterialSymbols.Book,
+        icon = MaterialSymbols.Book,
         labelText = "账本",
         route = Route.Ledger,
     ),
     ANALYTICS(
-        selectedIcon = MaterialSymbols.BarChartFilled,
-        unselectedIcon = MaterialSymbols.BarChart,
+        icon = MaterialSymbols.BarChart,
         labelText = "统计",
         route = Route.Analytics,
     ),
     WALLET(
-        selectedIcon = MaterialSymbols.AccountBalanceWalletFilled,
-        unselectedIcon = MaterialSymbols.AccountBalanceWallet,
+        icon = MaterialSymbols.Wallet,
         labelText = "钱包",
         route = Route.Wallet,
     ),
     SETTINGS(
-        selectedIcon = MaterialSymbols.SettingsFilled,
-        unselectedIcon = MaterialSymbols.Settings,
+        icon = MaterialSymbols.Settings,
         labelText = "设置",
         route = Route.Settings,
     ),

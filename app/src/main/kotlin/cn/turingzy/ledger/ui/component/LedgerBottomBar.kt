@@ -1,16 +1,13 @@
 package cn.turingzy.ledger.ui.component
 
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.ui.semantics.Role
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,7 +15,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -28,18 +27,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.navigation.TopLevelDestination
 
-/**
- * 底部沉浸式贴边导航栏。
- *
- * 整体紧贴手机屏幕最底部，左右及底边与物理边框无缝衔接；
- * 上边缘采用平直直线收边与浅色细线分割，呼应手机底部自带圆角的物理特性；
- * 去除多余背景框，纯净呈现 Material Symbols (Weight 200, Grade 0, Optical Size 24px) 图标。
- */
 @Composable
 fun LedgerBottomBar(
     destinations: List<TopLevelDestination>,
@@ -47,69 +39,71 @@ fun LedgerBottomBar(
     onNavigateToDestination: (TopLevelDestination) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val colors = MaterialTheme.colorScheme
     Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RectangleShape,
-        color = MaterialTheme.colorScheme.surface,
+        modifier = modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        shape = CircleShape,
+        color = colors.surface,
+        shadowElevation = 2.dp,
+        border = BorderStroke(
+            width = 0.5.dp,
+            color = colors.outlineVariant.copy(alpha = colors.outlineVariant.alpha * 0.5f),
+        ),
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+                .selectableGroup()
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            HorizontalDivider(
-                thickness = 0.5.dp,
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f),
-            )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .height(56.dp)
-                    .selectableGroup()
-                    .padding(horizontal = 8.dp),
-                horizontalArrangement = Arrangement.SpaceAround,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                destinations.forEach { destination ->
-                    val selected = destination == currentDestination
-                    val interactionSource = remember { MutableInteractionSource() }
-                    val isPressed by interactionSource.collectIsPressedAsState()
+            destinations.forEach { destination ->
+                val selected = destination == currentDestination
+                val interactionSource = remember(destination) { MutableInteractionSource() }
+                val pressed by interactionSource.collectIsPressedAsState()
+                val pressAlpha by animateFloatAsState(
+                    targetValue = if (pressed) 0.05f else 0f,
+                    animationSpec = tween(durationMillis = if (pressed) 70 else 140),
+                    label = "TabPressAlpha",
+                )
 
-                    // 点击交互中或当前激活状态均采用 Fill 形式
-                    val isFilled = selected || isPressed
+                val iconTint by animateColorAsState(
+                    targetValue = if (selected) {
+                        colors.onSurface
+                    } else {
+                        colors.onSurfaceVariant.copy(alpha = 0.60f)
+                    },
+                    animationSpec = tween(durationMillis = 120),
+                    label = "TabIconTint",
+                )
 
-                    val iconTint by animateColorAsState(
-                        targetValue = if (selected) {
-                            MaterialTheme.colorScheme.onSurface
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.60f)
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clip(CircleShape)
+                        .drawBehind { drawRect(colors.onSurface.copy(alpha = pressAlpha)) }
+                        .selectable(
+                            selected = selected,
+                            role = Role.Tab,
+                            interactionSource = interactionSource,
+                            indication = null,
+                        ) {
+                            if (!selected) onNavigateToDestination(destination)
                         },
-                        animationSpec = tween(durationMillis = 200),
-                        label = "TabIconTint",
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = destination.icon,
+                        contentDescription = destination.labelText,
+                        tint = iconTint,
+                        modifier = Modifier.size(32.dp),
                     )
-
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .clip(RoundedCornerShape(20.dp))
-                            .selectable(
-                                selected = selected,
-                                role = Role.Tab,
-                                interactionSource = interactionSource,
-                                indication = LocalIndication.current,
-                            ) {
-                                if (!selected) onNavigateToDestination(destination)
-                            },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            imageVector = if (isFilled) destination.selectedIcon else destination.unselectedIcon,
-                            contentDescription = destination.labelText,
-                            tint = iconTint,
-                            modifier = Modifier
-                                .size(28.dp),
-                        )
-                    }
                 }
             }
         }

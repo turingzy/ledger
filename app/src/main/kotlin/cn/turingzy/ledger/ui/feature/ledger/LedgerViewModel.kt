@@ -12,13 +12,17 @@ import cn.turingzy.ledger.model.CategoryWithIcon
 import cn.turingzy.ledger.model.Transaction
 import cn.turingzy.ledger.model.TransactionDetail
 import cn.turingzy.ledger.model.TransactionType
+import cn.turingzy.ledger.util.Dispatcher
+import cn.turingzy.ledger.util.LedgerDispatchers
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
@@ -55,6 +59,7 @@ class LedgerViewModel @Inject constructor(
     private val transactionRepository: TransactionRepository,
     categoryRepository: CategoryRepository,
     accountRepository: AccountRepository,
+    @param:Dispatcher(LedgerDispatchers.Default) private val defaultDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
 
     private val dateFilter = MutableStateFlow<LedgerDateFilter>(LedgerDateFilter.Month(YearMonth.now()))
@@ -130,7 +135,7 @@ class LedgerViewModel @Inject constructor(
                 filterEndDate = calc.endDate,
             )
         }
-    }.stateIn(
+    }.flowOn(defaultDispatcher).stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = LedgerUiState.Loading,

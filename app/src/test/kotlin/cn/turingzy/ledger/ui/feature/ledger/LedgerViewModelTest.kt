@@ -19,6 +19,8 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -33,6 +35,7 @@ import java.time.LocalDate
 import java.time.DayOfWeek
 import java.time.YearMonth
 import java.time.ZoneId
+import kotlin.coroutines.ContinuationInterceptor
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LedgerViewModelTest {
@@ -51,6 +54,27 @@ class LedgerViewModelTest {
     @After
     fun tearDown() {
         Dispatchers.resetMain()
+    }
+
+    @Test
+    fun ledgerDataIsCollectedOnTheInjectedWorkerDispatcher() = runTest {
+        val worker = StandardTestDispatcher(testScheduler, name = "ledger-worker")
+        var collectionDispatcher: ContinuationInterceptor? = null
+        coEvery { categoryRepository.getCategoriesStream() } returns flowOf(emptyList())
+        coEvery { accountRepository.getAccountsStream() } returns flowOf(emptyList())
+        coEvery { transactionRepository.getAmountSum(any(), any(), any()) } returns flowOf(0L)
+        coEvery { transactionRepository.getTransactionsBetween(any(), any()) } returns flow {
+            collectionDispatcher = currentCoroutineContext()[ContinuationInterceptor]
+            emit(emptyList())
+        }
+        viewModel = LedgerViewModel(transactionRepository, categoryRepository, accountRepository, worker)
+
+        viewModel.uiState.test {
+            assertEquals(LedgerUiState.Loading, awaitItem())
+            testScheduler.advanceUntilIdle()
+            assertTrue(awaitItem() is LedgerUiState.Success)
+            assertEquals(worker, collectionDispatcher)
+        }
     }
 
     @Test
@@ -82,6 +106,7 @@ class LedgerViewModelTest {
             transactionRepository = transactionRepository,
             categoryRepository = categoryRepository,
             accountRepository = accountRepository,
+            defaultDispatcher = testDispatcher,
         )
 
         viewModel.uiState.test {
@@ -118,6 +143,7 @@ class LedgerViewModelTest {
             transactionRepository = transactionRepository,
             categoryRepository = categoryRepository,
             accountRepository = accountRepository,
+            defaultDispatcher = testDispatcher,
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -157,6 +183,7 @@ class LedgerViewModelTest {
             transactionRepository = transactionRepository,
             categoryRepository = categoryRepository,
             accountRepository = accountRepository,
+            defaultDispatcher = testDispatcher,
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -174,7 +201,7 @@ class LedgerViewModelTest {
         coEvery { accountRepository.getAccountsStream() } returns flowOf(emptyList())
         coEvery { transactionRepository.getAmountSum(any(), any(), any()) } returns flowOf(0L)
         coEvery { transactionRepository.getTransactionsBetween(any(), any()) } returns flowOf(emptyList())
-        viewModel = LedgerViewModel(transactionRepository, categoryRepository, accountRepository)
+        viewModel = LedgerViewModel(transactionRepository, categoryRepository, accountRepository, testDispatcher)
         val cases = listOf(
             Triple(DateFilterType.WEEK, LocalDate.of(2021, 1, 1), LocalDate.of(2020, 12, 28) to LocalDate.of(2021, 1, 3)),
             Triple(DateFilterType.MONTH, LocalDate.of(2024, 2, 29), LocalDate.of(2024, 2, 1) to LocalDate.of(2024, 2, 29)),

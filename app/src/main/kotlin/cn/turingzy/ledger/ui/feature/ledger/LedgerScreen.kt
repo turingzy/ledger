@@ -284,7 +284,6 @@ fun LedgerContent(
                                     .height(44.dp),
                                 contentAlignment = Alignment.CenterEnd,
                             ) {
-                                // 默认顶栏: 大标题“账本” + 日期选择器 + 搜索图标按钮
                                 androidx.compose.animation.AnimatedVisibility(
                                     visible = !isSearchActive,
                                     enter = fadeIn(tween(durationMillis = 280, delayMillis = 60)),
@@ -295,51 +294,56 @@ fun LedgerContent(
                                         modifier = Modifier.fillMaxWidth(),
                                         contentAlignment = Alignment.Center,
                                     ) {
-                                        Text(
-                                            text = "账本",
-                                            fontSize = 28.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onSurface,
-                                            letterSpacing = (-0.6).sp,
-                                            modifier = Modifier.align(Alignment.CenterStart),
-                                        )
                                         Row(
-                                            modifier = Modifier.fillMaxWidth().padding(horizontal = 64.dp),
-                                            horizontalArrangement = Arrangement.Center,
-                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.fillMaxWidth().padding(end = 44.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp),
                                         ) {
                                             Text(
-                                                text = uiState.monthDisplay,
-                                                modifier = Modifier.weight(1f, fill = false)
-                                                    .semantics { contentDescription = "选择账本日期" }
-                                                    .clickable(
-                                                        interactionSource = remember { MutableInteractionSource() },
-                                                        indication = null,
-                                                    ) { showPeriodPicker = true }.padding(vertical = 8.dp),
-                                                fontSize = 17.sp,
-                                                fontWeight = FontWeight.Medium,
+                                                text = "账本",
+                                                fontSize = 28.sp,
+                                                fontWeight = FontWeight.Bold,
                                                 color = MaterialTheme.colorScheme.onSurface,
-                                                maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                                letterSpacing = (-0.6).sp,
+                                                modifier = Modifier.alignByBaseline(),
                                             )
-                                            val periodDate = uiState.filterStartDate
-                                                ?: LocalDate.of(uiState.year, uiState.month, 1)
-                                            if (uiState.filterType != DateFilterType.RANGE &&
-                                                periodStart(uiState.filterType, periodDate) !=
-                                                periodStart(uiState.filterType, LocalDate.now())
+                                            Row(
+                                                modifier = Modifier.weight(1f).alignByBaseline(),
+                                                horizontalArrangement = Arrangement.Start,
+                                                verticalAlignment = Alignment.CenterVertically,
                                             ) {
-                                                Row(
-                                                    modifier = Modifier.padding(start = 8.dp).clickable(
-                                                        interactionSource = remember { MutableInteractionSource() },
-                                                        indication = null,
-                                                    ) { onSelectPeriod(uiState.filterType, LocalDate.now()) }
-                                                        .padding(vertical = 8.dp),
-                                                    verticalAlignment = Alignment.CenterVertically,
-                                                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+                                                Text(
+                                                    text = uiState.monthDisplay,
+                                                    modifier = Modifier.weight(1f, fill = false).alignByBaseline()
+                                                        .semantics { contentDescription = "选择账本日期" }
+                                                        .clickable(
+                                                            interactionSource = remember { MutableInteractionSource() },
+                                                            indication = null,
+                                                        ) { showPeriodPicker = true }.padding(vertical = 8.dp),
+                                                    fontSize = 17.sp,
+                                                    fontWeight = FontWeight.Medium,
+                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                                )
+                                                val periodDate = uiState.filterStartDate
+                                                    ?: LocalDate.of(uiState.year, uiState.month, 1)
+                                                if (uiState.filterType != DateFilterType.RANGE &&
+                                                    periodStart(uiState.filterType, periodDate) !=
+                                                    periodStart(uiState.filterType, LocalDate.now())
                                                 ) {
-                                                    Icon(MaterialSymbols.Undo, null, Modifier.size(14.dp),
-                                                        tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                                                    Text(uiState.filterType.currentPeriodLabel, fontSize = 12.sp,
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                    Row(
+                                                        modifier = Modifier.alignByBaseline().padding(start = 8.dp).clickable(
+                                                            interactionSource = remember { MutableInteractionSource() },
+                                                            indication = null,
+                                                        ) { onSelectPeriod(uiState.filterType, LocalDate.now()) }
+                                                            .padding(vertical = 8.dp),
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.spacedBy(3.dp),
+                                                    ) {
+                                                        Icon(MaterialSymbols.Undo, null, Modifier.size(14.dp),
+                                                            tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                        Text(uiState.filterType.currentPeriodLabel, fontSize = 12.sp,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                    }
                                                 }
                                             }
                                         }

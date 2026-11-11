@@ -17,7 +17,7 @@ symbols = {
 'SwapHoriz':'swap_horiz', 'AccountBalance':'account_balance', 'Upload':'upload',
 'Undo':'undo', 'Menu':'menu', 'DragIndicator':'drag_indicator', 'ViewCarousel':'view_carousel', 'ViewAgenda':'view_agenda',
 'Memory':'memory', 'Contactless':'contactless', 'ShieldPerson':'shield_person',
-'Book':'book', 'BarChart':'bar_chart', 'AccountBalanceWallet':'account_balance_wallet', 'Settings':'settings',
+'Book':'book', 'BarChart':'bar_chart', 'Wallet':'wallet', 'AccountBalanceWallet':'account_balance_wallet', 'Settings':'settings',
 'BookFilled':'book', 'BarChartFilled':'bar_chart', 'AccountBalanceWalletFilled':'account_balance_wallet', 'SettingsFilled':'settings',
 }
 ROOT = Path(__file__).resolve().parents[1]
