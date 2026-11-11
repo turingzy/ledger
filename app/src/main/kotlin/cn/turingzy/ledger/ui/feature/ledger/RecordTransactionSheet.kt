@@ -57,6 +57,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cn.turingzy.ledger.model.AccountWithTemplate
 import cn.turingzy.ledger.model.CategoryWithIcon
+import cn.turingzy.ledger.model.Transaction
+import cn.turingzy.ledger.util.toFormattedAmount
 import cn.turingzy.ledger.model.TransactionType
 import cn.turingzy.ledger.ui.component.LedgerBottomSheet
 import cn.turingzy.ledger.ui.component.LedgerSegmentedControl
@@ -81,14 +83,18 @@ fun RecordTransactionSheet(
         categoryId: Long, note: String?, transactionTime: Long,
     ) -> Unit,
     modifier: Modifier = Modifier,
+    initialTransaction: Transaction? = null,
+    title: String = "记一笔",
+    saving: Boolean = false,
+    error: String? = null,
 ) {
-    var expression by rememberSaveable { mutableStateOf("") }
-    var note by rememberSaveable { mutableStateOf("") }
-    var type by rememberSaveable { mutableStateOf(TransactionType.EXPENSE) }
-    var accountId by rememberSaveable { mutableLongStateOf(0L) }
-    var destinationId by rememberSaveable { mutableLongStateOf(0L) }
-    var categoryId by rememberSaveable { mutableLongStateOf(0L) }
-    var transactionTime by rememberSaveable { mutableLongStateOf(System.currentTimeMillis()) }
+    var expression by rememberSaveable(initialTransaction?.id) { mutableStateOf(initialTransaction?.amount?.toFormattedAmount().orEmpty()) }
+    var note by rememberSaveable(initialTransaction?.id) { mutableStateOf(initialTransaction?.note.orEmpty()) }
+    var type by rememberSaveable(initialTransaction?.id) { mutableStateOf(initialTransaction?.type ?: TransactionType.EXPENSE) }
+    var accountId by rememberSaveable(initialTransaction?.id) { mutableLongStateOf(initialTransaction?.accountId ?: 0L) }
+    var destinationId by rememberSaveable(initialTransaction?.id) { mutableLongStateOf(initialTransaction?.toAccountId ?: 0L) }
+    var categoryId by rememberSaveable(initialTransaction?.id) { mutableLongStateOf(initialTransaction?.categoryId ?: 0L) }
+    var transactionTime by rememberSaveable(initialTransaction?.id) { mutableLongStateOf(initialTransaction?.transactionTime ?: System.currentTimeMillis()) }
     var panel by rememberSaveable { mutableStateOf(RecordPanel.ENTRY) }
     val zone = ZoneId.systemDefault()
     val initialDateTime = Instant.ofEpochMilli(transactionTime).atZone(zone)
@@ -100,31 +106,36 @@ fun RecordTransactionSheet(
     val focusManager = LocalFocusManager.current
 
     LaunchedEffect(accounts, accountId) {
-        if (accounts.none { it.account.id == accountId }) accountId = accounts.firstOrNull()?.account?.id ?: 0L
-        if (destinationId == accountId || accounts.none { it.account.id == destinationId }) {
+        if (initialTransaction == null && accounts.none { it.account.id == accountId }) accountId = accounts.firstOrNull()?.account?.id ?: 0L
+        if (initialTransaction == null && (destinationId == accountId || accounts.none { it.account.id == destinationId })) {
             destinationId = accounts.firstOrNull { it.account.id != accountId }?.account?.id ?: 0L
         }
     }
     val matchingCategories = categories.filter { it.category.type == type.categoryType() && !it.category.isDeleted }.sortedBy { it.category.sortOrder }
     LaunchedEffect(categories, type) {
-        if (matchingCategories.none { it.category.id == categoryId }) categoryId = matchingCategories.firstOrNull()?.category?.id ?: 0L
+        val keepOriginalCategory = initialTransaction?.let { type == it.type && categoryId == it.categoryId } == true
+        if (!keepOriginalCategory && matchingCategories.none { it.category.id == categoryId }) {
+            categoryId = matchingCategories.firstOrNull()?.category?.id ?: 0L
+        }
     }
     val hasPendingCalculation = expression.drop(1).any { it == '+' || it == '-' }
     val transaction = RecordFormInput(type, expression, accountId, destinationId, categoryId, transactionTime, note)
         .toTransactionOrNull(accounts, categories)
-    val actionEnabled = if (hasPendingCalculation) AmountFormatter.parseToCents(evaluateMathExpression(expression)) != null else transaction != null
+    val actionEnabled = !saving && if (hasPendingCalculation) AmountFormatter.parseToCents(evaluateMathExpression(expression)) != null else transaction != null
 
     fun showPanel(target: RecordPanel) {
+        if (saving) return
         focusManager.clearFocus()
         panel = if (panel == target) RecordPanel.ENTRY else target
     }
 
     LedgerBottomSheet(
-        title = "记一笔",
+        title = title,
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
         modifier = modifier,
     ) {
+        error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
         RecordTransactionContent(
             expression = expression, note = note, type = type, categories = matchingCategories,
             selectedCategoryId = categoryId,
@@ -132,8 +143,8 @@ fun RecordTransactionSheet(
             destinationName = accounts.firstOrNull { it.account.id == destinationId }?.account?.name ?: "选择转入账户",
             timeLabel = recordTimeLabel(transactionTime, zone),
             hasPendingCalculation = hasPendingCalculation, actionEnabled = actionEnabled,
-            onTypeChange = { type = it; showPanel(RecordPanel.ENTRY) }, onCategorySelect = { categoryId = it },
-            onExpressionChange = { expression = it }, onNoteChange = { note = it },
+            onTypeChange = { if (!saving) { type = it; showPanel(RecordPanel.ENTRY) } }, onCategorySelect = { if (!saving) categoryId = it },
+            onExpressionChange = { if (!saving) expression = it }, onNoteChange = { if (!saving) note = it },
             onAccountClick = { showPanel(RecordPanel.ACCOUNT) },
             onDestinationClick = { showPanel(RecordPanel.DESTINATION) },
             onTimeClick = {
@@ -146,7 +157,8 @@ fun RecordTransactionSheet(
                 showPanel(RecordPanel.DATE_TIME)
             },
             onConfirmAction = {
-                if (hasPendingCalculation) expression = evaluateMathExpression(expression)
+                if (saving) Unit
+                else if (hasPendingCalculation) expression = evaluateMathExpression(expression)
                 else transaction?.let { value ->
                     onConfirm(value.type, value.amount, value.accountId, value.toAccountId, value.categoryId, value.note, value.transactionTime)
                 }
@@ -189,7 +201,7 @@ fun RecordTransactionSheet(
 }
 
 @Composable
-private fun RecordTransactionContent(
+internal fun RecordTransactionContent(
     expression: String,
     note: String,
     type: TransactionType,
@@ -210,18 +222,20 @@ private fun RecordTransactionContent(
     onConfirmAction: () -> Unit,
     selectionExpanded: Boolean,
     selectionContent: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    currencyLabel: String = "¥",
 ) {
     val colors = MaterialTheme.colorScheme
     val focusManager = LocalFocusManager.current
     val expressionScroll = rememberScrollState()
     LaunchedEffect(expression) { expressionScroll.animateScrollTo(expressionScroll.maxValue) }
-    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Column(
             Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("¥", style = MaterialTheme.typography.headlineSmall, color = colors.onSurfaceVariant)
+                Text(currencyLabel, style = MaterialTheme.typography.headlineSmall, color = colors.onSurfaceVariant)
                 Text(
                     expression.ifEmpty { "0" }, modifier = Modifier.weight(1f).horizontalScroll(expressionScroll),
                     style = MaterialTheme.typography.headlineLarge.copy(fontFeatureSettings = "tnum"),
@@ -331,7 +345,7 @@ private fun RecordCategoryPages(categories: List<CategoryWithIcon>, selectedId: 
         return
     }
     val pages = categories.chunked(6)
-    val pager = rememberPagerState(pageCount = { pages.size })
+    val pager = rememberPagerState(initialPage = categories.indexOfFirst { it.category.id == selectedId }.coerceAtLeast(0) / 6, pageCount = { pages.size })
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         HorizontalPager(state = pager, pageSpacing = 12.dp) { page ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {

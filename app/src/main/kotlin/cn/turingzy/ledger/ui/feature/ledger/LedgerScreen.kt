@@ -38,7 +38,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.material3.ripple
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarHost
@@ -55,6 +54,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -71,6 +72,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cn.turingzy.ledger.ui.component.TopBarIconButton
 import cn.turingzy.ledger.ui.component.CardBackgroundDialog
 import cn.turingzy.ledger.ui.component.categoryGlyph
 import cn.turingzy.ledger.ui.theme.IosYellow
@@ -100,6 +102,7 @@ fun LedgerScreen(
     viewModel: LedgerViewModel = hiltViewModel(),
     onNavigateToRecord: () -> Unit = {},
 ) {
+    val transactionViewModel: TransactionDetailsViewModel = hiltViewModel()
     val cardViewModel: LedgerCardViewModel = hiltViewModel()
     val cardUiState by cardViewModel.uiState.collectAsStateWithLifecycle()
     val background = remember(cardUiState.background) { cardUiState.background?.asImageBitmap() }
@@ -118,6 +121,10 @@ fun LedgerScreen(
     val recordSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
 
+    LaunchedEffect(showRecordSheet) {
+        if (showRecordSheet) transactionViewModel.selectTransaction(null)
+    }
+
     LedgerContent(
         uiState = uiState,
         modifier = modifier,
@@ -130,6 +137,16 @@ fun LedgerScreen(
         },
         onCardTransparencyChange = cardViewModel::setTransparencyPercent,
         snackbarHostState = snackbarHostState,
+        onTransactionClick = transactionViewModel::selectTransaction,
+    )
+
+    if (!showRecordSheet) TransactionDetailsScreen(
+        onBack = { transactionViewModel.selectTransaction(null) },
+        onLoadFailure = { message ->
+            transactionViewModel.selectTransaction(null)
+            scope.launch { snackbarHostState.showSnackbar(message) }
+        },
+        viewModel = transactionViewModel,
     )
 
     if (showBackgroundDialog) {
@@ -173,6 +190,7 @@ fun LedgerContent(
     uiState: LedgerUiState,
     modifier: Modifier = Modifier,
     initialSearchActive: Boolean = false,
+    onTransactionClick: (Long) -> Unit = {},
     cardAppearance: LedgerCardAppearance = LedgerCardAppearance(),
     cardBackground: ImageBitmap? = null,
     cardSettingsEnabled: Boolean = true,
@@ -283,27 +301,12 @@ fun LedgerContent(
                                             )
                                         }
 
-                                        // 搜索按钮 (圆形点击水波纹反馈)
-                                        Box(
-                                            modifier = Modifier
-                                                .align(Alignment.CenterEnd)
-                                                .size(36.dp)
-                                                .clip(CircleShape)
-                                                .clickable(
-                                                    interactionSource = remember { MutableInteractionSource() },
-                                                    indication = ripple(bounded = true, radius = 18.dp),
-                                                ) {
-                                                    isSearchActive = true
-                                                },
-                                            contentAlignment = Alignment.Center,
-                                        ) {
-                                            Icon(
-                                                imageVector = MaterialSymbols.Search,
-                                                contentDescription = "搜索",
-                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                modifier = Modifier.size(24.dp),
-                                            )
-                                        }
+                                        TopBarIconButton(
+                                            imageVector = MaterialSymbols.Search,
+                                            contentDescription = "搜索",
+                                            onClick = { isSearchActive = true },
+                                            modifier = Modifier.align(Alignment.CenterEnd),
+                                        )
                                     }
                                 }
 
@@ -391,29 +394,16 @@ fun LedgerContent(
 
                                         Spacer(modifier = Modifier.width(4.dp))
 
-                                        // 点击 X 圆形水波纹触发效果 (大小与搜索图标一致 24dp，背景非常驻而是点击时触发)
-                                        Box(
-                                            modifier = Modifier
-                                                .size(36.dp)
-                                                .clip(CircleShape)
-                                                .clickable(
-                                                    interactionSource = remember { MutableInteractionSource() },
-                                                    indication = ripple(bounded = true, radius = 18.dp),
-                                                ) {
-                                                    isSearchActive = false
-                                                    searchQuery = ""
-                                                    submittedSearchQuery = ""
-                                                    focusManager.clearFocus()
-                                                },
-                                            contentAlignment = Alignment.Center,
-                                        ) {
-                                            Icon(
-                                                imageVector = MaterialSymbols.Close,
-                                                contentDescription = "关闭搜索",
-                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                modifier = Modifier.size(24.dp),
-                                            )
-                                        }
+                                        TopBarIconButton(
+                                            imageVector = MaterialSymbols.Close,
+                                            contentDescription = "关闭搜索",
+                                            onClick = {
+                                                isSearchActive = false
+                                                searchQuery = ""
+                                                submittedSearchQuery = ""
+                                                focusManager.clearFocus()
+                                            },
+                                        )
                                     }
                                 }
                             }
@@ -451,7 +441,7 @@ fun LedgerContent(
                     } else {
                         filteredDayGroups.forEach { dayGroup ->
                             item(key = "group_${dayGroup.dateEpochDay}") {
-                                DayGroupSection(dayGroup = dayGroup)
+                                DayGroupSection(dayGroup = dayGroup, onTransactionClick = onTransactionClick)
                             }
                         }
                     }
@@ -465,16 +455,25 @@ fun LedgerContent(
 fun DayGroupSection(
     dayGroup: DayTransactionGroup,
     modifier: Modifier = Modifier,
+    onTransactionClick: (Long) -> Unit = {},
 ) {
+    var expanded by rememberSaveable(dayGroup.dateEpochDay) { mutableStateOf(true) }
     val colors = MaterialTheme.colorScheme
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 3.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+                .semantics { stateDescription = if (expanded) "已展开" else "已折叠" }
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                ) { expanded = !expanded }
+                .padding(start = 4.dp, top = 3.dp, bottom = 3.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = dayGroup.displayDate,
+                modifier = Modifier.padding(end = 4.dp),
                 maxLines = 1,
                 fontSize = 13.sp,
                 lineHeight = 18.sp,
@@ -492,11 +491,19 @@ fun DayGroupSection(
                 fontWeight = FontWeight.SemiBold,
                 color = colors.onSurfaceVariant,
             )
+            Icon(
+                if (expanded) MaterialSymbols.ExpandMore else MaterialSymbols.ChevronRight,
+                contentDescription = if (expanded) "隐藏当日交易" else "显示当日交易",
+                tint = colors.onSurfaceVariant,
+                modifier = Modifier.size(24.dp),
+            )
         }
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            dayGroup.transactions.forEach { detail ->
-                key(detail.transaction.id) {
-                    DayTransactionRowItem(detail = detail)
+        if (expanded) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                dayGroup.transactions.forEach { detail ->
+                    key(detail.transaction.id) {
+                        DayTransactionRowItem(detail = detail, onClick = { onTransactionClick(detail.transaction.id) })
+                    }
                 }
             }
         }
@@ -507,6 +514,7 @@ fun DayGroupSection(
 fun DayTransactionRowItem(
     detail: TransactionDetail,
     modifier: Modifier = Modifier,
+    onClick: () -> Unit = {},
 ) {
     val tx = detail.transaction
     val colors = MaterialTheme.colorScheme
@@ -531,6 +539,11 @@ fun DayTransactionRowItem(
             .clip(shape)
             .background(colors.surface)
             .border(1.dp, colors.outline.copy(alpha = colors.outline.alpha * 0.5f), shape)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick,
+            )
             .padding(horizontal = 14.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,

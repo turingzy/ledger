@@ -40,6 +40,7 @@ internal fun LedgerSegmentedControl(
     enabled: Boolean = true,
     height: Dp = 36.dp,
     fontSize: TextUnit = 14.sp,
+    emphasizeSelection: Boolean = true,
 ) {
     val shape = RoundedCornerShape(height / 2)
     BoxWithConstraints(
@@ -83,8 +84,8 @@ internal fun LedgerSegmentedControl(
                     Text(
                         text = label,
                         fontSize = fontSize,
-                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                        color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = if (selected && emphasizeSelection) FontWeight.Bold else FontWeight.Medium,
+                        color = if (selected || !emphasizeSelection) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }

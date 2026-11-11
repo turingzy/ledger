@@ -1,18 +1,19 @@
 package cn.turingzy.ledger.ui.feature.analytics
 
+import cn.turingzy.ledger.ui.component.TopBarIconButton
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.Icon
@@ -26,12 +27,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.contentDescription
@@ -57,6 +60,7 @@ internal fun AnalyticsCardMenu(
     var draggedCard by remember { mutableStateOf<AnalyticsCard?>(null) }
     var dragOffset by remember { mutableFloatStateOf(0f) }
     val rowHeight = with(LocalDensity.current) { 48.dp.toPx() }
+    val rowStride = with(LocalDensity.current) { 56.dp.toPx() }
     val handleWidth = with(LocalDensity.current) { 40.dp.toPx() }
     val colors = MaterialTheme.colorScheme
 
@@ -65,23 +69,15 @@ internal fun AnalyticsCardMenu(
     }
 
     Box(modifier) {
-        Box(
-            Modifier.size(36.dp).clip(CircleShape)
-                .background(if (expanded) colors.primary.copy(alpha = 0.08f) else colors.surface.copy(alpha = 0f))
-                .semantics { stateDescription = "已启用${settings.enabledCards.size}张卡片" }
-                .clickable { expanded = !expanded },
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = MaterialSymbols.Menu,
-                contentDescription = "管理分析卡片",
-                modifier = Modifier.size(24.dp),
-                tint = colors.onSurfaceVariant,
-            )
-        }
+        TopBarIconButton(
+            imageVector = MaterialSymbols.Menu,
+            contentDescription = "管理分析卡片",
+            onClick = { expanded = !expanded },
+            modifier = Modifier.semantics { stateDescription = "已启用${settings.enabledCards.size}张卡片" },
+        )
         DropdownMenu(
             expanded = expanded,
-            onDismissRequest = { expanded = false },
+            onDismissRequest = { expanded = false; draggedCard = null; dragOffset = 0f; draftOrder = settings.order },
             shape = RoundedCornerShape(16.dp),
             containerColor = colors.surface,
             tonalElevation = 0.dp,
@@ -89,32 +85,34 @@ internal fun AnalyticsCardMenu(
             border = BorderStroke(1.dp, colors.outlineVariant),
         ) {
             Column(Modifier.width(216.dp).padding(horizontal = 12.dp)) {
-                Text("卡片管理", Modifier.padding(vertical = 6.dp), style = MaterialTheme.typography.titleSmall)
                 Column(
-                    Modifier.pointerInput(settings.order) {
+                    Modifier.testTag("analyticsCardRows").clip(RoundedCornerShape(12.dp)).pointerInput(settings.order) {
                         detectDragGestures(
                             onDragStart = { position ->
-                                if (position.x <= handleWidth) {
-                                    draggedCard = draftOrder.getOrNull((position.y / rowHeight).toInt())
+                                if (position.x in 0f..handleWidth && position.y >= 0f && position.y % rowStride < rowHeight) {
+                                    draggedCard = draftOrder.getOrNull((position.y / rowStride).toInt())
                                     dragOffset = 0f
                                 }
                             },
                             onDrag = { change, delta ->
                                 val card = draggedCard ?: return@detectDragGestures
                                 change.consume()
-                                var offset = dragOffset + delta.y
                                 var index = draftOrder.indexOf(card)
-                                while (offset > rowHeight / 2 && index < draftOrder.lastIndex) {
+                                var offset = (dragOffset + delta.y).coerceIn(
+                                    -index * rowStride,
+                                    (draftOrder.lastIndex - index) * rowStride,
+                                )
+                                while (offset > rowStride / 2 && index < draftOrder.lastIndex) {
                                     move(card, index + 1)
-                                    offset -= rowHeight
+                                    offset -= rowStride
                                     index += 1
                                 }
-                                while (offset < -rowHeight / 2 && index > 0) {
+                                while (offset < -rowStride / 2 && index > 0) {
                                     move(card, index - 1)
-                                    offset += rowHeight
+                                    offset += rowStride
                                     index -= 1
                                 }
-                                dragOffset = offset.coerceIn(-rowHeight, rowHeight)
+                                dragOffset = offset
                             },
                             onDragEnd = {
                                 if (draggedCard != null && draftOrder != settings.order) onOrderChange(draftOrder)
@@ -128,16 +126,17 @@ internal fun AnalyticsCardMenu(
                             },
                         )
                     },
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     draftOrder.forEachIndexed { index, card ->
                         androidx.compose.runtime.key(card) {
                             val enabled = card !in settings.disabled
                             Row(
-                                Modifier.height(48.dp)
+                                Modifier.testTag("analyticsCard_${card.name}").fillMaxWidth().height(48.dp)
                                     .offset { IntOffset(0, if (draggedCard == card) dragOffset.roundToInt() else 0) }
                                     .zIndex(if (draggedCard == card) 1f else 0f)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(if (draggedCard == card) colors.surfaceVariant else colors.surface),
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(if (draggedCard == card) colors.surfaceVariant.copy(alpha = 0.45f) else Color.Transparent),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Box(

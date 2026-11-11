@@ -86,11 +86,11 @@ fun LedgerApp(
                         launchSingleTop = true
                         restoreState = true
                     }
-                    when (targetDestination.route) {
-                        Route.Ledger -> navController.navigate(Route.Ledger, navOptions)
-                        Route.Analytics -> navController.navigate(Route.Analytics, navOptions)
-                        Route.Wallet -> navController.navigate(Route.Wallet, navOptions)
-                        Route.Settings -> navController.navigate(Route.Settings, navOptions)
+                    when (targetDestination) {
+                        TopLevelDestination.LEDGER -> navController.navigate(Route.Ledger, navOptions)
+                        TopLevelDestination.ANALYTICS -> navController.navigate(Route.Analytics, navOptions)
+                        TopLevelDestination.WALLET -> navController.navigate(Route.Wallet, navOptions)
+                        TopLevelDestination.SETTINGS -> navController.navigate(Route.Settings, navOptions)
                     }
                 },
                 modifier = Modifier.align(Alignment.BottomCenter),

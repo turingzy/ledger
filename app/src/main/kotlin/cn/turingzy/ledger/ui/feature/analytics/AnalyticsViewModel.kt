@@ -10,6 +10,10 @@ import cn.turingzy.ledger.model.CategoryType
 import cn.turingzy.ledger.model.TransactionDetail
 import cn.turingzy.ledger.model.TransactionType
 import dagger.hilt.android.lifecycle.HiltViewModel
+import cn.turingzy.ledger.util.Dispatcher
+import cn.turingzy.ledger.util.LedgerDispatchers
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -19,6 +23,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import java.time.Instant
 import java.time.LocalDate
@@ -33,6 +38,7 @@ import javax.inject.Inject
 class AnalyticsViewModel @Inject constructor(
     private val transactionRepository: TransactionRepository,
     private val cardSettingsRepository: AnalyticsCardSettingsRepository,
+    @Dispatcher(LedgerDispatchers.Default) private val defaultDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
 
     private val period =
@@ -49,6 +55,28 @@ class AnalyticsViewModel @Inject constructor(
     }.flatMapLatest { (selectedPeriod, catType) ->
         val scope = selectedPeriod.scope
         val zone = ZoneId.systemDefault()
+        if (scope == AnalyticsTimeScope.ALL) {
+            return@flatMapLatest transactionRepository.getTransactionsBetween(Long.MIN_VALUE, Long.MAX_VALUE).map { entries ->
+                val transactions = entries.filterNot { it.transaction.isDeleted }
+                val dates = transactions.map { Instant.ofEpochMilli(it.transaction.transactionTime).atZone(zone).toLocalDate() }
+                val start = dates.minOrNull() ?: LocalDate.now()
+                val end = dates.maxOrNull() ?: start
+                val expense = transactions.filter { it.transaction.type == TransactionType.EXPENSE }.sumOf { it.transaction.amount }
+                val income = transactions.filter { it.transaction.type == TransactionType.INCOME }.sumOf { it.transaction.amount }
+                AnalyticsUiState.Success(
+                    timeScope = scope,
+                    categoryType = catType,
+                    periodDisplay = "$start - $end",
+                    totalExpense = expense,
+                    totalIncome = income,
+                    balance = income - expense,
+                    rankings = calculateCategoryRankings(transactions, catType),
+                    periodStart = start,
+                    periodEnd = end,
+                    trendPoints = buildAnalyticsTrend(transactions, scope, start, zone, end),
+                )
+            }
+        }
         val selection = selectedPeriod.selection
         val startEpoch = selection.start.atStartOfDay(zone).toInstant().toEpochMilli()
         val endEpoch = selection.end.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
@@ -78,7 +106,7 @@ class AnalyticsViewModel @Inject constructor(
                 trendPoints = buildAnalyticsTrend(transactions, scope, selection.start, zone, selection.end),
             )
         }
-    }
+    }.flowOn(defaultDispatcher)
 
     val uiState: StateFlow<AnalyticsUiState> = combine<AnalyticsUiState.Success, AnalyticsCardSettings, String?, AnalyticsUiState>(
         analyticsState,
@@ -128,11 +156,13 @@ class AnalyticsViewModel @Inject constructor(
 
     fun navigatePeriod(delta: Int) {
         val selected = period.value
+        if (selected.scope == AnalyticsTimeScope.ALL) return
         val anchor = when (selected.scope) {
             AnalyticsTimeScope.WEEK -> selected.anchor.plusWeeks(delta.toLong())
             AnalyticsTimeScope.MONTH -> selected.anchor.plusMonths(delta.toLong())
             AnalyticsTimeScope.THREE_MONTHS -> selected.anchor.plusMonths(delta.toLong() * 3)
             AnalyticsTimeScope.YEAR -> selected.anchor.plusYears(delta.toLong())
+            AnalyticsTimeScope.ALL -> return
         }
         val custom = selected.customSelection?.let {
             val days = ChronoUnit.DAYS.between(it.start, it.end) + 1
@@ -175,6 +205,7 @@ class AnalyticsViewModel @Inject constructor(
                     YearMonth.from(anchor).atEndOfMonth(),
                 )
                 AnalyticsTimeScope.YEAR -> CalendarSelection.year(anchor.year)
+                AnalyticsTimeScope.ALL -> CalendarSelection(anchor, anchor)
             }
     }
 

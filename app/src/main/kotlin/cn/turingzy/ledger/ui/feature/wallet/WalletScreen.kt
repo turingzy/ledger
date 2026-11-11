@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.wallet
 
+import cn.turingzy.ledger.ui.component.TopBarIconButton
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.theme.IosYellow
 import androidx.compose.foundation.background
@@ -38,7 +39,6 @@ import cn.turingzy.ledger.ui.component.CardBackgroundDialog
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.material3.ripple
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -241,26 +241,11 @@ fun WalletContent(
                                         modifier = Modifier.padding(bottom = 2.dp),
                                     )
 
-                                    // 添加按钮 (与账本顶栏图标按钮风格统一: 圆形水波纹反馈，无底色，MaterialTheme.colorScheme.onSurfaceVariant 颜色，尺寸 24.dp)
-                                    Box(
-                                        modifier = Modifier
-                                            .size(36.dp)
-                                            .clip(CircleShape)
-                                            .clickable(
-                                                interactionSource = remember { MutableInteractionSource() },
-                                                indication = ripple(bounded = true, radius = 18.dp),
-                                            ) {
-                                                onAddAccountClick()
-                                            },
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        Icon(
-                                            imageVector = MaterialSymbols.Add,
-                                            contentDescription = "添加账户",
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.size(24.dp),
-                                        )
-                                    }
+                                    TopBarIconButton(
+                                        imageVector = MaterialSymbols.Add,
+                                        contentDescription = "添加账户",
+                                        onClick = onAddAccountClick,
+                                    )
                                 }
                             }
 
@@ -292,25 +277,11 @@ fun WalletContent(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
 
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(CircleShape)
-                                    .clickable(
-                                        interactionSource = remember { MutableInteractionSource() },
-                                        indication = ripple(bounded = true, radius = 18.dp),
-                                    ) {
-                                        isListView = !isListView
-                                    },
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Icon(
-                                    imageVector = if (isListView) MaterialSymbols.ViewCarousel else MaterialSymbols.ViewAgenda,
-                                    contentDescription = if (isListView) "切换为卡片堆叠视图" else "切换为纵向层叠视图",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(24.dp),
-                                )
-                            }
+                            TopBarIconButton(
+                                imageVector = if (isListView) MaterialSymbols.ViewCarousel else MaterialSymbols.ViewAgenda,
+                                contentDescription = if (isListView) "切换为卡片堆叠视图" else "切换为纵向层叠视图",
+                                onClick = { isListView = !isListView },
+                            )
                         }
                     }
 

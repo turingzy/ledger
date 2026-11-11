@@ -9,6 +9,7 @@ enum class AnalyticsTimeScope {
     MONTH,
     THREE_MONTHS,
     YEAR,
+    ALL,
 }
 
 data class CategoryExpenseRanking(
@@ -59,6 +60,7 @@ sealed interface AnalyticsUiState {
             AnalyticsTimeScope.MONTH -> periodStart.withDayOfMonth(periodStart.lengthOfMonth())
             AnalyticsTimeScope.THREE_MONTHS -> periodStart.plusMonths(3).minusDays(1)
             AnalyticsTimeScope.YEAR -> LocalDate.of(periodStart.year, 12, 31)
+            AnalyticsTimeScope.ALL -> periodStart
         },
         val trendPoints: List<AnalyticsTrendPoint> = emptyList(),
         val comparison: AnalyticsComparison? = null,

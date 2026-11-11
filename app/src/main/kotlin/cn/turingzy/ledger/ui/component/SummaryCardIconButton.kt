@@ -6,6 +6,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.ripple
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -27,13 +28,14 @@ internal fun SummaryCardIconButton(
     enabled: Boolean = true,
     containerColor: Color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.24f),
     contentColor: Color = MaterialTheme.colorScheme.onPrimary,
+    showRipple: Boolean = false,
 ) {
     Box(
-        modifier.clip(CircleShape)
+        modifier.size(36.dp).clip(CircleShape)
             .background(containerColor)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = null,
+                indication = if (showRipple) ripple(bounded = true, radius = 18.dp) else null,
                 enabled = enabled,
                 role = Role.Button,
                 onClick = onClick,
@@ -47,4 +49,22 @@ internal fun SummaryCardIconButton(
             modifier = Modifier.size(24.dp),
         )
     }
+}
+
+@Composable
+internal fun TopBarIconButton(
+    imageVector: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    SummaryCardIconButton(
+        imageVector = imageVector,
+        contentDescription = contentDescription,
+        onClick = onClick,
+        modifier = modifier,
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        showRipple = true,
+    )
 }

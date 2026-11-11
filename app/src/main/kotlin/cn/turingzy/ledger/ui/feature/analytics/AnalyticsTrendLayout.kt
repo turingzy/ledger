@@ -69,7 +69,7 @@ internal fun trendTimeTicks(
             )
         }
     }
-    val monthly = scope == AnalyticsTimeScope.THREE_MONTHS || scope == AnalyticsTimeScope.YEAR
+    val monthly = scope == AnalyticsTimeScope.THREE_MONTHS || scope == AnalyticsTimeScope.YEAR || scope == AnalyticsTimeScope.ALL
     val pattern = when {
         monthly && start.year != end.year -> "yyyy/M"
         monthly -> "M月"

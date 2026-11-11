@@ -25,7 +25,7 @@ internal fun buildAnalyticsTrend(
     zone: ZoneId,
     endDate: LocalDate? = null,
 ): List<AnalyticsTrendPoint> {
-    val monthly = scope == AnalyticsTimeScope.YEAR || scope == AnalyticsTimeScope.THREE_MONTHS
+    val monthly = scope == AnalyticsTimeScope.YEAR || scope == AnalyticsTimeScope.THREE_MONTHS || scope == AnalyticsTimeScope.ALL
     val dates = if (endDate != null) {
         if (monthly) {
             val firstMonth = YearMonth.from(anchor)
@@ -51,6 +51,7 @@ internal fun buildAnalyticsTrend(
             List(3) { firstMonth.plusMonths(it.toLong()).atDay(1) }
         }
 
+        AnalyticsTimeScope.ALL -> listOf(anchor.withDayOfMonth(1))
         AnalyticsTimeScope.YEAR -> List(12) { LocalDate.of(anchor.year, it + 1, 1) }
     }
     val rangeStart = if (endDate != null) anchor else dates.first()

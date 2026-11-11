@@ -32,6 +32,7 @@ internal fun AnalyticsComparisonCard(
         AnalyticsTimeScope.MONTH -> "本月" to "上月"
         AnalyticsTimeScope.THREE_MONTHS -> "这3个月" to "前3个月"
         AnalyticsTimeScope.YEAR -> "今年" to "去年"
+        AnalyticsTimeScope.ALL -> return
     }
     AnalyticsChartCard(modifier, contentSpacing = 12.dp) {
         Text("收支对比", fontSize = 17.sp, fontWeight = FontWeight.Bold)
