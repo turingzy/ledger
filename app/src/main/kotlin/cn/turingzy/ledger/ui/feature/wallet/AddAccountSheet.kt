@@ -19,7 +19,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import cn.turingzy.ledger.ui.component.LedgerIconButton as IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -119,7 +119,7 @@ fun AddAccountSheetContent(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = onDismissRequest) {
+            IconButton(showPressFeedback = false, onClick = onDismissRequest) {
                 Icon(MaterialSymbols.Close, "取消添加账户", Modifier.size(24.dp), tint = colors.onSurfaceVariant)
             }
             Text("添加账户", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)

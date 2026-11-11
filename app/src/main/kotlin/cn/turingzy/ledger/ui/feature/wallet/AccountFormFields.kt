@@ -9,7 +9,7 @@ import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import cn.turingzy.ledger.ui.component.LedgerIconButton as IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -28,7 +28,7 @@ internal fun AccountSaveButton(
     modifier: Modifier = Modifier,
 ) {
     val color = MaterialTheme.colorScheme.tertiary
-    IconButton(onClick = onClick, enabled = enabled, modifier = modifier) {
+    IconButton(showPressFeedback = false, onClick = onClick, enabled = enabled, modifier = modifier) {
         Icon(
             MaterialSymbols.Check,
             contentDescription = "保存账户",

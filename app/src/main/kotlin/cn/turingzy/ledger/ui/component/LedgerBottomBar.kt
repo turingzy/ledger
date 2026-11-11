@@ -1,9 +1,7 @@
 package cn.turingzy.ledger.ui.component
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -29,7 +27,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.navigation.TopLevelDestination
@@ -78,15 +77,6 @@ fun LedgerBottomBar(
                     // 点击交互中或当前激活状态均采用 Fill 形式
                     val isFilled = selected || isPressed
 
-                    val iconScale by animateFloatAsState(
-                        targetValue = if (isPressed) 0.88f else 1.0f,
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                            stiffness = Spring.StiffnessMediumLow,
-                        ),
-                        label = "TabScale",
-                    )
-
                     val iconTint by animateColorAsState(
                         targetValue = if (selected) {
                             MaterialTheme.colorScheme.onSurface
@@ -101,11 +91,12 @@ fun LedgerBottomBar(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
+                            .clip(RoundedCornerShape(20.dp))
                             .selectable(
                                 selected = selected,
                                 role = Role.Tab,
                                 interactionSource = interactionSource,
-                                indication = null,
+                                indication = LocalIndication.current,
                             ) {
                                 if (!selected) onNavigateToDestination(destination)
                             },
@@ -116,8 +107,7 @@ fun LedgerBottomBar(
                             contentDescription = destination.labelText,
                             tint = iconTint,
                             modifier = Modifier
-                                .size(28.dp)
-                                .scale(iconScale),
+                                .size(28.dp),
                         )
                     }
                 }

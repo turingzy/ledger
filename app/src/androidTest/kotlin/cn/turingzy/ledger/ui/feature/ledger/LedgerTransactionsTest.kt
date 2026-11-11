@@ -46,4 +46,39 @@ class LedgerTransactionsTest {
         compose.onNodeWithText("测试餐饮").performClick()
         assertEquals(42L, selectedId)
     }
+    @Test
+    fun zeroIncomeIsOmittedFromDailySummary() {
+        showSummary(expense = 123L, income = 0L)
+        compose.onNodeWithText("支出: ¥1.23").assertIsDisplayed()
+        compose.onNodeWithText("收入:", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun zeroExpenseIsOmittedFromDailySummary() {
+        showSummary(expense = 0L, income = 456L)
+        compose.onNodeWithText("收入: ¥4.56").assertIsDisplayed()
+        compose.onNodeWithText("支出:", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun zeroTotalsKeepDateAndCollapseControlWithoutSummary() {
+        showSummary(expense = 0L, income = 0L)
+        compose.onNodeWithText("今天").assertIsDisplayed()
+        compose.onNodeWithContentDescription("隐藏当日交易").assertExists()
+        compose.onNodeWithText("支出:", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("收入:", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun nonzeroIncomeAndExpenseAreBothShown() {
+        showSummary(expense = 123L, income = 456L)
+        compose.onNodeWithText("支出: ¥1.23  收入: ¥4.56").assertIsDisplayed()
+    }
+
+    private fun showSummary(expense: Long, income: Long) {
+        compose.setContent {
+            MaterialTheme { DayGroupSection(DayTransactionGroup(0L, "今天", expense, income, emptyList())) }
+        }
+    }
+
 }

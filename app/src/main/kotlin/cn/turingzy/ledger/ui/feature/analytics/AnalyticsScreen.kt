@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.analytics
 
+import androidx.compose.foundation.LocalIndication
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.LedgerSegmentedControl
 import androidx.compose.foundation.rememberScrollState
@@ -220,7 +221,7 @@ private fun PeriodNavigationArrow(
             .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = null,
+                indication = LocalIndication.current,
                 onClick = onClick,
             ),
         contentAlignment = Alignment.Center,

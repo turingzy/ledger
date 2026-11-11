@@ -13,7 +13,7 @@ symbols = {
 'Delete':'delete', 'DirectionsBus':'directions_bus', 'Edit':'edit', 'EditSquare':'edit_square',
 'ExpandMore':'expand_more', 'Home':'home', 'Image':'image', 'ImportExport':'swap_vert', 'Info':'info',
 'LocalHospital':'local_hospital', 'MoreHoriz':'more_horiz', 'NorthEast':'north_east', 'Payments':'payments',
-'Restaurant':'restaurant', 'Search':'search', 'ShoppingBag':'shopping_bag', 'SportsEsports':'sports_esports',
+'Schedule':'schedule', 'Restaurant':'restaurant', 'Search':'search', 'ShoppingBag':'shopping_bag', 'SportsEsports':'sports_esports',
 'SwapHoriz':'swap_horiz', 'AccountBalance':'account_balance', 'Upload':'upload',
 'Menu':'menu', 'DragIndicator':'drag_indicator', 'ViewCarousel':'view_carousel', 'ViewAgenda':'view_agenda',
 'Memory':'memory', 'Contactless':'contactless', 'ShieldPerson':'shield_person',

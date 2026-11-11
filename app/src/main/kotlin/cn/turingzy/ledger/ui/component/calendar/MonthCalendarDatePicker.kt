@@ -27,7 +27,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import cn.turingzy.ledger.ui.component.LedgerIconButton as IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -307,7 +307,7 @@ private fun CalendarFooter(
         horizontalArrangement = Arrangement.End,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconButton(onClick = onDismiss, modifier = Modifier.size(40.dp)) {
+        IconButton(showPressFeedback = false, onClick = onDismiss, modifier = Modifier.size(40.dp)) {
             Icon(
                 MaterialSymbols.Close,
                 contentDescription = "关闭日期选择器",

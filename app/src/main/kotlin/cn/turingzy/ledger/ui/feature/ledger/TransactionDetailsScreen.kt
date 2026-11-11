@@ -7,6 +7,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -18,6 +20,7 @@ internal fun TransactionDetailsScreen(
     onLoadFailure: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: TransactionDetailsViewModel = hiltViewModel(),
+    sheetHeight: Dp = 520.dp,
 ) {
     val selectedId by viewModel.selectedTransactionId.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -37,7 +40,7 @@ internal fun TransactionDetailsScreen(
     val state = uiState as? TransactionDetailsUiState.Success ?: return
     if (state.detail.transaction.id != selectedId) return
     key(selectedId) {
-        TransactionDetailsContent(state, onBack, modifier, saveState, viewModel::save)
+        TransactionDetailsContent(state, onBack, modifier, saveState, viewModel::save, sheetHeight)
     }
 }
 
@@ -49,6 +52,7 @@ internal fun TransactionDetailsContent(
     modifier: Modifier = Modifier,
     saveState: TransactionSaveState = TransactionSaveState(),
     onSave: (Transaction) -> Unit = {},
+    sheetHeight: Dp = 520.dp,
 ) {
     val sheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true,
@@ -62,6 +66,7 @@ internal fun TransactionDetailsContent(
     }
     RecordTransactionSheet(
         sheetState = sheetState,
+        sheetHeight = sheetHeight,
         categories = uiState.categories,
         accounts = uiState.accounts,
         onDismissRequest = { if (!saveState.saving) onBack() },

@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.ledger
 
+import androidx.compose.foundation.LocalIndication
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
@@ -52,6 +53,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.stateDescription
@@ -118,6 +120,7 @@ fun LedgerScreen(
     val categories by viewModel.categories.collectAsStateWithLifecycle()
     val accounts by viewModel.accounts.collectAsStateWithLifecycle()
 
+    val drawerHeight = LocalConfiguration.current.screenHeightDp.dp * 0.8f
     val recordSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
 
@@ -147,6 +150,7 @@ fun LedgerScreen(
             scope.launch { snackbarHostState.showSnackbar(message) }
         },
         viewModel = transactionViewModel,
+        sheetHeight = drawerHeight,
     )
 
     if (showBackgroundDialog) {
@@ -170,6 +174,7 @@ fun LedgerScreen(
     if (showRecordSheet) {
         RecordTransactionSheet(
             sheetState = recordSheetState,
+            sheetHeight = drawerHeight,
             categories = categories,
             accounts = accounts,
             onDismissRequest = onRecordSheetDismiss,
@@ -304,6 +309,7 @@ fun LedgerContent(
                                         TopBarIconButton(
                                             imageVector = MaterialSymbols.Search,
                                             contentDescription = "搜索",
+                                            showPressFeedback = false,
                                             onClick = { isSearchActive = true },
                                             modifier = Modifier.align(Alignment.CenterEnd),
                                         )
@@ -397,6 +403,7 @@ fun LedgerContent(
                                         TopBarIconButton(
                                             imageVector = MaterialSymbols.Close,
                                             contentDescription = "关闭搜索",
+                                            showPressFeedback = false,
                                             onClick = {
                                                 isSearchActive = false
                                                 searchQuery = ""
@@ -458,6 +465,10 @@ fun DayGroupSection(
     onTransactionClick: (Long) -> Unit = {},
 ) {
     var expanded by rememberSaveable(dayGroup.dateEpochDay) { mutableStateOf(true) }
+    val summary = buildList {
+        if (dayGroup.totalExpense != 0L) add("支出: ${dayGroup.totalExpense.toFormattedAmount(showSymbol = true)}")
+        if (dayGroup.totalIncome != 0L) add("收入: ${dayGroup.totalIncome.toFormattedAmount(showSymbol = true)}")
+    }.joinToString("  ")
     val colors = MaterialTheme.colorScheme
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(
@@ -465,7 +476,7 @@ fun DayGroupSection(
                 .semantics { stateDescription = if (expanded) "已展开" else "已折叠" }
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
+                    indication = LocalIndication.current,
                 ) { expanded = !expanded }
                 .padding(start = 4.dp, top = 3.dp, bottom = 3.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -480,8 +491,9 @@ fun DayGroupSection(
                 fontWeight = FontWeight.SemiBold,
                 color = colors.onSurfaceVariant,
             )
-            Text(
-                text = "支出: ${dayGroup.totalExpense.toFormattedAmount(showSymbol = true)}  收入: ${dayGroup.totalIncome.toFormattedAmount(showSymbol = true)}",
+            if (summary.isEmpty()) Spacer(Modifier.weight(1f))
+            else Text(
+                text = summary,
                 modifier = Modifier.weight(1f),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -541,7 +553,7 @@ fun DayTransactionRowItem(
             .border(1.dp, colors.outline.copy(alpha = colors.outline.alpha * 0.5f), shape)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = null,
+                indication = LocalIndication.current,
                 onClick = onClick,
             )
             .padding(horizontal = 14.dp, vertical = 12.dp),

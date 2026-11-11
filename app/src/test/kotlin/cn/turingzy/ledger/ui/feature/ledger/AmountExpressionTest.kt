@@ -22,4 +22,36 @@ class AmountExpressionTest {
         assertEquals("", evaluateMathExpression("-92233720368547758.07-0.01"))
         assertEquals("92233720368547758.07", evaluateMathExpression("92233720368547758.07"))
     }
+    @Test
+    fun multiplicationAndDivisionRespectPrecedenceAndRoundToCents() {
+        assertEquals("14", evaluateMathExpression("2+3×4"))
+        assertEquals("7", evaluateMathExpression("10-6÷2"))
+        assertEquals("24.68", evaluateMathExpression("12.34×2"))
+        assertEquals("0.02", evaluateMathExpression("0.1×0.2"))
+        assertEquals("2.5", evaluateMathExpression("10÷4"))
+        assertEquals("0.13", evaluateMathExpression("1÷8"))
+        assertEquals("-2.5", evaluateMathExpression("-10÷4"))
+        assertEquals("14", evaluateMathExpression("2+3*4"))
+    }
+
+    @Test
+    fun divisionByZeroAndMultiplicationOverflowPreventSaving() {
+        assertEquals("", evaluateMathExpression("1÷0"))
+        assertEquals("", evaluateMathExpression("92233720368547758.07×2"))
+        assertEquals("", evaluateMathExpression("92233720368547758.07÷0.01"))
+    }
+
+    @Test
+    fun repeatedOperatorPressesToggleWithinTheirFamily() {
+        assertEquals("12+", appendRecordOperator("12", "+"))
+        assertEquals("12×", appendRecordOperator("12+", "+"))
+        assertEquals("12+", appendRecordOperator("12×", "+"))
+        assertEquals("12-", appendRecordOperator("12", "-"))
+        assertEquals("12÷", appendRecordOperator("12-", "-"))
+        assertEquals("12-", appendRecordOperator("12÷", "-"))
+        assertEquals("12-", appendRecordOperator("12×", "-"))
+        assertEquals("0.25", recordLastOperand("2×3÷0.25"))
+        assertEquals("", appendRecordOperator("", "+"))
+    }
+
 }

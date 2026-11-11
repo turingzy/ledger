@@ -23,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -41,13 +42,15 @@ internal fun LedgerSegmentedControl(
     height: Dp = 36.dp,
     fontSize: TextUnit = 14.sp,
     emphasizeSelection: Boolean = true,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceVariant,
+    selectedContainerColor: Color = MaterialTheme.colorScheme.surface,
 ) {
     val shape = RoundedCornerShape(height / 2)
     BoxWithConstraints(
         modifier = modifier
             .height(height)
             .clip(shape)
-            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .background(containerColor)
             .padding(2.dp),
     ) {
         val segmentWidth = maxWidth / labels.size
@@ -62,7 +65,7 @@ internal fun LedgerSegmentedControl(
                 .width(segmentWidth)
                 .fillMaxHeight()
                 .clip(shape)
-                .background(MaterialTheme.colorScheme.surface),
+                .background(selectedContainerColor),
         )
         Row(modifier = Modifier.fillMaxSize().selectableGroup()) {
             labels.forEachIndexed { index, label ->

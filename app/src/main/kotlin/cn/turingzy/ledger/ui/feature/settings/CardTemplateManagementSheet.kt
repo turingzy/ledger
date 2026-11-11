@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.settings
 
+import androidx.compose.foundation.LocalIndication
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import android.net.Uri
 import android.widget.ImageView
@@ -33,9 +34,8 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import cn.turingzy.ledger.ui.component.LedgerIconButton as IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ripple
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -110,6 +110,7 @@ internal fun CardTemplateManagementSheet(
             val creating = newTemplate != null
             val canSave = newTemplate?.let { it.name.isNotBlank() && it.coverUri.isNotBlank() } == true
             IconButton(
+                showPressFeedback = false,
                 enabled = !creating || canSave,
                 onClick = {
                     val pending = newTemplate
@@ -204,7 +205,7 @@ private fun TemplateCoverPreview(
             Box(
                 Modifier.fillMaxSize().background(colors.surface).clickable(
                     interactionSource = remember { MutableInteractionSource() },
-                    indication = ripple(bounded = true),
+                    indication = LocalIndication.current,
                     role = Role.Button,
                     onClick = onUpload,
                 ).semantics { contentDescription = "上传卡片封面" }.drawWithCache {

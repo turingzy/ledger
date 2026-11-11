@@ -1,12 +1,12 @@
 package cn.turingzy.ledger.ui.component
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.ripple
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -28,14 +28,14 @@ internal fun SummaryCardIconButton(
     enabled: Boolean = true,
     containerColor: Color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.24f),
     contentColor: Color = MaterialTheme.colorScheme.onPrimary,
-    showRipple: Boolean = false,
+    showPressFeedback: Boolean = true,
 ) {
     Box(
         modifier.size(36.dp).clip(CircleShape)
             .background(containerColor)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = if (showRipple) ripple(bounded = true, radius = 18.dp) else null,
+                indication = if (showPressFeedback) LocalIndication.current else null,
                 enabled = enabled,
                 role = Role.Button,
                 onClick = onClick,
@@ -57,6 +57,7 @@ internal fun TopBarIconButton(
     contentDescription: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    showPressFeedback: Boolean = true,
 ) {
     SummaryCardIconButton(
         imageVector = imageVector,
@@ -65,6 +66,6 @@ internal fun TopBarIconButton(
         modifier = modifier,
         containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-        showRipple = true,
+        showPressFeedback = showPressFeedback,
     )
 }

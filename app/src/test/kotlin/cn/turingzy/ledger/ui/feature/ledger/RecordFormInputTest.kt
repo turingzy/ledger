@@ -9,6 +9,7 @@ import cn.turingzy.ledger.model.CategoryWithIcon
 import cn.turingzy.ledger.model.Icon
 import cn.turingzy.ledger.model.TransactionType
 import java.time.Instant
+import java.time.YearMonth
 import java.time.LocalDate
 import java.time.ZoneId
 import org.junit.Assert.assertEquals
@@ -68,4 +69,21 @@ class RecordFormInputTest {
         assertNull(recordTimeMillis(date, "12", "60", zone))
         assertNull(recordTimeMillis(date, "12", "-1", zone))
     }
+    @Test
+    fun timeLabelOmitsTodayAndKeepsOtherDates() {
+        val zone = ZoneId.of("Asia/Shanghai")
+        val today = LocalDate.of(2026, 11, 11)
+        fun timestamp(date: LocalDate) = date.atTime(13, 17).atZone(zone).toInstant().toEpochMilli()
+        assertEquals("13:17", recordTimeLabel(timestamp(today), zone, today))
+        assertEquals("11.10 13:17", recordTimeLabel(timestamp(today.minusDays(1)), zone, today))
+        assertEquals("2025.11.11 13:17", recordTimeLabel(timestamp(today.minusYears(1)), zone, today))
+    }
+
+    @Test
+    fun quickMonthSelectionClampsDayForLeapAndShortMonths() {
+        assertEquals(LocalDate.of(2024, 2, 29), recordDateInMonth(LocalDate.of(2024, 1, 31), YearMonth.of(2024, 2)))
+        assertEquals(LocalDate.of(2025, 2, 28), recordDateInMonth(LocalDate.of(2024, 2, 29), YearMonth.of(2025, 2)))
+        assertEquals(LocalDate.of(2024, 4, 30), recordDateInMonth(LocalDate.of(2024, 3, 31), YearMonth.of(2024, 4)))
+    }
+
 }

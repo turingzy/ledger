@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.settings
 
+import androidx.compose.foundation.LocalIndication
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -22,7 +23,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import cn.turingzy.ledger.ui.component.LedgerIconButton as IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -99,6 +100,7 @@ internal fun ParseRulesSheet(
         action = {
             if (choice == null) {
                 IconButton(
+                    showPressFeedback = false,
                     enabled = editing == null || editing.valid,
                     onClick = {
                         focusManager.clearFocus()
@@ -135,7 +137,7 @@ internal fun ParseRulesSheet(
                             Row(
                                 Modifier.fillMaxWidth().clickable(
                                     interactionSource = remember { MutableInteractionSource() },
-                                    indication = null,
+                                    indication = LocalIndication.current,
                                 ) { section = RuleEditorSection.BASIC; draft = rule }.padding(vertical = 14.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
@@ -228,7 +230,7 @@ internal fun ParseRulesSheet(
                                         RuleDivider()
                                         Row(Modifier.fillMaxWidth().heightIn(min = 56.dp), verticalAlignment = Alignment.CenterVertically) {
                                             Text("删除规则", Modifier.weight(1f))
-                                            IconButton(onClick = { onDeleteRule(editing.id); draft = null }) {
+                                            IconButton(showPressFeedback = false, onClick = { onDeleteRule(editing.id); draft = null }) {
                                                 Icon(MaterialSymbols.Delete, "删除规则预览", tint = colors.error)
                                             }
                                         }

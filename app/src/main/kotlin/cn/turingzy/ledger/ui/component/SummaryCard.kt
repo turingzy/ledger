@@ -112,6 +112,7 @@ fun SummaryCard(
             imageVector = if (settingsVisible) MaterialSymbols.Close else MaterialSymbols.MoreHoriz,
             contentDescription = if (settingsVisible) "关闭卡片设置" else "更多卡片设置",
             onClick = { settingsVisible = !settingsVisible },
+            showPressFeedback = !settingsVisible,
             modifier = Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 12.dp).size(36.dp),
         )
     }

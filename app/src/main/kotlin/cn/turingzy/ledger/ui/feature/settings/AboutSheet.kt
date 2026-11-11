@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.settings
 
+import androidx.compose.foundation.LocalIndication
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -161,7 +162,7 @@ private fun AboutContent(
                     Box(
                         modifier = Modifier.fillMaxSize().clickable(
                             interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
+                            indication = LocalIndication.current,
                             enabled = updateState != UpdatePreviewState.CHECKING,
                             role = Role.Button,
                             onClick = onCheckUpdate,

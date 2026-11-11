@@ -23,7 +23,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import cn.turingzy.ledger.ui.component.LedgerIconButton as IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
@@ -74,7 +74,7 @@ internal fun TemplateColorPickerSheet(
         onDismissRequest = onDismissRequest,
         onBack = onDismissRequest,
         action = {
-            IconButton(onClick = { onConfirm(selection.color().hexString()) }, enabled = valid) {
+            IconButton(showPressFeedback = false, onClick = { onConfirm(selection.color().hexString()) }, enabled = valid) {
                 Icon(MaterialSymbols.Check, "确认文字颜色", tint = colors.tertiary.copy(alpha = if (valid) 1f else 0.38f))
             }
         },

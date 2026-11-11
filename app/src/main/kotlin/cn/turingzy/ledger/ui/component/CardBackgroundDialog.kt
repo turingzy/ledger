@@ -21,9 +21,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.OutlinedButton
+import cn.turingzy.ledger.ui.component.LedgerOutlinedButton as OutlinedButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import cn.turingzy.ledger.ui.component.LedgerIconButton as IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -90,11 +90,11 @@ internal fun CardBackgroundDialog(
                 }
                 Spacer(Modifier.height(24.dp))
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onDismiss, enabled = !busy, modifier = Modifier.offset(x = (-8).dp).size(40.dp)) {
+                    IconButton(showPressFeedback = false, onClick = onDismiss, enabled = !busy, modifier = Modifier.offset(x = (-8).dp).size(40.dp)) {
                         Icon(MaterialSymbols.Close, contentDescription = "关闭更换背景", modifier = Modifier.size(24.dp))
                     }
                     Spacer(Modifier.weight(1f))
-                    IconButton(onClick = { onConfirm(restoreDefault) }, enabled = canConfirm, modifier = Modifier.size(40.dp)) {
+                    IconButton(showPressFeedback = false, onClick = { onConfirm(restoreDefault) }, enabled = canConfirm, modifier = Modifier.size(40.dp)) {
                         Icon(
                             MaterialSymbols.Check,
                             contentDescription = "应用背景",

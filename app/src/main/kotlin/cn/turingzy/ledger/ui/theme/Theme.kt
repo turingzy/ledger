@@ -4,6 +4,12 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LocalRippleConfiguration
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
+import cn.turingzy.ledger.ui.component.PressFeedback
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
@@ -45,6 +51,7 @@ private val LightColorScheme = lightColorScheme(
     error = IosRed,
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LedgerTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
@@ -55,6 +62,8 @@ fun LedgerTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
-        content = content,
-    )
+    ) {
+        val feedback = remember(colorScheme.onSurface) { PressFeedback(colorScheme.onSurface.copy(alpha = 0.1f)) }
+        CompositionLocalProvider(LocalIndication provides feedback, LocalRippleConfiguration provides null, content = content)
+    }
 }

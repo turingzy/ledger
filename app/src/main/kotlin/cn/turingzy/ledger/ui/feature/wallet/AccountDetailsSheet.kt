@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.wallet
 
+import androidx.compose.foundation.LocalIndication
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -35,7 +36,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import cn.turingzy.ledger.ui.component.LedgerIconButton as IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
@@ -136,7 +137,7 @@ fun AccountDetailsContent(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = onClose) {
+            IconButton(showPressFeedback = false, onClick = onClose) {
                 Icon(MaterialSymbols.Close, "关闭账户详情", Modifier.size(24.dp), tint = colors.onSurfaceVariant)
             }
             Text("账户详情", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
@@ -263,7 +264,7 @@ private fun AccountInlineTextField(
     Column(
         modifier.fillMaxWidth().clickable(
             interactionSource = remember { MutableInteractionSource() },
-            indication = null,
+            indication = LocalIndication.current,
         ) {
             focusRequester.requestFocus()
             keyboard?.show()
