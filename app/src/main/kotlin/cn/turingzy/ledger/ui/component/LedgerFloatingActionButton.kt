@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,9 +29,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cn.turingzy.ledger.ui.theme.IosFrostedBorder
-import cn.turingzy.ledger.ui.theme.IosFrostedGlass
-import cn.turingzy.ledger.ui.theme.IosLabel
 
 @Composable
 fun LedgerFloatingActionButton(
@@ -54,10 +52,10 @@ fun LedgerFloatingActionButton(
                     spotColor = Color.Black.copy(alpha = 0.10f),
                 )
                 .clip(RoundedCornerShape(20.dp))
-                .background(IosFrostedGlass)
+                .background(MaterialTheme.colorScheme.tertiary)
                 .border(
                     width = 0.5.dp,
-                    color = IosFrostedBorder,
+                    color = MaterialTheme.colorScheme.onTertiary.copy(alpha = 0.16f),
                     shape = RoundedCornerShape(20.dp),
                 )
                 .clickable(
@@ -74,12 +72,12 @@ fun LedgerFloatingActionButton(
                 text = "记一笔",
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = IosLabel,
+                color = MaterialTheme.colorScheme.onTertiary,
             )
             Icon(
                 imageVector = MaterialSymbols.EditSquare,
                 contentDescription = "记一笔",
-                tint = IosLabel,
+                tint = MaterialTheme.colorScheme.onTertiary,
                 modifier = Modifier.size(16.dp),
             )
         }

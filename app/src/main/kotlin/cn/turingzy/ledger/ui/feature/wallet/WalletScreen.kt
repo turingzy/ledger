@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.wallet
 
+import cn.turingzy.ledger.ui.component.PressFeedback
 import cn.turingzy.ledger.ui.component.TopBarIconButton
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.theme.IosYellow
@@ -242,7 +243,7 @@ fun WalletContent(
                                     )
 
                                     TopBarIconButton(
-                                        imageVector = MaterialSymbols.Add,
+                                        imageVector = MaterialSymbols.AddCard,
                                         contentDescription = "添加账户",
                                         onClick = onAddAccountClick,
                                     )
@@ -261,7 +262,6 @@ fun WalletContent(
                         }
                     }
 
-                    // 我的卡包 区域标题 + 右侧视图切换按钮 (堆叠视图 / 垂直平铺列表视图)
                     item(key = "cards_section_title") {
                         Row(
                             modifier = Modifier
@@ -271,7 +271,7 @@ fun WalletContent(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
-                                text = "我的卡包",
+                                text = "账户",
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -348,6 +348,7 @@ fun BankCardItem(
     showDetails: Boolean = true,
     showBackPlaceholder: Boolean = false,
 ) {
+    val pressColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.05f)
     val isCenturion = account.templateId == 2L || account.name.contains("百夫长") || account.name.contains("运通")
 
     val cardGradients = when {
@@ -367,7 +368,12 @@ fun BankCardItem(
                 ambientColor = Color.Black.copy(alpha = 0.35f),
                 spotColor = Color.Black.copy(alpha = 0.35f),
             )
-            .clickable(onClick = onAdjustClick),
+            .clip(RoundedCornerShape(14.dp))
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = remember(pressColor) { PressFeedback(pressColor) },
+                onClick = onAdjustClick,
+            ),
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = cardGradients.first()),
     ) {

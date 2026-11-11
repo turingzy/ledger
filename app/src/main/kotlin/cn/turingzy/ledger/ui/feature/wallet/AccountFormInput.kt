@@ -7,8 +7,12 @@ import cn.turingzy.ledger.util.AmountFormatter
 import java.util.Currency
 import java.util.Locale
 
+internal val accountCurrencyOptions: List<String> by lazy {
+    Currency.getAvailableCurrencies().map { it.currencyCode }.sorted()
+}
+
 internal val accountCurrencyCodes: Set<String> by lazy {
-    Currency.getAvailableCurrencies().map { it.currencyCode }.toSet()
+    accountCurrencyOptions.toSet()
 }
 
 internal data class AccountFormInput(
@@ -57,11 +61,10 @@ internal data class AccountFormInput(
     }
 
     fun toUpdatedAccountOrNull(original: Account, templates: List<CardTemplate>): Account? {
-        val edited = copy(currency = original.currency).toAccountOrNull(templates) ?: return null
+        val edited = copy(currency = original.currency, balance = "").toAccountOrNull(templates) ?: return null
         return original.copy(
             name = edited.name,
             type = edited.type,
-            initialBalance = edited.initialBalance,
             templateId = edited.templateId,
             cardNumber = edited.cardNumber,
             includeInTotal = edited.includeInTotal,

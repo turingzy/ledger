@@ -5,6 +5,9 @@ import androidx.lifecycle.viewModelScope
 import cn.turingzy.ledger.data.repository.CardTemplateRepository
 import cn.turingzy.ledger.data.repository.AccountRepository
 import cn.turingzy.ledger.model.Account
+import cn.turingzy.ledger.util.Dispatcher
+import cn.turingzy.ledger.util.LedgerDispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import cn.turingzy.ledger.model.AccountType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -18,7 +21,14 @@ import javax.inject.Inject
 class WalletViewModel @Inject constructor(
     private val accountRepository: AccountRepository,
     private val cardTemplateRepository: CardTemplateRepository,
+    @Dispatcher(LedgerDispatchers.Default) private val defaultDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
+
+    init {
+        viewModelScope.launch(defaultDispatcher) {
+            accountCurrencyCodes
+        }
+    }
 
     val uiState: StateFlow<WalletUiState> = combine(
         accountRepository.getTotalAsset(),

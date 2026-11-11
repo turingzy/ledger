@@ -7,7 +7,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 
 symbols = {
-'Add':'add', 'AddPhotoAlternate':'add_photo_alternate', 'ArrowBack':'arrow_back', 'ArrowForward':'arrow_forward',
+'Add':'add', 'AddCard':'add_card', 'AddPhotoAlternate':'add_photo_alternate', 'ArrowBack':'arrow_back', 'ArrowForward':'arrow_forward',
 'Backspace':'backspace', 'Check':'check', 'ChevronLeft':'chevron_left', 'ChevronRight':'chevron_right',
 'Close':'close', 'Code':'code', 'CloudUpload':'cloud_upload', 'DashboardCustomize':'dashboard_customize',
 'Delete':'delete', 'DirectionsBus':'directions_bus', 'Edit':'edit', 'EditSquare':'edit_square',

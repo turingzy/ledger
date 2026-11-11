@@ -80,7 +80,7 @@ class AccountFormInputTest {
         assertNull(AccountFormInput(name = "账户", templateId = template.id).toAccountOrNull(listOf(template)))
     }
     @Test
-    fun editingChangesMetadataButPreservesIdentityCurrencyAndCurrentBalance() {
+    fun editingChangesMetadataButPreservesIdentityCurrencyAndBalances() {
         val original = Account(
             id = 17L,
             name = "旧名称",
@@ -105,7 +105,7 @@ class AccountFormInputTest {
         assertEquals(original.currentBalance, edited.currentBalance)
         assertEquals("新名称", edited.name)
         assertEquals(AccountType.CREDIT, edited.type)
-        assertEquals(99999L, edited.initialBalance)
+        assertEquals(original.initialBalance, edited.initialBalance)
         assertEquals("1234", edited.cardNumber)
         assertFalse(edited.includeInTotal)
         assertEquals(9, edited.sortOrder)

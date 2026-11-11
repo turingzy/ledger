@@ -63,7 +63,7 @@ fun LedgerTheme(
         colorScheme = colorScheme,
         typography = Typography,
     ) {
-        val feedback = remember(colorScheme.onSurface) { PressFeedback(colorScheme.onSurface.copy(alpha = 0.1f)) }
+        val feedback = remember(colorScheme.onSurface) { PressFeedback(colorScheme.onSurface.copy(alpha = 0.05f)) }
         CompositionLocalProvider(LocalIndication provides feedback, LocalRippleConfiguration provides null, content = content)
     }
 }

@@ -1,5 +1,7 @@
 package cn.turingzy.ledger.ui.component
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.IndicationNodeFactory
 import androidx.compose.foundation.LocalIndication
@@ -16,10 +18,7 @@ import androidx.compose.material3.ButtonElevation
 import androidx.compose.material3.IconButtonColors
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -27,6 +26,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.ContentDrawScope
 import androidx.compose.ui.node.DelegatableNode
 import androidx.compose.ui.node.DrawModifierNode
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 internal data class PressFeedback(val color: Color) : IndicationNodeFactory {
@@ -34,27 +34,27 @@ internal data class PressFeedback(val color: Color) : IndicationNodeFactory {
 }
 
 private class PressFeedbackNode(private val source: InteractionSource, private val color: Color) : Modifier.Node(), DrawModifierNode {
-    private var pressed by mutableStateOf(false)
+    private val alpha = Animatable(0f)
 
     override fun onAttach() {
         coroutineScope.launch {
+            alpha.snapTo(0f)
             val presses = mutableSetOf<PressInteraction.Press>()
-            source.interactions.collect { interaction ->
+            source.interactions.collectLatest { interaction ->
                 when (interaction) {
                     is PressInteraction.Press -> presses.add(interaction)
                     is PressInteraction.Release -> presses.remove(interaction.press)
                     is PressInteraction.Cancel -> presses.remove(interaction.press)
                 }
-                pressed = presses.isNotEmpty()
+                val pressed = presses.isNotEmpty()
+                alpha.animateTo(if (pressed) 1f else 0f, tween(if (pressed) 70 else 140))
             }
         }
     }
 
-    override fun onDetach() { pressed = false }
-
     override fun ContentDrawScope.draw() {
         drawContent()
-        if (pressed) drawRect(color)
+        if (alpha.value > 0f) drawRect(color.copy(alpha = color.alpha * alpha.value))
     }
 }
 
