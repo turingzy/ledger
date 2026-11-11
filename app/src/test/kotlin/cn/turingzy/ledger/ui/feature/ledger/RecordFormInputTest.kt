@@ -28,6 +28,29 @@ class RecordFormInputTest {
     private val input = RecordFormInput(TransactionType.EXPENSE, "12.34", 1L, null, 5L, 1_700_000_000_000L, " 晚餐 ")
 
     @Test
+    fun categoryChoicesExcludeOtherAndDeletedCategoriesAndKeepTypeOrder() {
+        val template = categories.first()
+        val otherExpense = template.copy(category = template.category.copy(id = 20L, name = "其他支出"))
+        val otherIncome = template.copy(category = template.category.copy(id = 21L, name = "其他收入", type = CategoryType.INCOME))
+        val deleted = template.copy(category = template.category.copy(id = 22L, isDeleted = true))
+        val earlier = template.copy(category = template.category.copy(id = 23L, name = "早餐", sortOrder = -1))
+        val income = template.copy(category = template.category.copy(id = 24L, name = "工资", type = CategoryType.INCOME))
+        val other = template.copy(category = template.category.copy(id = 25L, name = "其他分类"))
+        val options = categories + listOf(otherExpense, otherIncome, deleted, earlier, income, other)
+
+        assertEquals(listOf(23L, 5L), selectableRecordCategories(options, TransactionType.EXPENSE).map { it.category.id })
+        assertEquals(listOf(24L), selectableRecordCategories(options, TransactionType.INCOME).map { it.category.id })
+        assertEquals(listOf(11L), selectableRecordCategories(options, TransactionType.TRANSFER).map { it.category.id })
+    }
+
+    @Test
+    fun existingTransactionCanKeepItsHiddenOtherCategoryWhenEdited() {
+        val other = categories.first().let { it.copy(category = it.category.copy(id = 20L, name = "其他支出")) }
+        val transaction = input.copy(categoryId = 20L).toTransactionOrNull(accounts, categories + other)
+        assertEquals(20L, checkNotNull(transaction).categoryId)
+    }
+
+    @Test
     fun selectedCategoryAndTimestampArePreservedWithoutNameMatching() {
         val transaction = checkNotNull(input.toTransactionOrNull(accounts, categories))
         assertEquals(1234L, transaction.amount)

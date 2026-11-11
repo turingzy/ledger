@@ -56,9 +56,9 @@ fun LedgerBottomBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp)
+                .height(52.dp)
                 .selectableGroup()
-                .padding(horizontal = 8.dp, vertical = 4.dp),
+                .padding(horizontal = 8.dp, vertical = 2.dp),
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -102,7 +102,7 @@ fun LedgerBottomBar(
                         imageVector = destination.icon,
                         contentDescription = destination.labelText,
                         tint = iconTint,
-                        modifier = Modifier.size(32.dp),
+                        modifier = Modifier.size(28.dp),
                     )
                 }
             }

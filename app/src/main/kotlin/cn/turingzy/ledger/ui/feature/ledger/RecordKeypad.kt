@@ -50,9 +50,9 @@ fun BuiltInKeypad(
         modifier = modifier.fillMaxWidth(),
         content = {
             for (digit in 1..3) KeypadButton(digit.toString(), { onNumberClick(digit.toString()) }, Modifier.testTag("keypad_$digit"))
-            KeypadButton("+ ×", { onOperatorClick("+") }, Modifier.testTag("keypad_add"))
+            KeypadButton("+×", { onOperatorClick("+") }, Modifier.testTag("keypad_add"))
             for (digit in 4..6) KeypadButton(digit.toString(), { onNumberClick(digit.toString()) }, Modifier.testTag("keypad_$digit"))
-            KeypadButton("− ÷", { onOperatorClick("-") }, Modifier.testTag("keypad_subtract"))
+            KeypadButton("−÷", { onOperatorClick("-") }, Modifier.testTag("keypad_subtract"))
             for (digit in 7..9) KeypadButton(digit.toString(), { onNumberClick(digit.toString()) }, Modifier.testTag("keypad_$digit"))
             KeypadIconButton(MaterialSymbols.Backspace, onBackspaceClick, Modifier.testTag("keypad_backspace"))
             KeypadButton("·", onDotClick, Modifier.testTag("keypad_dot").semantics { contentDescription = "小数点" })
@@ -106,7 +106,7 @@ fun KeypadButton(
     ) {
         Text(
             text = text,
-            fontSize = when (text) { "+ ×", "− ÷" -> 22.sp; "·" -> 26.sp; "AC" -> 18.sp; else -> 20.sp },
+            fontSize = when (text) { "+×", "−÷" -> 22.sp; "·" -> 26.sp; "AC" -> 18.sp; else -> 20.sp },
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurface,
         )

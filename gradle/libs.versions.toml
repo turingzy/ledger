@@ -1,9 +1,9 @@
 [versions]
 # Android & Kotlin Tooling
 agp = "9.5.1"
-kotlin = "2.2.10"
-ksp = "2.2.10-2.0.2"
-composeBom = "2026.02.01"
+kotlin = "2.4.10"
+ksp = "2.3.12"
+composeBom = "2026.08.00"
 
 # Core Architecture & Dependency Injection
 hilt = "2.60.1"
@@ -28,6 +28,7 @@ coreKtx = "1.15.0"
 
 # Utilities & Logging
 timber = "5.0.1"
+vico = "3.3.1"
 
 # Testing Frameworks
 junit = "4.13.2"
@@ -79,6 +80,7 @@ kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 
 # Logging
 timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "timber" }
+vico-compose = { group = "com.patrykandpatrick.vico", name = "compose", version.ref = "vico" }
 
 # Testing Suite (Unit & Instrumented)
 junit = { group = "junit", name = "junit", version.ref = "junit" }

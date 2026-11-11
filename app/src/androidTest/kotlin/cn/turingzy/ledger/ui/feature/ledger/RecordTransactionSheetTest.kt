@@ -35,7 +35,10 @@ import org.junit.Test
 @OptIn(ExperimentalMaterial3Api::class)
 class RecordTransactionSheetTest {
     @get:Rule val compose = createComposeRule()
-    private val accounts = listOf(AccountWithTemplate(Account(id = 1L, name = "测试账户", type = AccountType.DEBIT)))
+    private val accounts = listOf(
+        AccountWithTemplate(Account(id = 1L, name = "测试账户", type = AccountType.DEBIT)),
+        AccountWithTemplate(Account(id = 2L, name = "储蓄账户", type = AccountType.DEBIT)),
+    )
     private val expenseCategories = List(40) { index ->
         CategoryWithIcon(
             Category(id = index + 1L, name = "分类$index", type = CategoryType.EXPENSE, iconId = 1L, sortOrder = index),
@@ -68,7 +71,7 @@ class RecordTransactionSheetTest {
         compose.onNodeWithText("0").performClick()
         compose.onNodeWithTag("keypad_dot").performClick()
         compose.onNodeWithText("1").performClick()
-        compose.onNodeWithText("+ ×").performClick()
+        compose.onNodeWithTag("keypad_add").performClick()
         compose.onNodeWithText("0").performClick()
         compose.onNodeWithTag("keypad_dot").performClick()
         compose.onNodeWithText("2").performClick()
@@ -97,7 +100,7 @@ class RecordTransactionSheetTest {
     }
 
     @Test
-    fun timeUsesDialogAndTransferHasAccountCardsInsteadOfCategoryGrid() {
+    fun timeUsesDialogAndTransferHasAccountSelectorsInsteadOfCategoryGrid() {
         showSheet {}
         val before = compose.onNodeWithTag("recordDrawer").getUnclippedBoundsInRoot()
         compose.onNodeWithContentDescription("选择时间").performClick()
@@ -109,11 +112,37 @@ class RecordTransactionSheetTest {
         compose.onNodeWithText("23:59", substring = true).assertIsDisplayed()
         assertEquals(before, compose.onNodeWithTag("recordDrawer").getUnclippedBoundsInRoot())
         compose.onNodeWithText("转账").performClick()
-        compose.onNodeWithText("请选择转出账户").assertIsDisplayed()
-        compose.onNodeWithText("请选择转入账户").assertIsDisplayed()
+        compose.onNodeWithContentDescription("选择转出账户").assertIsDisplayed()
+        compose.onNodeWithContentDescription("选择转入账户").assertIsDisplayed()
         compose.onNodeWithTag("recordCategoryGrid").assertDoesNotExist()
         compose.onNodeWithText("转账分类").assertDoesNotExist()
         assertEquals(before, compose.onNodeWithTag("recordDrawer").getUnclippedBoundsInRoot())
+    }
+
+    @Test
+    fun transferUsesHorizontalAccountSelectorsAndSavesSwappedDirection() {
+        var saved: Transaction? = null
+        showSheet { saved = it }
+        compose.onNodeWithText("转账").performClick()
+        val source = compose.onNodeWithContentDescription("选择转出账户")
+        val destination = compose.onNodeWithContentDescription("选择转入账户")
+        val sourceBounds = source.getUnclippedBoundsInRoot()
+        val destinationBounds = destination.getUnclippedBoundsInRoot()
+        assertTrue(sourceBounds.right < destinationBounds.left)
+        assertEquals(sourceBounds.top, destinationBounds.top)
+
+        source.performClick()
+        compose.onNodeWithText("测试账户").performClick()
+        destination.performClick()
+        compose.onNodeWithText("储蓄账户").performClick()
+        compose.onNodeWithTag("keypad_5").performClick()
+        compose.onNodeWithContentDescription("交换转出转入账户").performClick()
+        compose.onNodeWithText("完成").performClick()
+        assertEquals(TransactionType.TRANSFER, saved?.type)
+        assertEquals(500L, saved?.amount)
+        assertEquals(2L, saved?.accountId)
+        assertEquals(1L, saved?.toAccountId)
+        assertEquals(100L, saved?.categoryId)
     }
 
     @Test

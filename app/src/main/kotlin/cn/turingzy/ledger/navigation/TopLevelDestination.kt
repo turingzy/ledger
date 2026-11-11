@@ -25,7 +25,7 @@ enum class TopLevelDestination(
     val route: Route,
 ) {
     LEDGER(
-        icon = MaterialSymbols.Book,
+        icon = MaterialSymbols.Receipt,
         labelText = "账本",
         route = Route.Ledger,
     ),

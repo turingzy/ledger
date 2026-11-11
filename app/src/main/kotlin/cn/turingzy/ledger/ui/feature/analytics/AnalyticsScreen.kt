@@ -160,7 +160,7 @@ fun AnalyticsContent(
                                     Text(
                                         text = uiState.periodDisplay,
                                         fontSize = 17.sp,
-                                        fontWeight = FontWeight.SemiBold,
+                                        fontWeight = FontWeight.Normal,
                                         color = MaterialTheme.colorScheme.onSurface,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
@@ -196,6 +196,7 @@ fun AnalyticsContent(
                                     uiState = uiState,
                                     onCategoryTypeChange = onCategoryTypeChange,
                                 )
+                                AnalyticsCard.AVERAGES -> AnalyticsAverageCard(uiState)
                             }
                         }
                     }

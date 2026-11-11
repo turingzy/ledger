@@ -4,6 +4,7 @@ enum class AnalyticsCard(val storageKey: String) {
     COMPARISON("comparison"),
     TREND("trend"),
     CATEGORIES("categories"),
+    AVERAGES("averages"),
 }
 
 data class AnalyticsCardSettings(

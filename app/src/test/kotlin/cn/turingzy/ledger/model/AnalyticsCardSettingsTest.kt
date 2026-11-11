@@ -16,8 +16,8 @@ class AnalyticsCardSettingsTest {
             listOf("categories", "removed", "categories", "trend"),
             setOf("comparison", "removed"),
         )
-        assertEquals(listOf(AnalyticsCard.CATEGORIES, AnalyticsCard.TREND, AnalyticsCard.COMPARISON), restored.order)
-        assertEquals(listOf(AnalyticsCard.CATEGORIES, AnalyticsCard.TREND), restored.enabledCards)
+        assertEquals(listOf(AnalyticsCard.CATEGORIES, AnalyticsCard.TREND, AnalyticsCard.COMPARISON, AnalyticsCard.AVERAGES), restored.order)
+        assertEquals(listOf(AnalyticsCard.CATEGORIES, AnalyticsCard.TREND, AnalyticsCard.AVERAGES), restored.enabledCards)
     }
 
     @Test
@@ -34,11 +34,11 @@ class AnalyticsCardSettingsTest {
     fun cardsMoveInBothDirectionsWithoutDuplicatesOrChangingVisibility() {
         val initial = AnalyticsCardSettings().withEnabled(AnalyticsCard.TREND, false)
         val first = initial.move(AnalyticsCard.CATEGORIES, 0)
-        assertEquals(listOf(AnalyticsCard.CATEGORIES, AnalyticsCard.COMPARISON, AnalyticsCard.TREND), first.order)
+        assertEquals(listOf(AnalyticsCard.CATEGORIES, AnalyticsCard.COMPARISON, AnalyticsCard.TREND, AnalyticsCard.AVERAGES), first.order)
         assertEquals(initial.disabled, first.disabled)
         assertEquals(initial, first.move(AnalyticsCard.CATEGORIES, 2))
         assertEquals(first, first.move(AnalyticsCard.CATEGORIES, -1))
-        assertEquals(first, first.move(AnalyticsCard.CATEGORIES, 3))
+        assertEquals(first, first.move(AnalyticsCard.CATEGORIES, first.order.size))
     }
 
     @Test

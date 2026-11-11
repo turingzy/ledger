@@ -6,6 +6,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -35,7 +39,20 @@ internal fun AnalyticsComparisonCard(
         AnalyticsTimeScope.ALL -> return
     }
     AnalyticsChartCard(modifier, contentSpacing = 12.dp) {
-        Text("收支对比", fontSize = 17.sp, fontWeight = FontWeight.Bold)
+        AnalyticsCardTitle("收支对比")
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End)) {
+            ComparisonLegend("本期", colors.primary)
+            ComparisonLegend("上期", colors.secondary)
+        }
+        VicoColumnChart(
+            dataSeries = listOf(
+                listOf(uiState.totalIncome, uiState.totalExpense, uiState.balance),
+                listOf(comparison.totalIncome, comparison.totalExpense, comparison.balance),
+            ),
+            labels = listOf("收入", "支出", "净结余"),
+            seriesColors = listOf(colors.primary, colors.secondary),
+            description = "收支对比分组柱状图，$currentLabel 与 $previousLabel",
+        )
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Spacer(Modifier.width(42.dp))
@@ -48,6 +65,14 @@ internal fun AnalyticsComparisonCard(
             HorizontalDivider(color = colors.outlineVariant)
             ComparisonAmountRow("净结余", uiState.balance, comparison.balance, increaseIsPositive = true)
         }
+    }
+}
+
+@Composable
+private fun ComparisonLegend(label: String, color: Color) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Box(Modifier.size(6.dp).background(color, CircleShape))
+        Text(label, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 

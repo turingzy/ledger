@@ -528,7 +528,7 @@ fun DayGroupSection(
                 .semantics { stateDescription = if (expanded) "已展开" else "已折叠" }
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
-                    indication = LocalIndication.current,
+                    indication = null,
                 ) { expanded = !expanded }
                 .padding(start = 4.dp, top = 3.dp, bottom = 3.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -540,7 +540,7 @@ fun DayGroupSection(
                 maxLines = 1,
                 fontSize = 13.sp,
                 lineHeight = 18.sp,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Normal,
                 color = colors.onSurfaceVariant,
             )
             if (summary.isEmpty()) Spacer(Modifier.weight(1f))
@@ -552,7 +552,7 @@ fun DayGroupSection(
                 textAlign = TextAlign.End,
                 fontSize = 13.sp,
                 lineHeight = 18.sp,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Normal,
                 color = colors.onSurfaceVariant,
             )
             Icon(
@@ -630,7 +630,7 @@ fun DayTransactionRowItem(
                 overflow = TextOverflow.Ellipsis,
                 fontSize = 15.sp,
                 lineHeight = 18.sp,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Normal,
                 color = colors.onSurface,
                 letterSpacing = (-0.2).sp,
             )
@@ -649,7 +649,7 @@ fun DayTransactionRowItem(
                 text = amountText,
                 fontSize = 16.sp,
                 lineHeight = 18.sp,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Normal,
                 color = if (tx.type == TransactionType.TRANSFER) colors.onSurface else typeColor,
                 letterSpacing = (-0.3).sp,
             )

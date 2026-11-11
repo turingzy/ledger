@@ -13,20 +13,14 @@ class AnalyticsTrendLayoutTest {
         val scale = trendValueScale(listOf(AnalyticsTrendPoint(start, 20000L, 5000L)))
         assertEquals(-15000L, scale.minimum)
         assertEquals(20000L, scale.maximum)
-        assertEquals(0f, scale.fraction(-15000L), 0.00001f)
-        assertEquals(1f, scale.fraction(20000L), 0.00001f)
-        assertTrue(scale.fraction(0L) in 0f..1f)
-        assertEquals(5, scale.ticks.size)
-        assertEquals(20000L, scale.ticks.first())
-        assertEquals(-15000L, scale.ticks.last())
     }
 
     @Test
     fun scaleHandlesLongAmountsWithoutSubtractionOverflow() {
         val scale = trendValueScale(listOf(AnalyticsTrendPoint(start, Long.MAX_VALUE, 0L)))
-        assertEquals(0.5f, scale.fraction(0L), 0.00001f)
-        assertEquals(Long.MAX_VALUE, scale.ticks.first())
-        assertEquals(-Long.MAX_VALUE, scale.ticks.last())
+        assertEquals(Long.MAX_VALUE, scale.maximum)
+        assertEquals(-Long.MAX_VALUE, scale.minimum)
+        assertEquals(TrendAmountUnit.TRILLION_YUAN, trendAmountUnit(scale))
     }
 
     @Test
@@ -58,18 +52,22 @@ class AnalyticsTrendLayoutTest {
     }
 
     @Test
-    fun amountAxisUsesOneExplicitUnitForPositiveAndNegativeTicks() {
+    fun amountAxisUsesStandardPrefixesAndLeavesSmallAmountsUnabbreviated() {
         assertEquals(TrendAmountUnit.YUAN, trendAmountUnit(TrendValueScale(-50000L, 99999L)))
         assertEquals("-500", TrendAmountUnit.YUAN.format(-50000L))
         assertEquals("1.01", TrendAmountUnit.YUAN.format(101L))
         assertEquals(TrendAmountUnit.THOUSAND_YUAN, trendAmountUnit(TrendValueScale(-100_000L, 0L)))
-        assertEquals("-1", TrendAmountUnit.THOUSAND_YUAN.format(-100_000L))
-        assertEquals("5", TrendAmountUnit.THOUSAND_YUAN.format(500_000L))
-        assertEquals(TrendAmountUnit.TEN_THOUSAND_YUAN, trendAmountUnit(TrendValueScale(-1_000_000L, 0L)))
-        assertEquals("-1", TrendAmountUnit.TEN_THOUSAND_YUAN.format(-1_000_000L))
-        assertEquals(TrendAmountUnit.HUNDRED_MILLION_YUAN, trendAmountUnit(TrendValueScale(-Long.MAX_VALUE, Long.MAX_VALUE)))
-        assertEquals("1", TrendAmountUnit.HUNDRED_MILLION_YUAN.format(10_000_000_000L))
+        assertEquals("-1k", TrendAmountUnit.THOUSAND_YUAN.format(-100_000L))
+        assertEquals("5k", TrendAmountUnit.THOUSAND_YUAN.format(500_000L))
+        assertEquals(TrendAmountUnit.MILLION_YUAN, trendAmountUnit(TrendValueScale(-100_000_000L, 0L)))
+        assertEquals("-1M", TrendAmountUnit.MILLION_YUAN.format(-100_000_000L))
+        assertEquals(TrendAmountUnit.BILLION_YUAN, trendAmountUnit(TrendValueScale(-100_000_000_000L, 0L)))
+        assertEquals("-1G", TrendAmountUnit.BILLION_YUAN.format(-100_000_000_000L))
+        assertEquals(TrendAmountUnit.TRILLION_YUAN, trendAmountUnit(TrendValueScale(-Long.MAX_VALUE, Long.MAX_VALUE)))
+        assertEquals("1T", TrendAmountUnit.TRILLION_YUAN.format(100_000_000_000_000L))
         assertEquals("0", TrendAmountUnit.YUAN.format(0L))
+        assertEquals("0", TrendAmountUnit.THOUSAND_YUAN.format(0L))
+        assertEquals("99", TrendAmountUnit.MILLION_YUAN.format(9900L))
     }
 
     @Test

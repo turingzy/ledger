@@ -60,7 +60,7 @@ internal fun AnalyticsCardMenu(
     var draggedCard by remember { mutableStateOf<AnalyticsCard?>(null) }
     var dragOffset by remember { mutableFloatStateOf(0f) }
     val rowHeight = with(LocalDensity.current) { 48.dp.toPx() }
-    val rowStride = with(LocalDensity.current) { 56.dp.toPx() }
+    val rowStride = with(LocalDensity.current) { 50.dp.toPx() }
     val handleWidth = with(LocalDensity.current) { 40.dp.toPx() }
     val colors = MaterialTheme.colorScheme
 
@@ -126,7 +126,7 @@ internal fun AnalyticsCardMenu(
                             },
                         )
                     },
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     draftOrder.forEachIndexed { index, card ->
                         androidx.compose.runtime.key(card) {
@@ -179,4 +179,5 @@ private val AnalyticsCard.title: String
         AnalyticsCard.COMPARISON -> "收支对比"
         AnalyticsCard.TREND -> "收支走势"
         AnalyticsCard.CATEGORIES -> "分类占比"
+        AnalyticsCard.AVERAGES -> "日均收支"
     }

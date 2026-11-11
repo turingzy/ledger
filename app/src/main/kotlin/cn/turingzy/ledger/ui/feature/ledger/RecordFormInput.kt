@@ -43,6 +43,14 @@ internal fun TransactionType.categoryType(): CategoryType = when (this) {
     TransactionType.TRANSFER -> CategoryType.TRANSFER
 }
 
+internal fun selectableRecordCategories(categories: List<CategoryWithIcon>, type: TransactionType): List<CategoryWithIcon> =
+    categories.filter {
+        it.category.type == type.categoryType() && !it.category.isDeleted &&
+            (type == TransactionType.TRANSFER || it.category.name !in OtherRecordCategoryNames)
+    }.sortedBy { it.category.sortOrder }
+
+private val OtherRecordCategoryNames = setOf("其他", "其他分类", "其他支出", "其他收入")
+
 internal fun recordTimeMillis(date: LocalDate, hour: String, minute: String, zone: ZoneId): Long? {
     val validHour = hour.toIntOrNull()?.takeIf { it in 0..23 } ?: return null
     val validMinute = minute.toIntOrNull()?.takeIf { it in 0..59 } ?: return null

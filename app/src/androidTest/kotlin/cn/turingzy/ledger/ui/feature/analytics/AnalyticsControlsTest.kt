@@ -98,10 +98,11 @@ class AnalyticsControlsTest {
             AnalyticsCard.COMPARISON -> "收支对比"
             AnalyticsCard.TREND -> "收支走势"
             AnalyticsCard.CATEGORIES -> "分类占比"
+            AnalyticsCard.AVERAGES -> "日均收支"
         }
         val card = compose.onNodeWithTag("analyticsCard_${firstCard.name}")
         val second = compose.onNodeWithTag("analyticsCard_${settings.value.order[1].name}")
-        assertEquals(8.dp, second.getUnclippedBoundsInRoot().top - card.getUnclippedBoundsInRoot().bottom)
+        assertEquals(2.dp, second.getUnclippedBoundsInRoot().top - card.getUnclippedBoundsInRoot().bottom)
         val handle = compose.onNodeWithContentDescription("拖动${title}排序")
         val rows = compose.onNodeWithTag("analyticsCardRows").getUnclippedBoundsInRoot()
         val top = handle.getUnclippedBoundsInRoot().top

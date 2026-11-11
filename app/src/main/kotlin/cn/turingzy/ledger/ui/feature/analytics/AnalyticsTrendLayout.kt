@@ -5,23 +5,7 @@ import java.math.RoundingMode
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-internal data class TrendValueScale(val minimum: Long, val maximum: Long) {
-    val ticks: List<Long>
-        get() = (4 downTo 0).map { step ->
-            BigDecimal.valueOf(maximum).subtract(BigDecimal.valueOf(minimum))
-                .multiply(BigDecimal.valueOf(step.toLong()))
-                .divide(BigDecimal.valueOf(4), 0, RoundingMode.HALF_UP)
-                .add(BigDecimal.valueOf(minimum)).longValueExact()
-        }
-
-    fun fraction(amount: Long): Float = BigDecimal.valueOf(amount)
-        .subtract(BigDecimal.valueOf(minimum))
-        .divide(
-            BigDecimal.valueOf(maximum).subtract(BigDecimal.valueOf(minimum)),
-            8,
-            RoundingMode.HALF_UP,
-        ).toFloat()
-}
+internal data class TrendValueScale(val minimum: Long, val maximum: Long)
 
 internal fun trendValueScale(points: List<AnalyticsTrendPoint>): TrendValueScale {
     val values = points.flatMap { listOf(it.income, it.expense, it.income - it.expense) }
@@ -33,21 +17,26 @@ internal fun trendValueScale(points: List<AnalyticsTrendPoint>): TrendValueScale
 internal data class TrendTimeTick(val fraction: Float, val label: String)
 
 internal enum class TrendAmountUnit(val label: String, private val cents: Long) {
-    YUAN("元", 100L),
-    THOUSAND_YUAN("千元", 100_000L),
-    TEN_THOUSAND_YUAN("万元", 1_000_000L),
-    HUNDRED_MILLION_YUAN("亿元", 10_000_000_000L);
+    YUAN("", 100L),
+    THOUSAND_YUAN("k", 100_000L),
+    MILLION_YUAN("M", 100_000_000L),
+    BILLION_YUAN("G", 100_000_000_000L),
+    TRILLION_YUAN("T", 100_000_000_000_000L);
 
-    fun format(amount: Long): String = BigDecimal.valueOf(amount)
-        .divide(BigDecimal.valueOf(cents), 2, RoundingMode.HALF_UP)
-        .stripTrailingZeros().toPlainString()
+    fun format(amount: Long): String {
+        val value = BigDecimal.valueOf(amount)
+        val smallAmount = value.abs() < BigDecimal.valueOf(100_000L)
+        return value.divide(BigDecimal.valueOf(if (smallAmount) 100L else cents), 2, RoundingMode.HALF_UP)
+            .stripTrailingZeros().toPlainString() + if (smallAmount) "" else label
+    }
 }
 
 internal fun trendAmountUnit(scale: TrendValueScale): TrendAmountUnit {
     val magnitude = maxOf(BigDecimal.valueOf(scale.minimum).abs(), BigDecimal.valueOf(scale.maximum).abs())
     return when {
-        magnitude >= BigDecimal.valueOf(10_000_000_000L) -> TrendAmountUnit.HUNDRED_MILLION_YUAN
-        magnitude >= BigDecimal.valueOf(1_000_000L) -> TrendAmountUnit.TEN_THOUSAND_YUAN
+        magnitude >= BigDecimal.valueOf(100_000_000_000_000L) -> TrendAmountUnit.TRILLION_YUAN
+        magnitude >= BigDecimal.valueOf(100_000_000_000L) -> TrendAmountUnit.BILLION_YUAN
+        magnitude >= BigDecimal.valueOf(100_000_000L) -> TrendAmountUnit.MILLION_YUAN
         magnitude >= BigDecimal.valueOf(100_000L) -> TrendAmountUnit.THOUSAND_YUAN
         else -> TrendAmountUnit.YUAN
     }

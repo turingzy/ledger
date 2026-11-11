@@ -475,7 +475,7 @@ class AnalyticsViewModelTest {
             testDispatcher.scheduler.advanceUntilIdle()
             val disabled = awaitItem() as AnalyticsUiState.Success
             assertTrue(AnalyticsCard.TREND !in disabled.cardSettings.enabledCards)
-            val order = listOf(AnalyticsCard.CATEGORIES, AnalyticsCard.COMPARISON, AnalyticsCard.TREND)
+            val order = listOf(AnalyticsCard.CATEGORIES, AnalyticsCard.COMPARISON, AnalyticsCard.TREND, AnalyticsCard.AVERAGES)
             viewModel.setCardOrder(order)
             testDispatcher.scheduler.advanceUntilIdle()
             assertEquals(order, (awaitItem() as AnalyticsUiState.Success).cardSettings.order)

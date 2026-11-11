@@ -28,7 +28,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.HorizontalDivider
@@ -114,7 +113,7 @@ fun RecordTransactionSheet(
     var panel by rememberSaveable { mutableStateOf(RecordPanel.ENTRY) }
     val focusManager = LocalFocusManager.current
     val zone = ZoneId.systemDefault()
-    val matchingCategories = categories.filter { it.category.type == type.categoryType() && !it.category.isDeleted }.sortedBy { it.category.sortOrder }
+    val matchingCategories = remember(categories, type) { selectableRecordCategories(categories, type) }
     LaunchedEffect(matchingCategories, type) {
         if (type == TransactionType.TRANSFER && matchingCategories.none { it.category.id == categoryId }) {
             categoryId = matchingCategories.firstOrNull()?.category?.id ?: 0L
@@ -356,7 +355,7 @@ private fun RecordCategoryGrid(
     val colors = MaterialTheme.colorScheme
     if (categories.isEmpty()) {
         Box(Modifier.fillMaxSize().padding(bottom = bottomPadding), contentAlignment = Alignment.Center) {
-            Text("暂无对应分类，请先在分类管理中添加", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+            Text("暂无可选分类", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
         }
         return
     }
@@ -389,19 +388,53 @@ private fun RecordTransferAccounts(
     source: String?, destination: String?, onSource: () -> Unit, onDestination: () -> Unit, onSwap: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier.verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        TransferAccountRow(source ?: "请选择转出账户", onSource, "选择转出账户")
-        IconButton(onClick = onSwap, enabled = source != null && destination != null, modifier = Modifier.size(32.dp)) { Icon(MaterialSymbols.ImportExport, "交换转出转入账户") }
-        TransferAccountRow(destination ?: "请选择转入账户", onDestination, "选择转入账户")
+    Box(modifier, contentAlignment = Alignment.TopCenter) {
+        Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface) {
+            Row(
+                Modifier.fillMaxWidth().padding(4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TransferAccountSelector("转出", source, onSource, Modifier.weight(1f))
+                IconButton(
+                    onClick = onSwap,
+                    enabled = source != null && destination != null,
+                    modifier = Modifier.size(40.dp),
+                ) {
+                    Icon(MaterialSymbols.SwapHoriz, "交换转出转入账户")
+                }
+                TransferAccountSelector("转入", destination, onDestination, Modifier.weight(1f))
+            }
+        }
     }
 }
 
 @Composable
-private fun TransferAccountRow(label: String, onClick: () -> Unit, description: String) {
-    Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.surface) {
+private fun TransferAccountSelector(
+    label: String,
+    accountName: String?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = MaterialTheme.colorScheme
+    Column(
+        modifier.clip(RoundedCornerShape(16.dp))
+            .semantics(mergeDescendants = true) { contentDescription = "选择${label}账户" }
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = LocalIndication.current,
+                onClick = onClick,
+            )
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(label, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
         Text(
-            label, Modifier.fillMaxWidth().semantics { contentDescription = description }.clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 12.dp),
-            style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium,
+            accountName ?: "选择账户",
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Normal,
+            color = if (accountName == null) colors.onSurfaceVariant else colors.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }

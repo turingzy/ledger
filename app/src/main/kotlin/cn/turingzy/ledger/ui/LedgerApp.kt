@@ -53,7 +53,7 @@ fun LedgerApp(
                 modifier = Modifier
                     .fillMaxSize()
                     .navigationBarsPadding()
-                    .padding(bottom = 80.dp),
+                    .padding(bottom = 76.dp),
             )
 
             LedgerFloatingActionButton(
@@ -62,7 +62,7 @@ fun LedgerApp(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .navigationBarsPadding()
-                    .padding(end = 16.dp, bottom = 96.dp),
+                    .padding(end = 16.dp, bottom = 76.dp),
             )
 
             LedgerBottomBar(
