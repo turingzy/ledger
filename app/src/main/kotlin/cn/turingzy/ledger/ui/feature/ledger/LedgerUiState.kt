@@ -1,14 +1,8 @@
 package cn.turingzy.ledger.ui.feature.ledger
 
+import cn.turingzy.ledger.model.DateFilterType
 import cn.turingzy.ledger.model.TransactionDetail
 import java.time.LocalDate
-
-enum class DateFilterType {
-    WEEK,
-    MONTH,
-    YEAR,
-    RANGE,
-}
 
 data class DayTransactionGroup(
     val dateEpochDay: Long,

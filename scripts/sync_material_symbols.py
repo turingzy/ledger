@@ -11,11 +11,11 @@ symbols = {
 'Backspace':'backspace', 'Check':'check', 'ChevronLeft':'chevron_left', 'ChevronRight':'chevron_right',
 'Close':'close', 'Code':'code', 'CloudUpload':'cloud_upload', 'DashboardCustomize':'dashboard_customize',
 'Delete':'delete', 'DirectionsBus':'directions_bus', 'Edit':'edit', 'EditSquare':'edit_square',
-'ExpandMore':'expand_more', 'Home':'home', 'Image':'image', 'ImportExport':'swap_vert', 'Info':'info',
+'ArrowDropDown':'arrow_drop_down', 'ExpandMore':'expand_more', 'Home':'home', 'Image':'image', 'ImportExport':'swap_vert', 'Info':'info',
 'LocalHospital':'local_hospital', 'MoreHoriz':'more_horiz', 'NorthEast':'north_east', 'Payments':'payments',
 'Schedule':'schedule', 'Restaurant':'restaurant', 'Search':'search', 'ShoppingBag':'shopping_bag', 'SportsEsports':'sports_esports',
 'SwapHoriz':'swap_horiz', 'AccountBalance':'account_balance', 'Upload':'upload',
-'Menu':'menu', 'DragIndicator':'drag_indicator', 'ViewCarousel':'view_carousel', 'ViewAgenda':'view_agenda',
+'Undo':'undo', 'Menu':'menu', 'DragIndicator':'drag_indicator', 'ViewCarousel':'view_carousel', 'ViewAgenda':'view_agenda',
 'Memory':'memory', 'Contactless':'contactless', 'ShieldPerson':'shield_person',
 'Book':'book', 'BarChart':'bar_chart', 'AccountBalanceWallet':'account_balance_wallet', 'Settings':'settings',
 'BookFilled':'book', 'BarChartFilled':'bar_chart', 'AccountBalanceWalletFilled':'account_balance_wallet', 'SettingsFilled':'settings',
@@ -38,7 +38,7 @@ def fetch(item):
     paths=[node.attrib['d'] for node in root if node.tag.endswith('path')]
     assert paths, name
     target.write_bytes(data)
-    return name, {'symbol':slug, 'source':url, 'paths':paths, 'mirrored':name in {'ArrowBack','ArrowForward','ChevronLeft','ChevronRight','Backspace'}}
+    return name, {'symbol':slug, 'source':url, 'paths':paths, 'mirrored':name in {'ArrowBack','ArrowForward','ChevronLeft','ChevronRight','Backspace','Undo'}}
 results={};errors=[]
 with ThreadPoolExecutor(max_workers=6) as executor:
     tasks={executor.submit(fetch,item):item[0] for item in symbols.items()}

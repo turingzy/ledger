@@ -1,5 +1,7 @@
 package cn.turingzy.ledger.ui.feature.ledger
 
+import cn.turingzy.ledger.ui.component.weekLabel
+import cn.turingzy.ledger.model.DateFilterType
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cn.turingzy.ledger.data.repository.AccountRepository
@@ -79,7 +81,7 @@ class LedgerViewModel @Inject constructor(
                 val endOfWeek = filter.anchorDate.with(DayOfWeek.SUNDAY)
                 val s = startOfWeek.atStartOfDay(zone).toInstant().toEpochMilli()
                 val e = endOfWeek.atTime(23, 59, 59, 999_000_000).atZone(zone).toInstant().toEpochMilli()
-                val header = "${filter.anchorDate.year}.${filter.anchorDate.monthValue.toString().padStart(2, '0')}"
+                val header = weekLabel(filter.anchorDate)
                 val cardLabel = "结余"
                 FilterCalcResult(s, e, DateFilterType.WEEK, header, cardLabel, filter.anchorDate.year, filter.anchorDate.monthValue, startOfWeek, endOfWeek)
             }
@@ -148,6 +150,15 @@ class LedgerViewModel @Inject constructor(
 
     fun setRange(startDate: LocalDate, endDate: LocalDate) {
         dateFilter.value = LedgerDateFilter.Range(startDate, endDate)
+    }
+
+    fun selectPeriod(type: DateFilterType, date: LocalDate) {
+        when (type) {
+            DateFilterType.WEEK -> setWeek(date)
+            DateFilterType.MONTH -> setMonth(date.year, date.monthValue)
+            DateFilterType.YEAR -> setYear(date.year)
+            DateFilterType.RANGE -> Unit
+        }
     }
 
     fun createTransaction(

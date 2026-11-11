@@ -1,5 +1,9 @@
 package cn.turingzy.ledger.ui.feature.ledger
 
+import cn.turingzy.ledger.ui.component.currentPeriodLabel
+import cn.turingzy.ledger.ui.component.periodStart
+import cn.turingzy.ledger.ui.component.PeriodPickerSheet
+import cn.turingzy.ledger.model.DateFilterType
 import androidx.compose.foundation.LocalIndication
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import androidx.compose.animation.core.CubicBezierEasing
@@ -56,6 +60,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.clip
@@ -91,6 +96,7 @@ import cn.turingzy.ledger.ui.theme.IosSecondary
 import cn.turingzy.ledger.util.toFormattedAmount
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -141,6 +147,7 @@ fun LedgerScreen(
         onCardTransparencyChange = cardViewModel::setTransparencyPercent,
         snackbarHostState = snackbarHostState,
         onTransactionClick = transactionViewModel::selectTransaction,
+        onSelectPeriod = viewModel::selectPeriod,
     )
 
     if (!showRecordSheet) TransactionDetailsScreen(
@@ -196,6 +203,7 @@ fun LedgerContent(
     modifier: Modifier = Modifier,
     initialSearchActive: Boolean = false,
     onTransactionClick: (Long) -> Unit = {},
+    onSelectPeriod: (DateFilterType, LocalDate) -> Unit = { _, _ -> },
     cardAppearance: LedgerCardAppearance = LedgerCardAppearance(),
     cardBackground: ImageBitmap? = null,
     cardSettingsEnabled: Boolean = true,
@@ -204,6 +212,7 @@ fun LedgerContent(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     var isSearchActive by rememberSaveable { mutableStateOf(initialSearchActive) }
+    var showPeriodPicker by rememberSaveable { mutableStateOf(false) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
     var submittedSearchQuery by rememberSaveable { mutableStateOf("") }
     val focusManager = LocalFocusManager.current
@@ -294,16 +303,45 @@ fun LedgerContent(
                                             letterSpacing = (-0.6).sp,
                                             modifier = Modifier.align(Alignment.CenterStart),
                                         )
-                                        Box(
+                                        Row(
                                             modifier = Modifier.fillMaxWidth().padding(horizontal = 64.dp),
-                                            contentAlignment = Alignment.Center,
+                                            horizontalArrangement = Arrangement.Center,
+                                            verticalAlignment = Alignment.CenterVertically,
                                         ) {
                                             Text(
-                                                text = "${uiState.month}月",
+                                                text = uiState.monthDisplay,
+                                                modifier = Modifier.weight(1f, fill = false)
+                                                    .semantics { contentDescription = "选择账本日期" }
+                                                    .clickable(
+                                                        interactionSource = remember { MutableInteractionSource() },
+                                                        indication = null,
+                                                    ) { showPeriodPicker = true }.padding(vertical = 8.dp),
                                                 fontSize = 17.sp,
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                fontWeight = FontWeight.Medium,
+                                                color = MaterialTheme.colorScheme.onSurface,
+                                                maxLines = 1, overflow = TextOverflow.Ellipsis,
                                             )
+                                            val periodDate = uiState.filterStartDate
+                                                ?: LocalDate.of(uiState.year, uiState.month, 1)
+                                            if (uiState.filterType != DateFilterType.RANGE &&
+                                                periodStart(uiState.filterType, periodDate) !=
+                                                periodStart(uiState.filterType, LocalDate.now())
+                                            ) {
+                                                Row(
+                                                    modifier = Modifier.padding(start = 8.dp).clickable(
+                                                        interactionSource = remember { MutableInteractionSource() },
+                                                        indication = null,
+                                                    ) { onSelectPeriod(uiState.filterType, LocalDate.now()) }
+                                                        .padding(vertical = 8.dp),
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+                                                ) {
+                                                    Icon(MaterialSymbols.Undo, null, Modifier.size(14.dp),
+                                                        tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                    Text(uiState.filterType.currentPeriodLabel, fontSize = 12.sp,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                }
+                                            }
                                         }
 
                                         TopBarIconButton(
@@ -456,6 +494,16 @@ fun LedgerContent(
             }
         }
     }
+    val periodState = uiState as? LedgerUiState.Success
+    if (showPeriodPicker && periodState != null) {
+        PeriodPickerSheet(
+            type = periodState.filterType,
+            initialDate = periodState.filterStartDate ?: LocalDate.of(periodState.year, periodState.month, 1),
+            onDismiss = { showPeriodPicker = false },
+            onSelect = onSelectPeriod,
+        )
+    }
+
 }
 
 @Composable

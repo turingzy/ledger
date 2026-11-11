@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.ledger
 
+import cn.turingzy.ledger.model.DateFilterType
 import app.cash.turbine.test
 import cn.turingzy.ledger.data.repository.AccountRepository
 import cn.turingzy.ledger.data.repository.CategoryRepository
@@ -28,6 +29,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.time.LocalDate
+import java.time.DayOfWeek
 import java.time.YearMonth
 import java.time.ZoneId
 
@@ -165,4 +168,50 @@ class LedgerViewModelTest {
             transactionRepository.deleteTransaction(42L)
         }
     }
+    @Test
+    fun periodSelectionChangesViewAtomicallyAndQueriesCompletePeriods() = runTest {
+        coEvery { categoryRepository.getCategoriesStream() } returns flowOf(emptyList())
+        coEvery { accountRepository.getAccountsStream() } returns flowOf(emptyList())
+        coEvery { transactionRepository.getAmountSum(any(), any(), any()) } returns flowOf(0L)
+        coEvery { transactionRepository.getTransactionsBetween(any(), any()) } returns flowOf(emptyList())
+        viewModel = LedgerViewModel(transactionRepository, categoryRepository, accountRepository)
+        val cases = listOf(
+            Triple(DateFilterType.WEEK, LocalDate.of(2021, 1, 1), LocalDate.of(2020, 12, 28) to LocalDate.of(2021, 1, 3)),
+            Triple(DateFilterType.MONTH, LocalDate.of(2024, 2, 29), LocalDate.of(2024, 2, 1) to LocalDate.of(2024, 2, 29)),
+            Triple(DateFilterType.YEAR, LocalDate.of(2024, 2, 29), LocalDate.of(2024, 1, 1) to LocalDate.of(2024, 12, 31)),
+        )
+        viewModel.uiState.test {
+            awaitItem()
+            testDispatcher.scheduler.advanceUntilIdle()
+            awaitItem()
+            cases.forEach { (type, date, range) ->
+                viewModel.selectPeriod(type, date)
+                testDispatcher.scheduler.advanceUntilIdle()
+                val selected = expectMostRecentItem() as LedgerUiState.Success
+                assertEquals(type, selected.filterType)
+                assertEquals(range.first, selected.filterStartDate)
+                assertEquals(range.second, selected.filterEndDate)
+                val zone = ZoneId.systemDefault()
+                val startMillis = range.first.atStartOfDay(zone).toInstant().toEpochMilli()
+                val endMillis = range.second.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
+                coVerify { transactionRepository.getTransactionsBetween(startMillis, endMillis) }
+                coVerify { transactionRepository.getAmountSum(TransactionType.INCOME, startMillis, endMillis) }
+                coVerify { transactionRepository.getAmountSum(TransactionType.EXPENSE, startMillis, endMillis) }
+
+                val today = LocalDate.now()
+                viewModel.selectPeriod(type, today)
+                testDispatcher.scheduler.advanceUntilIdle()
+                val current = expectMostRecentItem() as LedgerUiState.Success
+                val expectedStart = when (type) {
+                    DateFilterType.WEEK -> today.with(DayOfWeek.MONDAY)
+                    DateFilterType.MONTH -> today.withDayOfMonth(1)
+                    DateFilterType.YEAR -> today.withDayOfYear(1)
+                    DateFilterType.RANGE -> today
+                }
+                assertEquals(type, current.filterType)
+                assertEquals(expectedStart, current.filterStartDate)
+            }
+        }
+    }
+
 }

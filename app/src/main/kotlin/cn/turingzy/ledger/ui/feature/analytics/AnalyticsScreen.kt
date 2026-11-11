@@ -31,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -43,6 +44,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cn.turingzy.ledger.model.DateFilterType
+import cn.turingzy.ledger.ui.component.PeriodPickerSheet
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import cn.turingzy.ledger.model.AnalyticsCard
 import cn.turingzy.ledger.model.CategoryType
 import java.time.LocalDate
@@ -59,6 +64,7 @@ fun AnalyticsScreen(
         onTimeScopeChange = { viewModel.setTimeScope(it) },
         onCategoryTypeChange = { viewModel.setCategoryType(it) },
         onNavigatePeriod = viewModel::navigatePeriod,
+        onSelectPeriod = viewModel::selectPeriod,
         modifier = modifier,
         onCardEnabledChange = viewModel::setCardEnabled,
         onCardOrderChange = viewModel::setCardOrder,
@@ -76,7 +82,9 @@ fun AnalyticsContent(
     onCardEnabledChange: (AnalyticsCard, Boolean) -> Unit = { _, _ -> },
     onCardOrderChange: (List<AnalyticsCard>) -> Unit = {},
     onDismissCardSettingsError: () -> Unit = {},
+    onSelectPeriod: (LocalDate) -> Unit = {},
 ) {
+    var showPeriodPicker by rememberSaveable { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val settingsError = (uiState as? AnalyticsUiState.Success)?.cardSettingsError
     LaunchedEffect(settingsError) {
@@ -153,10 +161,16 @@ fun AnalyticsContent(
                                         text = uiState.periodDisplay,
                                         fontSize = 17.sp,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        color = MaterialTheme.colorScheme.onSurface,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                            .semantics { contentDescription = "选择分析日期" }
+                                            .clickable(
+                                                enabled = uiState.timeScope != AnalyticsTimeScope.ALL,
+                                                interactionSource = remember { MutableInteractionSource() },
+                                                indication = null,
+                                            ) { showPeriodPicker = true },
                                     )
                                 }
                                 if (uiState.timeScope != AnalyticsTimeScope.ALL) PeriodNavigationArrow(forward = true, onClick = {
@@ -188,6 +202,22 @@ fun AnalyticsContent(
                 }
             }
         }
+    }
+    val periodState = uiState as? AnalyticsUiState.Success
+    val pickerType = when (periodState?.timeScope) {
+        AnalyticsTimeScope.WEEK -> DateFilterType.WEEK
+        AnalyticsTimeScope.MONTH -> DateFilterType.MONTH
+        AnalyticsTimeScope.YEAR -> DateFilterType.YEAR
+        else -> null
+    }
+    if (showPeriodPicker && periodState != null && pickerType != null) {
+        PeriodPickerSheet(
+            type = pickerType,
+            initialDate = periodState.periodStart,
+            onDismiss = { showPeriodPicker = false },
+            onSelect = { _, date -> onSelectPeriod(date) },
+            showViewSelector = false,
+        )
     }
 }
 

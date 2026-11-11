@@ -26,7 +26,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import cn.turingzy.ledger.ui.component.LedgerIconButton as IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -80,94 +80,100 @@ private fun RecordDateCalendar(selectedDate: LocalDate, onSelect: (LocalDate) ->
     var month by remember { mutableStateOf(YearMonth.from(selectedDate)) }
     var panel by remember { mutableStateOf(RecordCalendarPanel.DAYS) }
     val colors = MaterialTheme.colorScheme
-    val first = month.atDay(1)
-    val gridStart = first.minusDays(first.dayOfWeek.value - 1L)
-    val days = List(42) { gridStart.plusDays(it.toLong()) }
-    fun shift(direction: Long) {
-        month = when (panel) {
-            RecordCalendarPanel.DAYS -> month.plusMonths(direction)
-            RecordCalendarPanel.MONTHS -> month.plusYears(direction)
-            RecordCalendarPanel.YEARS -> month.plusYears(direction * 12)
-        }
+    val days = remember(month) {
+        val first = month.atDay(1)
+        val gridStart = first.minusDays(first.dayOfWeek.value - 1L)
+        List(42) { gridStart.plusDays(it.toLong()) }
     }
+    val years = remember(month.year) {
+        ((month.year - 100).coerceAtLeast(1)..(month.year + 20).coerceAtMost(9999)).toList()
+    }
+    val months = remember { (1..12).toList() }
     Column {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { shift(-1) }, modifier = Modifier.size(36.dp)) {
-                Icon(MaterialSymbols.ChevronLeft, if (panel == RecordCalendarPanel.DAYS) "上个月" else "上一组")
-            }
-            Row(Modifier.weight(1f), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    month.year.toString(),
-                    Modifier.clip(RoundedCornerShape(8.dp)).semantics { contentDescription = "选择年份" }
-                        .clickable { panel = RecordCalendarPanel.YEARS }.padding(8.dp),
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-                Text(".", style = MaterialTheme.typography.bodyLarge)
-                Text(
-                    month.monthValue.toString().padStart(2, '0'),
-                    Modifier.clip(RoundedCornerShape(8.dp)).semantics { contentDescription = "选择月份" }
-                        .clickable { panel = RecordCalendarPanel.MONTHS }.padding(8.dp),
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-            }
-            IconButton(onClick = { shift(1) }, modifier = Modifier.size(36.dp)) {
-                Icon(MaterialSymbols.ChevronRight, if (panel == RecordCalendarPanel.DAYS) "下个月" else "下一组")
-            }
+            RecordCalendarHeading(
+                text = "${month.year}年", description = "选择年份", expanded = panel == RecordCalendarPanel.YEARS,
+                onClick = { panel = if (panel == RecordCalendarPanel.YEARS) RecordCalendarPanel.DAYS else RecordCalendarPanel.YEARS },
+            )
+            RecordCalendarHeading(
+                text = "${month.monthValue}月", description = "选择月份", expanded = panel == RecordCalendarPanel.MONTHS,
+                onClick = { panel = if (panel == RecordCalendarPanel.MONTHS) RecordCalendarPanel.DAYS else RecordCalendarPanel.MONTHS },
+            )
         }
-        when (panel) {
-            RecordCalendarPanel.YEARS -> RecordPeriodChoices(
-                values = ((month.year - 100).coerceAtLeast(1)..(month.year + 20).coerceAtMost(9999)).toList(),
-                selected = month.year, tag = "recordYearGrid", description = { "年份$it" },
-                onSelect = { year ->
-                    month = month.withYear(year)
-                    onSelect(recordDateInMonth(selectedDate, month))
-                    panel = RecordCalendarPanel.MONTHS
-                },
-            )
-            RecordCalendarPanel.MONTHS -> RecordPeriodChoices(
-                values = (1..12).toList(), selected = month.monthValue,
-                tag = "recordMonthGrid", description = { "月份${it.toString().padStart(2, '0')}" },
-                onSelect = { selectedMonth ->
-                    month = month.withMonth(selectedMonth)
-                    onSelect(recordDateInMonth(selectedDate, month))
-                    panel = RecordCalendarPanel.DAYS
-                },
-            )
-            RecordCalendarPanel.DAYS -> {
-                Row(Modifier.fillMaxWidth()) {
-                    listOf("一", "二", "三", "四", "五", "六", "日").forEach {
-                        Text(it, Modifier.weight(1f).padding(vertical = 4.dp), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+        Box(Modifier.height(204.dp)) {
+            when (panel) {
+                RecordCalendarPanel.YEARS -> RecordPeriodChoices(
+                    values = years,
+                    selected = month.year, tag = "recordYearGrid", description = { "年份$it" },
+                    onSelect = { year ->
+                        month = month.withYear(year)
+                        onSelect(recordDateInMonth(selectedDate, month))
+                        panel = RecordCalendarPanel.MONTHS
+                    },
+                )
+                RecordCalendarPanel.MONTHS -> RecordPeriodChoices(
+                    values = months, selected = month.monthValue,
+                    tag = "recordMonthGrid", description = { "月份${it.toString().padStart(2, '0')}" },
+                    onSelect = { selectedMonth ->
+                        month = month.withMonth(selectedMonth)
+                        onSelect(recordDateInMonth(selectedDate, month))
+                        panel = RecordCalendarPanel.DAYS
+                    },
+                )
+                RecordCalendarPanel.DAYS -> Column {
+                    Row(Modifier.fillMaxWidth()) {
+                        listOf("一", "二", "三", "四", "五", "六", "日").forEach {
+                            Text(it, Modifier.weight(1f).padding(vertical = 4.dp), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                        }
                     }
-                }
-                LazyVerticalGrid(columns = GridCells.Fixed(7), modifier = Modifier.height(180.dp), userScrollEnabled = false) {
-                    items(days, key = { it.toEpochDay() }) { date ->
-                        val chosen = date == selectedDate
-                        Box(
-                            Modifier.height(30.dp).semantics { selected = chosen; contentDescription = date.toString() }
-                                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = LocalIndication.current, role = Role.Button) {
-                                    month = YearMonth.from(date)
-                                    onSelect(date)
-                                },
-                            contentAlignment = Alignment.Center,
-                        ) {
+                    LazyVerticalGrid(columns = GridCells.Fixed(7), modifier = Modifier.height(180.dp), userScrollEnabled = false) {
+                        items(days, key = { it.toEpochDay() }) { date ->
+                            val chosen = date == selectedDate
                             Box(
-                                Modifier.size(28.dp).clip(CircleShape).background(if (chosen) colors.onSurface else colors.surface.copy(alpha = 0f)),
+                                Modifier.height(30.dp).semantics { selected = chosen; contentDescription = date.toString() }
+                                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = LocalIndication.current, role = Role.Button) {
+                                        month = YearMonth.from(date)
+                                        onSelect(date)
+                                    },
                                 contentAlignment = Alignment.Center,
                             ) {
-                                Text(
-                                    date.dayOfMonth.toString(), style = MaterialTheme.typography.bodyMedium,
-                                    color = when {
-                                        chosen -> colors.surface
-                                        date.month == month.month -> colors.onSurface
-                                        else -> colors.onSurfaceVariant.copy(alpha = 0.4f)
-                                    },
-                                )
+                                Box(
+                                    Modifier.size(28.dp).clip(CircleShape).background(if (chosen) colors.primary else colors.surface.copy(alpha = 0f)),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        date.dayOfMonth.toString(), style = MaterialTheme.typography.bodyMedium,
+                                        color = when {
+                                            chosen -> colors.onPrimary
+                                            date.month == month.month -> colors.onSurface
+                                            else -> colors.onSurfaceVariant.copy(alpha = 0.4f)
+                                        },
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun RecordCalendarHeading(text: String, description: String, expanded: Boolean, onClick: () -> Unit) {
+    Row(
+        Modifier.semantics {
+            contentDescription = description
+            stateDescription = if (expanded) "展开" else "收起"
+        }.clickable(
+            interactionSource = remember { MutableInteractionSource() }, indication = null,
+            role = Role.Button, onClick = onClick,
+        ).padding(horizontal = 6.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Text(text, style = MaterialTheme.typography.bodyLarge)
+        Icon(MaterialSymbols.ArrowDropDown, null, Modifier.size(24.dp).rotate(if (expanded) 180f else 0f))
     }
 }
 
@@ -182,13 +188,17 @@ private fun RecordPeriodChoices(values: List<Int>, selected: Int, tag: String, d
     ) {
         items(values, key = { it }) { value ->
             Box(
-                Modifier.height(44.dp).clip(RoundedCornerShape(12.dp))
-                    .background(if (value == selected) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface)
+                Modifier.height(44.dp)
                     .semantics { contentDescription = description(value); this.selected = value == selected }
-                    .clickable { onSelect(value) },
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() }, indication = null,
+                    ) { onSelect(value) },
                 contentAlignment = Alignment.Center,
             ) {
-                Text(value.toString(), style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    value.toString(), style = MaterialTheme.typography.bodyMedium,
+                    color = if (value == selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                )
             }
         }
     }

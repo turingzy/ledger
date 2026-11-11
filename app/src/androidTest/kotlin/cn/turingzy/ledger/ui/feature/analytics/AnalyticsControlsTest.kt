@@ -16,6 +16,7 @@ import cn.turingzy.ledger.model.AnalyticsCard
 import cn.turingzy.ledger.model.AnalyticsCardSettings
 import cn.turingzy.ledger.model.CategoryType
 import java.time.LocalDate
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -44,6 +45,42 @@ class AnalyticsControlsTest {
         compose.onNodeWithText("2021-12-31 - 2026-02-03").assertIsDisplayed()
         compose.onNodeWithContentDescription("上一周期").assertDoesNotExist()
         compose.onNodeWithContentDescription("下一周期").assertDoesNotExist()
+    }
+
+    @Test
+    fun monthDateOpensSharedDrawerWithoutAnInternalViewSelector() {
+        assertPeriodDrawerSelection(AnalyticsTimeScope.MONTH, LocalDate.of(2024, 3, 1))
+    }
+
+    @Test
+    fun weekDateOpensSharedDrawerAndSelectsAWholeWeek() {
+        assertPeriodDrawerSelection(AnalyticsTimeScope.WEEK, LocalDate.of(2024, 2, 12))
+    }
+
+    @Test
+    fun yearDateOpensSharedDrawerAndSelectsAWholeYear() {
+        assertPeriodDrawerSelection(AnalyticsTimeScope.YEAR, LocalDate.of(2025, 1, 1))
+    }
+
+    private fun assertPeriodDrawerSelection(scope: AnalyticsTimeScope, target: LocalDate) {
+        var selected: LocalDate? = null
+        compose.setContent {
+            MaterialTheme {
+                AnalyticsContent(
+                    AnalyticsUiState.Success(
+                        timeScope = scope, categoryType = CategoryType.EXPENSE,
+                        periodDisplay = "2024.02", totalExpense = 0L, totalIncome = 0L,
+                        balance = 0L, rankings = emptyList(), periodStart = LocalDate.of(2024, 2, 1),
+                    ), {}, {}, {}, onSelectPeriod = { selected = it },
+                )
+            }
+        }
+        compose.onNodeWithContentDescription("选择分析日期").performClick()
+        compose.onNodeWithTag("ledgerPeriodPicker").assertIsDisplayed()
+        compose.onNodeWithTag("periodViewSelector").assertDoesNotExist()
+        assertNull(selected)
+        compose.onNodeWithTag("ledgerPeriod-${target.toEpochDay()}").performClick()
+        assertEquals(target, selected)
     }
 
     @Test

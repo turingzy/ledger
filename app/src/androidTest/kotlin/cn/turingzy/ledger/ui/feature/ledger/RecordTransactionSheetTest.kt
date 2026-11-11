@@ -149,7 +149,10 @@ class RecordTransactionSheetTest {
     fun dateAndTimeShareDialogWithActionsOnOppositeSides() {
         showSheet {}
         compose.onNodeWithContentDescription("选择时间").performClick()
-        compose.onNodeWithContentDescription("上个月").assertIsDisplayed()
+        compose.onNodeWithContentDescription("上个月").assertDoesNotExist()
+        compose.onNodeWithContentDescription("下个月").assertDoesNotExist()
+        compose.onNodeWithContentDescription("选择年份").assertIsDisplayed()
+        compose.onNodeWithContentDescription("选择月份").assertIsDisplayed()
         compose.onNodeWithContentDescription("小时").assertIsDisplayed()
         compose.onNodeWithContentDescription("分钟").assertIsDisplayed()
         val cancel = compose.onNodeWithContentDescription("取消").getUnclippedBoundsInRoot()
