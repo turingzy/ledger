@@ -23,7 +23,6 @@ internal data class AccountFormInput(
     val currency: String = "CNY",
     val templateId: Long? = null,
     val includeInTotal: Boolean = true,
-    val sortOrder: String = "",
 ) {
     val balanceCents: Long?
         get() = if (balance.isBlank()) 0L else AmountFormatter.parseToCents(balance)
@@ -31,22 +30,22 @@ internal data class AccountFormInput(
     val currencyCode: String
         get() = currency.trim().uppercase(Locale.ROOT)
 
-    val order: Int?
-        get() = if (sortOrder.isBlank()) 0 else sortOrder.toIntOrNull()?.takeIf { it >= 0 }
+    val requiresCardTail: Boolean
+        get() = type == AccountType.DEBIT || type == AccountType.CREDIT
 
     val normalizedCardNumber: String?
-        get() = if (type == AccountType.DEBIT || type == AccountType.CREDIT) {
-            cardNumber.filterNot { it.isWhitespace() }.ifBlank { null }
-        } else null
+        get() = if (requiresCardTail) cardNumber.filterNot { it.isWhitespace() }.ifBlank { null } else null
 
     val cardNumberValid: Boolean
         get() = normalizedCardNumber?.let { number -> number.length <= 19 && number.all { it in '0'..'9' } } ?: true
+
+    val canSelectCardFace: Boolean
+        get() = name.isNotBlank() && (!requiresCardTail || (cardNumberValid && (normalizedCardNumber?.length ?: 0) >= 4))
 
     fun toAccountOrNull(templates: List<CardTemplate>): Account? {
         if (name.isBlank() || currencyCode !in accountCurrencyCodes || !cardNumberValid) return null
         if (templateId != null && templates.none { it.id == templateId && !it.isDeleted }) return null
         val initialBalance = balanceCents ?: return null
-        val sort = order ?: return null
         return Account(
             name = name.trim(),
             type = type,
@@ -56,7 +55,6 @@ internal data class AccountFormInput(
             templateId = templateId,
             cardNumber = normalizedCardNumber,
             includeInTotal = includeInTotal,
-            sortOrder = sort,
         )
     }
 
@@ -68,7 +66,6 @@ internal data class AccountFormInput(
             templateId = edited.templateId,
             cardNumber = edited.cardNumber,
             includeInTotal = edited.includeInTotal,
-            sortOrder = edited.sortOrder,
         )
     }
 }

@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.wallet
 
+import cn.turingzy.ledger.ui.component.initialCircularCardPage
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -49,7 +50,7 @@ class WalletCardDeckLayoutTest {
 
     @Test
     fun rebasingCircularDeckPreservesEveryLayerPosition() {
-        for (count in 3..20) {
+        for (count in 2..20) {
             for (account in 0 until count) {
                 assertEquals(
                     verticalCardDepth(account, -1f, count, 3),
@@ -62,6 +63,31 @@ class WalletCardDeckLayoutTest {
                     0f,
                 )
             }
+        }
+    }
+
+    @Test
+    fun circularPagerStartsAwayFromEitherEndAndWrapsInBothDirections() {
+        for (count in 2..20) {
+            for (selected in 0 until count) {
+                val initialPage = initialCircularCardPage(count, selected)
+                assertTrue(initialPage > count * 3)
+                assertTrue(initialPage < Int.MAX_VALUE - count * 3)
+                for (offset in -count * 3..count * 3) {
+                    assertEquals(Math.floorMod(selected + offset, count), Math.floorMod(initialPage + offset, count))
+                }
+            }
+        }
+        assertEquals(0, initialCircularCardPage(1, 0))
+    }
+
+    @Test
+    fun twoCardStackKeepsTheExpectedAccountInFrontAcrossBothEnds() {
+        for (page in -2..4) {
+            val position = page.toFloat()
+            val front = visibleCardPages(2, position, vertical = true)
+                .minBy { verticalCardDepth(it, position, 2, 3) }
+            assertEquals(Math.floorMod(page, 2), Math.floorMod(front, 2))
         }
     }
 

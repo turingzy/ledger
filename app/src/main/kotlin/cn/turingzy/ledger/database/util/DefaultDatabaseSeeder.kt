@@ -51,9 +51,9 @@ object DefaultDatabaseSeeder {
             database.categoryDao().insertCategories(defaultCategories)
 
             val defaultAccounts = listOf(
-                AccountEntity(accountId = 1, name = "现金", type = AccountType.CASH, templateId = 1, sortOrder = 1),
-                AccountEntity(accountId = 2, name = "微信零钱", type = AccountType.WALLET, templateId = 3, sortOrder = 2),
-                AccountEntity(accountId = 3, name = "支付宝", type = AccountType.WALLET, templateId = 1, sortOrder = 3),
+                AccountEntity(accountId = 1, name = "现金", type = AccountType.CASH, templateId = 1),
+                AccountEntity(accountId = 2, name = "微信零钱", type = AccountType.WALLET, templateId = 3),
+                AccountEntity(accountId = 3, name = "支付宝", type = AccountType.WALLET, templateId = 1),
             )
             database.accountDao().insertAccounts(defaultAccounts)
         }

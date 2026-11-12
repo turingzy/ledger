@@ -18,7 +18,6 @@ fun AddAccountDialog(
         includeInTotal: Boolean,
         currency: String,
         templateId: Long?,
-        sortOrder: Int,
     ) -> Unit,
     modifier: Modifier = Modifier,
     templates: List<CardTemplate> = emptyList(),

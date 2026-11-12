@@ -1,5 +1,12 @@
 package cn.turingzy.ledger.ui.feature.wallet
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.ButtonDefaults
+import cn.turingzy.ledger.ui.component.LedgerOutlinedButton
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,7 +28,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.model.Account
@@ -36,6 +42,7 @@ internal fun AccountEditorContent(
     onClose: () -> Unit,
     onSave: (Account) -> Unit,
     modifier: Modifier = Modifier,
+    onDelete: (() -> Unit)? = null,
 ) {
     var name by rememberSaveable(account?.id) { mutableStateOf(account?.name.orEmpty()) }
     var type by rememberSaveable(account?.id) { mutableStateOf(account?.type ?: AccountType.DEBIT) }
@@ -44,8 +51,8 @@ internal fun AccountEditorContent(
     var currency by rememberSaveable(account?.id) { mutableStateOf(account?.currency ?: "CNY") }
     var templateId by rememberSaveable(account?.id) { mutableStateOf(account?.templateId) }
     var includeInTotal by rememberSaveable(account?.id) { mutableStateOf(account?.includeInTotal ?: true) }
-    var sortOrder by rememberSaveable(account?.id) { mutableStateOf(account?.sortOrder?.toString().orEmpty()) }
-    val input = AccountFormInput(name, type, balance, cardNumber, currency, templateId, includeInTotal, sortOrder)
+    var showCardFaceDialog by rememberSaveable(account?.id) { mutableStateOf(false) }
+    val input = AccountFormInput(name, type, balance, cardNumber, currency, templateId, includeInTotal)
     val result = if (account == null) input.toAccountOrNull(templates) else input.toUpdatedAccountOrNull(account, templates)
     val activeTemplates = remember(templates) { templates.filterNot { it.isDeleted } }
     val currencies = accountCurrencyOptions
@@ -75,9 +82,9 @@ internal fun AccountEditorContent(
                     onCheckedChange = { includeInTotal = it },
                     modifier = Modifier.scale(0.72f).semantics { contentDescription = "计入总资产" },
                     colors = SwitchDefaults.colors(
-                        checkedTrackColor = colors.tertiary,
+                        checkedTrackColor = colors.primary,
                         checkedThumbColor = colors.surface,
-                        checkedBorderColor = colors.tertiary,
+                        checkedBorderColor = colors.primary,
                     ),
                 )
             }
@@ -90,23 +97,27 @@ internal fun AccountEditorContent(
             label = "账户类型", value = type.displayName(), options = AccountType.entries,
             optionLabel = { it.displayName() }, onSelect = { type = it },
         )
-        if (account == null) {
-            AccountFormDropdown(
-                label = "币种", value = currency, options = currencies,
-                optionLabel = { it }, onSelect = { currency = it },
-            )
-        } else {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (account == null) {
+                AccountFormDropdown(
+                    label = "币种", value = currency, options = currencies,
+                    optionLabel = { it }, onSelect = { currency = it }, modifier = Modifier.weight(0.8f),
+                    alignMenuToStart = true,
+                )
+            } else {
+                AccountFormTextField(
+                    label = "币种", value = account.currency, onValueChange = {}, readOnly = true,
+                    modifier = Modifier.weight(0.8f),
+                )
+            }
             AccountFormTextField(
-                label = "币种", value = account.currency, onValueChange = {}, readOnly = true,
+                label = if (type == AccountType.CREDIT) "初始欠款" else "初始余额",
+                value = balance, onValueChange = { balance = it }, placeholder = "0.00",
+                error = if (input.balanceCents == null) "请输入有效金额" else null,
+                readOnly = account != null, keyboardType = KeyboardType.Decimal,
+                modifier = Modifier.weight(1.2f),
             )
         }
-        AccountFormTextField(
-            label = if (type == AccountType.CREDIT) "初始欠款" else "初始余额",
-            value = balance, onValueChange = { balance = it }, placeholder = "0.00", suffix = input.currencyCode,
-            error = if (input.balanceCents == null) "请输入有效金额" else null,
-            readOnly = account != null,
-            keyboardType = KeyboardType.Decimal,
-        )
         if (account != null) {
             AccountFormTextField(
                 label = if (account.type == AccountType.CREDIT) "当前欠款" else "当前余额",
@@ -114,24 +125,35 @@ internal fun AccountEditorContent(
                 onValueChange = {}, suffix = account.currency, readOnly = true,
             )
         }
-        if (type == AccountType.DEBIT || type == AccountType.CREDIT) {
-            AccountFormTextField(
-                label = "尾号", value = cardNumber, onValueChange = { cardNumber = it },
-                error = if (!input.cardNumberValid) "请输入不超过 19 位的数字" else null,
-                keyboardType = KeyboardType.Number,
-            )
+        if (input.requiresCardTail) {
+            AccountTailNumberField(value = cardNumber.takeLast(4), onValueChange = { cardNumber = it })
         }
-        AccountFormDropdown(
-            label = "卡面模板",
-            value = if (templateId == null) "默认卡面" else activeTemplates.firstOrNull { it.id == templateId }?.name ?: "请重新选择模板",
-            options = listOf<CardTemplate?>(null) + activeTemplates,
-            optionLabel = { it?.name ?: "默认卡面" }, onSelect = { templateId = it?.id },
+        AccountCardFaceField(
+            value = if (templateId == null) "默认卡面" else activeTemplates.firstOrNull { it.id == templateId }?.name ?: "请重新选择卡面",
+            onClick = { focusManager.clearFocus(); showCardFaceDialog = true },
+            enabled = input.canSelectCardFace,
+            disabledHint = if (input.requiresCardTail) "先填写账户名称和四位尾号" else "先填写账户名称",
         )
-        AccountFormTextField(
-            label = "排序", value = sortOrder, onValueChange = { sortOrder = it },
-            placeholder = "数字越小越靠前",
-            error = if (input.order == null) "请输入有效的非负整数" else null,
-            keyboardType = KeyboardType.Number, imeAction = ImeAction.Done,
+
+        if (account != null && onDelete != null) {
+            LedgerOutlinedButton(
+                onClick = { focusManager.clearFocus(); onDelete() },
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp).height(44.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.error),
+                border = BorderStroke(1.dp, colors.error.copy(alpha = 0.3f)),
+            ) {
+                Text("删除账户", style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+
+    }
+    if (showCardFaceDialog && input.canSelectCardFace) {
+        AccountCardFaceDialog(
+            templates = activeTemplates, selectedId = templateId, accountName = name,
+            accountType = type, tailNumber = cardNumber,
+            onDismiss = { showCardFaceDialog = false },
+            onConfirm = { templateId = it; showCardFaceDialog = false },
         )
     }
 }

@@ -41,6 +41,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -89,15 +90,12 @@ fun WalletScreen(
     }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    var showAddSheet by remember { mutableStateOf(false) }
-    var selectedAccount by remember { mutableStateOf<Account?>(null) }
-    val addSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val scope = rememberCoroutineScope()
+    val accountSheets = remember { WalletAccountSheetController() }
 
     WalletContent(
         uiState = uiState,
-        onAddAccountClick = { showAddSheet = true },
-        onAdjustBalanceClick = { account -> selectedAccount = account },
+        onAddAccountClick = accountSheets::showAdd,
+        onAdjustBalanceClick = accountSheets::showDetails,
         modifier = modifier,
         cardAppearance = cardUiState.appearance,
         cardBackground = background,
@@ -128,45 +126,96 @@ fun WalletScreen(
         )
     }
 
-    if (showAddSheet) {
+    WalletAccountSheets(
+        controller = accountSheets,
+        uiState = uiState,
+        onCreate = { value ->
+            viewModel.createAccount(
+                name = value.name,
+                type = value.type,
+                initialBalance = value.initialBalance,
+                cardNumber = value.cardNumber,
+                includeInTotal = value.includeInTotal,
+                currency = value.currency,
+                templateId = value.templateId,
+            )
+        },
+        onSave = viewModel::updateAccountInfo,
+        onDelete = viewModel::deleteAccount,
+    )
+}
+
+@Stable
+private class WalletAccountSheetController {
+    var adding by mutableStateOf(false)
+        private set
+    var selected by mutableStateOf<Account?>(null)
+        private set
+
+    fun showAdd() {
+        selected = null
+        adding = true
+    }
+
+    fun showDetails(account: Account) {
+        adding = false
+        selected = account
+    }
+
+    fun dismissAdd() { adding = false }
+    fun dismissDetails() { selected = null }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun WalletAccountSheets(
+    controller: WalletAccountSheetController,
+    uiState: WalletUiState,
+    onCreate: (Account) -> Unit,
+    onSave: (Account) -> Unit,
+    onDelete: (Long) -> Unit,
+) {
+    val addSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val scope = rememberCoroutineScope()
+    val success = uiState as? WalletUiState.Success
+    fun dismissAdd() {
+        scope.launch {
+            addSheetState.hide()
+            if (!addSheetState.isVisible) controller.dismissAdd()
+        }
+    }
+
+    if (controller.adding) {
         AddAccountSheet(
             sheetState = addSheetState,
-            templates = (uiState as? WalletUiState.Success)?.templates.orEmpty(),
-            onDismissRequest = {
-                scope.launch { addSheetState.hide() }.invokeOnCompletion {
-                    if (!addSheetState.isVisible) {
-                        showAddSheet = false
-                    }
-                }
-            },
-            onConfirm = { name, type, balance, cardNo, includeInTotal, currency, templateId, sortOrder ->
-                viewModel.createAccount(
-                    name = name,
-                    type = type,
-                    initialBalance = balance,
-                    cardNumber = cardNo,
-                    includeInTotal = includeInTotal,
-                    currency = currency,
-                    templateId = templateId,
-                    sortOrder = sortOrder,
+            templates = success?.templates.orEmpty(),
+            onDismissRequest = ::dismissAdd,
+            onConfirm = { name, type, balance, cardNo, includeInTotal, currency, templateId ->
+                onCreate(
+                    Account(
+                        name = name,
+                        type = type,
+                        initialBalance = balance,
+                        currentBalance = balance,
+                        cardNumber = cardNo,
+                        includeInTotal = includeInTotal,
+                        currency = currency,
+                        templateId = templateId,
+                    ),
                 )
-                scope.launch { addSheetState.hide() }.invokeOnCompletion {
-                    if (!addSheetState.isVisible) {
-                        showAddSheet = false
-                    }
-                }
+                dismissAdd()
             },
         )
     }
 
-    selectedAccount?.let { selected ->
-        val details = (uiState as? WalletUiState.Success)?.accounts?.firstOrNull { it.account.id == selected.id }
-        val account = details?.account ?: selected
+    controller.selected?.let { selected ->
+        val account = success?.accounts?.firstOrNull { it.account.id == selected.id }?.account ?: selected
         AccountDetailsSheet(
             account = account,
-            templates = (uiState as? WalletUiState.Success)?.templates.orEmpty(),
-            onDismissRequest = { selectedAccount = null },
-            onSave = viewModel::updateAccountInfo,
+            templates = success?.templates.orEmpty(),
+            onDismissRequest = controller::dismissDetails,
+            onSave = onSave,
+            onDelete = onDelete,
         )
     }
 }
@@ -262,44 +311,44 @@ fun WalletContent(
                         }
                     }
 
-                    item(key = "cards_section_title") {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(start = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = "账户",
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                    item(key = "accounts_section") {
+                        Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    text = "账户",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
 
-                            TopBarIconButton(
-                                imageVector = if (isListView) MaterialSymbols.ViewCarousel else MaterialSymbols.ViewAgenda,
-                                contentDescription = if (isListView) "切换为卡片堆叠视图" else "切换为纵向层叠视图",
-                                onClick = { isListView = !isListView },
-                            )
-                        }
-                    }
+                                TopBarIconButton(
+                                    imageVector = if (isListView) MaterialSymbols.ViewCarousel else MaterialSymbols.ViewAgenda,
+                                    contentDescription = if (isListView) "切换为卡片堆叠视图" else "切换为纵向层叠视图",
+                                    onClick = { isListView = !isListView },
+                                )
+                            }
 
-                    item(key = "bank_cards") {
-                        if (isListView) {
-                            VerticalBankCardDeck(
-                                accounts = accounts,
-                                onAdjustClick = onAdjustBalanceClick,
-                                selectedAccountId = selectedAccountId,
-                                onSelectedAccountChange = { selectedAccountId = it },
-                            )
-                        } else {
-                            SwipeableBankCardDeck(
-                                accounts = accounts,
-                                onAdjustClick = onAdjustBalanceClick,
-                                selectedAccountId = selectedAccountId,
-                                onSelectedAccountChange = { selectedAccountId = it },
-                            )
+                            if (isListView) {
+                                VerticalBankCardDeck(
+                                    accounts = accounts,
+                                    onAdjustClick = onAdjustBalanceClick,
+                                    selectedAccountId = selectedAccountId,
+                                    onSelectedAccountChange = { selectedAccountId = it },
+                                )
+                            } else {
+                                SwipeableBankCardDeck(
+                                    accounts = accounts,
+                                    onAdjustClick = onAdjustBalanceClick,
+                                    selectedAccountId = selectedAccountId,
+                                    onSelectedAccountChange = { selectedAccountId = it },
+                                )
+                            }
                         }
                     }
                 }
@@ -339,6 +388,18 @@ fun WalletHeroCard(
     }
 }
 
+internal fun accountCardColors(account: Account): List<Color> {
+    val isCenturion = account.templateId == 2L || account.name.contains("百夫长") || account.name.contains("运通")
+    return when {
+        isCenturion -> listOf(Color(0xFF0D0E11), Color(0xFF141519), Color(0xFF08080A))
+        account.templateId == 1L -> listOf(Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)) // 经典深蓝
+        account.templateId == 3L -> listOf(Color(0xFF075E37), Color(0xFF03361E)) // 翡翠绿 (微信/活力薄荷)
+        account.type == AccountType.CREDIT -> listOf(Color(0xFF2D143D), Color(0xFF1A0D26)) // 尊贵紫 (白金信用卡)
+        account.type == AccountType.WALLET && account.name.contains("支付宝") -> listOf(Color(0xFF0A438C), Color(0xFF052148)) // 皇家科技蓝
+        else -> listOf(Color(0xFF1C1C1E), Color(0xFF121214)) // 黑曜金 (金葵花/储蓄卡)
+    }
+}
+
 @Composable
 fun BankCardItem(
     account: Account,
@@ -351,14 +412,7 @@ fun BankCardItem(
     val pressColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.05f)
     val isCenturion = account.templateId == 2L || account.name.contains("百夫长") || account.name.contains("运通")
 
-    val cardGradients = when {
-        isCenturion -> listOf(Color(0xFF0D0E11), Color(0xFF141519), Color(0xFF08080A))
-        account.templateId == 1L -> listOf(Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)) // 经典深蓝
-        account.templateId == 3L -> listOf(Color(0xFF075E37), Color(0xFF03361E)) // 翡翠绿 (微信/活力薄荷)
-        account.type == AccountType.CREDIT -> listOf(Color(0xFF2D143D), Color(0xFF1A0D26)) // 尊贵紫 (白金信用卡)
-        account.type == AccountType.WALLET && account.name.contains("支付宝") -> listOf(Color(0xFF0A438C), Color(0xFF052148)) // 皇家科技蓝
-        else -> listOf(Color(0xFF1C1C1E), Color(0xFF121214)) // 黑曜金 (金葵花/储蓄卡)
-    }
+    val cardGradients = accountCardColors(account)
 
     Card(
         modifier = modifier
@@ -450,7 +504,9 @@ fun BankCardItem(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.Bottom,
                 ) {
-                    val cardNumber = account.cardNumber?.takeIf { it.isNotBlank() }
+                    val cardNumber = account.cardNumber?.takeIf {
+                        (account.type == AccountType.DEBIT || account.type == AccountType.CREDIT) && it.isNotBlank()
+                    }
                     if (cardNumber != null) {
                         Text(
                             text = "•••• ${cardNumber.takeLast(4)}",

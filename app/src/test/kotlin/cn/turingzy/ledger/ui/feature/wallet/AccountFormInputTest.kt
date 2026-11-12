@@ -4,6 +4,7 @@ import cn.turingzy.ledger.model.Account
 import cn.turingzy.ledger.model.AccountType
 import cn.turingzy.ledger.model.CardTemplate
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -21,7 +22,6 @@ class AccountFormInputTest {
                 currency = " usd ",
                 templateId = template.id,
                 includeInTotal = false,
-                sortOrder = "7",
             ).toAccountOrNull(listOf(template)),
         )
         assertEquals("工资卡", account.name)
@@ -31,25 +31,25 @@ class AccountFormInputTest {
         assertEquals("USD", account.currency)
         assertEquals(42L, account.templateId)
         assertFalse(account.includeInTotal)
-        assertEquals(7, account.sortOrder)
     }
 
     @Test
     fun emptyOptionalFieldsDoNotCreateDemoValues() {
         val account = checkNotNull(AccountFormInput(name = "现金", type = AccountType.CASH).toAccountOrNull(emptyList()))
         assertEquals(0L, account.initialBalance)
-        assertEquals(0, account.sortOrder)
         assertNull(account.cardNumber)
         assertNull(account.templateId)
     }
 
     @Test
-    fun nonBankAccountsDoNotKeepAnInvisibleCardNumber() {
-        val account = checkNotNull(
-            AccountFormInput(name = "钱包", type = AccountType.WALLET, cardNumber = "invalid")
-                .toAccountOrNull(emptyList()),
-        )
-        assertNull(account.cardNumber)
+    fun nonBankAccountsCanSelectCardFacesWithoutKeepingHiddenCardNumbers() {
+        listOf(AccountType.WALLET, AccountType.CASH).forEach { type ->
+            val input = AccountFormInput(name = "钱包", type = type)
+            assertFalse(input.requiresCardTail)
+            assertTrue(input.canSelectCardFace)
+            assertFalse(input.copy(name = " ").canSelectCardFace)
+            assertNull(checkNotNull(input.copy(cardNumber = "invalid").toAccountOrNull(emptyList())).cardNumber)
+        }
     }
 
     @Test
@@ -66,12 +66,24 @@ class AccountFormInputTest {
             valid.copy(name = " "),
             valid.copy(balance = "abc"),
             valid.copy(currency = "invalid"),
-            valid.copy(sortOrder = "-1"),
-            valid.copy(sortOrder = "2147483648"),
             valid.copy(cardNumber = "123x"),
             valid.copy(cardNumber = "12345678901234567890"),
             valid.copy(templateId = 42L),
         ).forEach { assertNull(it.toAccountOrNull(emptyList())) }
+    }
+
+    @Test
+    fun cardFaceSelectionRequiresNameAndACompleteNumericTail() {
+        val valid = AccountFormInput(name = "工资卡", cardNumber = "1234")
+        assertTrue(valid.canSelectCardFace)
+        assertTrue(valid.copy(type = AccountType.CREDIT).canSelectCardFace)
+        assertTrue(valid.copy(cardNumber = "1234 5678 9012 3456").canSelectCardFace)
+        listOf(
+            valid.copy(name = " "),
+            valid.copy(cardNumber = ""),
+            valid.copy(cardNumber = "123"),
+            valid.copy(cardNumber = "12x4"),
+        ).forEach { assertFalse(it.canSelectCardFace) }
     }
 
     @Test
@@ -97,7 +109,6 @@ class AccountFormInputTest {
                 currency = "USD",
                 cardNumber = "1234",
                 includeInTotal = false,
-                sortOrder = "9",
             ).toUpdatedAccountOrNull(original, emptyList()),
         )
         assertEquals(original.id, edited.id)
@@ -108,7 +119,6 @@ class AccountFormInputTest {
         assertEquals(original.initialBalance, edited.initialBalance)
         assertEquals("1234", edited.cardNumber)
         assertFalse(edited.includeInTotal)
-        assertEquals(9, edited.sortOrder)
     }
 
 }

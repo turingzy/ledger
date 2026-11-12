@@ -56,7 +56,6 @@ class WalletViewModel @Inject constructor(
         includeInTotal: Boolean = true,
         currency: String = "CNY",
         templateId: Long? = null,
-        sortOrder: Int = 0,
     ) {
         viewModelScope.launch {
             val account = Account(
@@ -68,7 +67,6 @@ class WalletViewModel @Inject constructor(
                 includeInTotal = includeInTotal,
                 currency = currency,
                 templateId = templateId,
-                sortOrder = sortOrder,
             )
             accountRepository.createAccount(account)
         }

@@ -13,7 +13,6 @@ data class Account(
     val templateId: Long? = null,
     val cardNumber: String? = null,
     val includeInTotal: Boolean = true,
-    val sortOrder: Int = 0,
     val isDeleted: Boolean = false,
 )
 

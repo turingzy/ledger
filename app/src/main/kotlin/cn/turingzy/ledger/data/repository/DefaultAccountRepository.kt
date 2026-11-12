@@ -63,7 +63,6 @@ class DefaultAccountRepository @Inject constructor(
                 templateId = account.templateId,
                 cardNumber = account.cardNumber,
                 includeInTotal = account.includeInTotal,
-                sortOrder = account.sortOrder,
             )
         }
     }

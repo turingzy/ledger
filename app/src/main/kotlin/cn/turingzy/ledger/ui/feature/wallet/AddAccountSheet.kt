@@ -22,7 +22,6 @@ fun AddAccountSheet(
         includeInTotal: Boolean,
         currency: String,
         templateId: Long?,
-        sortOrder: Int,
     ) -> Unit,
     modifier: Modifier = Modifier,
     sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
@@ -49,7 +48,6 @@ fun AddAccountSheetContent(
         includeInTotal: Boolean,
         currency: String,
         templateId: Long?,
-        sortOrder: Int,
     ) -> Unit,
     modifier: Modifier = Modifier,
     templates: List<CardTemplate> = emptyList(),
@@ -61,7 +59,7 @@ fun AddAccountSheetContent(
         onSave = { value ->
             onConfirm(
                 value.name, value.type, value.initialBalance, value.cardNumber,
-                value.includeInTotal, value.currency, value.templateId, value.sortOrder,
+                value.includeInTotal, value.currency, value.templateId,
             )
         },
         modifier = modifier,
@@ -73,6 +71,6 @@ fun AddAccountSheetContent(
 @Composable
 private fun AddAccountSheetContentPreview() {
     LedgerTheme {
-        AddAccountSheetContent(onDismissRequest = {}, onConfirm = { _, _, _, _, _, _, _, _ -> })
+        AddAccountSheetContent(onDismissRequest = {}, onConfirm = { _, _, _, _, _, _, _ -> })
     }
 }

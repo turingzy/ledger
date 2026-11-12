@@ -5,7 +5,8 @@ import kotlin.math.roundToInt
 
 internal fun visibleCardPages(count: Int, position: Float, vertical: Boolean): List<Int> {
     if (count <= 0) return emptyList()
-    if (count <= 2) return (0 until count).toList()
+    if (count == 1) return listOf(0)
+    if (count == 2 && !vertical) return listOf(0, 1)
     if (!vertical) {
         val center = position.roundToInt()
         return (center - 1..center + 1).toList()

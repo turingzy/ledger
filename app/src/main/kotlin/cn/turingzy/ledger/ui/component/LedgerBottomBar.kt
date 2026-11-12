@@ -1,11 +1,9 @@
 package cn.turingzy.ledger.ui.component
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -27,7 +25,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.navigation.TopLevelDestination
@@ -65,13 +62,6 @@ fun LedgerBottomBar(
             destinations.forEach { destination ->
                 val selected = destination == currentDestination
                 val interactionSource = remember(destination) { MutableInteractionSource() }
-                val pressed by interactionSource.collectIsPressedAsState()
-                val pressAlpha by animateFloatAsState(
-                    targetValue = if (pressed) 0.05f else 0f,
-                    animationSpec = tween(durationMillis = if (pressed) 70 else 140),
-                    label = "TabPressAlpha",
-                )
-
                 val iconTint by animateColorAsState(
                     targetValue = if (selected) {
                         colors.onSurface
@@ -87,7 +77,7 @@ fun LedgerBottomBar(
                         .weight(1f)
                         .fillMaxHeight()
                         .clip(CircleShape)
-                        .drawBehind { drawRect(colors.onSurface.copy(alpha = pressAlpha)) }
+                        .navigationPressFeedback(interactionSource)
                         .selectable(
                             selected = selected,
                             role = Role.Tab,

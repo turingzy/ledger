@@ -351,7 +351,6 @@ fun LedgerContent(
                                         TopBarIconButton(
                                             imageVector = MaterialSymbols.Search,
                                             contentDescription = "搜索",
-                                            showPressFeedback = false,
                                             onClick = { isSearchActive = true },
                                             modifier = Modifier.align(Alignment.CenterEnd),
                                         )
@@ -445,7 +444,6 @@ fun LedgerContent(
                                         TopBarIconButton(
                                             imageVector = MaterialSymbols.Close,
                                             contentDescription = "关闭搜索",
-                                            showPressFeedback = false,
                                             onClick = {
                                                 isSearchActive = false
                                                 searchQuery = ""

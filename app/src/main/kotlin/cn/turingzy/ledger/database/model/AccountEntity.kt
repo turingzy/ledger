@@ -43,6 +43,7 @@ data class AccountEntity(
     val cardNumber: String? = null,
     @ColumnInfo(name = "include_in_total", defaultValue = "1")
     val includeInTotal: Boolean = true,
+    // Retained for database compatibility; account display order uses account_id.
     @ColumnInfo(name = "sort_order", defaultValue = "0")
     val sortOrder: Int = 0,
     @ColumnInfo(name = "is_deleted", defaultValue = "0")

@@ -59,13 +59,18 @@ internal fun TopBarIconButton(
     modifier: Modifier = Modifier,
     showPressFeedback: Boolean = true,
 ) {
-    SummaryCardIconButton(
-        imageVector = imageVector,
-        contentDescription = contentDescription,
-        onClick = onClick,
-        modifier = modifier,
-        containerColor = Color.Transparent,
-        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-        showPressFeedback = showPressFeedback,
-    )
+    val interactionSource = remember { MutableInteractionSource() }
+    Box(
+        modifier.size(36.dp).clip(CircleShape)
+            .topBarPressFeedback(interactionSource, enabled = showPressFeedback)
+            .clickable(
+                interactionSource = null,
+                indication = null,
+                role = Role.Button,
+                onClick = onClick,
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(imageVector, contentDescription, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
 }

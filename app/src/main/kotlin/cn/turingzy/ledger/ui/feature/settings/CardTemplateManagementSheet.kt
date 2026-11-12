@@ -26,7 +26,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -38,12 +37,13 @@ import cn.turingzy.ledger.ui.component.LedgerIconButton as IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,11 +64,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import cn.turingzy.ledger.ui.component.BankCardAspectRatio
+import cn.turingzy.ledger.ui.component.rememberCircularCardPagerState
 import cn.turingzy.ledger.ui.component.CardPageIndicator
 import cn.turingzy.ledger.ui.component.SummaryCardIconButton
 import cn.turingzy.ledger.R
 import cn.turingzy.ledger.model.CardTemplate
-import kotlinx.coroutines.launch
 
 @Composable
 internal fun CardTemplateManagementSheet(
@@ -76,9 +76,14 @@ internal fun CardTemplateManagementSheet(
     onDismissRequest: () -> Unit,
 ) {
     val drafts = remember { mutableStateListOf<CardTemplate>().apply { addAll(templates) } }
-    val pagerState = rememberPagerState(pageCount = { drafts.size.coerceAtLeast(1) })
-    val scope = rememberCoroutineScope()
-    val selectedIndex = pagerState.currentPage.coerceAtMost(drafts.lastIndex)
+    var selectedId by remember { mutableStateOf(drafts.firstOrNull()?.id) }
+    val pagerState = rememberCircularCardPagerState(drafts.map { it.id }, selectedId)
+    val selectedIndex = if (drafts.isEmpty()) -1 else Math.floorMod(pagerState.currentPage, drafts.size)
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.settledPage }.collect { page ->
+            if (drafts.isNotEmpty()) selectedId = drafts[Math.floorMod(page, drafts.size)].id
+        }
+    }
     var newTemplate by remember {
         mutableStateOf<CardTemplate?>(if (templates.isEmpty()) CardTemplate(id = -1L, name = "", coverUri = "") else null)
     }
@@ -121,8 +126,8 @@ internal fun CardTemplateManagementSheet(
                         if (!canSave) return@IconButton
                         focusManager.clearFocus()
                         drafts.add(pending)
+                        selectedId = pending.id
                         newTemplate = null
-                        scope.launch { pagerState.scrollToPage(drafts.lastIndex) }
                     }
                 },
             ) {
@@ -152,17 +157,22 @@ internal fun CardTemplateManagementSheet(
             } else {
                 HorizontalPager(
                     state = pagerState,
-                    key = { drafts.getOrNull(it)?.id ?: "empty" },
+                    key = { it },
                     pageSpacing = 12.dp,
                 ) { page ->
+                    val template = drafts.getOrNull(if (drafts.isEmpty()) -1 else Math.floorMod(page, drafts.size))
                     TemplateCoverPreview(
-                        template = drafts.getOrNull(page),
+                        template = template,
                         onDelete = {
-                            drafts.getOrNull(page)?.let { drafts.remove(it) }
+                            val index = drafts.indexOfFirst { it.id == template?.id }
+                            if (index >= 0) {
+                                drafts.removeAt(index)
+                                if (selectedId == template?.id) selectedId = drafts.getOrNull(index.coerceAtMost(drafts.lastIndex))?.id
+                            }
                             if (drafts.isEmpty()) newTemplate = CardTemplate(id = -1L, name = "", coverUri = "")
                         },
                         onUpload = {
-                            uploadTarget = drafts.getOrNull(page)?.id
+                            uploadTarget = template?.id
                             imagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                         },
                     )

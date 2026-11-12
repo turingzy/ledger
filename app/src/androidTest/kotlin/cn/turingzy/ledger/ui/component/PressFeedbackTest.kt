@@ -2,6 +2,9 @@ package cn.turingzy.ledger.ui.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
@@ -42,6 +45,31 @@ class PressFeedbackTest {
         val released = target.captureToImage().toPixelMap()
         assertEquals(before[10, 10], released[10, 10])
     }
+    @Test
+    fun quickTopBarTapShowsACircularBackgroundInsideScrollableContent() {
+        var clicks = 0
+        compose.setContent {
+            LedgerTheme {
+                Column(Modifier.background(MaterialTheme.colorScheme.surface).verticalScroll(rememberScrollState())) {
+                    TopBarIconButton(MaterialSymbols.AddCard, "添加账户", { clicks++ }, Modifier.testTag("topBar"))
+                }
+            }
+        }
+        val target = compose.onNodeWithTag("topBar")
+        val before = target.captureToImage().toPixelMap()
+        compose.mainClock.autoAdvance = false
+        target.performTouchInput { down(center); up() }
+        compose.mainClock.advanceTimeBy(80)
+        val feedback = target.captureToImage().toPixelMap()
+        assertNotEquals(before[3, before.height / 2], feedback[3, feedback.height / 2])
+        assertEquals(before[1, 1], feedback[1, 1])
+        compose.runOnIdle { assertEquals(1, clicks) }
+        compose.mainClock.advanceTimeBy(400)
+        val released = target.captureToImage().toPixelMap()
+        assertEquals(before[3, before.height / 2], released[3, released.height / 2])
+        compose.mainClock.autoAdvance = true
+    }
+
     @Test
     fun segmentedControlDoesNotPaintAnotherSelectionWhilePressed() {
         compose.setContent {

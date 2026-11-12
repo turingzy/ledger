@@ -10,6 +10,10 @@
 - **协程调度**: 注入 `@Dispatcher(LedgerDispatchers.IO)`，严禁直接写死 `Dispatchers.IO`。
 - **架构隔离**: Feature 间严禁直接耦合，页面导航统一走 `cn.turingzy.ledger.navigation`；Room `@Entity` 严禁穿透到 UI/ViewModel。
 
+## 验证与设备操作
+- **仅本地验证**：默认只修改代码、运行本地单元测试、编译与 lint；可以编写和编译设备交互测试，但不得安装应用到手机、模拟器或其他设备，也不得运行设备测试。
+- **设备操作需明确授权**：除非用户在当前任务中明确要求，否则不得执行 `adb install`、`installDebug`、`connectedAndroidTest`、`connectedDebugAndroidTest` 等安装或设备测试命令，也不得启动、操控或调试手机及模拟器。检测到设备已连接不代表获得授权。
+
 ## 审美与交互偏好
 - **简洁、有质感**：圆角卡片、克制的阴影与描边；图片和玻璃质感用于汇总卡片，普通列表保持清爽。
 - **主次清楚**：金额与核心数据突出，标签与说明弱化；文案短，删除重复标题、冗余提示、计数和无意义分隔线。

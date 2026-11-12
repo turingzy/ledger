@@ -94,7 +94,6 @@ fun AccountEntity.asExternalModel(): Account = Account(
     templateId = templateId,
     cardNumber = cardNumber,
     includeInTotal = includeInTotal,
-    sortOrder = sortOrder,
     isDeleted = isDeleted,
 )
 
@@ -108,7 +107,6 @@ fun Account.asEntity(): AccountEntity = AccountEntity(
     templateId = templateId,
     cardNumber = cardNumber,
     includeInTotal = includeInTotal,
-    sortOrder = sortOrder,
     isDeleted = isDeleted,
 )
 

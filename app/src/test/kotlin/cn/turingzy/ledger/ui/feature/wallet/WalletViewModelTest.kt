@@ -97,7 +97,6 @@ class WalletViewModelTest {
             includeInTotal = false,
             currency = "USD",
             templateId = 42L,
-            sortOrder = 7,
         )
 
         testDispatcher.scheduler.advanceUntilIdle()
@@ -112,8 +111,7 @@ class WalletViewModelTest {
                         it.cardNumber == "1234" &&
                         !it.includeInTotal &&
                         it.currency == "USD" &&
-                        it.templateId == 42L &&
-                        it.sortOrder == 7
+                        it.templateId == 42L
                 },
             )
         }

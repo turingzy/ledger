@@ -28,7 +28,7 @@ interface AccountDao {
         UPDATE tb_account
         SET name = :name, type = :type, initial_balance = :initialBalance,
             template_id = :templateId, card_number = :cardNumber,
-            include_in_total = :includeInTotal, sort_order = :sortOrder
+            include_in_total = :includeInTotal
         WHERE account_id = :accountId AND is_deleted = 0
         """,
     )
@@ -40,14 +40,13 @@ interface AccountDao {
         templateId: Long?,
         cardNumber: String?,
         includeInTotal: Boolean,
-        sortOrder: Int,
     ): Int
 
     @Query("UPDATE tb_account SET is_deleted = 1 WHERE account_id = :id")
     suspend fun softDeleteAccount(id: Long): Int
 
     @Transaction
-    @Query("SELECT * FROM tb_account WHERE is_deleted = 0 ORDER BY sort_order ASC, account_id ASC")
+    @Query("SELECT * FROM tb_account WHERE is_deleted = 0 ORDER BY account_id ASC")
     fun getPopulatedAccounts(): Flow<List<PopulatedAccount>>
 
     @Transaction

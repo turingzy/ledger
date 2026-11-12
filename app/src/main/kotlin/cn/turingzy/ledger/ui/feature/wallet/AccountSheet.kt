@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -59,7 +60,7 @@ internal fun AccountSheetContent(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
-    Column(modifier.fillMaxWidth().height(640.dp).imePadding().navigationBarsPadding()) {
+    Column(modifier.fillMaxWidth().heightIn(max = 640.dp).imePadding().navigationBarsPadding()) {
         Box(
             Modifier.fillMaxWidth().height(44.dp).padding(horizontal = 12.dp),
             contentAlignment = Alignment.Center,
@@ -77,7 +78,7 @@ internal fun AccountSheetContent(
             AccountSaveButton(saveEnabled, onSave, Modifier.align(Alignment.CenterEnd))
         }
         Column(
-            Modifier.weight(1f).verticalScroll(rememberScrollState())
+            Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp).padding(top = 8.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(contentSpacing),
             content = content,

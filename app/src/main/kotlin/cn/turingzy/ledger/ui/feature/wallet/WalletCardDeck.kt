@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -45,6 +44,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.ui.component.BankCardAspectRatio
+import cn.turingzy.ledger.ui.component.rememberCircularCardPagerState
 import cn.turingzy.ledger.ui.component.CardPageIndicator
 import cn.turingzy.ledger.model.Account
 import cn.turingzy.ledger.model.AccountWithTemplate
@@ -69,24 +69,22 @@ fun SwipeableBankCardDeck(
         return
     }
     val ids = accounts.map { it.account.id }
-    val selectedIndex = ids.indexOf(selectedAccountId).coerceAtLeast(0)
-    val pagerState = rememberPagerState(initialPage = selectedIndex, pageCount = { accounts.size })
+    val pagerState = rememberCircularCardPagerState(ids, selectedAccountId)
     val onSelectedChange by rememberUpdatedState(onSelectedAccountChange)
 
     LaunchedEffect(pagerState, ids) {
-        pagerState.scrollToPage(selectedIndex)
         snapshotFlow { pagerState.settledPage }.collect { page ->
-            ids.getOrNull(page)?.let(onSelectedChange)
+            onSelectedChange(ids[Math.floorMod(page, ids.size)])
         }
     }
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         HorizontalPager(
             state = pagerState,
-            key = { ids[it] },
+            key = { it },
             pageSpacing = 12.dp,
-            contentPadding = PaddingValues(vertical = 8.dp),
+            contentPadding = PaddingValues(bottom = 8.dp),
         ) { page ->
-            val item = accounts[page]
+            val item = accounts[Math.floorMod(page, accounts.size)]
             BankCardItem(
                 account = item.account,
                 template = item.template,
@@ -95,7 +93,7 @@ fun SwipeableBankCardDeck(
                     .semantics { contentDescription = item.account.name },
             )
         }
-        CardPageIndicator(pageCount = accounts.size, currentPage = pagerState.currentPage)
+        CardPageIndicator(pageCount = accounts.size, currentPage = Math.floorMod(pagerState.currentPage, accounts.size))
     }
 }
 
@@ -127,8 +125,8 @@ private fun BankCardDeck(
     val selectedIndex = ids.indexOf(selectedAccountId).coerceAtLeast(0)
     val state = remember(ids) { AnchoredDraggableState(selectedIndex) }
     val scope = rememberCoroutineScope()
-    val firstPage = if (accounts.size > 2) -1 else 0
-    val lastPage = if (accounts.size > 2) accounts.size else accounts.lastIndex
+    val firstPage = if (accounts.size > 1) -1 else 0
+    val lastPage = if (accounts.size > 1) accounts.size else accounts.lastIndex
     val overscrollEffect = rememberOverscrollEffect()
     val flingBehavior = AnchoredDraggableDefaults.flingBehavior(
         state = state,
@@ -181,7 +179,7 @@ private fun BankCardDeck(
         }
 
         Layout(
-            modifier = Modifier.fillMaxWidth().height(deckHeight + 16.dp)
+            modifier = Modifier.fillMaxWidth().height(deckHeight + 8.dp)
                 .semantics {
                     stateDescription = "第 ${Math.floorMod(state.settledValue, accounts.size) + 1} 张，共 ${accounts.size} 张卡片"
                     customActions = buildList {
@@ -232,7 +230,7 @@ private fun BankCardDeck(
                     val depth = verticalCardDepth(page, currentPosition, accounts.size, MaxBackCards)
                     placeable.placeWithLayer(
                         x = (constraints.maxWidth - cardWidthPx) / 2,
-                        y = with(density) { 8.dp.roundToPx() },
+                        y = 0,
                         zIndex = accounts.size - depth,
                     ) {
                         translationY = (backCount - depth) * stackStepPx
