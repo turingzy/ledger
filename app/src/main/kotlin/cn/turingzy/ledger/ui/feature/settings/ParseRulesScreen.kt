@@ -1,39 +1,45 @@
 package cn.turingzy.ledger.ui.feature.settings
 
+import android.view.WindowManager
+import androidx.activity.compose.LocalActivity
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import cn.turingzy.ledger.navigation.SettingsSubpageTransition
-import androidx.compose.foundation.LocalIndication
 import cn.turingzy.ledger.ui.component.MaterialSymbols
+import cn.turingzy.ledger.ui.component.LedgerDropdown
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import cn.turingzy.ledger.ui.component.LedgerIconButton as IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.key
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
@@ -41,9 +47,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import cn.turingzy.ledger.ui.component.LedgerSegmentedControl
 import cn.turingzy.ledger.model.AccountWithTemplate
 import cn.turingzy.ledger.model.CategoryWithIcon
 
@@ -62,11 +66,37 @@ internal data class ParseRulePreview(
     val valid: Boolean get() = name.isNotBlank() && (startRow.toIntOrNull() ?: 0) > 0 && dateColumn.isNotBlank() && amountColumn.isNotBlank()
 }
 
-private enum class RuleEditorSection(val label: String) { BASIC("基本信息"), FIELDS("字段对应"), DEFAULTS("默认归属") }
+internal fun defaultParseRulePreviews(): List<ParseRulePreview> = listOf(
+    ParseRulePreview(
+        id = 1L,
+        name = "通用账单",
+        dateColumn = "交易时间",
+        amountColumn = "金额",
+        typeColumn = "收支类型",
+        categoryColumn = "分类",
+        noteColumn = "备注",
+    ),
+    ParseRulePreview(
+        id = 2L,
+        name = "银行流水",
+        dateColumn = "交易日期",
+        amountColumn = "交易金额",
+        typeColumn = "借贷标志",
+        noteColumn = "摘要",
+    ),
+    ParseRulePreview(
+        id = 3L,
+        name = "收支明细",
+        dateColumn = "日期",
+        amountColumn = "金额",
+        typeColumn = "收支",
+        categoryColumn = "类别",
+        noteColumn = "说明",
+    ),
+)
 
-private enum class RuleChoice { ACCOUNT, CATEGORY }
-private data class RulePage(val draft: ParseRulePreview?, val choice: RuleChoice?) {
-    val depth: Int get() = if (choice != null) 2 else if (draft != null) 1 else 0
+private data class RulePage(val draft: ParseRulePreview?) {
+    val depth: Int get() = if (draft != null) 1 else 0
 }
 private data class RuleOption(val id: Long?, val label: String)
 
@@ -80,20 +110,17 @@ internal fun ParseRulesScreen(
     onDismissRequest: () -> Unit,
 ) {
     var draft by remember { mutableStateOf<ParseRulePreview?>(null) }
-    var section by remember { mutableStateOf(RuleEditorSection.BASIC) }
-    var choice by remember { mutableStateOf<RuleChoice?>(null) }
     val focusManager = LocalFocusManager.current
     val colors = MaterialTheme.colorScheme
+    KeepRuleEditorWindowStationary(enabled = draft != null)
     SettingsSubpageTransition(
-        targetState = RulePage(draft, choice),
+        targetState = RulePage(draft),
         depth = { it.depth },
-        contentKey = { it.depth to it.choice },
+        contentKey = { it.depth },
     ) { page ->
         val editing = page.draft
         val existing = editing != null && rules.any { it.id == editing.id }
         val title = when {
-            page.choice == RuleChoice.ACCOUNT -> "默认账户"
-            page.choice == RuleChoice.CATEGORY -> "默认分类"
             editing == null -> "账单解析规则"
             existing -> "规则详情"
             else -> "新增规则"
@@ -102,32 +129,31 @@ internal fun ParseRulesScreen(
         SettingsPage(
             title = title,
             onDismissRequest = onDismissRequest,
+            modifier = Modifier.testTag("parseRulePage"),
+            avoidKeyboard = editing != null,
             onBack = if (editing != null) ({
                 focusManager.clearFocus()
-                if (page.choice != null) choice = null else draft = null
+                draft = null
             }) else null,
             action = {
-                if (page.choice == null) {
-                    IconButton(
-                        showPressFeedback = false,
-                        enabled = editing == null || editing.valid,
-                        onClick = {
-                            focusManager.clearFocus()
-                            if (editing == null) {
-                                section = RuleEditorSection.BASIC
-                                draft = ParseRulePreview(id = (rules.maxOfOrNull { it.id } ?: 0L) + 1L)
-                            } else {
-                                onSaveRule(editing.copy(name = editing.name.trim()))
-                                draft = null
-                            }
-                        },
-                    ) {
-                        Icon(
-                            if (editing == null) MaterialSymbols.Add else MaterialSymbols.Check,
-                            if (editing == null) "新增解析规则" else "保存规则预览",
-                            tint = if (editing == null) colors.onSurfaceVariant else colors.tertiary.copy(alpha = if (editing.valid) 1f else 0.38f),
-                        )
-                    }
+                IconButton(
+                    showPressFeedback = false,
+                    enabled = editing == null || editing.valid,
+                    onClick = {
+                        focusManager.clearFocus()
+                        if (editing == null) {
+                            draft = ParseRulePreview(id = (rules.maxOfOrNull { it.id } ?: 0L) + 1L)
+                        } else {
+                            onSaveRule(editing.copy(name = editing.name.trim()))
+                            draft = null
+                        }
+                    },
+                ) {
+                    Icon(
+                        if (editing == null) MaterialSymbols.Add else MaterialSymbols.Check,
+                        if (editing == null) "新增解析规则" else "保存规则预览",
+                        tint = if (editing == null) colors.onSurfaceVariant else colors.tertiary.copy(alpha = if (editing.valid) 1f else 0.38f),
+                    )
                 }
             },
         ) {
@@ -140,113 +166,72 @@ internal fun ParseRulesScreen(
                         color = colors.onSurfaceVariant,
                     )
                 } else {
-                    RuleFieldGroup(Modifier.weight(1f, fill = false)) {
-                        LazyColumn {
-                            items(rules, key = { it.id }) { rule ->
-                                Row(
-                                    Modifier.fillMaxWidth().clickable(
-                                        interactionSource = remember { MutableInteractionSource() },
-                                        indication = LocalIndication.current,
-                                    ) { section = RuleEditorSection.BASIC; draft = rule }.padding(vertical = 14.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                        Text(rule.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                        Text("从第 ${rule.startRow} 行读取", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
-                                    }
-                                    Icon(MaterialSymbols.ChevronRight, "编辑规则", tint = colors.onSurfaceVariant)
-                                }
-                            }
-                        }
-                    }
-                }
-                Text("当前为交互预览，修改不会保存到设备。", Modifier.padding(top = 12.dp), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
-            } else if (page.choice != null) {
-                val options = if (page.choice == RuleChoice.ACCOUNT) {
-                    listOf(RuleOption(null, "导入时选择")) + accounts.map { RuleOption(it.account.id, it.account.name) }
-                } else {
-                    listOf(RuleOption(null, "不指定分类")) + categories.map { RuleOption(it.category.id, it.category.name) }
-                }
-                val selectedId = if (page.choice == RuleChoice.ACCOUNT) editing.accountId else editing.categoryId
-                RuleFieldGroup(Modifier.weight(1f, fill = false)) {
-                    LazyColumn {
-                        items(options, key = { it.id ?: "none" }) { option ->
-                            Row(
-                                Modifier.fillMaxWidth().clickable {
-                                    draft = if (page.choice == RuleChoice.ACCOUNT) editing.copy(accountId = option.id)
-                                    else editing.copy(categoryId = option.id)
-                                    choice = null
-                                }.padding(vertical = 16.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Text(option.label, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-                                if (selectedId == option.id) Icon(MaterialSymbols.Check, "已选择", tint = colors.tertiary)
-                            }
+                    LazyColumn(
+                        Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(bottom = SettingsPageBottomPadding),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        items(rules, key = { it.id }) { rule ->
+                            SettingsActionRow(
+                                title = rule.name,
+                                subtitle = "从第 ${rule.startRow} 行读取",
+                                onClick = { draft = rule },
+                            )
                         }
                     }
                 }
             } else {
                 Column(
-                    Modifier.fillMaxWidth().imePadding(),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    Modifier.fillMaxWidth().settingsPageScroll().testTag("parseRuleForm"),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    LedgerSegmentedControl(
-                        labels = RuleEditorSection.entries.map { it.label },
-                        selectedIndex = RuleEditorSection.entries.indexOf(section),
-                        onSelect = { focusManager.clearFocus(); section = RuleEditorSection.entries[it] },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    key(section) {
-                        Column(
-                            Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                    Text("基本信息", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                    RuleFieldGroup {
+                        RuleTextField("规则名称", editing.name, "请输入名称", { draft = editing.copy(name = it) })
+                        RuleDivider()
+                        RuleTextField("起始行", editing.startRow, "从第几行读取", { draft = editing.copy(startRow = it) }, KeyboardType.Number)
+                    }
+                    Text("字段对应", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                    RuleFieldGroup {
+                        RuleTextField("交易时间", editing.dateColumn, "如：交易时间", { draft = editing.copy(dateColumn = it) })
+                        RuleDivider()
+                        RuleTextField("金额", editing.amountColumn, "如：金额", { draft = editing.copy(amountColumn = it) })
+                        RuleDivider()
+                        RuleTextField("收支类型", editing.typeColumn, "如：收支类型", { draft = editing.copy(typeColumn = it) })
+                        RuleDivider()
+                        RuleTextField("分类", editing.categoryColumn, "选填", { draft = editing.copy(categoryColumn = it) })
+                        RuleDivider()
+                        RuleTextField("备注", editing.noteColumn, "选填", { draft = editing.copy(noteColumn = it) })
+                    }
+                    Text("填写原始账单列名；交易时间和金额必填。", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                    Text("默认归属", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                    RuleFieldGroup {
+                        RuleChoiceDropdown(
+                            label = "默认账户",
+                            value = accounts.firstOrNull { it.account.id == editing.accountId }?.account?.name ?: "导入时选择",
+                            options = listOf(RuleOption(null, "导入时选择")) + accounts.map { RuleOption(it.account.id, it.account.name) },
+                            selectedId = editing.accountId,
+                            onSelect = { draft = editing.copy(accountId = it.id) },
+                            menuTestTag = "ruleAccountOptions",
+                        )
+                        RuleDivider()
+                        RuleChoiceDropdown(
+                            label = "默认分类",
+                            value = categories.firstOrNull { it.category.id == editing.categoryId }?.category?.name ?: "不指定分类",
+                            options = listOf(RuleOption(null, "不指定分类")) + categories.map { RuleOption(it.category.id, it.category.name) },
+                            selectedId = editing.categoryId,
+                            onSelect = { draft = editing.copy(categoryId = it.id) },
+                            menuTestTag = "ruleCategoryOptions",
+                        )
+                    }
+                    if (existing) {
+                        TextButton(
+                            onClick = { focusManager.clearFocus(); onDeleteRule(editing.id); draft = null },
+                            modifier = Modifier.align(Alignment.End),
+                            contentPadding = PaddingValues(vertical = 8.dp),
+                            colors = ButtonDefaults.textButtonColors(contentColor = colors.error),
                         ) {
-                            when (section) {
-                                RuleEditorSection.BASIC -> {
-                                    RuleFieldGroup {
-                                        RuleTextField("规则名称", editing.name, "请输入名称", { draft = editing.copy(name = it) })
-                                        RuleDivider()
-                                        RuleTextField("起始行", editing.startRow, "从第几行读取", { draft = editing.copy(startRow = it) }, KeyboardType.Number)
-                                    }
-                                    Text("名称和起始行为必填项。", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
-                                }
-                                RuleEditorSection.FIELDS -> {
-                                    RuleFieldGroup {
-                                        RuleTextField("交易时间", editing.dateColumn, "如：交易时间", { draft = editing.copy(dateColumn = it) })
-                                        RuleDivider()
-                                        RuleTextField("金额", editing.amountColumn, "如：金额", { draft = editing.copy(amountColumn = it) })
-                                        RuleDivider()
-                                        RuleTextField("收支类型", editing.typeColumn, "如：收支类型", { draft = editing.copy(typeColumn = it) })
-                                        RuleDivider()
-                                        RuleTextField("分类", editing.categoryColumn, "选填", { draft = editing.copy(categoryColumn = it) })
-                                        RuleDivider()
-                                        RuleTextField("备注", editing.noteColumn, "选填", { draft = editing.copy(noteColumn = it) })
-                                    }
-                                    Text("填写原始账单列名；交易时间和金额必填。", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
-                                }
-                                RuleEditorSection.DEFAULTS -> {
-                                    RuleFieldGroup {
-                                        RuleChoiceRow("默认账户", accounts.firstOrNull { it.account.id == editing.accountId }?.account?.name ?: "导入时选择") {
-                                            focusManager.clearFocus()
-                                            choice = RuleChoice.ACCOUNT
-                                        }
-                                        RuleDivider()
-                                        RuleChoiceRow("默认分类", categories.firstOrNull { it.category.id == editing.categoryId }?.category?.name ?: "不指定分类") {
-                                            focusManager.clearFocus()
-                                            choice = RuleChoice.CATEGORY
-                                        }
-                                        if (existing) {
-                                            RuleDivider()
-                                            Row(Modifier.fillMaxWidth().heightIn(min = 56.dp), verticalAlignment = Alignment.CenterVertically) {
-                                                Text("删除规则", Modifier.weight(1f))
-                                                IconButton(showPressFeedback = false, onClick = { onDeleteRule(editing.id); draft = null }) {
-                                                    Icon(MaterialSymbols.Delete, "删除规则预览", tint = colors.error)
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                            Text("删除规则", style = MaterialTheme.typography.bodyLarge)
                         }
                     }
                 }
@@ -256,9 +241,23 @@ internal fun ParseRulesScreen(
 }
 
 @Composable
+private fun KeepRuleEditorWindowStationary(enabled: Boolean) {
+    val window = LocalActivity.current?.window
+    if (!enabled || window == null) return
+    LifecycleResumeEffect(window) {
+        val previousMode = window.attributes.softInputMode
+        // The form handles IME insets; letting Android pan the window also moves its background.
+        val stationaryMode = (previousMode and WindowManager.LayoutParams.SOFT_INPUT_MASK_ADJUST.inv()) or
+            WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING
+        window.setSoftInputMode(stationaryMode)
+        onPauseOrDispose { window.setSoftInputMode(previousMode) }
+    }
+}
+
+@Composable
 private fun RuleFieldGroup(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
-    Surface(modifier = modifier, shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp), content = content)
+    Surface(modifier = modifier, shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surface) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp), content = content)
     }
 }
 
@@ -276,16 +275,16 @@ private fun RuleTextField(
     keyboardType: KeyboardType = KeyboardType.Text,
 ) {
     val colors = MaterialTheme.colorScheme
-    Row(Modifier.fillMaxWidth().heightIn(min = 56.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().heightIn(min = SettingsItemHeight), verticalAlignment = Alignment.CenterVertically) {
         Text(label, Modifier.width(96.dp), style = MaterialTheme.typography.bodyLarge)
         BasicTextField(
             value = value,
             onValueChange = onChange,
             singleLine = true,
-            textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.onSurface, textAlign = TextAlign.End),
+            textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.onSurfaceVariant, textAlign = TextAlign.End),
             cursorBrush = SolidColor(colors.onSurface),
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType, imeAction = ImeAction.Done),
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).semantics { contentDescription = label },
             decorationBox = { field ->
                 androidx.compose.foundation.layout.Box(contentAlignment = Alignment.CenterEnd) {
                     if (value.isEmpty()) Text(placeholder, color = colors.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
@@ -297,14 +296,32 @@ private fun RuleTextField(
 }
 
 @Composable
-private fun RuleChoiceRow(label: String, value: String, onClick: () -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable(onClick = onClick),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Text(label, Modifier.width(96.dp), style = MaterialTheme.typography.bodyLarge)
-        Text(value, Modifier.weight(1f), textAlign = TextAlign.End, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        Icon(MaterialSymbols.ChevronRight, null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+private fun RuleChoiceDropdown(
+    label: String,
+    value: String,
+    options: List<RuleOption>,
+    selectedId: Long?,
+    onSelect: (RuleOption) -> Unit,
+    menuTestTag: String,
+) {
+    val colors = MaterialTheme.colorScheme
+    LedgerDropdown(
+        options = options,
+        optionLabel = { it.label },
+        isSelected = { it.id == selectedId },
+        onSelect = onSelect,
+        menuTestTag = menuTestTag,
+    ) { anchorModifier, _, onToggle ->
+        Row(
+            anchorModifier.fillMaxWidth().heightIn(min = SettingsItemHeight)
+                .semantics(mergeDescendants = true) { contentDescription = label }
+                .clickable(role = Role.Button, onClick = onToggle),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(label, Modifier.width(96.dp), style = MaterialTheme.typography.bodyLarge)
+            Text(value, Modifier.weight(1f), textAlign = TextAlign.End, color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Icon(MaterialSymbols.ChevronRight, null, Modifier.size(24.dp), tint = colors.onSurfaceVariant)
+        }
     }
 }

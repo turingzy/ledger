@@ -5,6 +5,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.platform.testTag
 import androidx.compose.material3.Icon
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,7 +32,6 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.topBarPressFeedback
@@ -43,7 +45,6 @@ internal fun SettingsPage(
     modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
     titleStyle: TextStyle = MaterialTheme.typography.titleLarge,
-    contentBottomPadding: Dp = 80.dp,
     avoidKeyboard: Boolean = false,
     action: @Composable () -> Unit = { Box(Modifier.size(48.dp)) },
     content: @Composable ColumnScope.() -> Unit,
@@ -69,7 +70,8 @@ internal fun SettingsPage(
                     Modifier.weight(1f).fillMaxWidth()
                         .then(if (avoidKeyboard) Modifier.imePadding() else Modifier)
                         .padding(horizontal = 20.dp)
-                        .padding(top = 12.dp, bottom = contentBottomPadding),
+                        .padding(top = 12.dp)
+                        .testTag("settingsPageContent"),
                     content = content,
                 )
             }
@@ -86,3 +88,9 @@ internal fun SettingsPage(
         }
     }
 }
+
+internal val SettingsPageBottomPadding = 80.dp
+
+@Composable
+internal fun Modifier.settingsPageScroll(): Modifier =
+    verticalScroll(rememberScrollState()).padding(bottom = SettingsPageBottomPadding)

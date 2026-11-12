@@ -56,7 +56,7 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    var parseRulePreviews by remember { mutableStateOf<List<ParseRulePreview>>(emptyList()) }
+    var parseRulePreviews by remember { mutableStateOf(defaultParseRulePreviews()) }
     SettingsNavigation(
         onDetailVisibleChange = onDetailVisibleChange,
         modifier = modifier,

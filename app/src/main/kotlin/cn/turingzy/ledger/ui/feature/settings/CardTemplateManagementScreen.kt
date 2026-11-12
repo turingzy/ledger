@@ -20,10 +20,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -104,7 +102,7 @@ internal fun CardTemplateManagementScreen(
             val pending = newFace
             val canSave = pending.name.isNotBlank() && pending.coverUri.isNotBlank()
             SettingsPage(
-                title = "新增",
+                title = "新增卡面",
                 onDismissRequest = { creating = false },
                 avoidKeyboard = true,
                 action = {
@@ -118,7 +116,7 @@ internal fun CardTemplateManagementScreen(
                 },
             ) {
                 Column(
-                    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+                    Modifier.fillMaxWidth().settingsPageScroll(),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     TemplateCoverPreview(pending, onChooseImage = { replaceImage(pending) })
@@ -141,7 +139,7 @@ internal fun CardTemplateManagementScreen(
                 },
             ) {
                 Column(
-                    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+                    Modifier.fillMaxWidth().settingsPageScroll(),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     if (selected != null) {

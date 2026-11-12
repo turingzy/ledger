@@ -1,5 +1,12 @@
 package cn.turingzy.ledger.ui.feature.settings
 
+import android.view.Window
+import android.view.WindowManager
+import androidx.activity.compose.LocalActivity
+import androidx.compose.runtime.SideEffect
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.test.espresso.Espresso.closeSoftKeyboard
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -28,8 +35,19 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.performSemanticsAction
+import org.junit.Assert.assertTrue
 import androidx.test.espresso.Espresso.pressBack
 import cn.turingzy.ledger.model.CardTemplate
+import cn.turingzy.ledger.model.Account
+import cn.turingzy.ledger.model.AccountType
+import cn.turingzy.ledger.model.AccountWithTemplate
+import cn.turingzy.ledger.model.Category
+import cn.turingzy.ledger.model.CategoryType
+import cn.turingzy.ledger.model.CategoryWithIcon
+import cn.turingzy.ledger.model.Icon as ModelIcon
 import cn.turingzy.ledger.navigation.SettingsDestination
 import cn.turingzy.ledger.navigation.SettingsNavigation
 import cn.turingzy.ledger.ui.component.MaterialSymbols
@@ -103,8 +121,7 @@ class SettingsInteractionTest {
             }
         }
         compose.onNodeWithContentDescription("新增解析规则").performClick()
-        compose.onNodeWithText("默认归属").performClick()
-        compose.onNodeWithText("默认账户").performClick()
+        compose.onNodeWithText("默认账户").performScrollTo().performClick()
         compose.onNodeWithText("导入时选择").assertIsDisplayed()
         pressBack()
         compose.onNodeWithText("新增规则").assertIsDisplayed()
@@ -113,6 +130,117 @@ class SettingsInteractionTest {
         compose.runOnIdle { assertEquals(false, dismissed) }
         pressBack()
         compose.runOnIdle { assertEquals(true, dismissed) }
+    }
+
+    @Test
+    fun ruleDropdownsSelectAccountAndCategoryWithoutLeavingEditor() {
+        var saved: ParseRulePreview? = null
+        compose.setContent {
+            LedgerTheme {
+                ParseRulesScreen(
+                    accounts = listOf(AccountWithTemplate(Account(id = 7L, name = "日常账户", type = AccountType.WALLET))),
+                    categories = listOf(CategoryWithIcon(
+                        Category(id = 9L, name = "餐饮", type = CategoryType.EXPENSE, iconId = 1L),
+                        ModelIcon(id = 1L, keyName = "food", displayName = "餐饮", iconUri = "res://food"),
+                    )),
+                    rules = defaultParseRulePreviews(),
+                    onSaveRule = { saved = it }, onDeleteRule = {}, onDismissRequest = {},
+                )
+            }
+        }
+        compose.onNodeWithText("通用账单").performClick()
+        val titleBounds = compose.onNodeWithText("规则详情").fetchSemanticsNode().boundsInRoot
+        compose.onNodeWithContentDescription("默认账户").performScrollTo().performClick()
+        compose.onNodeWithTag("ruleAccountOptions").assertIsDisplayed()
+        compose.onNodeWithText("日常账户").performClick()
+        compose.onNodeWithTag("ruleAccountOptions").assertDoesNotExist()
+        compose.onNodeWithContentDescription("默认分类").performScrollTo().performClick()
+        compose.onNodeWithTag("ruleCategoryOptions").assertIsDisplayed()
+        compose.onNodeWithText("餐饮").performClick()
+        compose.onNodeWithTag("ruleCategoryOptions").assertDoesNotExist()
+        assertEquals(titleBounds, compose.onNodeWithText("规则详情").fetchSemanticsNode().boundsInRoot)
+        compose.onNodeWithContentDescription("保存规则预览").performClick()
+        compose.runOnIdle {
+            assertEquals(7L, checkNotNull(saved).accountId)
+            assertEquals(9L, checkNotNull(saved).categoryId)
+        }
+    }
+
+    @Test
+    fun ruleFormReachesPageBottomAndScrollsDeleteAboveFooterClearance() {
+        var bottomClearance = 0f
+        compose.setContent {
+            val density = LocalDensity.current
+            SideEffect { bottomClearance = with(density) { SettingsPageBottomPadding.toPx() } }
+            LedgerTheme {
+                ParseRulesScreen(
+                    accounts = emptyList(), categories = emptyList(), rules = defaultParseRulePreviews(),
+                    onSaveRule = {}, onDeleteRule = {}, onDismissRequest = {},
+                )
+            }
+        }
+        compose.onNodeWithText("通用账单").performClick()
+        val page = compose.onNodeWithTag("parseRulePage").fetchSemanticsNode().boundsInRoot
+        val viewport = compose.onNodeWithTag("settingsPageContent").fetchSemanticsNode().boundsInRoot
+        assertEquals(page.bottom, viewport.bottom, 0.5f)
+        compose.onNodeWithTag("parseRuleForm").performSemanticsAction(SemanticsActions.ScrollBy) { scroll ->
+            scroll(0f, Float.MAX_VALUE)
+        }
+        compose.onNodeWithText("删除规则").assertIsDisplayed()
+        val delete = compose.onNodeWithText("删除规则").fetchSemanticsNode().boundsInRoot
+        assertTrue(delete.bottom <= viewport.bottom - bottomClearance + 0.5f)
+        assertTrue(delete.top >= viewport.top)
+    }
+
+    @Test
+    fun newRuleKeyboardKeepsBackgroundTitleAndBackButtonStationary() {
+        assertRuleKeyboardKeepsPageStationary(existing = false)
+    }
+
+    @Test
+    fun existingRuleKeyboardKeepsBackgroundTitleAndBackButtonStationary() {
+        assertRuleKeyboardKeepsPageStationary(existing = true)
+    }
+
+    private fun assertRuleKeyboardKeepsPageStationary(existing: Boolean) {
+        var hostWindow: Window? = null
+        compose.setContent {
+            val activity = LocalActivity.current
+            SideEffect { hostWindow = activity?.window }
+            LedgerTheme {
+                ParseRulesScreen(
+                    accounts = emptyList(), categories = emptyList(), rules = defaultParseRulePreviews(),
+                    onSaveRule = {}, onDeleteRule = {}, onDismissRequest = {},
+                )
+            }
+        }
+        val originalMode = compose.runOnIdle { checkNotNull(hostWindow).attributes.softInputMode }
+        if (existing) compose.onNodeWithText("通用账单").performClick()
+        else compose.onNodeWithContentDescription("新增解析规则").performClick()
+        val title = if (existing) "规则详情" else "新增规则"
+        val pageBounds = compose.onNodeWithTag("parseRulePage").fetchSemanticsNode().boundsInRoot
+        val titleBounds = compose.onNodeWithText(title).fetchSemanticsNode().boundsInRoot
+        val backBounds = compose.onNodeWithContentDescription("返回").fetchSemanticsNode().boundsInRoot
+        compose.onNodeWithContentDescription("备注").performScrollTo().performClick()
+        compose.waitUntil(timeoutMillis = 5_000) {
+            compose.runOnIdle {
+                hostWindow?.decorView?.let { ViewCompat.getRootWindowInsets(it)?.isVisible(WindowInsetsCompat.Type.ime()) } == true
+            }
+        }
+        compose.onNodeWithContentDescription("备注").performTextInput("键盘回归测试")
+        compose.runOnIdle {
+            assertEquals(
+                WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING,
+                checkNotNull(hostWindow).attributes.softInputMode and WindowManager.LayoutParams.SOFT_INPUT_MASK_ADJUST,
+            )
+        }
+        assertEquals(pageBounds, compose.onNodeWithTag("parseRulePage").fetchSemanticsNode().boundsInRoot)
+        assertEquals(titleBounds, compose.onNodeWithText(title).fetchSemanticsNode().boundsInRoot)
+        assertEquals(backBounds, compose.onNodeWithContentDescription("返回").fetchSemanticsNode().boundsInRoot)
+        closeSoftKeyboard()
+        compose.onNodeWithContentDescription("返回").performClick()
+        compose.onNodeWithText("账单解析规则").assertIsDisplayed()
+        compose.runOnIdle { assertEquals(originalMode, checkNotNull(hostWindow).attributes.softInputMode) }
     }
 
     @Test

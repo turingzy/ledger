@@ -50,10 +50,9 @@ internal fun OpenSourceLibrariesScreen(onBack: () -> Unit, modifier: Modifier = 
         title = "开源许可证",
         onDismissRequest = onBack,
         modifier = modifier,
-        contentBottomPadding = 0.dp,
     ) {
         LazyColumn(
-            contentPadding = PaddingValues(bottom = 80.dp),
+            contentPadding = PaddingValues(bottom = SettingsPageBottomPadding),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             items(openSourceLibraries, key = { it.name }) { library ->

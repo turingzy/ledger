@@ -50,6 +50,7 @@ import cn.turingzy.ledger.ui.theme.IosYellow
 import cn.turingzy.ledger.ui.theme.IosPurple
 import cn.turingzy.ledger.ui.theme.IosOrange
 import cn.turingzy.ledger.model.AccountWithTemplate
+import cn.turingzy.ledger.ui.component.LedgerDateTimePicker
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.util.toFormattedAmount
 import java.time.Instant
@@ -124,7 +125,7 @@ internal fun RecordDateTimeDialog(initialTime: Long, onDismiss: () -> Unit, onCo
         ) {
             Column(Modifier.fillMaxWidth().heightIn(max = 520.dp).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
-                    RecordDateTimePicker(date, hour, minute, { day = it.toEpochDay() }, { hour = it }, { minute = it })
+                    LedgerDateTimePicker(date, hour, minute, { day = it.toEpochDay() }, { hour = it }, { minute = it })
                 }
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     IconButton(showPressFeedback = false, onClick = onDismiss) { Icon(MaterialSymbols.Close, "取消") }

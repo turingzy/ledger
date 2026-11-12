@@ -8,7 +8,9 @@ import xml.etree.ElementTree as ET
 
 symbols = {
 'Add':'add', 'AddCard':'add_card', 'AddPhotoAlternate':'add_photo_alternate', 'ArrowBack':'arrow_back', 'ArrowForward':'arrow_forward',
+'RadioButtonChecked':'radio_button_checked', 'RadioButtonUnchecked':'radio_button_unchecked',
 'Backspace':'backspace', 'Check':'check', 'ChevronLeft':'chevron_left', 'ChevronRight':'chevron_right',
+'CheckBox':'check_box', 'CheckBoxOutlineBlank':'check_box_outline_blank', 'CloudDownload':'cloud_download',
 'Close':'close', 'Code':'code', 'CloudUpload':'cloud_upload', 'DashboardCustomize':'dashboard_customize',
 'Delete':'delete', 'DirectionsBus':'directions_bus', 'Edit':'edit', 'EditSquare':'edit_square',
 'ArrowDropDown':'arrow_drop_down', 'ExpandMore':'expand_more', 'Home':'home', 'Image':'image', 'ImportExport':'swap_vert', 'Info':'info',

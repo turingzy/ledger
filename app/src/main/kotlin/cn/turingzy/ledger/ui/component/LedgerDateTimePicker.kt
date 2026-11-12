@@ -1,4 +1,4 @@
-package cn.turingzy.ledger.ui.feature.ledger
+package cn.turingzy.ledger.ui.component
 
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
@@ -55,7 +55,7 @@ import java.time.YearMonth
 import kotlin.math.abs
 
 @Composable
-internal fun RecordDateTimePicker(
+internal fun LedgerDateTimePicker(
     date: LocalDate,
     hour: String,
     minute: String,
