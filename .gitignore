@@ -50,6 +50,7 @@ hs_err_pid*
 
 # local temp file
 temp/
+app/release/
 
 # Agent local configs
 .agents/*
