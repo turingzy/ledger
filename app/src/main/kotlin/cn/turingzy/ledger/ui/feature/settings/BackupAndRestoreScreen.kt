@@ -44,7 +44,7 @@ private data class TransferPreviewState(
 )
 
 @Composable
-internal fun BackupAndRestoreSheet(onDismissRequest: () -> Unit) {
+internal fun BackupAndRestoreScreen(onDismissRequest: () -> Unit) {
     var activeOperation by remember { mutableStateOf<TransferOperation?>(null) }
 
     fun tryStart(operation: TransferOperation): Boolean {
@@ -53,7 +53,7 @@ internal fun BackupAndRestoreSheet(onDismissRequest: () -> Unit) {
         return true
     }
 
-    SettingsBottomSheet(title = "备份与恢复", onDismissRequest = onDismissRequest) {
+    SettingsPage(title = "备份与恢复", onDismissRequest = onDismissRequest) {
         Column(
             Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(24.dp),

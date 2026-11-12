@@ -19,6 +19,7 @@ fun LedgerNavHost(
     onRecordSheetDismiss: () -> Unit,
     onNavigateToRecord: () -> Unit,
     modifier: Modifier = Modifier,
+    onSettingsDetailVisibleChange: (Boolean) -> Unit = {},
 ) {
     RetainedDestinationHost(currentDestination, modifier) { destination ->
         val navController = rememberNavController()
@@ -40,7 +41,7 @@ fun LedgerNavHost(
                 }
                 TopLevelDestination.ANALYTICS -> composable<Route.Analytics> { AnalyticsScreen() }
                 TopLevelDestination.WALLET -> composable<Route.Wallet> { WalletScreen() }
-                TopLevelDestination.SETTINGS -> composable<Route.Settings> { SettingsScreen() }
+                TopLevelDestination.SETTINGS -> composable<Route.Settings> { SettingsScreen(onDetailVisibleChange = onSettingsDetailVisibleChange) }
             }
         }
     }

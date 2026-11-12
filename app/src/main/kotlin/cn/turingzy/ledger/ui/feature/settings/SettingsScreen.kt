@@ -2,6 +2,10 @@ package cn.turingzy.ledger.ui.feature.settings
 
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import cn.turingzy.ledger.ui.component.topBarPressFeedback
+import cn.turingzy.ledger.navigation.SettingsDestination
+import cn.turingzy.ledger.navigation.SettingsNavigation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,7 +17,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -48,63 +51,50 @@ import cn.turingzy.ledger.model.Icon as ModelIcon
 @Composable
 fun SettingsScreen(
     modifier: Modifier = Modifier,
+    onDetailVisibleChange: (Boolean) -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     var parseRulePreviews by remember { mutableStateOf<List<ParseRulePreview>>(emptyList()) }
-    var showParseRulesSheet by remember { mutableStateOf(false) }
-    var showBackupSheet by remember { mutableStateOf(false) }
-    var showAboutSheet by remember { mutableStateOf(false) }
-    var showCardManagementSheet by remember { mutableStateOf(false) }
-    var showBillTransferSheet by remember { mutableStateOf(false) }
-
-    SettingsContent(
-        uiState = uiState,
-        onParseRulesClick = { showParseRulesSheet = true },
-        onCardManagementClick = { showCardManagementSheet = true },
-        onBillTransferClick = { showBillTransferSheet = true },
-        onBackupClick = { showBackupSheet = true },
-        onAboutClick = { showAboutSheet = true },
+    SettingsNavigation(
+        onDetailVisibleChange = onDetailVisibleChange,
         modifier = modifier,
-    )
-
-    if (showParseRulesSheet) {
-        ParseRulesSheet(
-            accounts = (uiState as? SettingsUiState.Success)?.accounts.orEmpty(),
-            categories = (uiState as? SettingsUiState.Success)?.categories.orEmpty(),
-            rules = parseRulePreviews,
-            onSaveRule = { rule ->
-                parseRulePreviews = if (parseRulePreviews.any { it.id == rule.id }) {
-                    parseRulePreviews.map { if (it.id == rule.id) rule else it }
-                } else parseRulePreviews + rule
-            },
-            onDeleteRule = { id -> parseRulePreviews = parseRulePreviews.filterNot { it.id == id } },
-            onDismissRequest = { showParseRulesSheet = false },
-        )
-    }
-
-    if (showBackupSheet) {
-        BackupAndRestoreSheet(onDismissRequest = { showBackupSheet = false })
-    }
-
-    if (showCardManagementSheet) {
-        CardTemplateManagementSheet(
-            templates = (uiState as? SettingsUiState.Success)?.cardTemplates.orEmpty(),
-            onDismissRequest = { showCardManagementSheet = false },
-        )
-    }
-
-    if (showBillTransferSheet) {
-        BillTransferSheet(rules = parseRulePreviews, onDismissRequest = { showBillTransferSheet = false })
-    }
-
-    if (showAboutSheet) {
-        val version = (uiState as? SettingsUiState.Success)?.appVersion ?: "1.0.0"
-        AboutSheet(
-            versionName = version,
-            onDismissRequest = { showAboutSheet = false },
-        )
+    ) { destination, navigate, back ->
+        when (destination) {
+            SettingsDestination.ROOT -> SettingsContent(
+                uiState = uiState,
+                onParseRulesClick = { navigate(SettingsDestination.PARSE_RULES) },
+                onCardManagementClick = { navigate(SettingsDestination.CARDS) },
+                onBillTransferClick = { navigate(SettingsDestination.BILL_TRANSFER) },
+                onBackupClick = { navigate(SettingsDestination.BACKUP) },
+                onAboutClick = { navigate(SettingsDestination.ABOUT) },
+            )
+            SettingsDestination.PARSE_RULES -> ParseRulesScreen(
+                accounts = (uiState as? SettingsUiState.Success)?.accounts.orEmpty(),
+                categories = (uiState as? SettingsUiState.Success)?.categories.orEmpty(),
+                rules = parseRulePreviews,
+                onSaveRule = { rule ->
+                    parseRulePreviews = if (parseRulePreviews.any { it.id == rule.id }) {
+                        parseRulePreviews.map { if (it.id == rule.id) rule else it }
+                    } else parseRulePreviews + rule
+                },
+                onDeleteRule = { id -> parseRulePreviews = parseRulePreviews.filterNot { it.id == id } },
+                onDismissRequest = back,
+            )
+            SettingsDestination.BACKUP -> BackupAndRestoreScreen(onDismissRequest = back)
+            SettingsDestination.CARDS -> CardTemplateManagementScreen(
+                templates = (uiState as? SettingsUiState.Success)?.cardTemplates.orEmpty(),
+                onDismissRequest = back,
+            )
+            SettingsDestination.BILL_TRANSFER -> BillTransferScreen(rules = parseRulePreviews, onDismissRequest = back)
+            SettingsDestination.ABOUT -> AboutScreen(
+                versionName = (uiState as? SettingsUiState.Success)?.appVersion ?: "1.0.0",
+                onDismissRequest = back,
+                onOpenSourceClick = { navigate(SettingsDestination.OPEN_SOURCE_LICENSES) },
+            )
+            SettingsDestination.OPEN_SOURCE_LICENSES -> OpenSourceLibrariesScreen(onBack = back)
+        }
     }
 }
 
@@ -257,11 +247,13 @@ fun SettingsRowItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .topBarPressFeedback(interactionSource, enabled = true)
+            .clickable(indication = null, interactionSource = remember { MutableInteractionSource() }, onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -293,7 +285,7 @@ fun SettingsRowItem(
             imageVector = MaterialSymbols.ChevronRight,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f),
-            modifier = Modifier.size(14.dp),
+            modifier = Modifier.size(24.dp),
         )
     }
 }

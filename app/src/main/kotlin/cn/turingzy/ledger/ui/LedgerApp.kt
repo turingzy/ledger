@@ -28,6 +28,8 @@ fun LedgerApp(
 ) {
     var currentTopLevelDestination by rememberSaveable { mutableStateOf(TopLevelDestination.LEDGER) }
 
+    var settingsDetailVisible by remember { mutableStateOf(false) }
+    val showBottomBar = currentTopLevelDestination != TopLevelDestination.SETTINGS || !settingsDetailVisible
     val isLedgerTab = currentTopLevelDestination == TopLevelDestination.LEDGER
     var showGlobalRecordSheet by remember { mutableStateOf(false) }
 
@@ -50,10 +52,11 @@ fun LedgerApp(
                 showRecordSheet = showGlobalRecordSheet,
                 onRecordSheetDismiss = { showGlobalRecordSheet = false },
                 onNavigateToRecord = { showGlobalRecordSheet = true },
+                onSettingsDetailVisibleChange = { settingsDetailVisible = it },
                 modifier = Modifier
                     .fillMaxSize()
                     .navigationBarsPadding()
-                    .padding(bottom = 76.dp),
+                    .padding(bottom = if (showBottomBar) 76.dp else 0.dp),
             )
 
             LedgerFloatingActionButton(
@@ -65,7 +68,7 @@ fun LedgerApp(
                     .padding(end = 16.dp, bottom = 76.dp),
             )
 
-            LedgerBottomBar(
+            if (showBottomBar) LedgerBottomBar(
                 destinations = TopLevelDestination.entries,
                 currentDestination = currentTopLevelDestination,
                 onNavigateToDestination = { targetDestination ->

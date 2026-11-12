@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.settings
 
+import cn.turingzy.ledger.navigation.SettingsSubpageTransition
 import androidx.compose.foundation.LocalIndication
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import android.net.Uri
@@ -70,8 +71,12 @@ import cn.turingzy.ledger.ui.component.SummaryCardIconButton
 import cn.turingzy.ledger.R
 import cn.turingzy.ledger.model.CardTemplate
 
+private data class TemplatePage(val draft: CardTemplate?, val colorPicker: Boolean) {
+    val depth: Int get() = if (colorPicker) 2 else if (draft != null) 1 else 0
+}
+
 @Composable
-internal fun CardTemplateManagementSheet(
+internal fun CardTemplateManagementScreen(
     templates: List<CardTemplate>,
     onDismissRequest: () -> Unit,
 ) {
@@ -87,6 +92,7 @@ internal fun CardTemplateManagementSheet(
     var newTemplate by remember {
         mutableStateOf<CardTemplate?>(if (templates.isEmpty()) CardTemplate(id = -1L, name = "", coverUri = "") else null)
     }
+    var showColors by remember { mutableStateOf(false) }
     val selected = newTemplate ?: drafts.getOrNull(selectedIndex)
     val focusManager = LocalFocusManager.current
     var uploadTarget by remember { mutableStateOf<Long?>(null) }
@@ -102,98 +108,113 @@ internal fun CardTemplateManagementSheet(
         uploadTarget = null
     }
 
-    SettingsBottomSheet(
-        title = "卡片管理",
-        onDismissRequest = onDismissRequest,
-        onBack = if (newTemplate != null && drafts.isNotEmpty()) {
-            {
-                focusManager.clearFocus()
-                newTemplate = null
-            }
-        } else null,
-        action = {
-            val creating = newTemplate != null
-            val canSave = newTemplate?.let { it.name.isNotBlank() && it.coverUri.isNotBlank() } == true
-            IconButton(
-                showPressFeedback = false,
-                enabled = !creating || canSave,
-                onClick = {
-                    val pending = newTemplate
-                    if (pending == null) {
-                        val id = minOf(drafts.minOfOrNull { it.id } ?: 0L, 0L) - 1L
-                        newTemplate = CardTemplate(id = id, name = "", coverUri = "")
-                    } else {
-                        if (!canSave) return@IconButton
+    SettingsSubpageTransition(
+        targetState = TemplatePage(newTemplate, showColors),
+        depth = { it.depth },
+        contentKey = { it.depth },
+    ) { page ->
+        if (page.colorPicker) {
+            TemplateColorPickerScreen(
+                initialColor = selected?.textColor.orEmpty(),
+                onDismissRequest = { showColors = false },
+                onConfirm = { color ->
+                    if (newTemplate != null) newTemplate = newTemplate?.copy(textColor = color)
+                    else selected?.let { drafts[selectedIndex] = it.copy(textColor = color) }
+                    showColors = false
+                },
+            )
+        } else {
+            SettingsPage(
+                title = if (page.draft != null) "新增卡片" else "卡片管理",
+                onDismissRequest = onDismissRequest,
+                onBack = if (page.draft != null && drafts.isNotEmpty()) {
+                    {
                         focusManager.clearFocus()
-                        drafts.add(pending)
-                        selectedId = pending.id
                         newTemplate = null
+                    }
+                } else null,
+                action = {
+                    val creating = page.draft != null
+                    val canSave = page.draft?.let { it.name.isNotBlank() && it.coverUri.isNotBlank() } == true
+                    IconButton(
+                        showPressFeedback = false,
+                        enabled = !creating || canSave,
+                        onClick = {
+                            val pending = page.draft
+                            if (pending == null) {
+                                val id = minOf(drafts.minOfOrNull { it.id } ?: 0L, 0L) - 1L
+                                newTemplate = CardTemplate(id = id, name = "", coverUri = "")
+                            } else {
+                                if (!canSave) return@IconButton
+                                focusManager.clearFocus()
+                                drafts.add(pending)
+                                selectedId = pending.id
+                                newTemplate = null
+                            }
+                        },
+                    ) {
+                        Icon(
+                            if (creating) MaterialSymbols.Check else MaterialSymbols.Add,
+                            if (creating) "保存卡片模板预览" else "新增卡片模板",
+                            tint = if (creating) {
+                                MaterialTheme.colorScheme.tertiary.copy(alpha = if (canSave) 1f else 0.38f)
+                            } else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 },
             ) {
-                Icon(
-                    if (creating) MaterialSymbols.Check else MaterialSymbols.Add,
-                    if (creating) "保存卡片模板预览" else "新增卡片模板",
-                    tint = if (creating) {
-                        MaterialTheme.colorScheme.tertiary.copy(alpha = if (canSave) 1f else 0.38f)
-                    } else MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        },
-    ) {
-        Column(
-            Modifier.fillMaxWidth().imePadding().verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            if (newTemplate != null) {
-                TemplateCoverPreview(
-                    template = newTemplate,
-                    creating = true,
-                    onUpload = {
-                        uploadTarget = newTemplate?.id
-                        imagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                    },
-                )
-            } else {
-                HorizontalPager(
-                    state = pagerState,
-                    key = { it },
-                    pageSpacing = 12.dp,
-                ) { page ->
-                    val template = drafts.getOrNull(if (drafts.isEmpty()) -1 else Math.floorMod(page, drafts.size))
-                    TemplateCoverPreview(
-                        template = template,
-                        onDelete = {
-                            val index = drafts.indexOfFirst { it.id == template?.id }
-                            if (index >= 0) {
-                                drafts.removeAt(index)
-                                if (selectedId == template?.id) selectedId = drafts.getOrNull(index.coerceAtMost(drafts.lastIndex))?.id
-                            }
-                            if (drafts.isEmpty()) newTemplate = CardTemplate(id = -1L, name = "", coverUri = "")
+                Column(
+                    Modifier.fillMaxWidth().imePadding().verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    if (page.draft != null) {
+                        TemplateCoverPreview(
+                            template = page.draft,
+                            creating = true,
+                            onUpload = {
+                                uploadTarget = newTemplate?.id
+                                imagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                            },
+                        )
+                    } else {
+                        HorizontalPager(
+                            state = pagerState,
+                            key = { it },
+                            pageSpacing = 12.dp,
+                        ) { page ->
+                            val template = drafts.getOrNull(if (drafts.isEmpty()) -1 else Math.floorMod(page, drafts.size))
+                            TemplateCoverPreview(
+                                template = template,
+                                onDelete = {
+                                    val index = drafts.indexOfFirst { it.id == template?.id }
+                                    if (index >= 0) {
+                                        drafts.removeAt(index)
+                                        if (selectedId == template?.id) selectedId = drafts.getOrNull(index.coerceAtMost(drafts.lastIndex))?.id
+                                    }
+                                    if (drafts.isEmpty()) newTemplate = CardTemplate(id = -1L, name = "", coverUri = "")
+                                },
+                                onUpload = {
+                                    uploadTarget = template?.id
+                                    imagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                                },
+                            )
+                        }
+                    }
+                    Box(Modifier.fillMaxWidth().height(6.dp)) {
+                        if (page.draft == null) {
+                            CardPageIndicator(pageCount = drafts.size, currentPage = selectedIndex)
+                        }
+                    }
+                    TemplateDetailsPreview(
+                        template = page.draft ?: drafts.getOrNull(selectedIndex),
+                        onNameChange = { name ->
+                            if (page.draft != null) newTemplate = newTemplate?.copy(name = name)
+                            else selected?.let { drafts[selectedIndex] = it.copy(name = name) }
                         },
-                        onUpload = {
-                            uploadTarget = template?.id
-                            imagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                        },
+                        onColorClick = { showColors = true },
                     )
                 }
             }
-            Box(Modifier.fillMaxWidth().height(6.dp)) {
-                if (newTemplate == null) {
-                    CardPageIndicator(pageCount = drafts.size, currentPage = selectedIndex)
-                }
-            }
-            TemplateDetailsPreview(
-                template = selected,
-                onNameChange = { name ->
-                    if (newTemplate != null) newTemplate = newTemplate?.copy(name = name)
-                    else selected?.let { drafts[selectedIndex] = it.copy(name = name) }
-                },
-                onColorChange = { color ->
-                    if (newTemplate != null) newTemplate = newTemplate?.copy(textColor = color)
-                    else selected?.let { drafts[selectedIndex] = it.copy(textColor = color) }
-                },
-            )
         }
     }
 }
@@ -268,10 +289,9 @@ private fun TemplateCoverPreview(
 private fun TemplateDetailsPreview(
     template: CardTemplate?,
     onNameChange: (String) -> Unit,
-    onColorChange: (String) -> Unit,
+    onColorClick: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
-    var showColors by remember(template?.id) { mutableStateOf(false) }
     Surface(shape = RoundedCornerShape(16.dp), color = colors.surfaceVariant.copy(alpha = 0.45f)) {
         Column(Modifier.padding(horizontal = 16.dp)) {
             Row(
@@ -304,7 +324,7 @@ private fun TemplateDetailsPreview(
                 Text("文字颜色")
                 Row(
                     Modifier.clip(RoundedCornerShape(8.dp))
-                        .clickable(enabled = template != null) { showColors = true }
+                        .clickable(enabled = template != null, onClick = onColorClick)
                         .padding(vertical = 12.dp, horizontal = 4.dp)
                         .semantics { contentDescription = "选择文字颜色" },
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -320,16 +340,6 @@ private fun TemplateDetailsPreview(
             }
 
         }
-    }
-    if (showColors && template != null) {
-        TemplateColorPickerSheet(
-            initialColor = template.textColor,
-            onDismissRequest = { showColors = false },
-            onConfirm = {
-                onColorChange(it)
-                showColors = false
-            },
-        )
     }
 
 }

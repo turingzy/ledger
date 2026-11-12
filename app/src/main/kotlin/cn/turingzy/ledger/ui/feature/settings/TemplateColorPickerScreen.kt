@@ -54,7 +54,7 @@ private data class PickerColor(val hue: Float, val saturation: Float, val value:
 }
 
 @Composable
-internal fun TemplateColorPickerSheet(
+internal fun TemplateColorPickerScreen(
     initialColor: String,
     onDismissRequest: () -> Unit,
     onConfirm: (String) -> Unit,
@@ -69,7 +69,7 @@ internal fun TemplateColorPickerSheet(
         hex = value.color().hexString()
     }
 
-    SettingsBottomSheet(
+    SettingsPage(
         title = "文字颜色",
         onDismissRequest = onDismissRequest,
         onBack = onDismissRequest,
