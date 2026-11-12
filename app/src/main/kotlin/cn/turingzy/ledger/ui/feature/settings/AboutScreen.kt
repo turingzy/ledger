@@ -1,8 +1,7 @@
 package cn.turingzy.ledger.ui.feature.settings
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,7 +17,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -33,14 +31,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.R
-import cn.turingzy.ledger.ui.component.MaterialSymbols
 import kotlinx.coroutines.delay
 
 private enum class UpdatePreviewState { IDLE, CHECKING, AVAILABLE }
@@ -91,41 +87,42 @@ private fun AboutContent(
 ) {
     val colors = MaterialTheme.colorScheme
     Column(modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
-        Row(
-            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
-                .border(0.5.dp, colors.onSurface.copy(alpha = 0.28f), RoundedCornerShape(16.dp))
-                .clickable(
-                    enabled = updateState != UpdatePreviewState.CHECKING,
-                    role = Role.Button,
-                    onClickLabel = "检查更新",
-                    onClick = onCheckUpdate,
-                ).semantics(mergeDescendants = true) { contentDescription = "检查更新" }
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(20.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        Surface(
+            onClick = onCheckUpdate,
+            enabled = updateState != UpdatePreviewState.CHECKING,
+            modifier = Modifier.semantics { contentDescription = "检查更新" },
+            shape = RoundedCornerShape(16.dp),
+            color = colors.surface,
+            border = BorderStroke(0.5.dp, colors.onSurface.copy(alpha = 0.28f)),
         ) {
-            Box(Modifier.size(80.dp).clip(CircleShape)) {
-                Image(painterResource(R.drawable.ic_launcher_background), null, Modifier.fillMaxSize())
-                Image(painterResource(R.drawable.ic_launcher_foreground), "Ledger 应用图标", Modifier.fillMaxSize())
-            }
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("Ledger", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        versionName,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = colors.onSurfaceVariant.copy(alpha = 0.65f),
-                    )
-                    when (updateState) {
-                        UpdatePreviewState.CHECKING -> CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 1.5.dp)
-                        UpdatePreviewState.AVAILABLE -> Text("1.0.1", style = MaterialTheme.typography.bodySmall, color = colors.primary)
-                        UpdatePreviewState.IDLE -> Unit
-                    }
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(Modifier.size(80.dp).clip(CircleShape)) {
+                    Image(painterResource(R.drawable.ic_launcher_background), null, Modifier.fillMaxSize())
+                    Image(painterResource(R.drawable.ic_launcher_foreground), "Ledger 应用图标", Modifier.fillMaxSize())
                 }
-                Text("TuringZY", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("Ledger", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            versionName,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = colors.onSurfaceVariant.copy(alpha = 0.65f),
+                        )
+                        when (updateState) {
+                            UpdatePreviewState.CHECKING -> CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 1.5.dp)
+                            UpdatePreviewState.AVAILABLE -> Text("1.0.1", style = MaterialTheme.typography.bodySmall, color = colors.primary)
+                            UpdatePreviewState.IDLE -> Unit
+                        }
+                    }
+                    Text("TuringZY", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                }
             }
         }
         Spacer(Modifier.height(24.dp))
@@ -135,28 +132,11 @@ private fun AboutContent(
             color = colors.onSurfaceVariant,
         )
         Spacer(Modifier.height(24.dp))
-        AboutLinkButton("开源许可证", "应用使用的开源库", onOpenSourceClick)
+        SettingsActionRow("开源许可证", onOpenSourceClick, subtitle = "应用使用的开源库")
         Spacer(Modifier.height(8.dp))
-        AboutLinkButton("开源协议", "MIT License", onLicenseClick)
+        SettingsActionRow("开源协议", onLicenseClick, subtitle = "MIT License", externalLink = true)
         Spacer(Modifier.height(8.dp))
-        AboutLinkButton("Github 上的源代码", "查看此应用的源代码", onSourceClick)
-    }
-}
-
-@Composable
-private fun AboutLinkButton(title: String, subtitle: String, onClick: () -> Unit) {
-    Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surface) {
-        Row(
-            Modifier.fillMaxWidth().clickable(role = Role.Button, onClick = onClick).padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(title, style = MaterialTheme.typography.bodyLarge)
-                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Icon(MaterialSymbols.ChevronRight, null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
+        SettingsActionRow("Github 上的源代码", onSourceClick, subtitle = "查看此应用的源代码", externalLink = true)
     }
 }
 

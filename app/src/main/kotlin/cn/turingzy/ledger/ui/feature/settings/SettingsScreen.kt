@@ -169,7 +169,7 @@ fun SettingsContent(
                                     SettingsRowItem(
                                         icon = MaterialSymbols.DashboardCustomize,
                                         iconColor = MaterialTheme.colorScheme.primary,
-                                        title = "卡片管理",
+                                        title = "卡面管理",
                                         onClick = onCardManagementClick,
                                     )
                                     HorizontalDivider(

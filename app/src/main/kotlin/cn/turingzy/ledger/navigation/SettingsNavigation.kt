@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -22,7 +23,11 @@ internal fun SettingsNavigation(
 ) {
     val controller = rememberNavController()
     val entry by controller.currentBackStackEntryAsState()
-    val detailVisible = entry?.destination?.route?.let { it != SettingsDestination.ROOT.name } == true
+    val visibleEntries by controller.visibleEntries.collectAsStateWithLifecycle()
+    // Keep the outgoing page height stable until its exit animation finishes.
+    val detailVisible = (visibleEntries + listOfNotNull(entry)).any {
+        it.destination.route?.let { route -> route != SettingsDestination.ROOT.name } == true
+    }
     LaunchedEffect(detailVisible) { onDetailVisibleChange(detailVisible) }
     NavHost(
         navController = controller,

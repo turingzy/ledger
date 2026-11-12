@@ -13,6 +13,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import kotlinx.coroutines.delay
@@ -22,10 +23,10 @@ import kotlinx.coroutines.flow.collectLatest
 internal fun Modifier.topBarPressFeedback(
     interactionSource: MutableInteractionSource,
     enabled: Boolean,
+    color: Color = MaterialTheme.colorScheme.onSurface,
 ): Modifier {
     val alpha = remember { Animatable(0f) }
-    val color = MaterialTheme.colorScheme.onSurface
-    LaunchedEffect(interactionSource, enabled) {
+    LaunchedEffect(interactionSource, enabled, color) {
         alpha.snapTo(0f)
         if (!enabled) return@LaunchedEffect
         interactionSource.interactions.collectLatest { interaction ->

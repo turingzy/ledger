@@ -12,7 +12,7 @@ symbols = {
 'Close':'close', 'Code':'code', 'CloudUpload':'cloud_upload', 'DashboardCustomize':'dashboard_customize',
 'Delete':'delete', 'DirectionsBus':'directions_bus', 'Edit':'edit', 'EditSquare':'edit_square',
 'ArrowDropDown':'arrow_drop_down', 'ExpandMore':'expand_more', 'Home':'home', 'Image':'image', 'ImportExport':'swap_vert', 'Info':'info',
-'LocalHospital':'local_hospital', 'MoreHoriz':'more_horiz', 'NorthEast':'north_east', 'Payments':'payments',
+'LocalHospital':'local_hospital', 'MoreHoriz':'more_horiz', 'NorthEast':'north_east', 'Palette':'palette', 'Payments':'payments',
 'Schedule':'schedule', 'Restaurant':'restaurant', 'Search':'search', 'ShoppingBag':'shopping_bag', 'SportsEsports':'sports_esports',
 'SwapHoriz':'swap_horiz', 'AccountBalance':'account_balance', 'Upload':'upload',
 'Undo':'undo', 'Menu':'menu', 'DragIndicator':'drag_indicator', 'ViewCarousel':'view_carousel', 'ViewAgenda':'view_agenda',
