@@ -42,6 +42,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.Stable
+import cn.turingzy.ledger.ui.component.LocalBottomBarContentPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -235,7 +236,7 @@ fun WalletContent(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { SnackbarHost(snackbarHostState, Modifier.padding(bottom = LocalBottomBarContentPadding.current)) },
         containerColor = MaterialTheme.colorScheme.background,
         modifier = modifier
             .fillMaxSize()
@@ -262,7 +263,7 @@ fun WalletContent(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(top = 0.dp),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp + innerPadding.calculateBottomPadding() + LocalBottomBarContentPadding.current),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     // 与账本页面顶栏设计保持一致: 大标题“钱包” + 右侧添加按钮 + 资产卡片 (卡片与顶栏间距 5.dp)
@@ -368,6 +369,7 @@ fun WalletHeroCard(
     onUploadBackground: () -> Unit = {},
     onTransparencyChange: (Int) -> Unit = {},
 ) {
+    var amountsHidden by rememberSaveable { mutableStateOf(false) }
     SummaryCard(
         modifier = modifier,
         defaultBackgroundRes = R.drawable.bg_wallet_card,
@@ -380,6 +382,8 @@ fun WalletHeroCard(
         SummaryCardContent(
             title = "总资产",
             amount = totalAsset,
+            amountsHidden = amountsHidden,
+            onToggleAmounts = { amountsHidden = !amountsHidden },
             leftAmount = totalDebt,
             rightAmount = totalAsset + totalDebt,
             leftLabel = "总支出",

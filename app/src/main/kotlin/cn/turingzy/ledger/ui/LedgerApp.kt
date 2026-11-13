@@ -7,7 +7,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.CompositionLocalProvider
+import cn.turingzy.ledger.ui.component.BottomBarContentPadding
+import cn.turingzy.ledger.ui.component.LocalBottomBarContentPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,45 +39,35 @@ fun LedgerApp(
         currentTopLevelDestination = TopLevelDestination.LEDGER
     }
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding.let { androidx.compose.foundation.layout.PaddingValues(0.dp) })
-                .background(MaterialTheme.colorScheme.background),
-        ) {
+    Box(modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        CompositionLocalProvider(LocalBottomBarContentPadding provides if (showBottomBar) BottomBarContentPadding else 0.dp) {
             LedgerNavHost(
                 currentDestination = currentTopLevelDestination,
                 showRecordSheet = showGlobalRecordSheet,
                 onRecordSheetDismiss = { showGlobalRecordSheet = false },
                 onNavigateToRecord = { showGlobalRecordSheet = true },
                 onSettingsDetailVisibleChange = { settingsDetailVisible = it },
-                modifier = Modifier
-                    .fillMaxSize()
-                    .navigationBarsPadding()
-                    .padding(bottom = if (showBottomBar) 76.dp else 0.dp),
-            )
-
-            LedgerFloatingActionButton(
-                visible = isLedgerTab,
-                onClick = { showGlobalRecordSheet = true },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .navigationBarsPadding()
-                    .padding(end = 16.dp, bottom = 76.dp),
-            )
-
-            if (showBottomBar) LedgerBottomBar(
-                destinations = TopLevelDestination.entries,
-                currentDestination = currentTopLevelDestination,
-                onNavigateToDestination = { targetDestination ->
-                    currentTopLevelDestination = targetDestination
-                },
-                modifier = Modifier.align(Alignment.BottomCenter),
+                modifier = Modifier.fillMaxSize()
+                    .then(if (showBottomBar) Modifier else Modifier.navigationBarsPadding()),
             )
         }
+
+        LedgerFloatingActionButton(
+            visible = isLedgerTab,
+            onClick = { showGlobalRecordSheet = true },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .navigationBarsPadding()
+                .padding(end = 16.dp, bottom = BottomBarContentPadding),
+        )
+
+        if (showBottomBar) LedgerBottomBar(
+            destinations = TopLevelDestination.entries,
+            currentDestination = currentTopLevelDestination,
+            onNavigateToDestination = { targetDestination ->
+                currentTopLevelDestination = targetDestination
+            },
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
     }
 }

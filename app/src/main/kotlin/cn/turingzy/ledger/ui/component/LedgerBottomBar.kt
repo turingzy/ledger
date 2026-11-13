@@ -41,7 +41,7 @@ fun LedgerBottomBar(
         modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = BottomBarVerticalPadding),
         shape = CircleShape,
         color = colors.surface,
         shadowElevation = 2.dp,
@@ -53,7 +53,7 @@ fun LedgerBottomBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(52.dp)
+                .height(BottomBarHeight)
                 .selectableGroup()
                 .padding(horizontal = 8.dp, vertical = 2.dp),
             horizontalArrangement = Arrangement.SpaceAround,

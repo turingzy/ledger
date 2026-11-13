@@ -86,7 +86,8 @@ class LedgerViewModelTest {
                 amount = 4500L,
                 accountId = 1L,
                 categoryId = 2L,
-                transactionTime = 1700000000000L,
+                transactionTime = LocalDate.of(2024, 2, 29).atTime(12, 0)
+                    .atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
                 note = "Lunch",
             ),
             account = Account(id = 1L, name = "WeChat", type = AccountType.WALLET),
@@ -129,6 +130,7 @@ class LedgerViewModelTest {
             assertEquals(-4500L, success.monthBalance)
             assertEquals(1, success.dayGroups.size)
             assertEquals(1, success.dayGroups.first().transactions.size)
+            assertEquals("02/29 周四", success.dayGroups.first().displayDate)
         }
     }
 

@@ -43,7 +43,6 @@ dependencies {
     // DataStore & Logging
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.timber)
-    implementation(libs.vico.compose)
 
     // Testing
     testImplementation(libs.junit)

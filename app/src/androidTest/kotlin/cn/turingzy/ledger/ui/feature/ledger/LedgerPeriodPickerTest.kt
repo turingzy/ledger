@@ -6,7 +6,7 @@ import cn.turingzy.ledger.ui.component.PeriodSeries
 import cn.turingzy.ledger.ui.component.PeriodPickerSheet
 import cn.turingzy.ledger.model.DateFilterType
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -91,17 +91,19 @@ class PeriodPickerSheetTest {
     }
 
     @Test
-    fun currentPeriodKeepsDrawerUndoVisibleAndDisabledWhileBrowsingOtherItems() {
+    fun currentPeriodShortcutRemainsEnabledWhileBrowsingOtherItems() {
         val today = LocalDate.now()
+        var selected: Pair<DateFilterType, LocalDate>? = null
         compose.setContent {
             MaterialTheme {
-                PeriodPickerSheet(DateFilterType.MONTH, today, {}, { _, _ -> })
+                PeriodPickerSheet(DateFilterType.MONTH, today, {}, { type, date -> selected = type to date })
             }
         }
-        compose.onNodeWithContentDescription("返回本月").assertIsDisplayed().assertIsNotEnabled()
+        compose.onNodeWithContentDescription("返回本月").assertIsDisplayed().assertIsEnabled()
         val series = PeriodSeries(DateFilterType.YEAR, today)
         compose.onNodeWithTag("ledgerPeriodList").performScrollToIndex(series.indexOf(today.minusYears(2)))
-        compose.onNodeWithContentDescription("返回本月").assertIsDisplayed().assertIsNotEnabled()
+        compose.onNodeWithContentDescription("返回本月").assertIsDisplayed().assertIsEnabled().performClick()
+        assertEquals(DateFilterType.MONTH to today.withDayOfMonth(1), selected)
     }
 
     @Test
@@ -120,7 +122,7 @@ class PeriodPickerSheetTest {
             }
         }
         compose.onNodeWithContentDescription("切换账本视图").assertDoesNotExist()
-        compose.onNodeWithText("本月").assertIsDisplayed()
+        compose.onNodeWithText("本月").assertDoesNotExist()
         compose.onNodeWithContentDescription("选择账本日期").performClick()
         compose.onNodeWithTag("ledgerPeriodList").assertIsDisplayed()
         compose.onNodeWithText("周").performClick()

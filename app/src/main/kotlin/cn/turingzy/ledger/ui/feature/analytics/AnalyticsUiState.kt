@@ -1,6 +1,5 @@
 package cn.turingzy.ledger.ui.feature.analytics
 
-import cn.turingzy.ledger.model.AnalyticsCardSettings
 import cn.turingzy.ledger.model.CategoryType
 import java.time.LocalDate
 
@@ -26,12 +25,6 @@ data class AnalyticsTransaction(
     val note: String,
     val accountName: String,
     val amount: Long,
-)
-
-data class AnalyticsTrendPoint(
-    val date: LocalDate,
-    val expense: Long,
-    val income: Long,
 )
 
 data class AnalyticsComparison(
@@ -62,9 +55,6 @@ sealed interface AnalyticsUiState {
             AnalyticsTimeScope.YEAR -> LocalDate.of(periodStart.year, 12, 31)
             AnalyticsTimeScope.ALL -> periodStart
         },
-        val trendPoints: List<AnalyticsTrendPoint> = emptyList(),
         val comparison: AnalyticsComparison? = null,
-        val cardSettings: AnalyticsCardSettings = AnalyticsCardSettings(),
-        val cardSettingsError: String? = null,
     ) : AnalyticsUiState
 }

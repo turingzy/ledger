@@ -6,7 +6,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertTrue
-import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasText
@@ -47,9 +47,32 @@ class RecordTransactionSheetTest {
     }
 
     private val categories = expenseCategories + CategoryWithIcon(
+        Category(id = 200L, name = "工资", type = CategoryType.INCOME, iconId = 1L),
+        Icon(id = 1L, keyName = "salary", displayName = "工资", iconUri = "res://"),
+    ) + CategoryWithIcon(
         Category(id = 100L, name = "转账分类", type = CategoryType.TRANSFER, iconId = 1L),
         Icon(id = 1L, keyName = "transfer", displayName = "转账", iconUri = "res://"),
     )
+
+    @Test
+    fun expenseAndIncomeSelectFirstCategoryOnOpeningAndTypeChange() {
+        showSheet {}
+        compose.onNodeWithText("分类0").assertIsSelected()
+        compose.onNodeWithText("分类1").performClick()
+        compose.onNodeWithText("收入").performClick()
+        compose.onNodeWithText("工资").assertIsSelected()
+        compose.onNodeWithText("支出").performClick()
+        compose.onNodeWithText("分类0").assertIsSelected()
+    }
+
+    @Test
+    fun editingKeepsExistingCategoryInsteadOfSelectingFirst() {
+        showSheet(initialTransaction = Transaction(
+            id = 9L, type = TransactionType.EXPENSE, amount = 100L,
+            accountId = 1L, categoryId = 3L, transactionTime = 1L,
+        )) {}
+        compose.onNodeWithText("分类2").assertIsSelected()
+    }
 
     @Test
     fun categoryGridScrollsWhileAmountAndKeypadRemainAvailable() {
@@ -65,7 +88,7 @@ class RecordTransactionSheetTest {
     fun numericKeyboardCalculatesExactCentsAndSavesEnteredNote() {
         var saved: Transaction? = null
         showSheet { saved = it }
-        compose.onNodeWithText("分类0").assertIsNotSelected().performClick()
+        compose.onNodeWithText("分类0").assertIsSelected()
         compose.onNodeWithContentDescription("选择账户").performClick()
         compose.onNodeWithText("测试账户").performClick()
         compose.onNodeWithText("0").performClick()
@@ -228,12 +251,12 @@ class RecordTransactionSheetTest {
         assertEquals(1L, saved?.categoryId)
     }
 
-    private fun showSheet(sheetHeight: Dp = 520.dp, onSave: (Transaction) -> Unit) {
+    private fun showSheet(sheetHeight: Dp = 520.dp, initialTransaction: Transaction? = null, onSave: (Transaction) -> Unit) {
         compose.setContent {
             MaterialTheme {
                 RecordTransactionSheet(
                     sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-                    sheetHeight = sheetHeight,
+                    sheetHeight = sheetHeight, initialTransaction = initialTransaction,
                     categories = categories, accounts = accounts, onDismissRequest = {},
                     onConfirm = { type, amount, accountId, destinationId, categoryId, note, time ->
                         onSave(Transaction(

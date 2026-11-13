@@ -14,7 +14,10 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -49,10 +52,12 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
@@ -64,6 +69,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.constrainHeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cn.turingzy.ledger.model.AccountWithTemplate
@@ -115,7 +121,7 @@ fun RecordTransactionSheet(
     val zone = ZoneId.systemDefault()
     val matchingCategories = remember(categories, type) { selectableRecordCategories(categories, type) }
     LaunchedEffect(matchingCategories, type) {
-        if (type == TransactionType.TRANSFER && matchingCategories.none { it.category.id == categoryId }) {
+        if (matchingCategories.isNotEmpty() && matchingCategories.none { it.category.id == categoryId }) {
             categoryId = matchingCategories.firstOrNull()?.category?.id ?: 0L
         }
     }
@@ -132,15 +138,24 @@ fun RecordTransactionSheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismissRequest, sheetState = sheetState,
-        modifier = modifier,
+        // Material's outer IME padding otherwise changes the drawer's expanded anchor.
+        modifier = modifier.composed {
+            val imeInsets = WindowInsets.ime
+            Modifier.layout { measurable, constraints ->
+                val keyboardHeight = imeInsets.getBottom(this)
+                val placeable = measurable.measure(constraints.copy(maxHeight = constraints.maxHeight + keyboardHeight))
+                layout(placeable.width, constraints.constrainHeight(placeable.height)) {
+                    placeable.place(0, 0)
+                }
+            }
+        },
         containerColor = MaterialTheme.colorScheme.surfaceVariant,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         dragHandle = null,
         contentWindowInsets = { WindowInsets(0, 0, 0, 0) },
     ) {
         RecordTransactionContent(
-            // Keep the outer constraints at window size so Material computes the correct expanded anchor.
-            modifier = Modifier.height(fixedHeight).testTag("recordDrawer").navigationBarsPadding(),
+            modifier = Modifier.height(fixedHeight).testTag("recordDrawer").padding(WindowInsets.navigationBars.asPaddingValues()),
             expression = expression, note = note, type = type, categories = matchingCategories,
             selectedCategoryId = categoryId,
             accountName = accounts.firstOrNull { it.account.id == accountId }?.account?.name,
@@ -232,6 +247,11 @@ internal fun RecordTransactionContent(
     val density = LocalDensity.current
     val expressionScroll = rememberScrollState()
     var footerHeight by remember { mutableStateOf(0.dp) }
+    val keyboardOverlap = with(density) {
+        (WindowInsets.ime.getBottom(this) - WindowInsets.navigationBars.getBottom(this)).coerceAtLeast(0).toDp()
+    }
+    val keypadHeight = keyHeight * 4 + 24.dp
+    val footerLift = (keyboardOverlap - keypadHeight - 8.dp).coerceAtLeast(0.dp)
     val selectionColor = when (type) {
         TransactionType.EXPENSE -> colors.error
         TransactionType.INCOME -> colors.tertiary
@@ -256,13 +276,13 @@ internal fun RecordTransactionContent(
             if (type == TransactionType.TRANSFER) {
                 RecordTransferAccounts(
                     accountName, destinationName, onAccountClick, onDestinationClick, onSwapAccounts,
-                    Modifier.fillMaxSize().padding(bottom = footerHeight).padding(horizontal = 12.dp).padding(top = 16.dp),
+                    Modifier.fillMaxSize().padding(bottom = footerHeight + footerLift).padding(horizontal = 12.dp).padding(top = 16.dp),
                 )
             } else key(type) {
-                RecordCategoryGrid(categories, selectedCategoryId, selectionColor, onCategorySelect, footerHeight)
+                RecordCategoryGrid(categories, selectedCategoryId, selectionColor, onCategorySelect, footerHeight + footerLift)
             }
             Surface(
-                Modifier.align(Alignment.BottomCenter).fillMaxWidth().onSizeChanged { footerHeight = with(density) { it.height.toDp() } },
+                Modifier.align(Alignment.BottomCenter).offset(y = -footerLift).fillMaxWidth().onSizeChanged { footerHeight = with(density) { it.height.toDp() } },
                 shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp), color = colors.surfaceVariant,
             ) {
                 Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -402,7 +422,7 @@ private fun RecordTransferAccounts(
                 ) {
                     Icon(MaterialSymbols.SwapHoriz, "交换转出转入账户")
                 }
-                TransferAccountSelector("转入", destination, onDestination, Modifier.weight(1f))
+                TransferAccountSelector("转入", destination, onDestination, Modifier.weight(1f), alignment = Alignment.End)
             }
         }
     }
@@ -414,6 +434,7 @@ private fun TransferAccountSelector(
     accountName: String?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    alignment: Alignment.Horizontal = Alignment.Start,
 ) {
     val colors = MaterialTheme.colorScheme
     Column(
@@ -426,6 +447,7 @@ private fun TransferAccountSelector(
             )
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalAlignment = alignment,
     ) {
         Text(label, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
         Text(

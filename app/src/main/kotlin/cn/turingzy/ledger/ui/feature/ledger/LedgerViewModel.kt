@@ -199,8 +199,7 @@ class LedgerViewModel @Inject constructor(
         transactions: List<TransactionDetail>,
         zone: ZoneId,
     ): List<DayTransactionGroup> {
-        val today = LocalDate.now(zone)
-        val dateFormatter = DateTimeFormatter.ofPattern("MM.dd E", Locale.CHINESE)
+        val dateFormatter = DateTimeFormatter.ofPattern("MM/dd E", Locale.CHINESE)
 
         return transactions
             .groupBy { tx ->
@@ -214,15 +213,9 @@ class LedgerViewModel @Inject constructor(
                     .filter { it.transaction.type == TransactionType.INCOME }
                     .sumOf { it.transaction.amount }
 
-                val prefix = when (date) {
-                    today -> "今天 · "
-                    today.minusDays(1) -> "昨天 · "
-                    else -> ""
-                }
-
                 DayTransactionGroup(
                     dateEpochDay = date.toEpochDay(),
-                    displayDate = "$prefix${date.format(dateFormatter)}",
+                    displayDate = date.format(dateFormatter),
                     totalExpense = dayExpense,
                     totalIncome = dayIncome,
                     transactions = txList.sortedByDescending { it.transaction.transactionTime },

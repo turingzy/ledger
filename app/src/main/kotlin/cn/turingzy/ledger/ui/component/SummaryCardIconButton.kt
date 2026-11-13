@@ -17,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -29,6 +30,7 @@ internal fun SummaryCardIconButton(
     containerColor: Color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.24f),
     contentColor: Color = MaterialTheme.colorScheme.onPrimary,
     showPressFeedback: Boolean = true,
+    iconSize: Dp = 24.dp,
 ) {
     Box(
         modifier.size(36.dp).clip(CircleShape)
@@ -46,7 +48,7 @@ internal fun SummaryCardIconButton(
             imageVector = imageVector,
             contentDescription = contentDescription,
             tint = contentColor.copy(alpha = contentColor.alpha * if (enabled) 1f else 0.38f),
-            modifier = Modifier.size(24.dp),
+            modifier = Modifier.size(iconSize),
         )
     }
 }

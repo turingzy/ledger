@@ -2,9 +2,6 @@ package cn.turingzy.ledger.ui.feature.analytics
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import cn.turingzy.ledger.data.repository.AnalyticsCardSettingsRepository
-import cn.turingzy.ledger.model.AnalyticsCard
-import cn.turingzy.ledger.model.AnalyticsCardSettings
 import cn.turingzy.ledger.data.repository.TransactionRepository
 import cn.turingzy.ledger.model.CategoryType
 import cn.turingzy.ledger.model.TransactionDetail
@@ -14,9 +11,6 @@ import cn.turingzy.ledger.util.Dispatcher
 import cn.turingzy.ledger.util.LedgerDispatchers
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.launch
-import timber.log.Timber
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -37,15 +31,12 @@ import javax.inject.Inject
 @HiltViewModel
 class AnalyticsViewModel @Inject constructor(
     private val transactionRepository: TransactionRepository,
-    private val cardSettingsRepository: AnalyticsCardSettingsRepository,
     @Dispatcher(LedgerDispatchers.Default) private val defaultDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
 
     private val period =
         MutableStateFlow(AnalyticsPeriod(AnalyticsTimeScope.MONTH, LocalDate.now()))
     private val categoryType = MutableStateFlow(CategoryType.EXPENSE)
-
-    private val cardSettingsError = MutableStateFlow<String?>(null)
 
     private val analyticsState = combine(
         period,
@@ -56,11 +47,16 @@ class AnalyticsViewModel @Inject constructor(
         val scope = selectedPeriod.scope
         val zone = ZoneId.systemDefault()
         if (scope == AnalyticsTimeScope.ALL) {
-            return@flatMapLatest transactionRepository.getTransactionsBetween(Long.MIN_VALUE, Long.MAX_VALUE).map { entries ->
+            val customRange = selectedPeriod.customSelection
+            val queryStart = customRange?.let { it.start.atStartOfDay(zone).toInstant().toEpochMilli() } ?: Long.MIN_VALUE
+            val queryEnd = customRange?.let {
+                it.end.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
+            } ?: Long.MAX_VALUE
+            return@flatMapLatest transactionRepository.getTransactionsBetween(queryStart, queryEnd).map { entries ->
                 val transactions = entries.filterNot { it.transaction.isDeleted }
                 val dates = transactions.map { Instant.ofEpochMilli(it.transaction.transactionTime).atZone(zone).toLocalDate() }
-                val start = dates.minOrNull() ?: LocalDate.now()
-                val end = dates.maxOrNull() ?: start
+                val start = customRange?.start ?: dates.minOrNull() ?: LocalDate.now()
+                val end = customRange?.end ?: dates.maxOrNull() ?: start
                 val expense = transactions.filter { it.transaction.type == TransactionType.EXPENSE }.sumOf { it.transaction.amount }
                 val income = transactions.filter { it.transaction.type == TransactionType.INCOME }.sumOf { it.transaction.amount }
                 AnalyticsUiState.Success(
@@ -73,7 +69,6 @@ class AnalyticsViewModel @Inject constructor(
                     rankings = calculateCategoryRankings(transactions, catType),
                     periodStart = start,
                     periodEnd = end,
-                    trendPoints = buildAnalyticsTrend(transactions, scope, start, zone, end),
                 )
             }
         }
@@ -103,47 +98,15 @@ class AnalyticsViewModel @Inject constructor(
                 periodStart = selection.start,
                 periodEnd = selection.end,
                 comparison = AnalyticsComparison(previousRange.start, previousRange.end, previousExpense, previousIncome),
-                trendPoints = buildAnalyticsTrend(transactions, scope, selection.start, zone, selection.end),
             )
         }
     }.flowOn(defaultDispatcher)
 
-    val uiState: StateFlow<AnalyticsUiState> = combine<AnalyticsUiState.Success, AnalyticsCardSettings, String?, AnalyticsUiState>(
-        analyticsState,
-        cardSettingsRepository.settings,
-        cardSettingsError,
-    ) { state, settings, error ->
-        state.copy(cardSettings = settings, cardSettingsError = error)
-    }.stateIn(
+    val uiState: StateFlow<AnalyticsUiState> = analyticsState.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = AnalyticsUiState.Loading,
     )
-
-    fun setCardEnabled(card: AnalyticsCard, enabled: Boolean) {
-        updateCardSettings { cardSettingsRepository.setEnabled(card, enabled) }
-    }
-
-    fun setCardOrder(order: List<AnalyticsCard>) {
-        updateCardSettings { cardSettingsRepository.setOrder(order) }
-    }
-
-    fun dismissCardSettingsError() {
-        cardSettingsError.value = null
-    }
-
-    private fun updateCardSettings(update: suspend () -> Unit) {
-        viewModelScope.launch {
-            try {
-                update()
-            } catch (error: CancellationException) {
-                throw error
-            } catch (error: Exception) {
-                Timber.e(error, "Unable to save analytics card settings")
-                cardSettingsError.value = "卡片设置保存失败，请重试"
-            }
-        }
-    }
 
     fun setTimeScope(scope: AnalyticsTimeScope) {
         if (period.value.scope == scope && period.value.customSelection == null) return
@@ -177,6 +140,10 @@ class AnalyticsViewModel @Inject constructor(
 
     fun selectRange(start: LocalDate, end: LocalDate) {
         val selection = CalendarSelection(start, end)
+        if (period.value.scope == AnalyticsTimeScope.ALL) {
+            period.value = period.value.copy(customSelection = selection)
+            return
+        }
         val days = ChronoUnit.DAYS.between(start, end) + 1
         val scope = when {
             selection == CalendarSelection.year(start.year) -> AnalyticsTimeScope.YEAR

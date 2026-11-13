@@ -65,7 +65,7 @@ fun SummaryCard(
     val shape = RoundedCornerShape(20.dp)
 
     Box(
-        modifier.fillMaxWidth().height(152.dp)
+        modifier.fillMaxWidth().height(132.dp)
             .shadow(12.dp, shape, spotColor = colors.scrim.copy(alpha = 0.18f))
             .clip(shape)
             .border(0.5.dp, colors.onPrimary.copy(alpha = 0.25f), shape),

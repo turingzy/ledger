@@ -1,7 +1,5 @@
 package cn.turingzy.ledger.ui.feature.ledger
 
-import cn.turingzy.ledger.ui.component.currentPeriodLabel
-import cn.turingzy.ledger.ui.component.periodStart
 import cn.turingzy.ledger.ui.component.PeriodPickerSheet
 import cn.turingzy.ledger.model.DateFilterType
 import androidx.compose.foundation.LocalIndication
@@ -13,7 +11,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -39,6 +36,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -49,6 +47,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import cn.turingzy.ledger.model.LedgerCardAppearance
+import cn.turingzy.ledger.ui.component.LocalBottomBarContentPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.runtime.LaunchedEffect
@@ -226,7 +225,7 @@ fun LedgerContent(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { SnackbarHost(snackbarHostState, Modifier.padding(bottom = LocalBottomBarContentPadding.current)) },
         containerColor = MaterialTheme.colorScheme.background,
         modifier = modifier
             .fillMaxSize()
@@ -270,7 +269,7 @@ fun LedgerContent(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(top = 0.dp),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp + innerPadding.calculateBottomPadding() + LocalBottomBarContentPadding.current),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     item(key = "header_and_hero") {
@@ -314,37 +313,18 @@ fun LedgerContent(
                                                 Text(
                                                     text = uiState.monthDisplay,
                                                     modifier = Modifier.weight(1f, fill = false).alignByBaseline()
+                                                        .clip(RoundedCornerShape(50))
+                                                        .background(MaterialTheme.colorScheme.surfaceVariant)
                                                         .semantics { contentDescription = "选择账本日期" }
                                                         .clickable(
                                                             interactionSource = remember { MutableInteractionSource() },
-                                                            indication = null,
-                                                        ) { showPeriodPicker = true }.padding(vertical = 8.dp),
+                                                            indication = LocalIndication.current,
+                                                        ) { showPeriodPicker = true }.padding(horizontal = 12.dp, vertical = 3.dp),
                                                     fontSize = 17.sp,
                                                     fontWeight = FontWeight.Medium,
                                                     color = MaterialTheme.colorScheme.onSurface,
                                                     maxLines = 1, overflow = TextOverflow.Ellipsis,
                                                 )
-                                                val periodDate = uiState.filterStartDate
-                                                    ?: LocalDate.of(uiState.year, uiState.month, 1)
-                                                if (uiState.filterType != DateFilterType.RANGE &&
-                                                    periodStart(uiState.filterType, periodDate) !=
-                                                    periodStart(uiState.filterType, LocalDate.now())
-                                                ) {
-                                                    Row(
-                                                        modifier = Modifier.alignByBaseline().padding(start = 8.dp).clickable(
-                                                            interactionSource = remember { MutableInteractionSource() },
-                                                            indication = null,
-                                                        ) { onSelectPeriod(uiState.filterType, LocalDate.now()) }
-                                                            .padding(vertical = 8.dp),
-                                                        verticalAlignment = Alignment.CenterVertically,
-                                                        horizontalArrangement = Arrangement.spacedBy(3.dp),
-                                                    ) {
-                                                        Icon(MaterialSymbols.Undo, null, Modifier.size(14.dp),
-                                                            tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                                                        Text(uiState.filterType.currentPeriodLabel, fontSize = 12.sp,
-                                                            color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                                    }
-                                                }
                                             }
                                         }
 
@@ -561,9 +541,16 @@ fun DayGroupSection(
             )
         }
         if (expanded) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                dayGroup.transactions.forEach { detail ->
+            Column(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(colors.surface),
+            ) {
+                dayGroup.transactions.forEachIndexed { index, detail ->
                     key(detail.transaction.id) {
+                        if (index > 0) HorizontalDivider(
+                            modifier = Modifier.padding(start = 62.dp, end = 14.dp),
+                            thickness = 0.5.dp,
+                            color = colors.outlineVariant,
+                        )
                         DayTransactionRowItem(detail = detail, onClick = { onTransactionClick(detail.transaction.id) })
                     }
                 }
@@ -595,12 +582,8 @@ fun DayTransactionRowItem(
         TransactionType.TRANSFER -> tx.amount.toFormattedAmount(showSymbol = true)
     }
     val supportingText = listOfNotNull(detail.account.name, tx.note?.takeIf { it.isNotBlank() }).joinToString(" · ")
-    val shape = RoundedCornerShape(20.dp)
     Row(
         modifier = modifier.fillMaxWidth()
-            .clip(shape)
-            .background(colors.surface)
-            .border(1.dp, colors.outline.copy(alpha = colors.outline.alpha * 0.5f), shape)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = LocalIndication.current,
@@ -678,7 +661,7 @@ fun LedgerContentPreview() {
                 dayGroups = listOf(
                     DayTransactionGroup(
                         dateEpochDay = 20000L,
-                        displayDate = "今天 · 11.01 周日",
+                        displayDate = "11/01 周日",
                         totalExpense = 1111L,
                         totalIncome = 1100L,
                         transactions = listOf(

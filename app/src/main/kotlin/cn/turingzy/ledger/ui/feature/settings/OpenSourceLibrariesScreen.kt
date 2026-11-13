@@ -39,7 +39,6 @@ private val openSourceLibraries = listOf(
     OpenSourceLibrary("kotlinx.coroutines", "https://github.com/Kotlin/kotlinx.coroutines"),
     OpenSourceLibrary("kotlinx.serialization", "https://github.com/Kotlin/kotlinx.serialization"),
     OpenSourceLibrary("Timber", "https://github.com/JakeWharton/timber"),
-    OpenSourceLibrary("Vico", "https://github.com/patrykandpatrick/vico"),
     OpenSourceLibrary("Material Symbols", "https://github.com/google/material-design-icons"),
 )
 

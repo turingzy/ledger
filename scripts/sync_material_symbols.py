@@ -19,6 +19,9 @@ symbols = {
 'SwapHoriz':'swap_horiz', 'AccountBalance':'account_balance', 'Upload':'upload',
 'Undo':'undo', 'Menu':'menu', 'DragIndicator':'drag_indicator', 'ViewCarousel':'view_carousel', 'ViewAgenda':'view_agenda',
 'Memory':'memory', 'Contactless':'contactless', 'ShieldPerson':'shield_person',
+'Visibility':'visibility', 'VisibilityOff':'visibility_off',
+'TrendingUp':'trending_up', 'TrendingDown':'trending_down',
+'CalendarMonth':'calendar_month',
 'Book':'book', 'Paid':'paid', 'Receipt':'receipt', 'BarChart':'bar_chart', 'Wallet':'wallet', 'AccountBalanceWallet':'account_balance_wallet', 'Settings':'settings',
 'BookFilled':'book', 'BarChartFilled':'bar_chart', 'AccountBalanceWalletFilled':'account_balance_wallet', 'SettingsFilled':'settings',
 }

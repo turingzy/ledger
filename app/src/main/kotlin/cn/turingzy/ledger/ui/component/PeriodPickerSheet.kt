@@ -105,14 +105,13 @@ internal fun PeriodPickerSheet(
                         fontSize = 13.sp, fontWeight = FontWeight.Normal,
                     )
                 }
-                val isCurrentPeriod = periodStart(view, initialDate) == periodStart(view, today)
                 LedgerIconButton(
                     { apply(view, today) }, modifier = Modifier.align(Alignment.CenterEnd),
-                    enabled = !isCurrentPeriod, showPressFeedback = false,
+                    showPressFeedback = false,
                 ) {
                     Icon(
                         MaterialSymbols.Undo, view.returnLabel,
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = if (isCurrentPeriod) 0.25f else 1f),
+                        tint = MaterialTheme.colorScheme.primary,
                     )
                 }
             }

@@ -1,5 +1,7 @@
 package cn.turingzy.ledger.ui.component
 
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +15,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -26,32 +29,45 @@ fun SummaryCardContent(
     amount: Long,
     leftAmount: Long,
     rightAmount: Long,
+    amountsHidden: Boolean,
+    onToggleAmounts: () -> Unit,
     modifier: Modifier = Modifier,
     leftLabel: String = "支出",
     rightLabel: String = "收入",
 ) {
+    val visibilityIconSize = with(LocalDensity.current) { 15.sp.toDp() }
     Box(modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 18.dp, end = 18.dp, top = 14.dp),
+                .padding(start = 18.dp, end = 18.dp, top = 10.dp),
         ) {
-            Text(
-                text = title,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onPrimary,
-                style = TextStyle(
-                    shadow = androidx.compose.ui.graphics.Shadow(
-                        color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.50f),
-                        offset = androidx.compose.ui.geometry.Offset(0f, 1.5f),
-                        blurRadius = 6f,
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = title,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    style = TextStyle(
+                        shadow = androidx.compose.ui.graphics.Shadow(
+                            color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.50f),
+                            offset = androidx.compose.ui.geometry.Offset(0f, 1.5f),
+                            blurRadius = 6f,
+                        ),
                     ),
-                ),
-            )
+                )
+                SummaryCardIconButton(
+                    imageVector = if (amountsHidden) MaterialSymbols.VisibilityOff else MaterialSymbols.Visibility,
+                    contentDescription = if (amountsHidden) "显示卡片金额" else "隐藏卡片金额",
+                    onClick = onToggleAmounts,
+                    modifier = Modifier.size(24.dp),
+                    containerColor = Color.Transparent,
+                    iconSize = visibilityIconSize,
+                )
+            }
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = amount.toFormattedAmount(showSymbol = true, useGrouping = true),
+                text = if (amountsHidden) "****" else amount.toFormattedAmount(showSymbol = true, useGrouping = true),
                 fontSize = 26.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimary,
@@ -98,7 +114,7 @@ fun SummaryCardContent(
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = leftAmount.toFormattedAmount(showSymbol = true, useGrouping = true),
+                        text = if (amountsHidden) "****" else leftAmount.toFormattedAmount(showSymbol = true, useGrouping = true),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.error,
@@ -131,7 +147,7 @@ fun SummaryCardContent(
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = rightAmount.toFormattedAmount(showSymbol = true, useGrouping = true),
+                        text = if (amountsHidden) "****" else rightAmount.toFormattedAmount(showSymbol = true, useGrouping = true),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.tertiary,

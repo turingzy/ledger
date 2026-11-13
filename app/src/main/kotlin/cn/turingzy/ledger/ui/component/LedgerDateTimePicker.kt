@@ -64,7 +64,7 @@ internal fun LedgerDateTimePicker(
     onMinuteChange: (String) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        RecordDateCalendar(date, onDateChange)
+        LedgerDatePicker(date, onDateChange)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
             RecordTimeWheel("小时", hour, 24, onHourChange)
             Text(":", Modifier.padding(horizontal = 12.dp), style = MaterialTheme.typography.titleLarge)
@@ -76,7 +76,7 @@ internal fun LedgerDateTimePicker(
 private enum class RecordCalendarPanel { DAYS, MONTHS, YEARS }
 
 @Composable
-private fun RecordDateCalendar(selectedDate: LocalDate, onSelect: (LocalDate) -> Unit) {
+internal fun LedgerDatePicker(selectedDate: LocalDate, onSelect: (LocalDate) -> Unit) {
     var month by remember { mutableStateOf(YearMonth.from(selectedDate)) }
     var panel by remember { mutableStateOf(RecordCalendarPanel.DAYS) }
     val colors = MaterialTheme.colorScheme
