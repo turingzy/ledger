@@ -10,6 +10,12 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface IconDao {
+    @Query("SELECT * FROM tb_icon")
+    suspend fun backupRows(): List<IconEntity>
+
+    @Query("DELETE FROM tb_icon")
+    suspend fun clearRows()
+
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertIcon(icon: IconEntity): Long

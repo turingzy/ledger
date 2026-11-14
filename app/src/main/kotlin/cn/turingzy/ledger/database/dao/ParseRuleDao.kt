@@ -10,6 +10,12 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ParseRuleDao {
+    @Query("SELECT * FROM tb_parse_rule")
+    suspend fun backupRows(): List<ParseRuleEntity>
+
+    @Query("DELETE FROM tb_parse_rule")
+    suspend fun clearRows()
+
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertRule(rule: ParseRuleEntity): Long

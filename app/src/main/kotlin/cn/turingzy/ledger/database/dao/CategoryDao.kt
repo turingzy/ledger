@@ -13,6 +13,12 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CategoryDao {
+    @Query("SELECT * FROM tb_category")
+    suspend fun backupRows(): List<CategoryEntity>
+
+    @Query("DELETE FROM tb_category")
+    suspend fun clearRows()
+
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCategory(category: CategoryEntity): Long

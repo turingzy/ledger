@@ -32,63 +32,92 @@ import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.LedgerSegmentedControl
 import cn.turingzy.ledger.ui.theme.LedgerTheme
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
+import android.net.Uri
+import kotlinx.coroutines.CancellationException
+import timber.log.Timber
 import kotlinx.coroutines.launch
 
-private enum class TransferPreviewStatus { IDLE, RUNNING, COMPLETED, CANCELLED }
+private enum class TransferStatus { IDLE, RUNNING, COMPLETED, CANCELLED }
 
-private data class TransferPreviewState(
+private data class TransferState(
     val progress: Int = 0,
-    val status: TransferPreviewStatus = TransferPreviewStatus.IDLE,
+    val status: TransferStatus = TransferStatus.IDLE,
 )
 
 @Composable
-internal fun BackupAndRestoreScreen(onDismissRequest: () -> Unit) {
+internal fun BackupAndRestoreScreen(
+    onDismissRequest: () -> Unit,
+    onBackup: suspend (Uri, Boolean, Boolean) -> Unit,
+    onRestore: suspend (Uri) -> Unit,
+) {
     var restoring by remember { mutableStateOf(false) }
     val context = LocalContext.current
     var includeBills by remember { mutableStateOf(true) }
     var includeSettings by remember { mutableStateOf(true) }
+    var fileUri by remember { mutableStateOf<Uri?>(null) }
+    var resultMessage by remember { mutableStateOf<String?>(null) }
+    var confirmRestore by remember { mutableStateOf(false) }
     var fileName by remember { mutableStateOf<String?>(null) }
-    var state by remember { mutableStateOf(TransferPreviewState()) }
+    var state by remember { mutableStateOf(TransferState()) }
     var operationJob by remember { mutableStateOf<Job?>(null) }
     val scope = rememberCoroutineScope()
     val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
+            fileUri = uri
             fileName = selectedTransferFileName(context, uri)
-            state = TransferPreviewState()
+            state = TransferState()
         }
     }
 
+    fun runTransfer(destination: Uri? = null) {
+        state = TransferState(status = TransferStatus.RUNNING)
+        resultMessage = null
+        operationJob = scope.launch {
+            try {
+                if (restoring) onRestore(requireNotNull(fileUri))
+                else onBackup(requireNotNull(destination), includeBills, includeSettings)
+                state = TransferState(100, TransferStatus.COMPLETED)
+                resultMessage = if (restoring) "恢复完成" else "备份已保存"
+            } catch (cancelled: CancellationException) {
+                state = state.copy(status = TransferStatus.CANCELLED)
+                throw cancelled
+            } catch (error: Exception) {
+                Timber.e(error, "Backup or restore failed")
+                state = TransferState()
+                resultMessage = error.message ?: "操作失败，请重试"
+            } finally { operationJob = null }
+        }
+    }
+    val destinationPicker = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        if (uri != null) runTransfer(uri)
+    }
     fun performAction() {
-        if (state.status == TransferPreviewStatus.RUNNING) {
+        if (state.status == TransferStatus.RUNNING) {
             operationJob?.cancel()
-            operationJob = null
-            state = state.copy(status = TransferPreviewStatus.CANCELLED)
             return
         }
-        if (!restoring && !includeBills && !includeSettings) return
-        if (restoring && fileName == null) return
-        state = TransferPreviewState(status = TransferPreviewStatus.RUNNING)
-        operationJob = scope.launch {
-            for (percent in 1..100) {
-                delay(45)
-                state = state.copy(progress = percent)
-            }
-            state = state.copy(status = TransferPreviewStatus.COMPLETED)
-            operationJob = null
-        }
+        if (restoring) confirmRestore = true
+        else destinationPicker.launch("Ledger-backup-${java.time.LocalDate.now()}.json")
     }
+    if (confirmRestore) androidx.compose.material3.AlertDialog(
+        onDismissRequest = { confirmRestore = false },
+        title = { Text("恢复备份") },
+        text = { Text("包含账单数据的备份将替换本地账户、账单和分类。应用设置将按备份恢复，是否继续？") },
+        confirmButton = { androidx.compose.material3.TextButton(onClick = { confirmRestore = false; runTransfer() }) { Text("恢复") } },
+        dismissButton = { androidx.compose.material3.TextButton(onClick = { confirmRestore = false }) { Text("取消") } },
+    )
 
     SettingsPage(title = "备份与恢复", onDismissRequest = onDismissRequest) {
+        if (resultMessage != null) Text(resultMessage.orEmpty(), color = MaterialTheme.colorScheme.onSurfaceVariant)
         DataTransferContent(
             restoring = restoring,
             includeBills = includeBills,
             includeSettings = includeSettings,
             fileName = fileName,
             state = state,
-            onModeChange = { restoring = it; state = TransferPreviewState() },
-            onBillsChange = { includeBills = it; state = TransferPreviewState() },
-            onSettingsChange = { includeSettings = it; state = TransferPreviewState() },
+            onModeChange = { restoring = it; state = TransferState() },
+            onBillsChange = { includeBills = it; state = TransferState() },
+            onSettingsChange = { includeSettings = it; state = TransferState() },
             onChooseFile = { filePicker.launch(arrayOf("*/*")) },
             onAction = ::performAction,
         )
@@ -101,7 +130,7 @@ private fun DataTransferContent(
     includeBills: Boolean,
     includeSettings: Boolean,
     fileName: String?,
-    state: TransferPreviewState,
+    state: TransferState,
     onModeChange: (Boolean) -> Unit,
     onBillsChange: (Boolean) -> Unit,
     onSettingsChange: (Boolean) -> Unit,
@@ -110,7 +139,7 @@ private fun DataTransferContent(
     modifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.colorScheme
-    val running = state.status == TransferPreviewStatus.RUNNING
+    val running = state.status == TransferStatus.RUNNING
     Column(
         modifier.fillMaxWidth().settingsPageScroll(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -167,20 +196,20 @@ private fun BackupContentOption(title: String, selected: Boolean, enabled: Boole
 private fun TransferActionContent(
     title: String,
     cancelTitle: String,
-    state: TransferPreviewState,
+    state: TransferState,
     enabled: Boolean,
     onClick: () -> Unit,
 ) {
-    val running = state.status == TransferPreviewStatus.RUNNING
+    val running = state.status == TransferStatus.RUNNING
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         SettingsTransferAction(
             title = if (running) cancelTitle else title,
             running = running,
-            progress = state.progress.takeIf { running || state.status == TransferPreviewStatus.COMPLETED },
+            progress = state.progress.takeIf { state.status == TransferStatus.COMPLETED },
             enabled = enabled,
             onClick = onClick,
         )
-        if (state.status == TransferPreviewStatus.CANCELLED) {
+        if (state.status == TransferStatus.CANCELLED) {
             Text("已${cancelTitle}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
@@ -196,7 +225,7 @@ private fun BackupPreview() {
             includeBills = true,
             includeSettings = false,
             fileName = null,
-            state = TransferPreviewState(),
+            state = TransferState(),
             onModeChange = {},
             onBillsChange = {},
             onSettingsChange = {},
@@ -215,7 +244,7 @@ private fun RestorePreview() {
             includeBills = false,
             includeSettings = false,
             fileName = "Ledger-backup.json",
-            state = TransferPreviewState(48, TransferPreviewStatus.RUNNING),
+            state = TransferState(48, TransferStatus.RUNNING),
             onModeChange = {},
             onBillsChange = {},
             onSettingsChange = {},

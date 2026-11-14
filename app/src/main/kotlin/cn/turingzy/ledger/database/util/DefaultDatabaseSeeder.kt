@@ -56,6 +56,10 @@ object DefaultDatabaseSeeder {
                 AccountEntity(accountId = 3, name = "支付宝", type = AccountType.WALLET, templateId = 1),
             )
             database.accountDao().insertAccounts(defaultAccounts)
+            database.parseRuleDao().insertRules(cn.turingzy.ledger.model.BillParseRule.defaults().map { rule -> cn.turingzy.ledger.database.model.ParseRuleEntity(
+                ruleId = rule.id, name = rule.name, startRow = rule.startRow.toInt(),
+                mappingConfig = kotlinx.serialization.json.Json.encodeToString(cn.turingzy.ledger.model.BillParseRule.serializer(), rule), isSystem = true,
+            ) })
         }
     }
 }

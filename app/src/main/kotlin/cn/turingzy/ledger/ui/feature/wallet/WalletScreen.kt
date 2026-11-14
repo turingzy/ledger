@@ -407,7 +407,7 @@ internal fun accountCardColors(account: Account): List<Color> {
 @Composable
 fun BankCardItem(
     account: Account,
-    @Suppress("UNUSED_PARAMETER") template: CardTemplate?,
+    template: CardTemplate?,
     onAdjustClick: () -> Unit,
     modifier: Modifier = Modifier,
     showDetails: Boolean = true,
@@ -417,6 +417,9 @@ fun BankCardItem(
     val isCenturion = account.templateId == 2L || account.name.contains("百夫长") || account.name.contains("运通")
 
     val cardGradients = accountCardColors(account)
+    val textColor = template?.takeUnless { it.isDeleted }?.textColor?.cardFaceTextColor(MaterialTheme.colorScheme.onPrimary)
+        ?: MaterialTheme.colorScheme.onPrimary
+    val cover = template?.takeUnless { it.isDeleted }?.coverUri?.let(android.net.Uri::parse)
 
     Card(
         modifier = modifier
@@ -438,16 +441,24 @@ fun BankCardItem(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Brush.linearGradient(cardGradients))
-                .padding(horizontal = 20.dp, vertical = 16.dp),
+                .background(Brush.linearGradient(cardGradients)),
         ) {
+            if (cover?.scheme in setOf("content", "file", "android.resource")) {
+                androidx.compose.ui.viewinterop.AndroidView(
+                    factory = { context -> android.widget.ImageView(context).apply { scaleType = android.widget.ImageView.ScaleType.CENTER_CROP } },
+                    update = { image ->
+                        if (image.tag != cover) { image.setImageURI(cover); image.tag = cover }
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
             if (!showDetails) {
-                if (showBackPlaceholder) BankCardBackPlaceholder()
+                if (showBackPlaceholder) Box(Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) { BankCardBackPlaceholder() }
                 return@Box
             }
 
             Column(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 16.dp),
                 verticalArrangement = Arrangement.SpaceBetween,
             ) {
                 if (isCenturion) {
@@ -459,14 +470,14 @@ fun BankCardItem(
                             text = "AMERICAN EXPRESS",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = Color(0xFFEDEDF0),
+                            color = textColor,
                             letterSpacing = 2.sp,
                         )
                         Text(
                             text = "CENTURION",
                             fontSize = 8.sp,
                             fontWeight = FontWeight.Medium,
-                            color = Color(0xFFE5E5EA).copy(alpha = 0.65f),
+                            color = textColor.copy(alpha = 0.65f),
                             letterSpacing = 1.sp,
                         )
                     }
@@ -483,7 +494,7 @@ fun BankCardItem(
                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimary,
+                            color = textColor,
                         )
 
                         if (account.type == AccountType.DEBIT || account.type == AccountType.CREDIT) {
@@ -516,7 +527,7 @@ fun BankCardItem(
                             text = "•••• ${cardNumber.takeLast(4)}",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onPrimary,
+                            color = textColor,
                             letterSpacing = 1.5.sp,
                         )
                     } else {

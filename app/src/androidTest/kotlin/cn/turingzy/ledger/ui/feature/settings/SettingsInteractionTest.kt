@@ -159,7 +159,7 @@ class SettingsInteractionTest {
         compose.onNodeWithText("餐饮").performClick()
         compose.onNodeWithTag("ruleCategoryOptions").assertDoesNotExist()
         assertEquals(titleBounds, compose.onNodeWithText("规则详情").fetchSemanticsNode().boundsInRoot)
-        compose.onNodeWithContentDescription("保存规则预览").performClick()
+        compose.onNodeWithContentDescription("保存规则").performClick()
         compose.runOnIdle {
             assertEquals(7L, checkNotNull(saved).accountId)
             assertEquals(9L, checkNotNull(saved).categoryId)
@@ -249,6 +249,7 @@ class SettingsInteractionTest {
             LedgerTheme {
                 CardTemplateManagementScreen(
                     templates = listOf(CardTemplate(id = 1L, name = "原有卡面", coverUri = "res://card")),
+                    onCreate = { 2L }, onUpdate = {}, onDelete = {}, onCopyImage = { it.toString() },
                     onDismissRequest = {},
                 )
             }

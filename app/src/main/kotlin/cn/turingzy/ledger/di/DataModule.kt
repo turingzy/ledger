@@ -25,6 +25,18 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 interface DataModule {
+    @Binds
+    @Singleton
+    fun bindsAppUpdateRepository(
+        impl: cn.turingzy.ledger.data.repository.DefaultAppUpdateRepository,
+    ): cn.turingzy.ledger.data.repository.AppUpdateRepository
+
+    @Binds
+    @Singleton
+    fun bindsSettingsDataRepository(
+        impl: cn.turingzy.ledger.data.repository.DefaultSettingsDataRepository,
+    ): cn.turingzy.ledger.data.repository.SettingsDataRepository
+
 
     @Binds
     @Singleton

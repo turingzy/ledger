@@ -31,6 +31,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -67,7 +69,13 @@ import cn.turingzy.ledger.ui.component.rememberCircularCardPagerState
 internal fun CardTemplateManagementScreen(
     templates: List<CardTemplate>,
     onDismissRequest: () -> Unit,
+    onCreate: suspend (CardTemplate) -> Long?,
+    onUpdate: (CardTemplate) -> Unit,
+    onDelete: (Long) -> Unit,
+    onCopyImage: suspend (Uri) -> String?,
 ) {
+    val scope = rememberCoroutineScope()
+    var saving by remember { mutableStateOf(false) }
     val drafts = remember { mutableStateListOf<CardTemplate>().apply { addAll(templates) } }
     var selectedId by remember { mutableStateOf(drafts.firstOrNull()?.id) }
     val pagerState = rememberCircularCardPagerState(drafts.map { it.id }, selectedId)
@@ -82,34 +90,47 @@ internal fun CardTemplateManagementScreen(
     var creating by remember { mutableStateOf(false) }
     var uploadTarget by remember { mutableStateOf<Long?>(null) }
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        val index = drafts.indexOfFirst { it.id == uploadTarget }
-        if (uri != null) {
-            if (creating && newFace.id == uploadTarget) newFace = newFace.copy(coverUri = uri.toString())
-            else if (index >= 0) drafts[index] = drafts[index].copy(coverUri = uri.toString())
+        val target = uploadTarget
+        if (uri != null) scope.launch {
+            val image = onCopyImage(uri) ?: return@launch
+            val index = drafts.indexOfFirst { it.id == target }
+            if ((creating || drafts.isEmpty()) && newFace.id == target) newFace = newFace.copy(coverUri = image)
+            else if (index >= 0) {
+                val updated = drafts[index].copy(coverUri = image)
+                drafts[index] = updated
+                onUpdate(updated)
+            }
         }
         uploadTarget = null
     }
+
     fun replaceImage(template: CardTemplate) {
         uploadTarget = template.id
         imagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
     }
 
     SettingsSubpageTransition(
-        targetState = creating,
+        targetState = creating || drafts.isEmpty(),
         depth = { if (it) 1 else 0 },
     ) { adding ->
         if (adding) {
             val pending = newFace
-            val canSave = pending.name.isNotBlank() && pending.coverUri.isNotBlank()
+            val canSave = !saving && pending.name.isNotBlank() && pending.coverUri.isNotBlank()
             SettingsPage(
                 title = "新增卡面",
-                onDismissRequest = { creating = false },
+                onDismissRequest = { if (drafts.isEmpty()) onDismissRequest() else creating = false },
                 avoidKeyboard = true,
                 action = {
                     LedgerIconButton(enabled = canSave, onClick = {
-                        drafts.add(pending.copy(name = pending.name.trim()))
-                        selectedId = pending.id
-                        creating = false
+                        saving = true
+                        scope.launch {
+                            try {
+                                val id = onCreate(pending.copy(name = pending.name.trim())) ?: return@launch
+                                drafts.add(pending.copy(id = id, name = pending.name.trim()))
+                                selectedId = id
+                                creating = false
+                            } finally { saving = false }
+                        }
                     }) {
                         Icon(MaterialSymbols.Check, "确认新增卡面", tint = MaterialTheme.colorScheme.tertiary.copy(alpha = if (canSave) 1f else 0.38f))
                     }
@@ -152,7 +173,9 @@ internal fun CardTemplateManagementScreen(
                                     onDelete = {
                                         val index = drafts.indexOfFirst { draft -> draft.id == face.id }
                                         if (index >= 0) {
+                                            onDelete(face.id)
                                             drafts.removeAt(index)
+                                            if (drafts.isEmpty()) newFace = CardTemplate(id = -1L, name = "", coverUri = "")
                                             selectedId = drafts.getOrNull(index.coerceAtMost(drafts.lastIndex))?.id
                                         }
                                     },
@@ -164,12 +187,13 @@ internal fun CardTemplateManagementScreen(
                             template = selected,
                             onChange = { updated ->
                                 val index = drafts.indexOfFirst { it.id == updated.id }
-                                if (index >= 0) drafts[index] = updated
+                                if (index >= 0) {
+                                    drafts[index] = updated
+                                    if (updated.name.isNotBlank()) onUpdate(updated)
+                                }
                             },
 
                         )
-                    } else {
-                        Text("暂无卡面", Modifier.padding(vertical = 24.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
 
                 }
@@ -232,7 +256,7 @@ private fun TemplateCoverPreview(
         contentAlignment = Alignment.Center,
     ) {
         if (placeholder) Icon(MaterialSymbols.AddPhotoAlternate, "选择卡面图片", Modifier.size(40.dp), tint = IosLabel)
-        if (template.coverUri.startsWith("content://")) {
+        if (Uri.parse(template.coverUri).scheme in setOf("content", "file")) {
             AndroidView(
                 factory = { context -> ImageView(context).apply { scaleType = ImageView.ScaleType.CENTER_CROP } },
                 update = { it.setImageURI(Uri.parse(template.coverUri)) },

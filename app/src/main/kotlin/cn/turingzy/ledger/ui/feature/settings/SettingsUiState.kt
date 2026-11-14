@@ -8,6 +8,8 @@ sealed interface SettingsUiState {
     data object Loading : SettingsUiState
 
     data class Success(
+        val rules: List<cn.turingzy.ledger.model.BillParseRule> = emptyList(),
+        val message: String? = null,
         val appVersion: String = "1.0.0",
         val categories: List<CategoryWithIcon>,
         val cardTemplates: List<CardTemplate> = emptyList(),

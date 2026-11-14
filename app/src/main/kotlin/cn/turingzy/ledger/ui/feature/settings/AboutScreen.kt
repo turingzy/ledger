@@ -35,9 +35,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.R
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.CancellationException
+import cn.turingzy.ledger.data.repository.AppUpdateRepository
+import timber.log.Timber
 
-private enum class UpdatePreviewState { IDLE, CHECKING, AVAILABLE }
+private enum class UpdateCheckState { IDLE, CHECKING, AVAILABLE }
 
 @Composable
 fun AboutScreen(
@@ -45,17 +47,44 @@ fun AboutScreen(
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
     onOpenSourceClick: () -> Unit = {},
+    onCheckLatest: suspend () -> String? = { null },
 ) {
-    var updateState by remember { mutableStateOf(UpdatePreviewState.IDLE) }
+    var updateState by remember { mutableStateOf(UpdateCheckState.IDLE) }
     val uriHandler = LocalUriHandler.current
+    var latestVersion by remember { mutableStateOf<String?>(null) }
+    var updateMessage by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(updateState) {
-        if (updateState == UpdatePreviewState.CHECKING) {
-            delay(1_200)
-            updateState = UpdatePreviewState.AVAILABLE
+        if (updateState == UpdateCheckState.CHECKING) {
+            try {
+                val latest = onCheckLatest()
+                latestVersion = latest
+                if (latest != null && AppUpdateRepository.isNewer(latest, versionName)) updateState = UpdateCheckState.AVAILABLE
+                else {
+                    updateState = UpdateCheckState.IDLE
+                    updateMessage = if (latest == null) "暂无已发布版本" else "已是最新版本"
+                }
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (error: Exception) {
+                Timber.e(error, "Update check failed")
+                updateState = UpdateCheckState.IDLE
+                updateMessage = error.message ?: "检查更新失败，请重试"
+            }
         }
     }
 
+    if (updateMessage != null) androidx.compose.material3.AlertDialog(
+        onDismissRequest = { updateMessage = null }, text = { Text(updateMessage.orEmpty()) },
+        containerColor = MaterialTheme.colorScheme.surface,
+        textContentColor = MaterialTheme.colorScheme.onSurface,
+        tonalElevation = 0.dp,
+        confirmButton = {
+            androidx.compose.material3.TextButton(
+                onClick = { updateMessage = null },
+                colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.tertiary),
+            ) { Text("确定") }
+        },
+    )
     SettingsPage(
         title = "关于",
         onDismissRequest = onDismissRequest,
@@ -65,10 +94,14 @@ fun AboutScreen(
         AboutContent(
             versionName = versionName,
             updateState = updateState,
+            latestVersion = latestVersion,
             onOpenSourceClick = onOpenSourceClick,
             onLicenseClick = { uriHandler.openUri("https://github.com/turingzy/ledger?tab=MIT-1-ov-file") },
             onSourceClick = { uriHandler.openUri("https://github.com/turingzy/ledger") },
-            onCheckUpdate = { updateState = UpdatePreviewState.CHECKING },
+            onCheckUpdate = {
+                if (updateState == UpdateCheckState.AVAILABLE) uriHandler.openUri("https://github.com/turingzy/ledger/releases/latest")
+                else updateState = UpdateCheckState.CHECKING
+            },
         )
     }
 }
@@ -76,18 +109,19 @@ fun AboutScreen(
 @Composable
 private fun AboutContent(
     versionName: String,
-    updateState: UpdatePreviewState,
+    updateState: UpdateCheckState,
     onOpenSourceClick: () -> Unit,
     onLicenseClick: () -> Unit,
     onSourceClick: () -> Unit,
     onCheckUpdate: () -> Unit,
     modifier: Modifier = Modifier,
+    latestVersion: String? = null,
 ) {
     val colors = MaterialTheme.colorScheme
     Column(modifier.fillMaxWidth().settingsPageScroll()) {
         Surface(
             onClick = onCheckUpdate,
-            enabled = updateState != UpdatePreviewState.CHECKING,
+            enabled = updateState != UpdateCheckState.CHECKING,
             modifier = Modifier.semantics { contentDescription = "检查更新" },
             shape = RoundedCornerShape(16.dp),
             color = colors.surface,
@@ -114,9 +148,9 @@ private fun AboutContent(
                             color = colors.onSurfaceVariant.copy(alpha = 0.65f),
                         )
                         when (updateState) {
-                            UpdatePreviewState.CHECKING -> CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 1.5.dp)
-                            UpdatePreviewState.AVAILABLE -> Text("1.0.1", style = MaterialTheme.typography.bodySmall, color = colors.primary)
-                            UpdatePreviewState.IDLE -> Unit
+                            UpdateCheckState.CHECKING -> CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 1.5.dp)
+                            UpdateCheckState.AVAILABLE -> Text(latestVersion.orEmpty(), style = MaterialTheme.typography.bodySmall, color = colors.primary)
+                            UpdateCheckState.IDLE -> Unit
                         }
                     }
                     Text("TuringZY", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
@@ -142,6 +176,6 @@ private fun AboutContent(
 @Composable
 private fun AboutContentPreview() {
     MaterialTheme {
-        AboutContent("1.0.0", UpdatePreviewState.AVAILABLE, onOpenSourceClick = {}, onLicenseClick = {}, onSourceClick = {}, onCheckUpdate = {})
+        AboutContent("1.0.0", UpdateCheckState.AVAILABLE, onOpenSourceClick = {}, onLicenseClick = {}, onSourceClick = {}, onCheckUpdate = {})
     }
 }

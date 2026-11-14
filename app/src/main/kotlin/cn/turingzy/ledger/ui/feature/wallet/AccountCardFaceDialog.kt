@@ -118,7 +118,7 @@ internal fun AccountCardFaceDialog(
     }
 }
 
-private fun String.cardFaceTextColor(fallback: Color): Color {
+internal fun String.cardFaceTextColor(fallback: Color): Color {
     val hex = removePrefix("#")
     if (hex.length != 6 && hex.length != 8) return fallback
     val value = hex.toLongOrNull(16) ?: return fallback

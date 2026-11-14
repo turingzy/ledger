@@ -51,49 +51,9 @@ import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.model.AccountWithTemplate
 import cn.turingzy.ledger.model.CategoryWithIcon
 
-internal data class ParseRulePreview(
-    val id: Long,
-    val name: String = "",
-    val startRow: String = "2",
-    val dateColumn: String = "",
-    val amountColumn: String = "",
-    val typeColumn: String = "",
-    val categoryColumn: String = "",
-    val noteColumn: String = "",
-    val accountId: Long? = null,
-    val categoryId: Long? = null,
-) {
-    val valid: Boolean get() = name.isNotBlank() && (startRow.toIntOrNull() ?: 0) > 0 && dateColumn.isNotBlank() && amountColumn.isNotBlank()
-}
+internal typealias ParseRulePreview = cn.turingzy.ledger.model.BillParseRule
 
-internal fun defaultParseRulePreviews(): List<ParseRulePreview> = listOf(
-    ParseRulePreview(
-        id = 1L,
-        name = "通用账单",
-        dateColumn = "交易时间",
-        amountColumn = "金额",
-        typeColumn = "收支类型",
-        categoryColumn = "分类",
-        noteColumn = "备注",
-    ),
-    ParseRulePreview(
-        id = 2L,
-        name = "银行流水",
-        dateColumn = "交易日期",
-        amountColumn = "交易金额",
-        typeColumn = "借贷标志",
-        noteColumn = "摘要",
-    ),
-    ParseRulePreview(
-        id = 3L,
-        name = "收支明细",
-        dateColumn = "日期",
-        amountColumn = "金额",
-        typeColumn = "收支",
-        categoryColumn = "类别",
-        noteColumn = "说明",
-    ),
-)
+internal fun defaultParseRulePreviews(): List<ParseRulePreview> = ParseRulePreview.defaults()
 
 private data class RulePage(val draft: ParseRulePreview?) {
     val depth: Int get() = if (draft != null) 1 else 0
@@ -110,11 +70,13 @@ internal fun ParseRulesScreen(
     onDismissRequest: () -> Unit,
 ) {
     var draft by remember { mutableStateOf<ParseRulePreview?>(null) }
+    var emptyDraft by remember { mutableStateOf(ParseRulePreview(id = 0L)) }
+    val visibleDraft = draft ?: emptyDraft.takeIf { rules.isEmpty() }
     val focusManager = LocalFocusManager.current
     val colors = MaterialTheme.colorScheme
-    KeepRuleEditorWindowStationary(enabled = draft != null)
+    KeepRuleEditorWindowStationary(enabled = visibleDraft != null)
     SettingsSubpageTransition(
-        targetState = RulePage(draft),
+        targetState = RulePage(visibleDraft),
         depth = { it.depth },
         contentKey = { it.depth },
     ) { page ->
@@ -133,7 +95,7 @@ internal fun ParseRulesScreen(
             avoidKeyboard = editing != null,
             onBack = if (editing != null) ({
                 focusManager.clearFocus()
-                draft = null
+                if (rules.isEmpty()) onDismissRequest() else draft = null
             }) else null,
             action = {
                 IconButton(
@@ -145,39 +107,31 @@ internal fun ParseRulesScreen(
                             draft = ParseRulePreview(id = (rules.maxOfOrNull { it.id } ?: 0L) + 1L)
                         } else {
                             onSaveRule(editing.copy(name = editing.name.trim()))
+                            emptyDraft = ParseRulePreview(id = 0L)
                             draft = null
                         }
                     },
                 ) {
                     Icon(
                         if (editing == null) MaterialSymbols.Add else MaterialSymbols.Check,
-                        if (editing == null) "新增解析规则" else "保存规则预览",
+                        if (editing == null) "新增解析规则" else "保存规则",
                         tint = if (editing == null) colors.onSurfaceVariant else colors.tertiary.copy(alpha = if (editing.valid) 1f else 0.38f),
                     )
                 }
             },
         ) {
             if (editing == null) {
-                if (rules.isEmpty()) {
-                    Text(
-                        "暂无解析规则，点击右上角添加",
-                        Modifier.fillMaxWidth().padding(vertical = 40.dp),
-                        textAlign = TextAlign.Center,
-                        color = colors.onSurfaceVariant,
-                    )
-                } else {
-                    LazyColumn(
-                        Modifier.fillMaxWidth(),
-                        contentPadding = PaddingValues(bottom = SettingsPageBottomPadding),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        items(rules, key = { it.id }) { rule ->
-                            SettingsActionRow(
-                                title = rule.name,
-                                subtitle = "从第 ${rule.startRow} 行读取",
-                                onClick = { draft = rule },
-                            )
-                        }
+                LazyColumn(
+                    Modifier.fillMaxWidth(),
+                    contentPadding = PaddingValues(bottom = SettingsPageBottomPadding),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(rules, key = { it.id }) { rule ->
+                        SettingsActionRow(
+                            title = rule.name,
+                            subtitle = "从第 ${rule.startRow} 行读取",
+                            onClick = { draft = rule },
+                        )
                     }
                 }
             } else {
@@ -203,7 +157,7 @@ internal fun ParseRulesScreen(
                         RuleDivider()
                         RuleTextField("备注", editing.noteColumn, "选填", { draft = editing.copy(noteColumn = it) })
                     }
-                    Text("填写原始账单列名；交易时间和金额必填。", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                    Text("填写原始账单列名；交易时间和金额必填。未设置收支列时按支出导入。", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                     Text("默认归属", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                     RuleFieldGroup {
                         RuleChoiceDropdown(
@@ -226,7 +180,12 @@ internal fun ParseRulesScreen(
                     }
                     if (existing) {
                         TextButton(
-                            onClick = { focusManager.clearFocus(); onDeleteRule(editing.id); draft = null },
+                            onClick = {
+                                focusManager.clearFocus()
+                                onDeleteRule(editing.id)
+                                emptyDraft = ParseRulePreview(id = 0L)
+                                draft = null
+                            },
                             modifier = Modifier.align(Alignment.End),
                             contentPadding = PaddingValues(vertical = 8.dp),
                             colors = ButtonDefaults.textButtonColors(contentColor = colors.error),

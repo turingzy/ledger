@@ -56,6 +56,9 @@ internal fun SettingsTransferAction(
         ) {
             Text(title, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Start)
         }
+        if (running && progress == null) {
+            LinearProgressIndicator(modifier = Modifier.weight(1f).height(8.dp).clip(CircleShape), color = colors.tertiary)
+        }
         if (progress != null) {
             LinearProgressIndicator(
                 progress = { progress / 100f },

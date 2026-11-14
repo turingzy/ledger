@@ -57,7 +57,13 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    var parseRulePreviews by remember { mutableStateOf(defaultParseRulePreviews()) }
+    val parseRulePreviews = (uiState as? SettingsUiState.Success)?.rules.orEmpty()
+    val message = (uiState as? SettingsUiState.Success)?.message
+    if (message != null) androidx.compose.material3.AlertDialog(
+        onDismissRequest = viewModel::dismissMessage,
+        text = { Text(message.orEmpty()) },
+        confirmButton = { androidx.compose.material3.TextButton(onClick = viewModel::dismissMessage) { Text("确定") } },
+    )
     SettingsNavigation(
         onDetailVisibleChange = onDetailVisibleChange,
         modifier = modifier,
@@ -75,24 +81,27 @@ fun SettingsScreen(
                 accounts = (uiState as? SettingsUiState.Success)?.accounts.orEmpty(),
                 categories = (uiState as? SettingsUiState.Success)?.categories.orEmpty(),
                 rules = parseRulePreviews,
-                onSaveRule = { rule ->
-                    parseRulePreviews = if (parseRulePreviews.any { it.id == rule.id }) {
-                        parseRulePreviews.map { if (it.id == rule.id) rule else it }
-                    } else parseRulePreviews + rule
-                },
-                onDeleteRule = { id -> parseRulePreviews = parseRulePreviews.filterNot { it.id == id } },
+                onSaveRule = viewModel::saveRule,
+                onDeleteRule = viewModel::deleteRule,
                 onDismissRequest = back,
             )
-            SettingsDestination.BACKUP -> BackupAndRestoreScreen(onDismissRequest = back)
+            SettingsDestination.BACKUP -> BackupAndRestoreScreen(onDismissRequest = back, onBackup = viewModel::backup, onRestore = viewModel::restore)
             SettingsDestination.CARDS -> CardTemplateManagementScreen(
                 templates = (uiState as? SettingsUiState.Success)?.cardTemplates.orEmpty(),
+                onCreate = viewModel::createTemplate,
+                onUpdate = viewModel::updateTemplate,
+                onDelete = viewModel::deleteTemplate,
+                onCopyImage = viewModel::copyImage,
                 onDismissRequest = back,
             )
-            SettingsDestination.BILL_TRANSFER -> BillTransferScreen(rules = parseRulePreviews, onDismissRequest = back)
+            SettingsDestination.BILL_TRANSFER -> BillTransferScreen(rules = parseRulePreviews, onDismissRequest = back,
+                accounts = (uiState as? SettingsUiState.Success)?.accounts.orEmpty(),
+                onImport = viewModel::importBills, onExport = viewModel::exportBills)
             SettingsDestination.ABOUT -> AboutScreen(
                 versionName = (uiState as? SettingsUiState.Success)?.appVersion ?: "1.0.0",
                 onDismissRequest = back,
                 onOpenSourceClick = { navigate(SettingsDestination.OPEN_SOURCE_LICENSES) },
+                onCheckLatest = viewModel::checkLatest,
             )
             SettingsDestination.OPEN_SOURCE_LICENSES -> OpenSourceLibrariesScreen(onBack = back)
         }

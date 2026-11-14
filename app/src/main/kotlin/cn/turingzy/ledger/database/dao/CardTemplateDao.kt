@@ -10,6 +10,12 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CardTemplateDao {
+    @Query("SELECT * FROM tb_card_template")
+    suspend fun backupRows(): List<CardTemplateEntity>
+
+    @Query("DELETE FROM tb_card_template")
+    suspend fun clearRows()
+
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTemplate(template: CardTemplateEntity): Long

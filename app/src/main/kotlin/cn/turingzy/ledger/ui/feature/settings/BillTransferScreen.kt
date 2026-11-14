@@ -28,6 +28,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.delay
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -53,43 +55,97 @@ import cn.turingzy.ledger.ui.theme.LedgerTheme
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
+import android.net.Uri
+import cn.turingzy.ledger.model.AccountWithTemplate
+import kotlinx.coroutines.CancellationException
+import timber.log.Timber
+import java.time.ZoneId
 import kotlinx.coroutines.launch
 
 private enum class ExportFormat(val label: String) { EXCEL("Excel"), CSV("CSV") }
-private enum class BillTransferPicker { RULE, START, END }
+private enum class BillTransferPicker { RULE, ACCOUNT, START, END }
 private enum class BillTransferStatus { IDLE, RUNNING, COMPLETED, CANCELLED }
 
 @Composable
-internal fun BillTransferScreen(rules: List<ParseRulePreview>, onDismissRequest: () -> Unit) {
+internal fun BillTransferScreen(
+    rules: List<ParseRulePreview>, onDismissRequest: () -> Unit,
+    accounts: List<AccountWithTemplate> = emptyList(),
+    onImport: suspend (Uri, ParseRulePreview, Long?) -> Int = { _, _, _ -> 0 },
+    onExport: suspend (Uri, Boolean, Long, Long) -> Int = { _, _, _, _ -> 0 },
+) {
     val today = remember { LocalDate.now() }
     val context = LocalContext.current
     var importing by remember { mutableStateOf(true) }
+    var fileUri by remember { mutableStateOf<Uri?>(null) }
+    var accountId by remember { mutableStateOf<Long?>(null) }
+    var resultMessage by remember { mutableStateOf<String?>(null) }
     var fileName by remember { mutableStateOf<String?>(null) }
     var selectedRuleId by remember { mutableStateOf<Long?>(null) }
     var picker by remember { mutableStateOf<BillTransferPicker?>(null) }
     val selectedRule = rules.firstOrNull { it.id == selectedRuleId }
     var allBills by remember { mutableStateOf(true) }
     var rangeStart by remember { mutableStateOf(today.withDayOfMonth(1).atStartOfDay()) }
-    var rangeEnd by remember { mutableStateOf(today.atStartOfDay()) }
+    var rangeEnd by remember { mutableStateOf(today.atTime(23, 59, 59)) }
     var format by remember { mutableStateOf(ExportFormat.EXCEL) }
     var status by remember { mutableStateOf(BillTransferStatus.IDLE) }
+    var exportCoolingDown by remember { mutableStateOf(false) }
     var progress by remember { mutableIntStateOf(0) }
     var operation by remember { mutableStateOf<Job?>(null) }
     val scope = rememberCoroutineScope()
     val colors = MaterialTheme.colorScheme
     val running = status == BillTransferStatus.RUNNING
 
-    fun resetPreview() {
+    fun resetResult() {
         status = BillTransferStatus.IDLE
         progress = 0
+        resultMessage = null
+    }
+
+    LaunchedEffect(exportCoolingDown) {
+        if (exportCoolingDown) {
+            delay(10_000)
+            exportCoolingDown = false
+            if (status == BillTransferStatus.COMPLETED && !importing) resetResult()
+        }
     }
 
     val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
+            fileUri = uri
             fileName = selectedTransferFileName(context, uri)
-            resetPreview()
+            resetResult()
         }
+    }
+
+    fun runTransfer(destination: Uri? = null) {
+        if (!importing && exportCoolingDown) return
+        status = BillTransferStatus.RUNNING
+        resultMessage = null
+        operation = scope.launch {
+            try {
+                val count = if (importing) onImport(requireNotNull(fileUri), requireNotNull(selectedRule), accountId)
+                else onExport(requireNotNull(destination), format == ExportFormat.EXCEL,
+                    if (allBills) Long.MIN_VALUE else rangeStart.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
+                    if (allBills) Long.MAX_VALUE else rangeEnd.withSecond(59).withNano(999_000_000).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
+                status = BillTransferStatus.COMPLETED
+                if (!importing) exportCoolingDown = true
+                progress = 100
+                resultMessage = "已${if (importing) "导入" else "导出"} $count 笔账单"
+            } catch (cancelled: CancellationException) {
+                status = BillTransferStatus.CANCELLED
+                throw cancelled
+            } catch (error: Exception) {
+                Timber.e(error, "Bill transfer failed")
+                status = BillTransferStatus.IDLE
+                resultMessage = error.message ?: "操作失败，请重试"
+            } finally { operation = null }
+        }
+    }
+    val csvDestination = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
+        if (uri != null) runTransfer(uri)
+    }
+    val excelDestination = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")) { uri ->
+        if (uri != null) runTransfer(uri)
     }
 
     SettingsPage(title = "账单导入与导出", onDismissRequest = onDismissRequest) {
@@ -101,29 +157,35 @@ internal fun BillTransferScreen(rules: List<ParseRulePreview>, onDismissRequest:
                 LedgerSegmentedControl(
                     labels = listOf("导入", "导出"),
                     selectedIndex = if (importing) 0 else 1,
-                    onSelect = { importing = it == 0; resetPreview() },
+                    onSelect = { importing = it == 0; resetResult() },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !running,
                 )
-                if (importing) Text("支持 Excel、CSV 两种格式账单", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                if (importing) Text("支持 Excel(XLSX)、CSV 账单", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
             }
             if (importing) {
                 SettingsTransferFileRow(fileName = fileName, enabled = !running) {
                     filePicker.launch(arrayOf(
                         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                        "application/vnd.ms-excel", "text/csv", "text/comma-separated-values", "text/plain",
+                        "text/csv", "text/comma-separated-values", "text/plain",
                     ))
                 }
                 BillTransferCard {
                     BillImportRow("解析规则", selectedRule?.name ?: "请选择", enabled = !running) {
                         picker = BillTransferPicker.RULE
                     }
+                    if (selectedRule?.accountId == null) {
+                        BillTransferDivider()
+                        BillImportRow("导入账户", accounts.firstOrNull { it.account.id == accountId }?.account?.name ?: "使用文件中的账户", enabled = !running) {
+                            picker = BillTransferPicker.ACCOUNT
+                        }
+                    }
                 }
             } else {
                 Text("导出范围", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                 Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    BillTransferOption("全部账单", allBills, !running, Modifier.weight(1f)) { allBills = true; resetPreview() }
-                    BillTransferOption("指定范围", !allBills, !running, Modifier.weight(1f)) { allBills = false; resetPreview() }
+                    BillTransferOption("全部账单", allBills, !running, Modifier.weight(1f)) { allBills = true; resetResult() }
+                    BillTransferOption("指定范围", !allBills, !running, Modifier.weight(1f)) { allBills = false; resetResult() }
                 }
                 if (!allBills) {
                     BillTransferCard {
@@ -137,7 +199,7 @@ internal fun BillTransferScreen(rules: List<ParseRulePreview>, onDismissRequest:
                     ExportFormat.entries.forEach { option ->
                         BillTransferOption(option.label, format == option, !running, Modifier.weight(1f)) {
                             format = option
-                            resetPreview()
+                            resetResult()
                         }
                     }
                 }
@@ -145,25 +207,18 @@ internal fun BillTransferScreen(rules: List<ParseRulePreview>, onDismissRequest:
             SettingsTransferAction(
                 title = if (running) { if (importing) "取消导入" else "取消导出" }
                     else { if (importing) "导入账单" else "导出账单" },
-                enabled = running || !importing || (fileName != null && selectedRule != null),
+                enabled = (importing || !exportCoolingDown) && (running || !importing || (fileName != null && selectedRule != null)),
                 running = running,
-                progress = progress.takeIf { running || status == BillTransferStatus.COMPLETED },
+                progress = progress.takeIf { status == BillTransferStatus.COMPLETED },
                 onClick = {
                     if (running) {
                         operation?.cancel()
                         operation = null
                         status = BillTransferStatus.CANCELLED
                     } else {
-                        status = BillTransferStatus.RUNNING
-                        progress = 0
-                        operation = scope.launch {
-                            for (percent in 1..100) {
-                                delay(35)
-                                progress = percent
-                            }
-                            status = BillTransferStatus.COMPLETED
-                            operation = null
-                        }
+                        if (importing) runTransfer()
+                        else if (format == ExportFormat.EXCEL) excelDestination.launch("Ledger-$today.xlsx")
+                        else csvDestination.launch("Ledger-$today.csv")
                     }
                 },
             )
@@ -173,17 +228,26 @@ internal fun BillTransferScreen(rules: List<ParseRulePreview>, onDismissRequest:
                 BillTransferStatus.COMPLETED -> null
                 BillTransferStatus.CANCELLED -> if (importing) "已取消导入" else "已取消导出"
             }
+            if (resultMessage != null) Text(resultMessage.orEmpty(), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
             if (message != null) Text(message, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
         }
     }
 
     when (picker) {
+        BillTransferPicker.ACCOUNT -> BillTransferDialog(
+            title = "导入账户", onDismiss = { picker = null }, onConfirm = { picker = null },
+        ) {
+            ImportRuleChoice("使用文件中的账户", accountId == null) { accountId = null }
+            accounts.forEach { item ->
+                ImportRuleChoice(item.account.name, accountId == item.account.id) { accountId = item.account.id }
+            }
+        }
         BillTransferPicker.RULE -> {
             var pendingRuleId by remember { mutableStateOf(selectedRule?.id) }
             BillTransferDialog(
                 title = "解析规则",
                 onDismiss = { picker = null },
-                onConfirm = { selectedRuleId = pendingRuleId; picker = null; resetPreview() },
+                onConfirm = { selectedRuleId = pendingRuleId; picker = null; resetResult() },
                 confirmEnabled = pendingRuleId != null,
             ) {
                 Column(Modifier.selectableGroup()) {
@@ -216,7 +280,7 @@ internal fun BillTransferScreen(rules: List<ParseRulePreview>, onDismissRequest:
                 onConfirm = {
                     if (editingStart) rangeStart = pending else rangeEnd = pending
                     picker = null
-                    resetPreview()
+                    resetResult()
                 },
                 confirmEnabled = validRange,
             ) {

@@ -13,6 +13,12 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TransactionDao {
+    @Query("SELECT * FROM tb_transaction")
+    suspend fun backupRows(): List<TransactionEntity>
+
+    @Query("DELETE FROM tb_transaction")
+    suspend fun clearRows()
+
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTransaction(transaction: TransactionEntity): Long
