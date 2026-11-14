@@ -17,7 +17,7 @@ class AnalyticsCategoryShareCardTest {
     private val state = AnalyticsUiState.Success(AnalyticsTimeScope.MONTH, CategoryType.EXPENSE, "", 300000L, 950000L, 650000L,
         expenses, LocalDate.of(2026, 11, 1))
 
-    @Test fun switchingCategoryTypeChangesRingLegendAndKeepsTotalsSeparate() {
+    @Test fun switchingCategoryTypeChangesBarLegendAndKeepsTotalsSeparate() {
         val current = mutableStateOf(state)
         compose.setContent {
             LedgerTheme {
@@ -29,15 +29,18 @@ class AnalyticsCategoryShareCardTest {
         }
         compose.onNodeWithText("分类占比").assertIsDisplayed()
         compose.onNodeWithText("支出/收入分类占比").assertDoesNotExist()
-        compose.onNodeWithText("餐饮 40%").assertIsDisplayed().performClick().assertIsSelected()
+        compose.onNodeWithText("餐饮 40%").assertIsDisplayed().performClick()
+        compose.onNodeWithText("暂无交易记录").assertIsDisplayed()
+        compose.onNodeWithContentDescription("关闭交易明细").performClick()
+        compose.onNodeWithText("餐饮 40%").assertIsNotSelected()
         compose.onNodeWithText("总支出").assertIsDisplayed()
         compose.onNodeWithText("¥3000.00").assertIsDisplayed()
         val first = compose.onNodeWithText("¥1200.00").getUnclippedBoundsInRoot()
         val second = compose.onNodeWithText("¥1800.00").getUnclippedBoundsInRoot()
         assertEquals(first.right, second.right)
-        val ring = compose.onNodeWithContentDescription("支出分类环形图", substring = true).getUnclippedBoundsInRoot()
+        val bar = compose.onNodeWithContentDescription("支出分类占比条", substring = true).getUnclippedBoundsInRoot()
         val legend = compose.onNodeWithText("餐饮 40%").getUnclippedBoundsInRoot()
-        assertTrue(legend.top >= ring.bottom)
+        assertTrue(legend.top >= bar.bottom)
         compose.onNodeWithText("收入").performClick()
         compose.onNodeWithText("总收入").assertIsDisplayed()
         compose.onNodeWithText("工资 100%").assertIsDisplayed()
@@ -47,7 +50,14 @@ class AnalyticsCategoryShareCardTest {
         compose.onNodeWithText("餐饮 40%").assertIsDisplayed().assertIsNotSelected()
     }
 
-    @Test fun emptyPeriodKeepsSwitchAndEmptyRingAvailable() {
+    @Test fun allCategoriesAreVisibleWithoutAnInnerScrollingList() {
+        val rankings = (1L..10L).map { CategoryExpenseRanking(it, "分类$it", 100L, 0.1f) }
+        compose.setContent { LedgerTheme { AnalyticsCategoryShareCard(state.copy(rankings = rankings), {}) } }
+        compose.onNodeWithText("分类1 10%").assertIsDisplayed()
+        compose.onNodeWithText("分类10 10%").assertIsDisplayed()
+    }
+
+    @Test fun emptyPeriodKeepsSwitchAndEmptyBarAvailable() {
         compose.setContent { LedgerTheme { AnalyticsCategoryShareCard(state.copy(rankings = emptyList(), totalExpense = 0L), {}) } }
         compose.onNodeWithText("总支出").assertIsDisplayed()
         compose.onNodeWithText("暂无支出记录").assertIsDisplayed()

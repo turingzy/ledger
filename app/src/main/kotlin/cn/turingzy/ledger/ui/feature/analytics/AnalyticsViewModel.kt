@@ -204,17 +204,7 @@ class AnalyticsViewModel @Inject constructor(
                     totalAmount = catTotal,
                     percentage = percentage,
                     transactions = txList.sortedByDescending { it.transaction.transactionTime }
-                        .map { detail ->
-                            AnalyticsTransaction(
-                                id = detail.transaction.id,
-                                date = Instant.ofEpochMilli(detail.transaction.transactionTime)
-                                    .atZone(ZoneId.systemDefault()).toLocalDate(),
-                                note = detail.transaction.note.orEmpty()
-                                    .ifBlank { detail.category.category.name },
-                                accountName = detail.account.name,
-                                amount = detail.transaction.amount,
-                            )
-                        },
+                        .map { analyticsTransaction(it, ZoneId.systemDefault()) },
                 )
             }
             .sortedByDescending { it.totalAmount }

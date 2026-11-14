@@ -31,7 +31,12 @@ fun LedgerApp(
     var currentTopLevelDestination by rememberSaveable { mutableStateOf(TopLevelDestination.LEDGER) }
 
     var settingsDetailVisible by remember { mutableStateOf(false) }
-    val showBottomBar = currentTopLevelDestination != TopLevelDestination.SETTINGS || !settingsDetailVisible
+    var analyticsDetailVisible by remember { mutableStateOf(false) }
+    val showBottomBar = when (currentTopLevelDestination) {
+        TopLevelDestination.SETTINGS -> !settingsDetailVisible
+        TopLevelDestination.ANALYTICS -> !analyticsDetailVisible
+        else -> true
+    }
     val isLedgerTab = currentTopLevelDestination == TopLevelDestination.LEDGER
     var showGlobalRecordSheet by remember { mutableStateOf(false) }
 
@@ -47,6 +52,7 @@ fun LedgerApp(
                 onRecordSheetDismiss = { showGlobalRecordSheet = false },
                 onNavigateToRecord = { showGlobalRecordSheet = true },
                 onSettingsDetailVisibleChange = { settingsDetailVisible = it },
+                onAnalyticsDetailVisibleChange = { analyticsDetailVisible = it },
                 modifier = Modifier.fillMaxSize()
                     .then(if (showBottomBar) Modifier else Modifier.navigationBarsPadding()),
             )

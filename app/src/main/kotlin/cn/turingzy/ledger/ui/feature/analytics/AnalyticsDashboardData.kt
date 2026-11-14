@@ -43,3 +43,22 @@ internal fun projectExpense(amount: Long, elapsedDays: Int, targetDay: Int): Lon
     if (elapsedDays <= 0) 0L else BigDecimal.valueOf(amount).multiply(BigDecimal.valueOf(targetDay.toLong()))
         .divide(BigDecimal.valueOf(elapsedDays.toLong()), 0, RoundingMode.HALF_UP)
         .min(BigDecimal.valueOf(Long.MAX_VALUE)).longValueExact()
+
+internal fun analyticsTransactions(entries: List<TransactionDetail>, zone: ZoneId): List<AnalyticsTransaction> =
+    entries.filter { !it.transaction.isDeleted && it.transaction.type != TransactionType.TRANSFER }
+        .sortedByDescending { it.transaction.transactionTime }
+        .map { analyticsTransaction(it, zone) }
+
+internal fun analyticsTransaction(detail: TransactionDetail, zone: ZoneId): AnalyticsTransaction {
+    val time = Instant.ofEpochMilli(detail.transaction.transactionTime).atZone(zone)
+    return AnalyticsTransaction(
+        id = detail.transaction.id,
+        date = time.toLocalDate(),
+        note = detail.transaction.note.orEmpty().ifBlank { detail.category.category.name },
+        accountName = detail.account.name,
+        amount = detail.transaction.amount,
+        type = detail.transaction.type,
+        category = detail.category,
+        time = time.toLocalTime(),
+    )
+}

@@ -46,6 +46,21 @@ class AnalyticsDashboardDataTest {
         assertEquals(33L, projectExpense(10L, 3, 10))
     }
 
+    @Test
+    fun drillDownTransactionsExcludeDeletedAndTransfersAndKeepIncomeSign() {
+        val transactions = analyticsTransactions(listOf(
+            entry(1L, TransactionType.EXPENSE, 10L),
+            entry(2L, TransactionType.INCOME, 20L),
+            entry(3L, TransactionType.TRANSFER, 30L),
+            entry(4L, TransactionType.EXPENSE, 40L, deleted = true),
+        ), zone)
+        assertEquals(listOf(1L, 2L), transactions.map { it.id })
+        assertEquals(TransactionType.INCOME, transactions.last().type)
+        assertEquals(date, transactions.first().date)
+        assertEquals("餐饮", transactions.first().category?.category?.name)
+        assertEquals(java.time.LocalTime.MIDNIGHT, transactions.first().time)
+    }
+
     private fun entry(id: Long, type: TransactionType, amount: Long, deleted: Boolean = false) = TransactionDetail(
         Transaction(id = id, type = type, amount = amount, accountId = 1L, categoryId = 1L,
             transactionTime = date.atStartOfDay(zone).toInstant().toEpochMilli(), isDeleted = deleted),

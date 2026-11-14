@@ -51,3 +51,12 @@ internal fun expensePaceData(days: Map<LocalDate, AnalyticsDay>, scope: Analytic
     val scale = step.multiply(BigDecimal.valueOf(4)).min(BigDecimal.valueOf(Long.MAX_VALUE)).longValueExact()
     return ExpensePaceData(buckets.map { it.first }, current, alignedPrevious, scale)
 }
+
+internal fun expensePaceChangeLabel(current: Long, previous: Long): String {
+    if (current == previous) return "持平"
+    if (previous == 0L) return "暂无环比"
+    val percentage = BigDecimal.valueOf(current).subtract(BigDecimal.valueOf(previous)).abs()
+        .multiply(BigDecimal.valueOf(100)).divide(BigDecimal.valueOf(previous), 1, RoundingMode.HALF_UP)
+    val magnitude = if (percentage.signum() == 0) "<0.1" else percentage.stripTrailingZeros().toPlainString()
+    return (if (current > previous) "增长 " else "下降 ") + magnitude + "%"
+}

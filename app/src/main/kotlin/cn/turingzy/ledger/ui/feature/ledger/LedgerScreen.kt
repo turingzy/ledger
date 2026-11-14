@@ -48,6 +48,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import cn.turingzy.ledger.model.LedgerCardAppearance
 import cn.turingzy.ledger.ui.component.LocalBottomBarContentPadding
+import cn.turingzy.ledger.ui.component.TransactionRow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.runtime.LaunchedEffect
@@ -566,83 +567,20 @@ fun DayTransactionRowItem(
     onClick: () -> Unit = {},
 ) {
     val tx = detail.transaction
-    val colors = MaterialTheme.colorScheme
     val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
     val timeStr = remember(tx.transactionTime) {
         Instant.ofEpochMilli(tx.transactionTime).atZone(ZoneId.systemDefault()).format(timeFormatter)
     }
-    val typeColor = when (tx.type) {
-        TransactionType.EXPENSE -> colors.error
-        TransactionType.INCOME -> colors.tertiary
-        TransactionType.TRANSFER -> IosYellow
-    }
-    val amountText = when (tx.type) {
-        TransactionType.EXPENSE -> "−${tx.amount.toFormattedAmount(showSymbol = true)}"
-        TransactionType.INCOME -> "+${tx.amount.toFormattedAmount(showSymbol = true)}"
-        TransactionType.TRANSFER -> tx.amount.toFormattedAmount(showSymbol = true)
-    }
-    val supportingText = listOfNotNull(detail.account.name, tx.note?.takeIf { it.isNotBlank() }).joinToString(" · ")
-    Row(
-        modifier = modifier.fillMaxWidth()
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = LocalIndication.current,
-                onClick = onClick,
-            )
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            modifier = Modifier.size(36.dp).clip(CircleShape).background(typeColor),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = detail.category.icon.categoryGlyph(),
-                contentDescription = detail.category.category.name,
-                tint = if (tx.type == TransactionType.TRANSFER) colors.scrim else colors.onPrimary,
-                modifier = Modifier.size(20.dp),
-            )
-        }
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(
-                text = detail.category.category.name,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                fontSize = 15.sp,
-                lineHeight = 18.sp,
-                fontWeight = FontWeight.Normal,
-                color = colors.onSurface,
-                letterSpacing = (-0.2).sp,
-            )
-            Text(
-                text = supportingText,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
-                fontWeight = FontWeight.Normal,
-                color = colors.onSurfaceVariant,
-            )
-        }
-        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(
-                text = amountText,
-                fontSize = 16.sp,
-                lineHeight = 18.sp,
-                fontWeight = FontWeight.Normal,
-                color = if (tx.type == TransactionType.TRANSFER) colors.onSurface else typeColor,
-                letterSpacing = (-0.3).sp,
-            )
-            Text(
-                text = timeStr,
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
-                fontWeight = FontWeight.Normal,
-                color = colors.onSurfaceVariant,
-            )
-        }
-    }
+    TransactionRow(
+        categoryName = detail.category.category.name,
+        supportingText = listOfNotNull(detail.account.name, tx.note?.takeIf { it.isNotBlank() }).joinToString(" · "),
+        timeText = timeStr,
+        amount = tx.amount,
+        type = tx.type,
+        icon = detail.category.icon.categoryGlyph(),
+        modifier = modifier,
+        onClick = onClick,
+    )
 }
 
 @Preview(showBackground = true)

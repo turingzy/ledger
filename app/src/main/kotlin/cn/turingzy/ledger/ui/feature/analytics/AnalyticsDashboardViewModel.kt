@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.stateIn
 data class AnalyticsDashboardState(
     val days: Map<LocalDate, AnalyticsDay> = emptyMap(),
     val loading: Boolean = true,
+    val transactions: List<AnalyticsTransaction> = emptyList(),
 )
 
 @HiltViewModel
@@ -26,7 +27,11 @@ class AnalyticsDashboardViewModel @Inject constructor(
     @Dispatcher(LedgerDispatchers.Default) dispatcher: CoroutineDispatcher,
 ) : ViewModel() {
     val uiState = transactions.getTransactionsBetween(Long.MIN_VALUE, Long.MAX_VALUE)
-        .map { AnalyticsDashboardState(analyticsDays(it, ZoneId.systemDefault()), loading = false) }
+        .map { entries ->
+            val zone = ZoneId.systemDefault()
+            AnalyticsDashboardState(analyticsDays(entries, zone), loading = false,
+                transactions = analyticsTransactions(entries, zone))
+        }
         .flowOn(dispatcher)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AnalyticsDashboardState())
 }

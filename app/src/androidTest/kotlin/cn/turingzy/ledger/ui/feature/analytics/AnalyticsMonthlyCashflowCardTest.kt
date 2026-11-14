@@ -12,7 +12,7 @@ import org.junit.Test
 class AnalyticsMonthlyCashflowCardTest {
     @get:Rule val compose = createComposeRule()
 
-    @Test fun headerHasLargerInlineLegendAndChartTapsDoNotOpenPopups() {
+    @Test fun monthSelectionShowsSummaryAndOpensMonthlyTransactions() {
         compose.setContent {
             LedgerTheme {
                 MonthlyCashflowCard(mapOf(
@@ -30,8 +30,35 @@ class AnalyticsMonthlyCashflowCardTest {
         assertTrue(income.right < balance.left)
         compose.onNodeWithContentDescription("收入支出双柱与结余折线组合图").assertHasNoClickAction()
             .performTouchInput { click(center) }
-        compose.onNodeWithContentDescription("2026年2月").performScrollTo().assertHasNoClickAction()
-            .performTouchInput { click(center) }
-        compose.onNodeWithText("净结余", substring = true).assertDoesNotExist()
+        compose.onNodeWithContentDescription("2026年2月").performScrollTo().performClick().assertIsSelected()
+        compose.onNodeWithText("净结余").assertIsDisplayed()
+        compose.onNodeWithText("储蓄率").assertDoesNotExist()
+        val chart = compose.onNodeWithContentDescription("收入支出双柱与结余折线组合图").getUnclippedBoundsInRoot()
+        val summary = compose.onNodeWithContentDescription("2026年2月收支汇总").getUnclippedBoundsInRoot()
+        assertTrue(summary.top >= chart.top && summary.bottom <= chart.bottom)
+        compose.onNodeWithContentDescription("2026年2月收支汇总").performClick()
+        compose.onNodeWithText("2026年2月账单").assertIsDisplayed()
+        compose.onNodeWithText("暂无交易记录").assertIsDisplayed()
+        compose.onNodeWithContentDescription("关闭交易明细").performClick()
     }
+    @Test fun summaryTogglesAndAutomaticallyDisappears() {
+        compose.setContent {
+            LedgerTheme { MonthlyCashflowCard(emptyMap(), YearMonth.of(2026, 2)) }
+        }
+        compose.mainClock.autoAdvance = false
+        compose.onNodeWithContentDescription("2026年2月").performClick()
+        compose.mainClock.advanceTimeBy(200)
+        compose.onNodeWithContentDescription("2026年2月收支汇总").assertIsDisplayed()
+        compose.onNodeWithContentDescription("2026年2月").performClick()
+        compose.mainClock.advanceTimeBy(200)
+        compose.onNodeWithContentDescription("2026年2月收支汇总").assertDoesNotExist()
+        compose.onNodeWithContentDescription("2026年2月").performClick()
+        compose.mainClock.advanceTimeBy(200)
+        compose.onNodeWithContentDescription("2026年2月收支汇总").assertIsDisplayed()
+        compose.mainClock.advanceTimeBy(2800)
+        compose.onNodeWithContentDescription("2026年2月收支汇总").assertIsDisplayed()
+        compose.mainClock.advanceTimeBy(2500)
+        compose.onNodeWithContentDescription("2026年2月收支汇总").assertDoesNotExist()
+    }
+
 }

@@ -11,11 +11,11 @@ import androidx.compose.ui.unit.sp
 import cn.turingzy.ledger.util.toFormattedAmount
 
 @Composable
-internal fun AnalyticsAmountText(amount: Long, modifier: Modifier = Modifier, textAlign: TextAlign = TextAlign.Start) {
+internal fun AnalyticsAmountText(amount: Long, modifier: Modifier = Modifier, textAlign: TextAlign = TextAlign.Start, fontSize: androidx.compose.ui.unit.TextUnit = 16.sp) {
     Text(
         amount.toFormattedAmount(showSymbol = true), modifier,
         style = MaterialTheme.typography.bodyLarge.copy(
-            fontSize = 16.sp, lineHeight = 18.sp, fontWeight = FontWeight.Normal,
+            fontSize = fontSize, lineHeight = 18.sp, fontWeight = FontWeight.Normal,
             color = MaterialTheme.colorScheme.onSurface, fontFeatureSettings = "tnum",
         ),
         textAlign = textAlign, maxLines = 1, overflow = TextOverflow.Ellipsis,

@@ -25,6 +25,9 @@ data class AnalyticsTransaction(
     val note: String,
     val accountName: String,
     val amount: Long,
+    val type: cn.turingzy.ledger.model.TransactionType = cn.turingzy.ledger.model.TransactionType.EXPENSE,
+    val category: cn.turingzy.ledger.model.CategoryWithIcon? = null,
+    val time: java.time.LocalTime? = null,
 )
 
 data class AnalyticsComparison(

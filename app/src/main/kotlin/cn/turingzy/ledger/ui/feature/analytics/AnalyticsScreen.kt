@@ -44,6 +44,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cn.turingzy.ledger.model.DateFilterType
 import cn.turingzy.ledger.ui.component.LedgerDatePickerDialog
 import cn.turingzy.ledger.ui.component.LedgerSegmentedControl
+import cn.turingzy.ledger.ui.component.TopBarIconButton
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.PeriodPickerSheet
 import java.time.LocalDate
@@ -56,6 +57,7 @@ fun AnalyticsScreen(
     modifier: Modifier = Modifier,
     viewModel: AnalyticsViewModel = hiltViewModel(),
     dashboardViewModel: AnalyticsDashboardViewModel = hiltViewModel(),
+    onOpenCalendar: (LocalDate) -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val dashboard by dashboardViewModel.uiState.collectAsStateWithLifecycle()
@@ -68,6 +70,7 @@ fun AnalyticsScreen(
         onCategoryTypeChange = viewModel::setCategoryType,
         modifier = modifier,
         dashboard = dashboard,
+        onOpenCalendar = onOpenCalendar,
     )
 }
 
@@ -81,70 +84,73 @@ fun AnalyticsContent(
     onSelectRange: (LocalDate, LocalDate) -> Unit = { _, _ -> },
     dashboard: AnalyticsDashboardState = AnalyticsDashboardState(),
     onCategoryTypeChange: (cn.turingzy.ledger.model.CategoryType) -> Unit = {},
+    onOpenCalendar: (LocalDate) -> Unit = {},
 ) {
     var showPeriodPicker by rememberSaveable { mutableStateOf(false) }
     var dateEndpoint by rememberSaveable { mutableStateOf<AnalyticsDateEndpoint?>(null) }
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        modifier = modifier.fillMaxSize().statusBarsPadding(),
-    ) { innerPadding ->
-        when (uiState) {
-            AnalyticsUiState.Loading -> Box(
-                Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center,
-            ) {
-                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-            }
-            is AnalyticsUiState.Success -> Column(
-                Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding()).verticalScroll(rememberScrollState())
-                    .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp + innerPadding.calculateBottomPadding() + LocalBottomBarContentPadding.current),
-                verticalArrangement = Arrangement.spacedBy(5.dp),
-            ) {
-                Box(Modifier.fillMaxWidth().height(44.dp), contentAlignment = Alignment.CenterStart) {
-                    Text(
-                        "分析", fontSize = 28.sp, fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface, letterSpacing = (-0.6).sp,
-                    )
-                    Box(Modifier.align(Alignment.CenterEnd).size(36.dp), contentAlignment = Alignment.Center) {
-                        Icon(MaterialSymbols.CalendarMonth, "日历", Modifier.size(24.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-                AnalyticsTimeScopeSelector(uiState.timeScope, onTimeScopeChange)
-                Row(
-                    Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(
-                        if (uiState.timeScope == AnalyticsTimeScope.ALL) 16.dp else 0.dp,
-                        Alignment.CenterHorizontally,
-                    ),
-                    verticalAlignment = Alignment.CenterVertically,
+    AnalyticsChartInteractionHost {
+        Scaffold(
+            containerColor = MaterialTheme.colorScheme.background,
+            modifier = modifier.fillMaxSize().statusBarsPadding(),
+        ) { innerPadding ->
+            when (uiState) {
+                AnalyticsUiState.Loading -> Box(
+                    Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center,
                 ) {
-                    if (uiState.timeScope == AnalyticsTimeScope.ALL) {
-                        AnalyticsRangeDate(
-                            uiState.periodStart, "选择分析开始日期", { dateEndpoint = AnalyticsDateEndpoint.START },
-                        )
-                        Text("～", fontSize = 17.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        AnalyticsRangeDate(
-                            uiState.periodEnd, "选择分析结束日期", { dateEndpoint = AnalyticsDateEndpoint.END },
-                        )
-                    } else {
-                        PeriodNavigationArrow(false, { onNavigatePeriod(-1) })
-                        Text(
-                            uiState.periodDisplay,
-                            Modifier.weight(1f).semantics { contentDescription = "选择分析日期" }
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = null,
-                                ) { showPeriodPicker = true }.padding(horizontal = 6.dp, vertical = 2.dp),
-                            fontSize = 17.sp, fontWeight = FontWeight.Normal,
-                            color = MaterialTheme.colorScheme.onSurface, maxLines = 1,
-                            overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,
-                        )
-                        PeriodNavigationArrow(true, { onNavigatePeriod(1) })
-                    }
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
-                if (dashboard.loading) {
-                    androidx.compose.material3.LinearProgressIndicator(Modifier.fillMaxWidth())
-                } else {
-                    AnalyticsDashboardCards(uiState, dashboard, onCategoryTypeChange)
+                is AnalyticsUiState.Success -> Column(
+                    Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding()).verticalScroll(rememberScrollState())
+                        .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp + innerPadding.calculateBottomPadding() + LocalBottomBarContentPadding.current),
+                    verticalArrangement = Arrangement.spacedBy(5.dp),
+                ) {
+                    Box(Modifier.fillMaxWidth().height(44.dp), contentAlignment = Alignment.CenterStart) {
+                        Text(
+                            "分析", fontSize = 28.sp, fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface, letterSpacing = (-0.6).sp,
+                        )
+                        TopBarIconButton(MaterialSymbols.CalendarMonth, "消费日历热力图",
+                            { onOpenCalendar(minOf(uiState.periodEnd, LocalDate.now())) },
+                            Modifier.align(Alignment.CenterEnd))
+                    }
+                    AnalyticsTimeScopeSelector(uiState.timeScope, onTimeScopeChange)
+                    Row(
+                        Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(
+                            if (uiState.timeScope == AnalyticsTimeScope.ALL) 16.dp else 0.dp,
+                            Alignment.CenterHorizontally,
+                        ),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        if (uiState.timeScope == AnalyticsTimeScope.ALL) {
+                            AnalyticsRangeDate(
+                                uiState.periodStart, "选择分析开始日期", { dateEndpoint = AnalyticsDateEndpoint.START },
+                            )
+                            Text("～", fontSize = 17.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            AnalyticsRangeDate(
+                                uiState.periodEnd, "选择分析结束日期", { dateEndpoint = AnalyticsDateEndpoint.END },
+                            )
+                        } else {
+                            PeriodNavigationArrow(false, { onNavigatePeriod(-1) })
+                            Text(
+                                uiState.periodDisplay,
+                                Modifier.weight(1f).semantics { contentDescription = "选择分析日期" }
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null,
+                                    ) { showPeriodPicker = true }.padding(horizontal = 6.dp, vertical = 2.dp),
+                                fontSize = 17.sp, fontWeight = FontWeight.Normal,
+                                color = MaterialTheme.colorScheme.onSurface, maxLines = 1,
+                                overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,
+                            )
+                            PeriodNavigationArrow(true, { onNavigatePeriod(1) })
+                        }
+                    }
+                    if (dashboard.loading) {
+                        androidx.compose.material3.LinearProgressIndicator(Modifier.fillMaxWidth())
+                    } else {
+                        AnalyticsDashboardCards(uiState, dashboard, onCategoryTypeChange)
+                    }
                 }
             }
         }

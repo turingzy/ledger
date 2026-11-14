@@ -41,7 +41,7 @@ internal fun AnalyticsStatisticsCard(state: AnalyticsUiState.Success, days: Map<
         border = BorderStroke(0.5.dp, colors.outlineVariant),
     ) {
         Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("收支统计", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Normal)
+            AnalyticsCardTitle("收支统计")
             Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 StatisticsMetric("支出", state.totalExpense, Modifier.weight(1f))
                 StatisticsMetric("收入", state.totalIncome, Modifier.weight(1f))
@@ -57,11 +57,11 @@ internal fun AnalyticsStatisticsCard(state: AnalyticsUiState.Success, days: Map<
 @Composable
 private fun StatisticsMetric(label: String, amount: Long, modifier: Modifier = Modifier, average: AnalyticsExpenseAverage? = null) {
     val colors = MaterialTheme.colorScheme
-    Surface(modifier.fillMaxHeight(), shape = RoundedCornerShape(14.dp), color = colors.surfaceVariant.copy(alpha = 0.6f)) {
+    Surface(modifier.fillMaxHeight(), shape = RoundedCornerShape(14.dp), color = analyticsChartInfoColor()) {
         Column(Modifier.padding(horizontal = 8.dp, vertical = 5.dp), verticalArrangement = Arrangement.spacedBy(1.dp)) {
             Text(label, fontSize = 11.sp, lineHeight = 14.sp, color = colors.onSurfaceVariant)
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                AnalyticsAmountText(amount, Modifier.weight(1f))
+                AnalyticsAmountText(amount, Modifier.weight(1f), fontSize = 14.sp)
                 average?.takeIf { it.direction != 0 }?.let {
                     val color = if (it.direction > 0) colors.error else colors.tertiary
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {

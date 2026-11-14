@@ -13,6 +13,9 @@ sealed interface Route {
     data object Analytics : Route
 
     @Serializable
+    data class ConsumptionCalendar(val month: String) : Route
+
+    @Serializable
     data object Wallet : Route
 
     @Serializable
