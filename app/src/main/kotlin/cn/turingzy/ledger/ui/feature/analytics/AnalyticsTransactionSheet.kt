@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cn.turingzy.ledger.model.TransactionType
 import cn.turingzy.ledger.ui.component.LedgerIconButton
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.TransactionRow
@@ -32,6 +33,7 @@ internal fun AnalyticsTransactionSheet(
     transactions: List<AnalyticsTransaction>,
     onDismiss: () -> Unit,
     groupByDate: Boolean = true,
+    summaryType: TransactionType? = null,
 ) {
     val height = LocalConfiguration.current.screenHeightDp.dp * 2 / 3
     val colors = MaterialTheme.colorScheme
@@ -58,14 +60,20 @@ internal fun AnalyticsTransactionSheet(
                 }
             }
             HorizontalDivider(color = colors.outlineVariant, thickness = 0.5.dp)
-            Text(subtitle, Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(subtitle, Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                AnalyticsTransactionTotals(transactions, summaryType)
+            }
             if (transactions.isEmpty()) Text("暂无交易记录", Modifier.padding(16.dp), color = colors.onSurfaceVariant)
             else LazyColumn(Modifier.fillMaxWidth().weight(1f), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 12.dp)) {
                 groups.forEach { (date, entries) ->
                     if (date != null) item(key = "date:$date") {
-                        Text(date.format(dateFormatter), Modifier.padding(start = 4.dp, top = 8.dp, bottom = 7.dp),
-                            fontSize = 13.sp, lineHeight = 18.sp, color = colors.onSurfaceVariant)
+                        Row(Modifier.fillMaxWidth().padding(start = 4.dp, top = 8.dp, bottom = 7.dp),
+                            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text(date.format(dateFormatter), Modifier.weight(1f), fontSize = 13.sp, lineHeight = 18.sp, color = colors.onSurfaceVariant)
+                            AnalyticsTransactionTotals(entries, summaryType)
+                        }
                     }
                     itemsIndexed(entries, key = { _, entry -> entry.id }) { index, entry ->
                         val categoryName = entry.category?.category?.name ?: entry.note
@@ -91,5 +99,19 @@ internal fun AnalyticsTransactionSheet(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun AnalyticsTransactionTotals(transactions: List<AnalyticsTransaction>, summaryType: TransactionType?) {
+    val expense = remember(transactions) { transactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount } }
+    val income = remember(transactions) { transactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amount } }
+    val showExpense = summaryType == TransactionType.EXPENSE || (summaryType == null && (expense > 0L || income == 0L))
+    val showIncome = summaryType == TransactionType.INCOME || (summaryType == null && income > 0L)
+    Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        if (showExpense) Text("总支出 ${expense.toFormattedAmount(true)}", fontSize = 12.sp, lineHeight = 16.sp,
+            color = MaterialTheme.colorScheme.onSurface)
+        if (showIncome) Text("总收入 ${income.toFormattedAmount(true)}", fontSize = 12.sp, lineHeight = 16.sp,
+            color = MaterialTheme.colorScheme.onSurface)
     }
 }

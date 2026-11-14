@@ -17,6 +17,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.constrainHeight
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.Rect
@@ -27,6 +30,7 @@ import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
@@ -48,7 +52,7 @@ internal fun AnalyticsCategoryShareCard(
 ) {
     val colors = MaterialTheme.colorScheme
     val income = state.categoryType == CategoryType.INCOME
-    val rankings = state.rankings
+    val rankings = remember(state.rankings) { state.rankings.sortedByDescending { it.totalAmount } }
     val total = rankings.sumOf { it.totalAmount }
     val periodTotal = if (income) state.totalIncome else state.totalExpense
     val palette = remember(rankings.size, colors.tertiary, colors.surface, colors.onSurfaceVariant) { categoryShareColors(rankings.size, colors.tertiary, colors.surface, colors.onSurfaceVariant) }
@@ -96,29 +100,24 @@ internal fun AnalyticsCategoryShareCard(
             }
             if (rankings.isEmpty()) {
                 Text(if (income) "暂无收入记录" else "暂无支出记录", Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
-            } else Column(
-                Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
+            } else CategoryLegendLayout(Modifier.fillMaxWidth()) {
                 rankings.forEachIndexed { index, item ->
                     key(item.categoryId) {
-                        Row(Modifier.fillMaxWidth().semantics { selected = sheetId == item.categoryId }
+                        Row(Modifier.semantics { selected = sheetId == item.categoryId }
                             .clip(RoundedCornerShape(14.dp))
                             .background(if (sheetId == item.categoryId) colors.primary.copy(alpha = 0.08f) else Color.Transparent)
                             .clickable { sheetId = item.categoryId }
-                            .padding(horizontal = 6.dp, vertical = 3.dp),
-                            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            .padding(vertical = 3.dp),
+                            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp),
                         ) {
                             Box(Modifier.size(8.dp).background(palette[index], CircleShape))
                             Text(buildAnnotatedString {
-                                append(item.categoryName)
+                                withStyle(SpanStyle(fontWeight = FontWeight.Medium)) { append(item.categoryName) }
                                 append(" ")
                                 withStyle(SpanStyle(color = colors.onSurfaceVariant, fontSize = 12.sp)) {
                                     append(categorySharePercentage(item.totalAmount, total))
                                 }
-                            }, Modifier.weight(1f), fontSize = 13.sp, lineHeight = 18.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Text(item.totalAmount.toFormattedAmount(true), Modifier.widthIn(min = 60.dp, max = 88.dp),
-                                fontSize = 13.sp, lineHeight = 18.sp, textAlign = TextAlign.End, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }, fontSize = 13.sp, lineHeight = 18.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }
                 }
@@ -127,7 +126,35 @@ internal fun AnalyticsCategoryShareCard(
     }
     rankings.firstOrNull { it.categoryId == sheetId }?.let { category ->
         AnalyticsTransactionSheet(category.categoryName, "${state.periodStart} 至 ${state.periodEnd}",
-            category.transactions, { sheetId = null }, groupByDate = false)
+            category.transactions, { sheetId = null }, groupByDate = false,
+            summaryType = if (income) cn.turingzy.ledger.model.TransactionType.INCOME else cn.turingzy.ledger.model.TransactionType.EXPENSE)
+    }
+}
+
+@Composable
+private fun CategoryLegendLayout(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    Layout(content = content, modifier = modifier) { measurables, constraints ->
+        val horizontalSpacing = 16.dp.roundToPx()
+        val verticalSpacing = 4.dp.roundToPx()
+        val itemConstraints = constraints.copy(minWidth = 0, minHeight = 0)
+        var x = 0
+        var y = 0
+        var rowHeight = 0
+        val items = measurables.map { measurable ->
+            val placeable = measurable.measure(itemConstraints)
+            if (x > 0 && x + placeable.width > constraints.maxWidth) {
+                x = 0
+                y += rowHeight + verticalSpacing
+                rowHeight = 0
+            }
+            val position = IntOffset(x, y)
+            x += placeable.width + horizontalSpacing
+            rowHeight = maxOf(rowHeight, placeable.height)
+            placeable to position
+        }
+        layout(constraints.maxWidth, constraints.constrainHeight(y + rowHeight)) {
+            items.forEach { (placeable, position) -> placeable.placeRelative(position.x, position.y) }
+        }
     }
 }
 

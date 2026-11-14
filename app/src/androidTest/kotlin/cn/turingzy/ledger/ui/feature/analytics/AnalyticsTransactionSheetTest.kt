@@ -56,6 +56,21 @@ class AnalyticsTransactionSheetTest {
         assertTrue(largest.top < middle.top && middle.top < smallest.top)
         compose.onNodeWithText("11/01", substring = true).assertDoesNotExist()
         compose.onNodeWithText("11.01").assertIsDisplayed()
+        compose.onNodeWithText("总支出 ¥6.00").assertIsDisplayed()
+    }
+
+    @Test fun mixedMonthlyTransactionsShowSeparateExpenseAndIncomeTotals() {
+        val date = LocalDate.of(2026, 11, 1)
+        val entries = listOf(
+            AnalyticsTransaction(1L, date, "餐饮", "现金", 12345L),
+            AnalyticsTransaction(2L, date.plusDays(1), "工资", "银行卡", 67890L,
+                type = cn.turingzy.ledger.model.TransactionType.INCOME),
+        )
+        compose.setContent { LedgerTheme {
+            AnalyticsTransactionSheet("11月账单", "2026-11-01 至 2026-11-30", entries, {}, groupByDate = false)
+        } }
+        compose.onNodeWithText("总支出 ¥123.45").assertIsDisplayed()
+        compose.onNodeWithText("总收入 ¥678.90").assertIsDisplayed()
     }
 
 }
