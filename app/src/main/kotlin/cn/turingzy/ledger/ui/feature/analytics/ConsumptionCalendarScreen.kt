@@ -94,7 +94,7 @@ internal fun ConsumptionCalendarContent(
                             border = BorderStroke(0.5.dp, colors.outlineVariant)) {
                             Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                    Text("${month.year}年${month.monthValue}月", Modifier.weight(1f).clip(RoundedCornerShape(10.dp))
+                                    Text("${month.year}年${month.monthValue}月", Modifier.clip(RoundedCornerShape(10.dp))
                                         .clickable { showPicker = true }.padding(vertical = 6.dp),
                                         fontSize = 17.sp, textAlign = TextAlign.Start)
                                     Text(buildAnnotatedString {

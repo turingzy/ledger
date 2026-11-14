@@ -61,4 +61,14 @@ class AnalyticsMonthlyCashflowCardTest {
         compose.onNodeWithContentDescription("2026年2月收支汇总").assertDoesNotExist()
     }
 
+    @Test fun scrollingToBothEdgesShowsTheFirstAndLastMonthSummary() {
+        compose.setContent { LedgerTheme {
+            MonthlyCashflowCard(mapOf(LocalDate.of(2025, 1, 1) to AnalyticsDay(100L)), YearMonth.of(2025, 12))
+        } }
+        repeat(3) { compose.onNodeWithTag("monthlyCashflowViewport").performTouchInput { swipeRight() } }
+        compose.onNodeWithContentDescription("2025年1月收支汇总").assertIsDisplayed()
+        repeat(3) { compose.onNodeWithTag("monthlyCashflowViewport").performTouchInput { swipeLeft() } }
+        compose.onNodeWithContentDescription("2025年12月收支汇总").assertIsDisplayed()
+    }
+
 }

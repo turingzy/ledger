@@ -2,9 +2,11 @@ package cn.turingzy.ledger.ui.feature.analytics
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.animation.core.animateFloatAsState
 import cn.turingzy.ledger.util.toFormattedAmount
 import androidx.compose.foundation.Canvas
@@ -32,6 +34,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.math.BigDecimal
 import java.math.RoundingMode
+import kotlin.math.roundToInt
 
 @Composable
 internal fun MonthlyCashflowCard(days: Map<LocalDate, AnalyticsDay>, month: YearMonth, modifier: Modifier = Modifier, transactions: List<AnalyticsTransaction> = emptyList()) {
@@ -87,6 +90,7 @@ private fun MonthlyCashflow(days: Map<LocalDate, AnalyticsDay>, month: YearMonth
     }
     LaunchedEffect(months.size, month) { scroll.scrollTo(scroll.maxValue) }
     BoxWithConstraints(Modifier.fillMaxWidth()
+        .testTag("monthlyCashflowViewport")
         .chartSelectionBoundary { selectedMonth = null }
         .pointerInput(Unit) { detectTapGestures { selectedMonth = null } },
     ) {
@@ -95,11 +99,14 @@ private fun MonthlyCashflow(days: Map<LocalDate, AnalyticsDay>, month: YearMonth
         val slotPx = with(LocalDensity.current) { slot.toPx() }
         val viewportPx = with(LocalDensity.current) { maxWidth.toPx() }
         LaunchedEffect(scroll, slotPx, months) {
-            snapshotFlow { scroll.value to scroll.isScrollInProgress }.collect { (offset, moving) ->
-                if (moving) {
-                    val index = ((offset + viewportPx / 2) / slotPx).toInt().coerceIn(months.indices)
-                    selectedMonth = months[index].month
+            var wasMoving = false
+            snapshotFlow { Triple(scroll.value, scroll.isScrollInProgress, scroll.maxValue) }.collect { (offset, moving, maximumOffset) ->
+                if (moving || wasMoving) {
+                    monthlyCashflowFocusIndex(offset, maximumOffset, viewportPx, slotPx, months.size)?.let { index ->
+                        selectedMonth = months[index].month
+                    }
                 }
+                wasMoving = moving
             }
         }
         Box {
@@ -145,12 +152,18 @@ private fun MonthlyCashflow(days: Map<LocalDate, AnalyticsDay>, month: YearMonth
                 }
                 Row {
                     months.forEachIndexed { index, item ->
-                        Column(
-                            Modifier.width(slot).height(36.dp).clickable { selectedMonth = item.month.takeUnless { it == selectedMonth } }.semantics { contentDescription = "${item.month.year}年${item.month.monthValue}月"; this.selected = selectedMonth == item.month },
-                            horizontalAlignment = Alignment.CenterHorizontally,
+                        Box(
+                            Modifier.width(slot).height(24.dp).clickable(
+                                interactionSource = remember { MutableInteractionSource() }, indication = null,
+                            ) { selectedMonth = item.month.takeUnless { it == selectedMonth } }
+                                .semantics { contentDescription = "${item.month.year}年${item.month.monthValue}月"; this.selected = selectedMonth == item.month }
+                                .padding(top = 5.dp),
+                            contentAlignment = Alignment.TopCenter,
                         ) {
-                            Text("${item.month.monthValue}月", fontSize = 12.sp, lineHeight = 16.sp, color = colors.onSurface)
-                            if (index == 0 || item.month.monthValue == 1) Text(item.month.year.toString(), fontSize = 12.sp, lineHeight = 14.sp, color = colors.onSurfaceVariant)
+                            Text(
+                                if (index == 0 || item.month.monthValue == 1) "${item.month.year}.${item.month.monthValue}" else "${item.month.monthValue}月",
+                                fontSize = 10.sp, lineHeight = 12.sp, color = colors.onSurfaceVariant, maxLines = 1,
+                            )
                         }
                     }
                 }
@@ -175,6 +188,14 @@ private fun MonthlyCashflow(days: Map<LocalDate, AnalyticsDay>, month: YearMonth
             }
         }
     }
+}
+
+internal fun monthlyCashflowFocusIndex(offset: Int, maximumOffset: Int, viewportWidth: Float, slotWidth: Float, monthCount: Int): Int? {
+    if (slotWidth <= 0f || monthCount <= 0) return null
+    if (maximumOffset > 0) {
+        return (offset.coerceIn(0, maximumOffset).toFloat() / maximumOffset * (monthCount - 1)).roundToInt()
+    }
+    return ((offset + viewportWidth / 2) / slotWidth).toInt().coerceIn(0, monthCount - 1)
 }
 
 @Composable
