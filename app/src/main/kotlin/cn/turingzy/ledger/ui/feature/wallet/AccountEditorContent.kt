@@ -92,25 +92,13 @@ internal fun AccountEditorContent(
         }
         AccountFormTextField(
             label = "账户名称", value = name, onValueChange = { name = it },
-            placeholder = "例如：工资卡",
+            placeholder = "工资卡",
         )
         AccountFormDropdown(
             label = "账户类型", value = type.displayName(), options = AccountType.entries,
             optionLabel = { it.displayName() }, onSelect = { type = it },
         )
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            if (account == null) {
-                AccountFormDropdown(
-                    label = "币种", value = currency, options = currencies,
-                    optionLabel = { it }, onSelect = { currency = it }, modifier = Modifier.weight(0.8f),
-                    alignMenuToStart = true,
-                )
-            } else {
-                AccountFormTextField(
-                    label = "币种", value = account.currency, onValueChange = {}, readOnly = true,
-                    modifier = Modifier.weight(0.8f),
-                )
-            }
             AccountFormTextField(
                 label = if (type == AccountType.CREDIT) "初始欠款" else "初始余额",
                 value = balance, onValueChange = { balance = it }, placeholder = "0.00",
@@ -118,6 +106,18 @@ internal fun AccountEditorContent(
                 readOnly = account != null, keyboardType = KeyboardType.Decimal,
                 modifier = Modifier.weight(1.2f),
             )
+            if (account == null) {
+                AccountFormDropdown(
+                    label = "币种", value = currency, options = currencies,
+                    optionLabel = { it }, onSelect = { currency = it }, modifier = Modifier.weight(0.8f),
+                    alignMenuToStart = false,
+                )
+            } else {
+                AccountFormTextField(
+                    label = "币种", value = account.currency, onValueChange = {}, readOnly = true,
+                    modifier = Modifier.weight(0.8f),
+                )
+            }
         }
         if (account != null) {
             AccountFormTextField(

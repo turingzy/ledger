@@ -244,6 +244,6 @@ private fun BankCardDeck(
 @Composable
 private fun EmptyCardDeck(modifier: Modifier = Modifier) {
     Box(modifier.fillMaxWidth().aspectRatio(BankCardAspectRatio), contentAlignment = Alignment.Center) {
-        Text("暂无卡片，点击右上角 '+' 添加", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text("暂无账户", color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
