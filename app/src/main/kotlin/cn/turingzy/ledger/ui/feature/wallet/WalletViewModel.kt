@@ -3,6 +3,7 @@ package cn.turingzy.ledger.ui.feature.wallet
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cn.turingzy.ledger.data.repository.CardTemplateRepository
+import cn.turingzy.ledger.data.repository.TransactionRepository
 import cn.turingzy.ledger.data.repository.AccountRepository
 import cn.turingzy.ledger.model.Account
 import cn.turingzy.ledger.util.Dispatcher
@@ -13,6 +14,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -22,6 +24,7 @@ class WalletViewModel @Inject constructor(
     private val accountRepository: AccountRepository,
     private val cardTemplateRepository: CardTemplateRepository,
     @Dispatcher(LedgerDispatchers.Default) private val defaultDispatcher: CoroutineDispatcher,
+    private val transactionRepository: TransactionRepository,
 ) : ViewModel() {
 
     init {
@@ -31,18 +34,21 @@ class WalletViewModel @Inject constructor(
     }
 
     val uiState: StateFlow<WalletUiState> = combine(
-        accountRepository.getTotalAsset(),
-        accountRepository.getTotalCreditDebt(),
         accountRepository.getAccountsStream(),
         cardTemplateRepository.getTemplatesStream(),
-    ) { totalAsset, totalDebt, accounts, templates ->
+        transactionRepository.getTransactionsBetween(Long.MIN_VALUE, Long.MAX_VALUE),
+    ) { accounts, templates, transactions ->
+        val totals = walletCurrencyTotals(accounts, transactions)
+        val primary = totals.first()
+
         WalletUiState.Success(
-            totalAsset = totalAsset,
-            totalDebt = totalDebt,
+            totalAsset = primary.assets,
+            totalDebt = primary.creditBalance,
+            currencyTotals = totals,
             accounts = accounts,
             templates = templates,
         )
-    }.stateIn(
+    }.flowOn(defaultDispatcher).stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = WalletUiState.Loading,

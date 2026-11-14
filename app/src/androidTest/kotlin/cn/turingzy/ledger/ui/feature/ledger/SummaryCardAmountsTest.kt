@@ -26,7 +26,7 @@ class SummaryCardAmountsTest {
     @Test
     fun walletHidesAllAmountsAndKeepsThemHiddenAfterCardSettings() {
         assertAmountsToggle("总资产") {
-            WalletHeroCard(totalAsset = 12345L, totalDebt = 456L)
+            WalletHeroCard(totalAsset = 12345L, totalExpense = 456L, totalIncome = 12801L)
         }
     }
 

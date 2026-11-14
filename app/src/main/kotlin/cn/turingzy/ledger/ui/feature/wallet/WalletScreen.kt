@@ -1,5 +1,9 @@
 package cn.turingzy.ledger.ui.feature.wallet
 
+import cn.turingzy.ledger.ui.component.LedgerDropdown
+import cn.turingzy.ledger.ui.component.accountCardColors
+import cn.turingzy.ledger.ui.component.AccountCardBackground
+
 import cn.turingzy.ledger.ui.component.PressFeedback
 import cn.turingzy.ledger.ui.component.TopBarIconButton
 import cn.turingzy.ledger.ui.component.MaterialSymbols
@@ -256,6 +260,9 @@ fun WalletContent(
 
             is WalletUiState.Success -> {
                 val accounts = uiState.accounts
+                var selectedCurrency by rememberSaveable { mutableStateOf("CNY") }
+                val currencyTotals = uiState.currencyTotals.ifEmpty { listOf(WalletCurrencyTotals("CNY", assets = uiState.totalAsset)) }
+                val totals = currencyTotals.firstOrNull { it.currency == selectedCurrency } ?: currencyTotals.first()
                 var isListView by rememberSaveable { mutableStateOf(false) }
                 var selectedAccountId by rememberSaveable { mutableStateOf<Long?>(null) }
 
@@ -300,9 +307,23 @@ fun WalletContent(
                                 }
                             }
 
+                            if (currencyTotals.size > 1) LedgerDropdown(
+                                options = currencyTotals,
+                                optionLabel = { it.currency },
+                                isSelected = { it.currency == totals.currency },
+                                onSelect = { selectedCurrency = it.currency },
+                                menuTestTag = "walletCurrencyOptions",
+                            ) { anchorModifier, _, onToggle ->
+                                Row(anchorModifier.clickable(onClick = onToggle).padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Text(totals.currency, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Icon(MaterialSymbols.ArrowDropDown, "选择资产币种", Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
                             WalletHeroCard(
-                                totalAsset = uiState.totalAsset,
-                                totalDebt = uiState.totalDebt,
+                                totalAsset = totals.assets,
+                                totalExpense = totals.expense,
+                                totalIncome = totals.income,
+                                currency = totals.currency,
                                 appearance = cardAppearance,
                                 background = cardBackground,
                                 settingsEnabled = cardSettingsEnabled,
@@ -361,13 +382,15 @@ fun WalletContent(
 @Composable
 fun WalletHeroCard(
     totalAsset: Long,
-    totalDebt: Long,
+    totalExpense: Long,
+    totalIncome: Long,
     modifier: Modifier = Modifier,
     appearance: LedgerCardAppearance = LedgerCardAppearance(),
     background: ImageBitmap? = null,
     settingsEnabled: Boolean = true,
     onUploadBackground: () -> Unit = {},
     onTransparencyChange: (Int) -> Unit = {},
+    currency: String = "CNY",
 ) {
     var amountsHidden by rememberSaveable { mutableStateOf(false) }
     SummaryCard(
@@ -384,25 +407,15 @@ fun WalletHeroCard(
             amount = totalAsset,
             amountsHidden = amountsHidden,
             onToggleAmounts = { amountsHidden = !amountsHidden },
-            leftAmount = totalDebt,
-            rightAmount = totalAsset + totalDebt,
+            leftAmount = totalExpense,
+            rightAmount = totalIncome,
+            currency = currency,
             leftLabel = "总支出",
             rightLabel = "总收入",
         )
     }
 }
 
-internal fun accountCardColors(account: Account): List<Color> {
-    val isCenturion = account.templateId == 2L || account.name.contains("百夫长") || account.name.contains("运通")
-    return when {
-        isCenturion -> listOf(Color(0xFF0D0E11), Color(0xFF141519), Color(0xFF08080A))
-        account.templateId == 1L -> listOf(Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)) // 经典深蓝
-        account.templateId == 3L -> listOf(Color(0xFF075E37), Color(0xFF03361E)) // 翡翠绿 (微信/活力薄荷)
-        account.type == AccountType.CREDIT -> listOf(Color(0xFF2D143D), Color(0xFF1A0D26)) // 尊贵紫 (白金信用卡)
-        account.type == AccountType.WALLET && account.name.contains("支付宝") -> listOf(Color(0xFF0A438C), Color(0xFF052148)) // 皇家科技蓝
-        else -> listOf(Color(0xFF1C1C1E), Color(0xFF121214)) // 黑曜金 (金葵花/储蓄卡)
-    }
-}
 
 @Composable
 fun BankCardItem(
@@ -419,7 +432,6 @@ fun BankCardItem(
     val cardGradients = accountCardColors(account)
     val textColor = template?.takeUnless { it.isDeleted }?.textColor?.cardFaceTextColor(MaterialTheme.colorScheme.onPrimary)
         ?: MaterialTheme.colorScheme.onPrimary
-    val cover = template?.takeUnless { it.isDeleted }?.coverUri?.let(android.net.Uri::parse)
 
     Card(
         modifier = modifier
@@ -443,15 +455,7 @@ fun BankCardItem(
                 .fillMaxSize()
                 .background(Brush.linearGradient(cardGradients)),
         ) {
-            if (cover?.scheme in setOf("content", "file", "android.resource")) {
-                androidx.compose.ui.viewinterop.AndroidView(
-                    factory = { context -> android.widget.ImageView(context).apply { scaleType = android.widget.ImageView.ScaleType.CENTER_CROP } },
-                    update = { image ->
-                        if (image.tag != cover) { image.setImageURI(cover); image.tag = cover }
-                    },
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
+            AccountCardBackground(account, template, Modifier.fillMaxSize())
             if (!showDetails) {
                 if (showBackPlaceholder) Box(Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) { BankCardBackPlaceholder() }
                 return@Box

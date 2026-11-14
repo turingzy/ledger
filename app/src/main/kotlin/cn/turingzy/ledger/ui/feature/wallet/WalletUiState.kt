@@ -10,6 +10,7 @@ sealed interface WalletUiState {
         val totalAsset: Long,
         val totalDebt: Long,
         val accounts: List<AccountWithTemplate>,
+        val currencyTotals: List<WalletCurrencyTotals> = emptyList(),
         val templates: List<CardTemplate> = emptyList(),
     ) : WalletUiState
 }

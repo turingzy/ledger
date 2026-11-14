@@ -1,11 +1,12 @@
 package cn.turingzy.ledger.ui.feature.settings
 
+import cn.turingzy.ledger.ui.component.AccountCardBackground
+import cn.turingzy.ledger.model.Account
+import cn.turingzy.ledger.model.AccountType
 import android.net.Uri
-import android.widget.ImageView
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -44,19 +45,15 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import cn.turingzy.ledger.navigation.SettingsSubpageTransition
 import cn.turingzy.ledger.ui.theme.SurfaceLight
 import cn.turingzy.ledger.ui.theme.IosLabel
-import cn.turingzy.ledger.R
 import cn.turingzy.ledger.model.CardTemplate
 import cn.turingzy.ledger.ui.component.BankCardAspectRatio
 import cn.turingzy.ledger.ui.component.CardPageIndicator
@@ -256,18 +253,11 @@ private fun TemplateCoverPreview(
         contentAlignment = Alignment.Center,
     ) {
         if (placeholder) Icon(MaterialSymbols.AddPhotoAlternate, "选择卡面图片", Modifier.size(40.dp), tint = IosLabel)
-        if (Uri.parse(template.coverUri).scheme in setOf("content", "file")) {
-            AndroidView(
-                factory = { context -> ImageView(context).apply { scaleType = ImageView.ScaleType.CENTER_CROP } },
-                update = { it.setImageURI(Uri.parse(template.coverUri)) },
-                modifier = Modifier.fillMaxSize(),
-            )
-        } else if (template.coverUri.isNotBlank()) {
-            Image(
-                painterResource(R.drawable.bg_wallet_card), null, Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-            )
-        }
+        if (!placeholder) AccountCardBackground(
+            account = Account(name = "", type = AccountType.DEBIT, templateId = template.id),
+            template = template,
+            modifier = Modifier.fillMaxSize(),
+        )
         if (template.name.isNotBlank()) Text(
             template.name,
             modifier = Modifier.align(Alignment.TopStart).padding(16.dp),

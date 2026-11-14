@@ -1,7 +1,7 @@
 package cn.turingzy.ledger.ui.feature.wallet
 
-import android.net.Uri
-import android.widget.ImageView
+import cn.turingzy.ledger.ui.component.accountCardColors
+import cn.turingzy.ledger.ui.component.AccountCardBackground
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,7 +28,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import cn.turingzy.ledger.model.Account
 import cn.turingzy.ledger.model.AccountType
@@ -72,23 +71,11 @@ internal fun AccountCardFaceDialog(
                     val face = faces[Math.floorMod(page, faces.size)]
                     val account = Account(name = accountName, type = accountType, templateId = face?.id)
                     val textColor = face?.textColor?.cardFaceTextColor(colors.onPrimary) ?: colors.onPrimary
-                    val cover = face?.coverUri?.let(Uri::parse)
                     Box(
                         Modifier.fillMaxWidth().aspectRatio(BankCardAspectRatio).clip(RoundedCornerShape(16.dp))
                             .background(Brush.linearGradient(accountCardColors(account))),
                     ) {
-                        if (cover?.scheme in setOf("content", "file", "android.resource")) {
-                            AndroidView(
-                                factory = { context -> ImageView(context).apply { scaleType = ImageView.ScaleType.CENTER_CROP } },
-                                update = { image ->
-                                    if (image.tag != cover) {
-                                        image.setImageURI(cover)
-                                        image.tag = cover
-                                    }
-                                },
-                                modifier = Modifier.fillMaxSize(),
-                            )
-                        }
+                        AccountCardBackground(account, face, Modifier.fillMaxSize())
                         Text(
                             accountName.ifBlank { "账户名称" },
                             Modifier.align(Alignment.TopStart).padding(16.dp),

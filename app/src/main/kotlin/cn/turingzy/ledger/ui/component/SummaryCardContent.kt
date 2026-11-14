@@ -34,7 +34,9 @@ fun SummaryCardContent(
     modifier: Modifier = Modifier,
     leftLabel: String = "支出",
     rightLabel: String = "收入",
+    currency: String = "CNY",
 ) {
+    val currencySymbol = if (currency == "CNY") "¥" else "$currency "
     val visibilityIconSize = with(LocalDensity.current) { 15.sp.toDp() }
     Box(modifier.fillMaxSize()) {
         Column(
@@ -67,7 +69,7 @@ fun SummaryCardContent(
             }
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = if (amountsHidden) "****" else amount.toFormattedAmount(showSymbol = true, useGrouping = true),
+                text = if (amountsHidden) "****" else amount.toFormattedAmount(showSymbol = true, symbol = currencySymbol, useGrouping = true),
                 fontSize = 26.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimary,
@@ -114,7 +116,7 @@ fun SummaryCardContent(
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = if (amountsHidden) "****" else leftAmount.toFormattedAmount(showSymbol = true, useGrouping = true),
+                        text = if (amountsHidden) "****" else leftAmount.toFormattedAmount(showSymbol = true, symbol = currencySymbol, useGrouping = true),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.error,
@@ -147,7 +149,7 @@ fun SummaryCardContent(
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = if (amountsHidden) "****" else rightAmount.toFormattedAmount(showSymbol = true, useGrouping = true),
+                        text = if (amountsHidden) "****" else rightAmount.toFormattedAmount(showSymbol = true, symbol = currencySymbol, useGrouping = true),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.tertiary,
