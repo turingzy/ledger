@@ -41,4 +41,11 @@ class BillImportPlannerTest {
         assertThrows(IllegalArgumentException::class.java) { BillImportPlanner.plan(listOf(header + "金额", row("支出")), rule, 1, accounts, categories) }
         assertThrows(IllegalArgumentException::class.java) { plan(listOf(row("不计收支"))) }
     }
+    @Test fun sourceIdsAreReadAndSurviveExportRoundTrips() {
+        val external = BillImportPlanner.plan(listOf(header + "交易号", row("支出") + "abc123"), rule, null, accounts, categories).single()
+        assertEquals("交易号:abc123", external.importKey)
+        val exported = BillImportPlanner.plan(listOf(header + "来源交易号", row("支出") + external.importKey.orEmpty()), rule, null, accounts, categories).single()
+        assertEquals(external.importKey, exported.importKey)
+    }
+
 }

@@ -1,5 +1,8 @@
 package cn.turingzy.ledger.ui.feature.ledger
 
+import cn.turingzy.ledger.data.repository.CurrencyRepository
+import cn.turingzy.ledger.data.repository.CurrencySelection
+import io.mockk.every
 import cn.turingzy.ledger.model.DateFilterType
 import app.cash.turbine.test
 import cn.turingzy.ledger.data.repository.AccountRepository
@@ -43,12 +46,15 @@ class LedgerViewModelTest {
     private val transactionRepository: TransactionRepository = mockk(relaxed = true)
     private val categoryRepository: CategoryRepository = mockk(relaxed = true)
     private val accountRepository: AccountRepository = mockk(relaxed = true)
+    private val currencies: CurrencyRepository = mockk()
+    private val currencySelection = kotlinx.coroutines.flow.MutableStateFlow(CurrencySelection())
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var viewModel: LedgerViewModel
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
+        every { currencies.selection } returns currencySelection
     }
 
     @After
@@ -62,12 +68,12 @@ class LedgerViewModelTest {
         var collectionDispatcher: ContinuationInterceptor? = null
         coEvery { categoryRepository.getCategoriesStream() } returns flowOf(emptyList())
         coEvery { accountRepository.getAccountsStream() } returns flowOf(emptyList())
-        coEvery { transactionRepository.getAmountSum(any(), any(), any()) } returns flowOf(0L)
-        coEvery { transactionRepository.getTransactionsBetween(any(), any()) } returns flow {
+        coEvery { transactionRepository.getAmountSum(any(), any(), any(), "CNY") } returns flowOf(0L)
+        coEvery { transactionRepository.getTransactionsBetween(any(), any(), "CNY") } returns flow {
             collectionDispatcher = currentCoroutineContext()[ContinuationInterceptor]
             emit(emptyList())
         }
-        viewModel = LedgerViewModel(transactionRepository, categoryRepository, accountRepository, worker)
+        viewModel = LedgerViewModel(transactionRepository, categoryRepository, accountRepository, worker, currencies)
 
         viewModel.uiState.test {
             assertEquals(LedgerUiState.Loading, awaitItem())
@@ -99,15 +105,16 @@ class LedgerViewModelTest {
 
         coEvery { categoryRepository.getCategoriesStream() } returns flowOf(emptyList())
         coEvery { accountRepository.getAccountsStream() } returns flowOf(emptyList())
-        coEvery { transactionRepository.getAmountSum(TransactionType.INCOME, any(), any()) } returns flowOf(0L)
-        coEvery { transactionRepository.getAmountSum(TransactionType.EXPENSE, any(), any()) } returns flowOf(4500L)
-        coEvery { transactionRepository.getTransactionsBetween(any(), any()) } returns flowOf(listOf(testTx))
+        coEvery { transactionRepository.getAmountSum(TransactionType.INCOME, any(), any(), "CNY") } returns flowOf(0L)
+        coEvery { transactionRepository.getAmountSum(TransactionType.EXPENSE, any(), any(), "CNY") } returns flowOf(4500L)
+        coEvery { transactionRepository.getTransactionsBetween(any(), any(), "CNY") } returns flowOf(listOf(testTx))
 
         viewModel = LedgerViewModel(
             transactionRepository = transactionRepository,
             categoryRepository = categoryRepository,
             accountRepository = accountRepository,
             defaultDispatcher = testDispatcher,
+            currencies = currencies,
         )
 
         viewModel.uiState.test {
@@ -125,7 +132,7 @@ class LedgerViewModelTest {
             assertEquals(DateFilterType.MONTH, success.filterType)
             assertEquals(month.atDay(1), success.filterStartDate)
             assertEquals(month.atEndOfMonth(), success.filterEndDate)
-            coVerify { transactionRepository.getTransactionsBetween(start, end) }
+            coVerify { transactionRepository.getTransactionsBetween(start, end, "CNY") }
             assertEquals(4500L, success.monthExpense)
             assertEquals(-4500L, success.monthBalance)
             assertEquals(1, success.dayGroups.size)
@@ -138,14 +145,15 @@ class LedgerViewModelTest {
     fun createTransaction_delegatesToRepository() = runTest {
         coEvery { categoryRepository.getCategoriesStream() } returns flowOf(emptyList())
         coEvery { accountRepository.getAccountsStream() } returns flowOf(emptyList())
-        coEvery { transactionRepository.getAmountSum(any(), any(), any()) } returns flowOf(0L)
-        coEvery { transactionRepository.getTransactionsBetween(any(), any()) } returns flowOf(emptyList())
+        coEvery { transactionRepository.getAmountSum(any(), any(), any(), "CNY") } returns flowOf(0L)
+        coEvery { transactionRepository.getTransactionsBetween(any(), any(), "CNY") } returns flowOf(emptyList())
 
         viewModel = LedgerViewModel(
             transactionRepository = transactionRepository,
             categoryRepository = categoryRepository,
             accountRepository = accountRepository,
             defaultDispatcher = testDispatcher,
+            currencies = currencies,
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -178,14 +186,15 @@ class LedgerViewModelTest {
     fun deleteTransaction_delegatesToRepository() = runTest {
         coEvery { categoryRepository.getCategoriesStream() } returns flowOf(emptyList())
         coEvery { accountRepository.getAccountsStream() } returns flowOf(emptyList())
-        coEvery { transactionRepository.getAmountSum(any(), any(), any()) } returns flowOf(0L)
-        coEvery { transactionRepository.getTransactionsBetween(any(), any()) } returns flowOf(emptyList())
+        coEvery { transactionRepository.getAmountSum(any(), any(), any(), "CNY") } returns flowOf(0L)
+        coEvery { transactionRepository.getTransactionsBetween(any(), any(), "CNY") } returns flowOf(emptyList())
 
         viewModel = LedgerViewModel(
             transactionRepository = transactionRepository,
             categoryRepository = categoryRepository,
             accountRepository = accountRepository,
             defaultDispatcher = testDispatcher,
+            currencies = currencies,
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -201,9 +210,9 @@ class LedgerViewModelTest {
     fun periodSelectionChangesViewAtomicallyAndQueriesCompletePeriods() = runTest {
         coEvery { categoryRepository.getCategoriesStream() } returns flowOf(emptyList())
         coEvery { accountRepository.getAccountsStream() } returns flowOf(emptyList())
-        coEvery { transactionRepository.getAmountSum(any(), any(), any()) } returns flowOf(0L)
-        coEvery { transactionRepository.getTransactionsBetween(any(), any()) } returns flowOf(emptyList())
-        viewModel = LedgerViewModel(transactionRepository, categoryRepository, accountRepository, testDispatcher)
+        coEvery { transactionRepository.getAmountSum(any(), any(), any(), "CNY") } returns flowOf(0L)
+        coEvery { transactionRepository.getTransactionsBetween(any(), any(), "CNY") } returns flowOf(emptyList())
+        viewModel = LedgerViewModel(transactionRepository, categoryRepository, accountRepository, testDispatcher, currencies)
         val cases = listOf(
             Triple(DateFilterType.WEEK, LocalDate.of(2021, 1, 1), LocalDate.of(2020, 12, 28) to LocalDate.of(2021, 1, 3)),
             Triple(DateFilterType.MONTH, LocalDate.of(2024, 2, 29), LocalDate.of(2024, 2, 1) to LocalDate.of(2024, 2, 29)),
@@ -223,9 +232,9 @@ class LedgerViewModelTest {
                 val zone = ZoneId.systemDefault()
                 val startMillis = range.first.atStartOfDay(zone).toInstant().toEpochMilli()
                 val endMillis = range.second.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
-                coVerify { transactionRepository.getTransactionsBetween(startMillis, endMillis) }
-                coVerify { transactionRepository.getAmountSum(TransactionType.INCOME, startMillis, endMillis) }
-                coVerify { transactionRepository.getAmountSum(TransactionType.EXPENSE, startMillis, endMillis) }
+                coVerify { transactionRepository.getTransactionsBetween(startMillis, endMillis, "CNY") }
+                coVerify { transactionRepository.getTransactionsBetween(startMillis, endMillis, "CNY") }
+                coVerify { transactionRepository.getTransactionsBetween(startMillis, endMillis, "CNY") }
 
                 val today = LocalDate.now()
                 viewModel.selectPeriod(type, today)
@@ -240,6 +249,80 @@ class LedgerViewModelTest {
                 assertEquals(type, current.filterType)
                 assertEquals(expectedStart, current.filterStartDate)
             }
+        }
+    }
+
+    @Test
+    fun globalSearchIgnoresTheSelectedPeriodAndCurrencyAndClosingRestoresThem() = runTest {
+        coEvery { categoryRepository.getCategoriesStream() } returns flowOf(emptyList())
+        coEvery { accountRepository.getAccountsStream() } returns flowOf(emptyList())
+        coEvery { transactionRepository.getAmountSum(any(), any(), any(), "CNY") } returns flowOf(0L)
+        coEvery { transactionRepository.getTransactionsBetween(any(), any(), "CNY") } returns flowOf(emptyList())
+        val historical = TransactionDetail(
+            Transaction(id = 10, type = TransactionType.EXPENSE, amount = 1000L, accountId = 2,
+                categoryId = 1, transactionTime = 0L, note = "旧账"),
+            Account(id = 2, name = "美元账户", type = AccountType.CASH, currency = "USD"),
+            category = CategoryWithIcon(Category(id = 1, name = "餐饮", type = CategoryType.EXPENSE, iconId = 1),
+                Icon(id = 1, keyName = "food", displayName = "餐饮", iconUri = "res://")),
+        )
+        coEvery { transactionRepository.searchTransactions("旧账") } returns flowOf(listOf(historical))
+        viewModel = LedgerViewModel(transactionRepository, categoryRepository, accountRepository, testDispatcher, currencies)
+        viewModel.uiState.test {
+            awaitItem()
+            testDispatcher.scheduler.advanceUntilIdle()
+            val before = awaitItem() as LedgerUiState.Success
+            viewModel.search("  旧账  ")
+            testDispatcher.scheduler.advanceUntilIdle()
+            val result = awaitItem() as LedgerUiState.Success
+            assertEquals(10L, result.dayGroups.single().transactions.single().transaction.id)
+            assertEquals("USD", result.dayGroups.single().transactions.single().account.currency)
+            assertEquals(0L, result.dayGroups.single().totalExpense)
+            viewModel.search("")
+            testDispatcher.scheduler.advanceUntilIdle()
+            val restored = awaitItem() as LedgerUiState.Success
+            assertEquals(before, restored)
+        }
+    }
+
+    @Test
+    fun failedSaveCanBeRetriedAndRapidClicksCannotCreateDuplicates() = runTest {
+        coEvery { categoryRepository.getCategoriesStream() } returns flowOf(emptyList())
+        coEvery { accountRepository.getAccountsStream() } returns flowOf(emptyList())
+        coEvery { transactionRepository.createTransaction(any()) } throws IllegalStateException("disk error")
+        viewModel = LedgerViewModel(transactionRepository, categoryRepository, accountRepository, testDispatcher, currencies)
+        fun save() = viewModel.createTransaction(TransactionType.EXPENSE, 100L, 1L, categoryId = 1L)
+        save()
+        save()
+        testDispatcher.scheduler.advanceUntilIdle()
+        coVerify(exactly = 1) { transactionRepository.createTransaction(any()) }
+        assertTrue(viewModel.saveState.value.error != null)
+        assertTrue(!viewModel.saveState.value.saved)
+        coEvery { transactionRepository.createTransaction(any()) } returns 1L
+        save()
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertTrue(viewModel.saveState.value.saved)
+        save()
+        testDispatcher.scheduler.advanceUntilIdle()
+        coVerify(exactly = 2) { transactionRepository.createTransaction(any()) }
+    }
+
+    @Test
+    fun ledgerTotalsAndRowsUseTheSelectedCurrency() = runTest {
+        coEvery { categoryRepository.getCategoriesStream() } returns flowOf(emptyList())
+        coEvery { accountRepository.getAccountsStream() } returns flowOf(emptyList())
+        coEvery { transactionRepository.getAmountSum(any(), any(), any(), any()) } returns flowOf(0L)
+        coEvery { transactionRepository.getTransactionsBetween(any(), any(), any()) } returns flowOf(emptyList())
+        viewModel = LedgerViewModel(transactionRepository, categoryRepository, accountRepository, testDispatcher, currencies)
+        viewModel.uiState.test {
+            awaitItem()
+            testDispatcher.scheduler.advanceUntilIdle()
+            awaitItem()
+            currencySelection.value = CurrencySelection("USD")
+            testDispatcher.scheduler.advanceUntilIdle()
+            assertEquals("USD", (awaitItem() as LedgerUiState.Success).currency)
+            coVerify { transactionRepository.getTransactionsBetween(any(), any(), "USD") }
+            coVerify { transactionRepository.getTransactionsBetween(any(), any(), "USD") }
+            coVerify { transactionRepository.getTransactionsBetween(any(), any(), "USD") }
         }
     }
 

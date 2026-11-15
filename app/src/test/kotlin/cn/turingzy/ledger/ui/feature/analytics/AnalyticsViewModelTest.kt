@@ -1,7 +1,9 @@
 package cn.turingzy.ledger.ui.feature.analytics
 
-import app.cash.turbine.test
+import cn.turingzy.ledger.data.repository.CurrencyRepository
+import cn.turingzy.ledger.data.repository.CurrencySelection
 import io.mockk.every
+import app.cash.turbine.test
 import kotlinx.coroutines.flow.MutableStateFlow
 import cn.turingzy.ledger.data.repository.TransactionRepository
 import cn.turingzy.ledger.model.Account
@@ -35,12 +37,15 @@ import java.time.ZoneId
 class AnalyticsViewModelTest {
 
     private val transactionRepository: TransactionRepository = mockk(relaxed = true)
+    private val currencies: CurrencyRepository = mockk()
+    private val currencySelection = kotlinx.coroutines.flow.MutableStateFlow(CurrencySelection())
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var viewModel: AnalyticsViewModel
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
+        every { currencies.selection } returns currencySelection
     }
 
     @After
@@ -100,24 +105,27 @@ class AnalyticsViewModelTest {
             transactionRepository.getAmountSum(
                 TransactionType.EXPENSE,
                 any(),
-                any()
+                any(),
+                "CNY",
             )
         } returns flowOf(10000L)
         coEvery {
             transactionRepository.getAmountSum(
                 TransactionType.INCOME,
                 any(),
-                any()
+                any(),
+                "CNY",
             )
         } returns flowOf(25000L)
         coEvery {
             transactionRepository.getTransactionsBetween(
                 any(),
-                any()
+                any(),
+                "CNY",
             )
-        } returns flowOf(listOf(testTx1, testTx2))
+        } returns flowOf(listOf(testTx1, testTx2, testTx1.copy(transaction = testTx1.transaction.copy(id = 3L, type = TransactionType.INCOME, amount = 25000L))))
 
-        viewModel = AnalyticsViewModel(transactionRepository, testDispatcher)
+        viewModel = AnalyticsViewModel(transactionRepository, testDispatcher, currencies)
 
         viewModel.uiState.test {
             assertEquals(AnalyticsUiState.Loading, awaitItem())
@@ -146,12 +154,12 @@ class AnalyticsViewModelTest {
 
     @Test
     fun setTimeScope_updatesScopeAndResetsOffset() = runTest {
-        coEvery { transactionRepository.getAmountSum(any(), any(), any()) } returns flowOf(0L)
-        coEvery { transactionRepository.getTransactionsBetween(any(), any()) } returns flowOf(
+        coEvery { transactionRepository.getAmountSum(any(), any(), any(), "CNY") } returns flowOf(0L)
+        coEvery { transactionRepository.getTransactionsBetween(any(), any(), "CNY") } returns flowOf(
             emptyList()
         )
 
-        viewModel = AnalyticsViewModel(transactionRepository, testDispatcher)
+        viewModel = AnalyticsViewModel(transactionRepository, testDispatcher, currencies)
 
         viewModel.uiState.test {
             assertEquals(AnalyticsUiState.Loading, awaitItem())
@@ -174,12 +182,12 @@ class AnalyticsViewModelTest {
 
     @Test
     fun setCategoryType_switchesRankingsTarget() = runTest {
-        coEvery { transactionRepository.getAmountSum(any(), any(), any()) } returns flowOf(0L)
-        coEvery { transactionRepository.getTransactionsBetween(any(), any()) } returns flowOf(
+        coEvery { transactionRepository.getAmountSum(any(), any(), any(), "CNY") } returns flowOf(0L)
+        coEvery { transactionRepository.getTransactionsBetween(any(), any(), "CNY") } returns flowOf(
             emptyList()
         )
 
-        viewModel = AnalyticsViewModel(transactionRepository, testDispatcher)
+        viewModel = AnalyticsViewModel(transactionRepository, testDispatcher, currencies)
 
         viewModel.uiState.test {
             assertEquals(AnalyticsUiState.Loading, awaitItem())
@@ -202,11 +210,11 @@ class AnalyticsViewModelTest {
 
     @Test
     fun selectPeriod_queriesFullCalendarPeriodAndNavigatesFromSelection() = runTest {
-        coEvery { transactionRepository.getAmountSum(any(), any(), any()) } returns flowOf(0L)
-        coEvery { transactionRepository.getTransactionsBetween(any(), any()) } returns flowOf(
+        coEvery { transactionRepository.getAmountSum(any(), any(), any(), "CNY") } returns flowOf(0L)
+        coEvery { transactionRepository.getTransactionsBetween(any(), any(), "CNY") } returns flowOf(
             emptyList()
         )
-        viewModel = AnalyticsViewModel(transactionRepository, testDispatcher)
+        viewModel = AnalyticsViewModel(transactionRepository, testDispatcher, currencies)
         val zone = ZoneId.systemDefault()
         val cases = listOf(
             Triple(AnalyticsTimeScope.WEEK, LocalDate.of(2020, 12, 31), LocalDate.of(2020, 12, 28)),
@@ -239,21 +247,9 @@ class AnalyticsViewModelTest {
                 }
                 val startMillis = expectedStart.atStartOfDay(zone).toInstant().toEpochMilli()
                 val endMillis = nextStart.atStartOfDay(zone).toInstant().toEpochMilli() - 1
-                coVerify {
-                    transactionRepository.getAmountSum(
-                        TransactionType.EXPENSE,
-                        startMillis,
-                        endMillis
-                    )
-                }
-                coVerify {
-                    transactionRepository.getAmountSum(
-                        TransactionType.INCOME,
-                        startMillis,
-                        endMillis
-                    )
-                }
-                coVerify { transactionRepository.getTransactionsBetween(startMillis, endMillis) }
+                coVerify { transactionRepository.getTransactionsBetween(startMillis, endMillis, "CNY") }
+                coVerify { transactionRepository.getTransactionsBetween(startMillis, endMillis, "CNY") }
+                coVerify { transactionRepository.getTransactionsBetween(startMillis, endMillis, "CNY") }
 
                 viewModel.navigatePeriod(1)
                 testDispatcher.scheduler.advanceUntilIdle()
@@ -268,9 +264,9 @@ class AnalyticsViewModelTest {
 
     @Test
     fun selectRange_queriesExactBoundariesAndScopeChangeRestoresCalendarPeriod() = runTest {
-        coEvery { transactionRepository.getAmountSum(any(), any(), any()) } returns flowOf(0L)
-        coEvery { transactionRepository.getTransactionsBetween(any(), any()) } returns flowOf(emptyList())
-        viewModel = AnalyticsViewModel(transactionRepository, testDispatcher)
+        coEvery { transactionRepository.getAmountSum(any(), any(), any(), "CNY") } returns flowOf(0L)
+        coEvery { transactionRepository.getTransactionsBetween(any(), any(), "CNY") } returns flowOf(emptyList())
+        viewModel = AnalyticsViewModel(transactionRepository, testDispatcher, currencies)
         val start = LocalDate.of(2024, 2, 27)
         val end = LocalDate.of(2024, 3, 4)
         val zone = ZoneId.systemDefault()
@@ -288,9 +284,9 @@ class AnalyticsViewModelTest {
             assertEquals("2024 02.27-03.04", selected.periodDisplay)
             val startMillis = start.atStartOfDay(zone).toInstant().toEpochMilli()
             val endMillis = end.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
-            coVerify { transactionRepository.getTransactionsBetween(startMillis, endMillis) }
-            coVerify { transactionRepository.getAmountSum(TransactionType.EXPENSE, startMillis, endMillis) }
-            coVerify { transactionRepository.getAmountSum(TransactionType.INCOME, startMillis, endMillis) }
+            coVerify { transactionRepository.getTransactionsBetween(startMillis, endMillis, "CNY") }
+            coVerify { transactionRepository.getTransactionsBetween(startMillis, endMillis, "CNY") }
+            coVerify { transactionRepository.getTransactionsBetween(startMillis, endMillis, "CNY") }
 
             viewModel.setTimeScope(AnalyticsTimeScope.WEEK)
             testDispatcher.scheduler.advanceUntilIdle()
@@ -302,9 +298,9 @@ class AnalyticsViewModelTest {
 
     @Test
     fun confirmedCalendarMonth_navigatesByMonthAcrossLeapDay() = runTest {
-        coEvery { transactionRepository.getAmountSum(any(), any(), any()) } returns flowOf(0L)
-        coEvery { transactionRepository.getTransactionsBetween(any(), any()) } returns flowOf(emptyList())
-        viewModel = AnalyticsViewModel(transactionRepository, testDispatcher)
+        coEvery { transactionRepository.getAmountSum(any(), any(), any(), "CNY") } returns flowOf(0L)
+        coEvery { transactionRepository.getTransactionsBetween(any(), any(), "CNY") } returns flowOf(emptyList())
+        viewModel = AnalyticsViewModel(transactionRepository, testDispatcher, currencies)
 
         viewModel.uiState.test {
             awaitItem()
@@ -328,9 +324,9 @@ class AnalyticsViewModelTest {
 
     @Test
     fun threeMonthScope_navigatesWholeMonthsAcrossYearBoundary() = runTest {
-        coEvery { transactionRepository.getAmountSum(any(), any(), any()) } returns flowOf(0L)
-        coEvery { transactionRepository.getTransactionsBetween(any(), any()) } returns flowOf(emptyList())
-        viewModel = AnalyticsViewModel(transactionRepository, testDispatcher)
+        coEvery { transactionRepository.getAmountSum(any(), any(), any(), "CNY") } returns flowOf(0L)
+        coEvery { transactionRepository.getTransactionsBetween(any(), any(), "CNY") } returns flowOf(emptyList())
+        viewModel = AnalyticsViewModel(transactionRepository, testDispatcher, currencies)
 
         viewModel.uiState.test {
             awaitItem()
@@ -360,13 +356,20 @@ class AnalyticsViewModelTest {
         val januaryEnd = LocalDate.of(2024, 2, 1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
         val februaryStart = LocalDate.of(2024, 2, 1).atStartOfDay(zone).toInstant().toEpochMilli()
         val februaryEnd = LocalDate.of(2024, 3, 1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
-        coEvery { transactionRepository.getAmountSum(any(), any(), any()) } returns flowOf(0L)
-        coEvery { transactionRepository.getAmountSum(TransactionType.INCOME, januaryStart, januaryEnd) } returns flowOf(20000L)
-        coEvery { transactionRepository.getAmountSum(TransactionType.EXPENSE, januaryStart, januaryEnd) } returns flowOf(12000L)
-        coEvery { transactionRepository.getAmountSum(TransactionType.INCOME, februaryStart, februaryEnd) } returns flowOf(30000L)
-        coEvery { transactionRepository.getAmountSum(TransactionType.EXPENSE, februaryStart, februaryEnd) } returns flowOf(10000L)
-        coEvery { transactionRepository.getTransactionsBetween(any(), any()) } returns flowOf(emptyList())
-        viewModel = AnalyticsViewModel(transactionRepository, testDispatcher)
+        coEvery { transactionRepository.getAmountSum(any(), any(), any(), "CNY") } returns flowOf(0L)
+        coEvery { transactionRepository.getAmountSum(TransactionType.INCOME, januaryStart, januaryEnd, "CNY") } returns flowOf(20000L)
+        coEvery { transactionRepository.getAmountSum(TransactionType.EXPENSE, januaryStart, januaryEnd, "CNY") } returns flowOf(12000L)
+        coEvery { transactionRepository.getAmountSum(TransactionType.INCOME, februaryStart, februaryEnd, "CNY") } returns flowOf(30000L)
+        coEvery { transactionRepository.getAmountSum(TransactionType.EXPENSE, februaryStart, februaryEnd, "CNY") } returns flowOf(10000L)
+        coEvery { transactionRepository.getTransactionsBetween(any(), any(), "CNY") } returns flowOf(emptyList())
+        fun rows(income: Long, expense: Long) = listOf(TransactionType.INCOME to income, TransactionType.EXPENSE to expense).mapIndexed { index, (type, amount) ->
+            TransactionDetail(Transaction(id = index.toLong() + 1, type = type, amount = amount, accountId = 1, categoryId = 1, transactionTime = 1),
+                Account(id = 1, name = "账户", type = AccountType.CASH), category = CategoryWithIcon(
+                    Category(1, "分类", CategoryType.valueOf(type.name), 1), Icon(1, "test", "分类", "res://")))
+        }
+        coEvery { transactionRepository.getTransactionsBetween(januaryStart, januaryEnd, "CNY") } returns flowOf(rows(20000L, 12000L))
+        coEvery { transactionRepository.getTransactionsBetween(februaryStart, februaryEnd, "CNY") } returns flowOf(rows(30000L, 10000L))
+        viewModel = AnalyticsViewModel(transactionRepository, testDispatcher, currencies)
         viewModel.uiState.test {
             awaitItem()
             testDispatcher.scheduler.advanceUntilIdle()
@@ -415,8 +418,8 @@ class AnalyticsViewModelTest {
             entry(3L, end, TransactionType.TRANSFER, 500L),
             entry(4L, start.minusYears(1), TransactionType.EXPENSE, 999L, deleted = true),
         ))
-        every { transactionRepository.getTransactionsBetween(Long.MIN_VALUE, Long.MAX_VALUE) } returns transactions
-        viewModel = AnalyticsViewModel(transactionRepository, testDispatcher)
+        every { transactionRepository.getTransactionsBetween(Long.MIN_VALUE, Long.MAX_VALUE, "CNY") } returns transactions
+        viewModel = AnalyticsViewModel(transactionRepository, testDispatcher, currencies)
         viewModel.setTimeScope(AnalyticsTimeScope.ALL)
         viewModel.uiState.test {
             assertEquals(AnalyticsUiState.Loading, awaitItem())
@@ -440,13 +443,13 @@ class AnalyticsViewModelTest {
             assertEquals(0L, empty.balance)
             assertTrue(empty.rankings.isEmpty())
         }
-        coVerify(exactly = 0) { transactionRepository.getAmountSum(any(), any(), any()) }
+        coVerify(exactly = 0) { transactionRepository.getAmountSum(any(), any(), any(), "CNY") }
     }
 
     @Test
     fun allScopeCustomRangeUsesInclusiveBoundariesAndSurvivesEmptyResults() = runTest {
-        coEvery { transactionRepository.getTransactionsBetween(any(), any()) } returns flowOf(emptyList())
-        viewModel = AnalyticsViewModel(transactionRepository, testDispatcher)
+        coEvery { transactionRepository.getTransactionsBetween(any(), any(), "CNY") } returns flowOf(emptyList())
+        viewModel = AnalyticsViewModel(transactionRepository, testDispatcher, currencies)
         viewModel.setTimeScope(AnalyticsTimeScope.ALL)
         val start = LocalDate.of(2026, 11, 12)
         val end = LocalDate.of(2026, 11, 14)
@@ -465,15 +468,39 @@ class AnalyticsViewModelTest {
             coVerify {
                 transactionRepository.getTransactionsBetween(
                     start.atStartOfDay(zone).toInstant().toEpochMilli(),
-                    end.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1,
-                )
+                    end.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1, "CNY")
             }
             viewModel.setTimeScope(AnalyticsTimeScope.ALL)
             testDispatcher.scheduler.advanceUntilIdle()
             val reset = awaitItem() as AnalyticsUiState.Success
             assertEquals(LocalDate.now(), reset.periodStart)
             assertEquals(reset.periodStart, reset.periodEnd)
-            coVerify(exactly = 2) { transactionRepository.getTransactionsBetween(Long.MIN_VALUE, Long.MAX_VALUE) }
+            coVerify(exactly = 2) { transactionRepository.getTransactionsBetween(Long.MIN_VALUE, Long.MAX_VALUE, "CNY") }
+        }
+    }
+
+    @Test
+    fun currencySwitchUpdatesCurrentPeriodComparisonAndAllTimeQueries() = runTest {
+        coEvery { transactionRepository.getAmountSum(any(), any(), any(), any()) } returns flowOf(0L)
+        coEvery { transactionRepository.getTransactionsBetween(any(), any(), any()) } returns flowOf(emptyList())
+        viewModel = AnalyticsViewModel(transactionRepository, testDispatcher, currencies)
+        viewModel.uiState.test {
+            awaitItem()
+            testDispatcher.scheduler.advanceUntilIdle()
+            awaitItem()
+            currencySelection.value = CurrencySelection("USD")
+            testDispatcher.scheduler.advanceUntilIdle()
+            val state = awaitItem() as AnalyticsUiState.Success
+            assertEquals("USD", state.currency)
+            val zone = ZoneId.systemDefault()
+            val comparison = checkNotNull(state.comparison)
+            val previousStart = comparison.periodStart.atStartOfDay(zone).toInstant().toEpochMilli()
+            val previousEnd = comparison.periodEnd.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
+            coVerify { transactionRepository.getTransactionsBetween(previousStart, previousEnd, "USD") }
+            viewModel.setTimeScope(AnalyticsTimeScope.ALL)
+            testDispatcher.scheduler.advanceUntilIdle()
+            assertEquals("USD", (awaitItem() as AnalyticsUiState.Success).currency)
+            coVerify { transactionRepository.getTransactionsBetween(Long.MIN_VALUE, Long.MAX_VALUE, "USD") }
         }
     }
 

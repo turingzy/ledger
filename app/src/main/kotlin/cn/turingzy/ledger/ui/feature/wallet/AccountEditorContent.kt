@@ -45,11 +45,13 @@ internal fun AccountEditorContent(
     modifier: Modifier = Modifier,
     onDelete: (() -> Unit)? = null,
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     var name by rememberSaveable(account?.id) { mutableStateOf(account?.name.orEmpty()) }
     var type by rememberSaveable(account?.id) { mutableStateOf(account?.type ?: AccountType.DEBIT) }
     var balance by rememberSaveable(account?.id) { mutableStateOf(account?.initialBalance?.toFormattedAmount().orEmpty()) }
     var cardNumber by rememberSaveable(account?.id) { mutableStateOf(account?.cardNumber.orEmpty()) }
-    var currency by rememberSaveable(account?.id) { mutableStateOf(account?.currency ?: "CNY") }
+    val primaryCurrency = cn.turingzy.ledger.ui.component.LocalLedgerCurrency.current
+    var currency by rememberSaveable(account?.id) { mutableStateOf(account?.currency ?: primaryCurrency) }
     var templateId by rememberSaveable(account?.id) { mutableStateOf(account?.templateId) }
     var includeInTotal by rememberSaveable(account?.id) { mutableStateOf(account?.includeInTotal ?: true) }
     var showCardFaceDialog by rememberSaveable(account?.id) { mutableStateOf(false) }
@@ -61,8 +63,8 @@ internal fun AccountEditorContent(
     val colors = MaterialTheme.colorScheme
 
     AccountSheetContent(
-        title = if (account == null) "添加账户" else "账户详情",
-        closeDescription = if (account == null) "取消添加账户" else "关闭账户详情",
+        title = if (account == null) textResources.getString(cn.turingzy.ledger.R.string.ui_add_account) else textResources.getString(cn.turingzy.ledger.R.string.ui_account_details),
+        closeDescription = if (account == null) textResources.getString(cn.turingzy.ledger.R.string.ui_cancel_new_account) else textResources.getString(cn.turingzy.ledger.R.string.ui_close_account_details),
         onClose = onClose,
         saveEnabled = result != null,
         onSave = {
@@ -76,12 +78,12 @@ internal fun AccountEditorContent(
             Modifier.fillMaxWidth().heightIn(min = 40.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("计入总资产", Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = colors.onSurface)
+            Text(textResources.getString(cn.turingzy.ledger.R.string.ui_include_in_total_assets), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = colors.onSurface)
             Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
                 Switch(
                     checked = includeInTotal,
                     onCheckedChange = { includeInTotal = it },
-                    modifier = Modifier.scale(0.72f).semantics { contentDescription = "计入总资产" },
+                    modifier = Modifier.scale(0.72f).semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_include_in_total_assets) },
                     colors = SwitchDefaults.colors(
                         checkedTrackColor = colors.primary,
                         checkedThumbColor = colors.surface,
@@ -91,37 +93,37 @@ internal fun AccountEditorContent(
             }
         }
         AccountFormTextField(
-            label = "账户名称", value = name, onValueChange = { name = it },
-            placeholder = "工资卡",
+            label = textResources.getString(cn.turingzy.ledger.R.string.ui_account_name), value = name, onValueChange = { name = it },
+            placeholder = textResources.getString(cn.turingzy.ledger.R.string.ui_salary_account),
         )
         AccountFormDropdown(
-            label = "账户类型", value = type.displayName(), options = AccountType.entries,
-            optionLabel = { it.displayName() }, onSelect = { type = it },
+            label = textResources.getString(cn.turingzy.ledger.R.string.ui_account_type), value = type.displayName(textResources), options = AccountType.entries,
+            optionLabel = { it.displayName(textResources) }, onSelect = { type = it },
         )
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             AccountFormTextField(
-                label = if (type == AccountType.CREDIT) "初始欠款" else "初始余额",
+                label = if (type == AccountType.CREDIT) textResources.getString(cn.turingzy.ledger.R.string.ui_opening_debt) else textResources.getString(cn.turingzy.ledger.R.string.ui_opening_balance),
                 value = balance, onValueChange = { balance = it }, placeholder = "0.00",
-                error = if (input.balanceCents == null) "请输入有效金额" else null,
+                error = if (input.balanceCents == null) textResources.getString(cn.turingzy.ledger.R.string.ui_enter_a_valid_amount) else null,
                 readOnly = account != null, keyboardType = KeyboardType.Decimal,
                 modifier = Modifier.weight(1.2f),
             )
             if (account == null) {
                 AccountFormDropdown(
-                    label = "币种", value = currency, options = currencies,
+                    label = textResources.getString(cn.turingzy.ledger.R.string.ui_currency), value = currency, options = currencies,
                     optionLabel = { it }, onSelect = { currency = it }, modifier = Modifier.weight(0.8f),
                     alignMenuToStart = false,
                 )
             } else {
                 AccountFormTextField(
-                    label = "币种", value = account.currency, onValueChange = {}, readOnly = true,
+                    label = textResources.getString(cn.turingzy.ledger.R.string.ui_currency), value = account.currency, onValueChange = {}, readOnly = true,
                     modifier = Modifier.weight(0.8f),
                 )
             }
         }
         if (account != null) {
             AccountFormTextField(
-                label = if (account.type == AccountType.CREDIT) "当前欠款" else "当前余额",
+                label = if (account.type == AccountType.CREDIT) textResources.getString(cn.turingzy.ledger.R.string.ui_current_debt) else textResources.getString(cn.turingzy.ledger.R.string.ui_current_balance),
                 value = account.currentBalance.toFormattedAmount(useGrouping = true),
                 onValueChange = {}, suffix = account.currency, readOnly = true,
             )
@@ -130,10 +132,10 @@ internal fun AccountEditorContent(
             AccountTailNumberField(value = cardNumber.takeLast(4), onValueChange = { cardNumber = it })
         }
         AccountCardFaceField(
-            value = if (templateId == null) "默认卡面" else activeTemplates.firstOrNull { it.id == templateId }?.name ?: "请重新选择卡面",
+            value = if (templateId == null) textResources.getString(cn.turingzy.ledger.R.string.ui_default_card_design) else activeTemplates.firstOrNull { it.id == templateId }?.name ?: textResources.getString(cn.turingzy.ledger.R.string.ui_select_a_card_design_again),
             onClick = { focusManager.clearFocus(); showCardFaceDialog = true },
             enabled = input.canSelectCardFace,
-            disabledHint = if (input.requiresCardTail) "先填写账户名称和四位尾号" else "先填写账户名称",
+            disabledHint = if (input.requiresCardTail) textResources.getString(cn.turingzy.ledger.R.string.ui_enter_an_account_name_and_last_four_digits) else textResources.getString(cn.turingzy.ledger.R.string.ui_enter_an_account_name_first),
         )
 
         if (account != null && onDelete != null) {
@@ -144,7 +146,7 @@ internal fun AccountEditorContent(
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.error),
                 border = BorderStroke(1.dp, colors.error.copy(alpha = 0.3f)),
             ) {
-                Text("删除账户", style = MaterialTheme.typography.bodyMedium)
+                Text(textResources.getString(cn.turingzy.ledger.R.string.ui_delete_account), style = MaterialTheme.typography.bodyMedium)
             }
         }
 

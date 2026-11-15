@@ -49,6 +49,7 @@ fun AboutScreen(
     onOpenSourceClick: () -> Unit = {},
     onCheckLatest: suspend () -> String? = { null },
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     var updateState by remember { mutableStateOf(UpdateCheckState.IDLE) }
     val uriHandler = LocalUriHandler.current
     var latestVersion by remember { mutableStateOf<String?>(null) }
@@ -62,13 +63,13 @@ fun AboutScreen(
                 if (latest != null && AppUpdateRepository.isNewer(latest, versionName)) updateState = UpdateCheckState.AVAILABLE
                 else {
                     updateState = UpdateCheckState.IDLE
-                    updateMessage = if (latest == null) "暂无已发布版本" else "已是最新版本"
+                    updateMessage = if (latest == null) textResources.getString(cn.turingzy.ledger.R.string.ui_no_release_available) else textResources.getString(cn.turingzy.ledger.R.string.ui_you_are_up_to_date)
                 }
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (error: Exception) {
                 Timber.e(error, "Update check failed")
                 updateState = UpdateCheckState.IDLE
-                updateMessage = error.message ?: "检查更新失败，请重试"
+                updateMessage = error.message ?: textResources.getString(cn.turingzy.ledger.R.string.ui_could_not_check_updates_please_try_again)
             }
         }
     }
@@ -82,11 +83,11 @@ fun AboutScreen(
             androidx.compose.material3.TextButton(
                 onClick = { updateMessage = null },
                 colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.tertiary),
-            ) { Text("确定") }
+            ) { Text(textResources.getString(cn.turingzy.ledger.R.string.ui_ok)) }
         },
     )
     SettingsPage(
-        title = "关于",
+        title = textResources.getString(cn.turingzy.ledger.R.string.ui_about),
         onDismissRequest = onDismissRequest,
         modifier = modifier,
         titleStyle = MaterialTheme.typography.headlineMedium,
@@ -117,12 +118,13 @@ private fun AboutContent(
     modifier: Modifier = Modifier,
     latestVersion: String? = null,
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val colors = MaterialTheme.colorScheme
     Column(modifier.fillMaxWidth().settingsPageScroll()) {
         Surface(
             onClick = onCheckUpdate,
             enabled = updateState != UpdateCheckState.CHECKING,
-            modifier = Modifier.semantics { contentDescription = "检查更新" },
+            modifier = Modifier.semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_check_for_updates) },
             shape = RoundedCornerShape(16.dp),
             color = colors.surface,
             border = BorderStroke(0.5.dp, colors.onSurface.copy(alpha = 0.28f)),
@@ -134,7 +136,7 @@ private fun AboutContent(
             ) {
                 Box(Modifier.size(80.dp).clip(CircleShape)) {
                     Image(painterResource(R.drawable.ic_launcher_background), null, Modifier.fillMaxSize())
-                    Image(painterResource(R.drawable.ic_launcher_foreground), "Ledger 应用图标", Modifier.fillMaxSize())
+                    Image(painterResource(R.drawable.ic_launcher_foreground), textResources.getString(cn.turingzy.ledger.R.string.ui_ledger_app_icon), Modifier.fillMaxSize())
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("Ledger", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
@@ -159,16 +161,16 @@ private fun AboutContent(
         }
         Spacer(Modifier.height(24.dp))
         Text(
-            "Ledger 是一款本地优先的个人记账与资产管理应用，帮助你记录日常收支、管理账户与资产。数据保存在设备本地，注重隐私，纯粹实用。",
+            textResources.getString(cn.turingzy.ledger.R.string.ui_ledger_is_a_local_first_personal_finance_app),
             style = MaterialTheme.typography.bodyMedium,
             color = colors.onSurfaceVariant,
         )
         Spacer(Modifier.height(24.dp))
-        SettingsActionRow("开源许可证", onOpenSourceClick, subtitle = "应用使用的开源库")
+        SettingsActionRow(textResources.getString(cn.turingzy.ledger.R.string.ui_open_source_licenses), onOpenSourceClick, subtitle = textResources.getString(cn.turingzy.ledger.R.string.ui_open_source_libraries))
         Spacer(Modifier.height(8.dp))
-        SettingsActionRow("开源协议", onLicenseClick, subtitle = "MIT License", externalLink = true)
+        SettingsActionRow(textResources.getString(cn.turingzy.ledger.R.string.ui_license), onLicenseClick, subtitle = "MIT License", externalLink = true)
         Spacer(Modifier.height(8.dp))
-        SettingsActionRow("Github 上的源代码", onSourceClick, subtitle = "查看此应用的源代码", externalLink = true)
+        SettingsActionRow(textResources.getString(cn.turingzy.ledger.R.string.ui_source_code_on_github), onSourceClick, subtitle = textResources.getString(cn.turingzy.ledger.R.string.ui_view_app_source_code), externalLink = true)
     }
 }
 

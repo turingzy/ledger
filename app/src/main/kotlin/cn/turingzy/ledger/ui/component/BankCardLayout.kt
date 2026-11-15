@@ -24,10 +24,11 @@ internal fun CardPageIndicator(
     currentPage: Int,
     modifier: Modifier = Modifier,
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val colors = MaterialTheme.colorScheme
     Row(
         modifier.fillMaxWidth().semantics {
-            stateDescription = if (pageCount == 0) "暂无卡片" else "第${currentPage + 1}张，共${pageCount}张卡片"
+            stateDescription = if (pageCount == 0) textResources.getString(cn.turingzy.ledger.R.string.ui_no_cards) else "第${currentPage + 1}张，共${pageCount}张卡片"
         },
         horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
     ) {

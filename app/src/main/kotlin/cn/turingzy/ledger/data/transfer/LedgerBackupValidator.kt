@@ -15,6 +15,13 @@ object LedgerBackupValidator {
             ids(bills.transactions.map { it.id })
             require(bills.accounts.all { it.templateId == null || it.templateId in templates }) { "账户卡面引用无效" }
             require(bills.categories.all { it.iconId in icons }) { "分类图标引用无效" }
+            require(bills.transactions.all { transaction ->
+                transaction.currencySnapshots.map { it.currency }.distinct().size == transaction.currencySnapshots.size &&
+                    transaction.currencySnapshots.all { snapshot ->
+                        snapshot.currency in supportedCurrencyCodes && snapshot.amount >= 0L &&
+                            runCatching { java.time.LocalDate.parse(snapshot.date); convertCents(transaction.amount, snapshot.rate) == snapshot.amount }.getOrDefault(false)
+                    } && (transaction.toAmount == null || transaction.type == TransactionType.TRANSFER && transaction.toAmount > 0L)
+            }) { "账单换算数据无效" }
             require(bills.transactions.all {
                 it.amount > 0 && it.accountId in accounts && it.categoryId in categories &&
                     (it.type != TransactionType.TRANSFER || (it.toAccountId in accounts && it.toAccountId != it.accountId)) &&
@@ -23,6 +30,11 @@ object LedgerBackupValidator {
 
         }
         backup.settings?.let { settings ->
+            settings.preferences?.let {
+                require(it.primaryCurrency in supportedCurrencyCodes && it.theme in setOf("system", "light", "dark") && it.language in setOf("system", "zh", "en")) { "常规无效" }
+            }
+            require(settings.rates.all { it.currency.matches(Regex("[A-Z]{3}")) && it.perUsd.toBigDecimalOrNull()?.signum() == 1 &&
+                runCatching { java.time.LocalDate.parse(it.date) }.isSuccess }) { "备份汇率无效" }
             ids(settings.rules.map { it.id }); ids(settings.templates.map { it.id })
             require(settings.rules.filterNot { it.isDeleted }.all {
                 it.name.isNotBlank() && it.startRow > 0 && Json.decodeFromString<BillParseRule>(it.mappingConfig).valid

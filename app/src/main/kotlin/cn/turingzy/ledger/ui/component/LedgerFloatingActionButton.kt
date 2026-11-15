@@ -36,6 +36,7 @@ fun LedgerFloatingActionButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     AnimatedVisibility(
         visible = visible,
         enter = fadeIn() + scaleIn(initialScale = 0.9f),
@@ -69,14 +70,14 @@ fun LedgerFloatingActionButton(
             horizontalArrangement = Arrangement.spacedBy(7.dp),
         ) {
             Text(
-                text = "记一笔",
+                text = textResources.getString(cn.turingzy.ledger.R.string.ui_new_transaction),
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onTertiary,
             )
             Icon(
                 imageVector = MaterialSymbols.EditSquare,
-                contentDescription = "记一笔",
+                contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_new_transaction),
                 tint = MaterialTheme.colorScheme.onTertiary,
                 modifier = Modifier.size(16.dp),
             )

@@ -1,0 +1,23 @@
+<resources>
+  <string name="basic_preferences">Basics</string>
+  <string name="general_settings">General</string>
+  <string name="preference_language">Language</string>
+  <string name="follow_system">System default</string>
+  <string name="preference_theme">Theme</string>
+  <string name="light_theme">Light</string>
+  <string name="dark_theme">Dark</string>
+  <string name="primary_currency">Primary currency</string>
+  <string name="account_currency">Account currency</string>
+  <string name="save">Save</string>
+  <string name="exchange_rates">Exchange rates</string>
+  <string name="refresh_rates">Refresh rates</string>
+  <string name="save_rate">Save manual rate</string>
+  <string name="imported_count">Imported %1$d transactions</string>
+  <string name="exported_count">Exported %1$d transactions</string>
+  <string name="skipped_count">, skipped %1$d duplicates</string>
+  <string name="duplicate_prompt">%1$d transactions match existing accounts, dates, amounts and notes. Skip them?</string>
+  <string name="calendar_day_count">%1$s · %2$d expenses</string>
+  <string name="calendar_month_expense">Month %1$d expenses </string>
+  <string name="rate_as_of">Reference rate · %1$s</string>
+  <string name="destination_amount">Receiving %1$s</string>
+</resources>

@@ -39,15 +39,14 @@ class WalletCurrencyTotalsTest {
         assertEquals(0L, totals.expense)
     }
 
-    @Test fun currenciesStaySeparateAndCnyComesFirst() {
-        val dollarAccount = cash.copy(id = 2, currency = "USD", currentBalance = 1234)
-        val totals = walletCurrencyTotals(listOf(AccountWithTemplate(dollarAccount), AccountWithTemplate(cash)), listOf(
-            entry(TransactionType.INCOME, 700L, dollarAccount), entry(TransactionType.EXPENSE, 100L),
-        ))
-        assertEquals(listOf("CNY", "USD"), totals.map { it.currency })
-        assertEquals(listOf(9000L, 1234L), totals.map { it.assets })
-        assertEquals(listOf(0L, 700L), totals.map { it.income })
-        assertEquals(listOf(100L, 0L), totals.map { it.expense })
+    @Test fun foreignAccountsAndBillsAreConvertedIntoOnePrimaryCurrency() {
+        val dollar = cash.copy(id = 2, currency = "USD", currentBalance = 1234L, baseCurrency = "CNY", baseBalance = 8885L)
+        val income = entry(TransactionType.INCOME, 700L, dollar).let { it.copy(transaction = it.transaction.copy(baseAmount = 5040L, baseCurrency = "CNY")) }
+        val totals = walletCurrencyTotals(listOf(AccountWithTemplate(dollar), AccountWithTemplate(cash)), listOf(income, entry(TransactionType.EXPENSE, 100L))).single()
+        assertEquals("CNY", totals.currency)
+        assertEquals(17885L, totals.assets)
+        assertEquals(5040L, totals.income)
+        assertEquals(100L, totals.expense)
     }
 
     @Test fun excludedAccountsDoNotAddToAssetsButTheirBillsRemainRealHistory() {
@@ -62,12 +61,14 @@ class WalletCurrencyTotalsTest {
         assertEquals(500L, totals.income)
     }
 
-    @Test fun deletedForeignAccountKeepsItsTransactionCurrency() {
+    @Test fun deletedForeignAccountsKeepTheirHistoryInPrimaryCurrencyTotals() {
         val deleted = cash.copy(currency = "EUR", isDeleted = true)
-        val totals = walletCurrencyTotals(emptyList(), listOf(entry(TransactionType.EXPENSE, 500L, deleted))).single()
-        assertEquals("EUR", totals.currency)
+        val original = entry(TransactionType.EXPENSE, 500L, deleted)
+        val valued = original.copy(transaction = original.transaction.copy(baseAmount = 3900L, baseCurrency = "CNY"))
+        val totals = walletCurrencyTotals(emptyList(), listOf(valued)).single()
+        assertEquals("CNY", totals.currency)
         assertEquals(0L, totals.assets)
-        assertEquals(500L, totals.expense)
+        assertEquals(3900L, totals.expense)
     }
 
     @Test fun emptyWalletHasZeroCnyTotalsAndOverflowIsRejected() {

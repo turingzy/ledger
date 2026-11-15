@@ -32,10 +32,11 @@ class DevelopmentDataInitializer @Inject constructor(
         scope.launch {
             try {
                 seed()
+                seedScenarios()
             } catch (failure: CancellationException) {
                 throw failure
             } catch (failure: Exception) {
-                Timber.e(failure, "Unable to seed chart test data")
+                Timber.e(failure, "Unable to seed development test data")
             }
         }
     }
@@ -70,4 +71,28 @@ class DevelopmentDataInitializer @Inject constructor(
             entries.forEach { database.transactionDao().insertTransaction(it.asEntity()) }
         }
     }
+    private suspend fun seedScenarios() {
+        val categories = database.categoryDao().getPopulatedCategories().first { items ->
+            CategoryType.entries.all { type -> items.any { it.category.type == type } }
+        }
+        val data = debugScenarioData(
+            Instant.now(), ZoneId.systemDefault(),
+            categories.filter { it.category.type == CategoryType.EXPENSE }.map { it.category.categoryId },
+            categories.filter { it.category.type == CategoryType.INCOME }.map { it.category.categoryId },
+            categories.first { it.category.type == CategoryType.TRANSFER }.category.categoryId,
+        )
+        database.withTransaction {
+            // The account survives soft deletion and prevents re-adding data after user edits.
+            val exists = database.openHelper.writableDatabase.query(
+                "SELECT 1 FROM tb_account WHERE account_id = ? LIMIT 1", arrayOf<Any>(data.accounts.first().id),
+            ).use { it.moveToFirst() }
+            if (exists) return@withTransaction
+            val templateIds = database.cardTemplateDao().backupRows().filterNot { it.isDeleted }.map { it.templateId }.toSet()
+            data.accounts.forEach { account ->
+                database.accountDao().insertAccount(account.copy(templateId = account.templateId?.takeIf { it in templateIds }).asEntity())
+            }
+            data.transactions.forEach { database.transactionDao().insertTransaction(it.asEntity()) }
+        }
+    }
+
 }

@@ -32,11 +32,12 @@ fun SummaryCardContent(
     amountsHidden: Boolean,
     onToggleAmounts: () -> Unit,
     modifier: Modifier = Modifier,
-    leftLabel: String = "支出",
-    rightLabel: String = "收入",
+    leftLabel: String = androidx.compose.ui.res.stringResource(cn.turingzy.ledger.R.string.ui_expense),
+    rightLabel: String = androidx.compose.ui.res.stringResource(cn.turingzy.ledger.R.string.ui_income),
     currency: String = "CNY",
 ) {
-    val currencySymbol = if (currency == "CNY") "¥" else "$currency "
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
+    val currencySymbol = currencySymbol(currency)
     val visibilityIconSize = with(LocalDensity.current) { 15.sp.toDp() }
     Box(modifier.fillMaxSize()) {
         Column(
@@ -60,7 +61,7 @@ fun SummaryCardContent(
                 )
                 SummaryCardIconButton(
                     imageVector = if (amountsHidden) MaterialSymbols.VisibilityOff else MaterialSymbols.Visibility,
-                    contentDescription = if (amountsHidden) "显示卡片金额" else "隐藏卡片金额",
+                    contentDescription = if (amountsHidden) textResources.getString(cn.turingzy.ledger.R.string.ui_show_amounts) else textResources.getString(cn.turingzy.ledger.R.string.ui_hide_amounts),
                     onClick = onToggleAmounts,
                     modifier = Modifier.size(24.dp),
                     containerColor = Color.Transparent,

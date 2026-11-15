@@ -48,5 +48,13 @@ data class AccountEntity(
     val sortOrder: Int = 0,
     @ColumnInfo(name = "is_deleted", defaultValue = "0")
     val isDeleted: Boolean = false,
+    @ColumnInfo(name = "base_balance")
+    val baseBalance: Long? = null,
+    @ColumnInfo(name = "base_currency")
+    val baseCurrency: String? = null,
+    @ColumnInfo(name = "base_rate")
+    val baseRate: String? = null,
+    @ColumnInfo(name = "base_rate_date")
+    val baseRateDate: String? = null,
 )
 

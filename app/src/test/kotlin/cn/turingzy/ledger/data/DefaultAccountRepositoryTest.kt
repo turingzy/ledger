@@ -27,6 +27,7 @@ class DefaultAccountRepositoryTest {
         repository = DefaultAccountRepository(
             accountDao = accountDao,
             ioDispatcher = testDispatcher,
+            preferences = mockk(relaxed = true), valuation = mockk(relaxed = true), rates = mockk(relaxed = true),
         )
     }
 

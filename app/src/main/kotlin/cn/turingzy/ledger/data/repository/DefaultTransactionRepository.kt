@@ -12,6 +12,9 @@ import cn.turingzy.ledger.model.TransactionType
 import cn.turingzy.ledger.util.Dispatcher
 import cn.turingzy.ledger.util.LedgerDispatchers
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import cn.turingzy.ledger.model.primaryAmount
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
@@ -22,101 +25,118 @@ class DefaultTransactionRepository @Inject constructor(
     private val database: LedgerDatabase,
     private val transactionDao: TransactionDao,
     private val accountDao: AccountDao,
+    private val preferences: AppPreferencesRepository,
+    private val valuation: MoneyValuation,
+    private val rates: ExchangeRateRepository,
     @param:Dispatcher(LedgerDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
 ) : TransactionRepository {
 
-    override fun getTransactionsStream(limit: Int): Flow<List<TransactionDetail>> =
-        transactionDao.getPopulatedTransactions(limit)
-            .map { list -> list.map { it.asExternalModel() } }
-            .flowOn(ioDispatcher)
+    private fun valued(rows: Flow<List<cn.turingzy.ledger.database.model.PopulatedTransaction>>, currency: String? = null): Flow<List<TransactionDetail>> =
+        combine(rows, preferences.preferences, rates.changes) { entries, settings, _ -> entries to (currency ?: settings.primaryCurrency) }
+            .map { (entries, primary) -> valuation.transactions(entries.map { it.asExternalModel() }, primary) }.flowOn(ioDispatcher)
 
+    override fun getTransactionsStream(limit: Int): Flow<List<TransactionDetail>> = valued(transactionDao.getPopulatedTransactions(limit))
+    override fun searchTransactions(query: String): Flow<List<TransactionDetail>> = valued(transactionDao.searchTransactions(query))
     override fun getTransaction(id: Long): Flow<TransactionDetail?> =
-        transactionDao.getPopulatedTransactionById(id)
-            .map { it?.asExternalModel() }
-            .flowOn(ioDispatcher)
-
-    override fun getTransactionsBetween(startTime: Long, endTime: Long): Flow<List<TransactionDetail>> =
-        transactionDao.getPopulatedTransactionsBetween(startTime, endTime)
-            .map { list -> list.map { it.asExternalModel() } }
-            .flowOn(ioDispatcher)
-
-    override fun getTransactionsByAccount(accountId: Long): Flow<List<TransactionDetail>> =
-        transactionDao.getPopulatedTransactionsByAccount(accountId)
-            .map { list -> list.map { it.asExternalModel() } }
-            .flowOn(ioDispatcher)
-
-    override fun getTransactionsByCategory(categoryId: Long): Flow<List<TransactionDetail>> =
-        transactionDao.getPopulatedTransactionsByCategory(categoryId)
-            .map { list -> list.map { it.asExternalModel() } }
-            .flowOn(ioDispatcher)
-
-    override fun getAmountSum(type: TransactionType, startTime: Long, endTime: Long): Flow<Long> =
-        transactionDao.getAmountSumByTypeAndDateRange(type, startTime, endTime)
-            .flowOn(ioDispatcher)
-
+        valued(transactionDao.getPopulatedTransactionById(id).map { listOfNotNull(it) }).map { it.firstOrNull() }
+    override fun getTransactionsBetween(startTime: Long, endTime: Long, currency: String?): Flow<List<TransactionDetail>> =
+        valued(transactionDao.getPopulatedTransactionsBetween(startTime, endTime), currency)
+    override fun getTransactionsByAccount(accountId: Long): Flow<List<TransactionDetail>> = valued(transactionDao.getPopulatedTransactionsByAccount(accountId))
+    override fun getTransactionsByCategory(categoryId: Long): Flow<List<TransactionDetail>> = valued(transactionDao.getPopulatedTransactionsByCategory(categoryId))
+    override fun getAmountSum(type: TransactionType, startTime: Long, endTime: Long, currency: String?): Flow<Long> =
+        combine(getTransactionsBetween(startTime, endTime, currency), preferences.preferences) { entries, settings ->
+            entries.filter { it.transaction.type == type }.fold(0L) { total, entry ->
+                Math.addExact(total, checkNotNull(entry.primaryAmount(currency ?: settings.primaryCurrency)) { "缺少汇率" })
+            }
+        }
     override fun getCategoryAmountSum(categoryId: Long, startTime: Long, endTime: Long): Flow<Long> =
-        transactionDao.getAmountSumByCategoryAndDateRange(categoryId, startTime, endTime)
-            .flowOn(ioDispatcher)
+        combine(getTransactionsBetween(startTime, endTime), preferences.preferences) { entries, settings ->
+            entries.filter { it.transaction.categoryId == categoryId }.fold(0L) { total, entry ->
+                Math.addExact(total, checkNotNull(entry.primaryAmount(settings.primaryCurrency)) { "缺少汇率" })
+            }
+        }
+
+    private suspend fun value(transaction: Transaction): Transaction {
+        val source = requireNotNull(accountDao.getAccountByIdOnce(transaction.accountId)) { "账户已删除" }.asExternalModel()
+        val target = transaction.toAccountId?.let { requireNotNull(accountDao.getAccountByIdOnce(it)) { "转入账户已删除" }.asExternalModel() }
+        require(transaction.amount > 0L && if (transaction.type == TransactionType.TRANSFER) target != null && target.id != source.id else target == null)
+        return valuation.transaction(transaction, source, target, preferences.preferences.first().primaryCurrency)
+    }
+
+    private suspend fun changeBalance(id: Long, delta: Long) {
+        val account = requireNotNull(accountDao.getAccountIncludingDeleted(id)) { "账户不存在" }
+        accountDao.updateAccount(account.copy(currentBalance = Math.addExact(account.currentBalance, delta), baseBalance = null))
+    }
 
     override suspend fun createTransaction(transaction: Transaction): Long =
         withContext(ioDispatcher) {
+            val valued = value(transaction)
             database.withTransaction {
+                check(accountDao.getAccountByIdOnce(transaction.accountId) != null) { "账户已删除" }
+                transaction.toAccountId?.let { check(accountDao.getAccountByIdOnce(it) != null) { "转入账户已删除" } }
                 when (transaction.type) {
                     TransactionType.EXPENSE -> {
-                        accountDao.updateBalance(transaction.accountId, -transaction.amount)
+                        changeBalance(transaction.accountId, -transaction.amount)
                     }
                     TransactionType.INCOME -> {
-                        accountDao.updateBalance(transaction.accountId, transaction.amount)
+                        changeBalance(transaction.accountId, transaction.amount)
                     }
                     TransactionType.TRANSFER -> {
                         val toAccountId = checkNotNull(transaction.toAccountId) {
                             "Transfer destination account must not be null"
                         }
-                        accountDao.updateBalance(transaction.accountId, -transaction.amount)
-                        accountDao.updateBalance(toAccountId, transaction.amount)
+                        changeBalance(transaction.accountId, -transaction.amount)
+                        changeBalance(toAccountId, checkNotNull(valued.toAmount))
                     }
                 }
-                transactionDao.insertTransaction(transaction.asEntity())
+                transactionDao.insertTransaction(valued.asEntity())
             }
         }
 
     override suspend fun updateTransaction(transaction: Transaction) {
         withContext(ioDispatcher) {
+            val previous = checkNotNull(transactionDao.getTransactionByIdOnce(transaction.id)) { "交易已删除" }
+            val financialChange = previous.amount != transaction.amount || previous.accountId != transaction.accountId ||
+                previous.toAccountId != transaction.toAccountId || previous.type != transaction.type ||
+                previous.transactionTime != transaction.transactionTime || (transaction.toAmount != null && previous.toAmount != transaction.toAmount)
+            val valued = if (financialChange) value(transaction.copy(baseAmount = null, baseCurrency = null, baseRate = null, baseRateDate = null, currencySnapshots = emptyList()))
+                else previous.asExternalModel().copy(note = transaction.note, categoryId = transaction.categoryId)
             database.withTransaction {
-                val oldEntity = transactionDao.getTransactionByIdOnce(transaction.id) ?: return@withTransaction
+                val oldEntity = checkNotNull(transactionDao.getTransactionByIdOnce(transaction.id)) { "交易已删除" }
+                check(oldEntity == previous) { "交易已发生变化，请重新打开" }
 
                 when (oldEntity.type) {
                     TransactionType.EXPENSE -> {
-                        accountDao.updateBalance(oldEntity.accountId, oldEntity.amount)
+                        changeBalance(oldEntity.accountId, oldEntity.amount)
                     }
                     TransactionType.INCOME -> {
-                        accountDao.updateBalance(oldEntity.accountId, -oldEntity.amount)
+                        changeBalance(oldEntity.accountId, -oldEntity.amount)
                     }
                     TransactionType.TRANSFER -> {
                         oldEntity.toAccountId?.let { toAcc ->
-                            accountDao.updateBalance(oldEntity.accountId, oldEntity.amount)
-                            accountDao.updateBalance(toAcc, -oldEntity.amount)
+                            changeBalance(oldEntity.accountId, oldEntity.amount)
+                            changeBalance(toAcc, -(oldEntity.toAmount ?: oldEntity.amount))
                         }
                     }
                 }
 
                 when (transaction.type) {
                     TransactionType.EXPENSE -> {
-                        accountDao.updateBalance(transaction.accountId, -transaction.amount)
+                        changeBalance(transaction.accountId, -transaction.amount)
                     }
                     TransactionType.INCOME -> {
-                        accountDao.updateBalance(transaction.accountId, transaction.amount)
+                        changeBalance(transaction.accountId, transaction.amount)
                     }
                     TransactionType.TRANSFER -> {
                         val toAccountId = checkNotNull(transaction.toAccountId) {
                             "Transfer destination account must not be null"
                         }
-                        accountDao.updateBalance(transaction.accountId, -transaction.amount)
-                        accountDao.updateBalance(toAccountId, transaction.amount)
+                        changeBalance(transaction.accountId, -transaction.amount)
+                        changeBalance(toAccountId, checkNotNull(valued.toAmount))
                     }
                 }
 
-                transactionDao.updateTransaction(transaction.asEntity())
+                transactionDao.updateTransaction(valued.copy(importKey = oldEntity.importKey).asEntity())
             }
         }
     }
@@ -129,15 +149,15 @@ class DefaultTransactionRepository @Inject constructor(
 
                 when (entity.type) {
                     TransactionType.EXPENSE -> {
-                        accountDao.updateBalance(entity.accountId, entity.amount)
+                        changeBalance(entity.accountId, entity.amount)
                     }
                     TransactionType.INCOME -> {
-                        accountDao.updateBalance(entity.accountId, -entity.amount)
+                        changeBalance(entity.accountId, -entity.amount)
                     }
                     TransactionType.TRANSFER -> {
                         val toAccountId = entity.toAccountId ?: return@withTransaction
-                        accountDao.updateBalance(entity.accountId, entity.amount)
-                        accountDao.updateBalance(toAccountId, -entity.amount)
+                        changeBalance(entity.accountId, entity.amount)
+                        changeBalance(toAccountId, -(entity.toAmount ?: entity.amount))
                     }
                 }
 

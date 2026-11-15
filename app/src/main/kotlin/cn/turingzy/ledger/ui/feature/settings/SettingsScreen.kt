@@ -55,6 +55,7 @@ fun SettingsScreen(
     onDetailVisibleChange: (Boolean) -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val parseRulePreviews = (uiState as? SettingsUiState.Success)?.rules.orEmpty()
@@ -62,7 +63,7 @@ fun SettingsScreen(
     if (message != null) androidx.compose.material3.AlertDialog(
         onDismissRequest = viewModel::dismissMessage,
         text = { Text(message.orEmpty()) },
-        confirmButton = { androidx.compose.material3.TextButton(onClick = viewModel::dismissMessage) { Text("确定") } },
+        confirmButton = { androidx.compose.material3.TextButton(onClick = viewModel::dismissMessage) { Text(textResources.getString(cn.turingzy.ledger.R.string.ui_ok)) } },
     )
     SettingsNavigation(
         onDetailVisibleChange = onDetailVisibleChange,
@@ -71,12 +72,14 @@ fun SettingsScreen(
         when (destination) {
             SettingsDestination.ROOT -> SettingsContent(
                 uiState = uiState,
+                onGeneralSettingsClick = { navigate(SettingsDestination.GENERAL) },
                 onParseRulesClick = { navigate(SettingsDestination.PARSE_RULES) },
                 onCardManagementClick = { navigate(SettingsDestination.CARDS) },
                 onBillTransferClick = { navigate(SettingsDestination.BILL_TRANSFER) },
                 onBackupClick = { navigate(SettingsDestination.BACKUP) },
                 onAboutClick = { navigate(SettingsDestination.ABOUT) },
             )
+            SettingsDestination.GENERAL -> GeneralSettingsScreen(onBack = back)
             SettingsDestination.PARSE_RULES -> ParseRulesScreen(
                 accounts = (uiState as? SettingsUiState.Success)?.accounts.orEmpty(),
                 categories = (uiState as? SettingsUiState.Success)?.categories.orEmpty(),
@@ -96,7 +99,7 @@ fun SettingsScreen(
             )
             SettingsDestination.BILL_TRANSFER -> BillTransferScreen(rules = parseRulePreviews, onDismissRequest = back,
                 accounts = (uiState as? SettingsUiState.Success)?.accounts.orEmpty(),
-                onImport = viewModel::importBills, onExport = viewModel::exportBills)
+                onPreviewImport = viewModel::previewImport, onImport = viewModel::importBills, onExport = viewModel::exportBills)
             SettingsDestination.ABOUT -> AboutScreen(
                 versionName = (uiState as? SettingsUiState.Success)?.appVersion ?: "1.0.0",
                 onDismissRequest = back,
@@ -117,7 +120,9 @@ fun SettingsContent(
     onBackupClick: () -> Unit,
     onAboutClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onGeneralSettingsClick: () -> Unit = {},
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         modifier = modifier
@@ -154,7 +159,7 @@ fun SettingsContent(
                                 contentAlignment = Alignment.CenterStart,
                             ) {
                                 Text(
-                                    text = "设置",
+                                    text = textResources.getString(cn.turingzy.ledger.R.string.ui_settings),
                                     fontSize = 28.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface,
@@ -177,9 +182,16 @@ fun SettingsContent(
                             ) {
                                 Column(modifier = Modifier.fillMaxWidth()) {
                                     SettingsRowItem(
+                                        icon = MaterialSymbols.Tune,
+                                        iconColor = MaterialTheme.colorScheme.primary,
+                                        title = androidx.compose.ui.res.stringResource(cn.turingzy.ledger.R.string.general_settings),
+                                        onClick = onGeneralSettingsClick,
+                                    )
+                                    HorizontalDivider(Modifier.padding(start = 58.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+                                    SettingsRowItem(
                                         icon = MaterialSymbols.DashboardCustomize,
                                         iconColor = MaterialTheme.colorScheme.primary,
-                                        title = "卡面管理",
+                                        title = textResources.getString(cn.turingzy.ledger.R.string.ui_card_designs),
                                         onClick = onCardManagementClick,
                                     )
                                     HorizontalDivider(
@@ -190,7 +202,7 @@ fun SettingsContent(
                                     SettingsRowItem(
                                         icon = MaterialSymbols.Code,
                                         iconColor = MaterialTheme.colorScheme.secondary,
-                                        title = "账单解析规则",
+                                        title = textResources.getString(cn.turingzy.ledger.R.string.ui_import_rules),
                                         onClick = onParseRulesClick,
                                     )
                                     HorizontalDivider(
@@ -201,7 +213,7 @@ fun SettingsContent(
                                     SettingsRowItem(
                                         icon = MaterialSymbols.ImportExport,
                                         iconColor = MaterialTheme.colorScheme.tertiary,
-                                        title = "账单导入与导出",
+                                        title = textResources.getString(cn.turingzy.ledger.R.string.ui_import_and_export),
                                         onClick = onBillTransferClick,
                                     )
                                 }
@@ -226,7 +238,7 @@ fun SettingsContent(
                                 SettingsRowItem(
                                     icon = MaterialSymbols.CloudUpload,
                                     iconColor = MaterialTheme.colorScheme.tertiary,
-                                    title = "备份与恢复",
+                                    title = textResources.getString(cn.turingzy.ledger.R.string.ui_backup_and_restore),
                                     onClick = onBackupClick,
                                 )
                                 HorizontalDivider(
@@ -237,7 +249,7 @@ fun SettingsContent(
                                 SettingsRowItem(
                                     icon = MaterialSymbols.Info,
                                     iconColor = MaterialTheme.colorScheme.primary,
-                                    title = "关于",
+                                    title = textResources.getString(cn.turingzy.ledger.R.string.ui_about),
                                     onClick = onAboutClick,
                                 )
                             }

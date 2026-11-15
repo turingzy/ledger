@@ -12,5 +12,6 @@ sealed interface WalletUiState {
         val accounts: List<AccountWithTemplate>,
         val currencyTotals: List<WalletCurrencyTotals> = emptyList(),
         val templates: List<CardTemplate> = emptyList(),
+        val amountsAvailable: Boolean = true,
     ) : WalletUiState
 }

@@ -69,6 +69,7 @@ internal fun ParseRulesScreen(
     onDeleteRule: (Long) -> Unit,
     onDismissRequest: () -> Unit,
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     var draft by remember { mutableStateOf<ParseRulePreview?>(null) }
     var emptyDraft by remember { mutableStateOf(ParseRulePreview(id = 0L)) }
     val visibleDraft = draft ?: emptyDraft.takeIf { rules.isEmpty() }
@@ -83,9 +84,9 @@ internal fun ParseRulesScreen(
         val editing = page.draft
         val existing = editing != null && rules.any { it.id == editing.id }
         val title = when {
-            editing == null -> "账单解析规则"
-            existing -> "规则详情"
-            else -> "新增规则"
+            editing == null -> textResources.getString(cn.turingzy.ledger.R.string.ui_import_rules)
+            existing -> textResources.getString(cn.turingzy.ledger.R.string.ui_rule_details)
+            else -> textResources.getString(cn.turingzy.ledger.R.string.ui_new_rule)
         }
 
         SettingsPage(
@@ -114,7 +115,7 @@ internal fun ParseRulesScreen(
                 ) {
                     Icon(
                         if (editing == null) MaterialSymbols.Add else MaterialSymbols.Check,
-                        if (editing == null) "新增解析规则" else "保存规则",
+                        if (editing == null) textResources.getString(cn.turingzy.ledger.R.string.ui_new_import_rule) else textResources.getString(cn.turingzy.ledger.R.string.ui_save_rule),
                         tint = if (editing == null) colors.onSurfaceVariant else colors.tertiary.copy(alpha = if (editing.valid) 1f else 0.38f),
                     )
                 }
@@ -139,40 +140,40 @@ internal fun ParseRulesScreen(
                     Modifier.fillMaxWidth().settingsPageScroll().testTag("parseRuleForm"),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Text("基本信息", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                    Text(textResources.getString(cn.turingzy.ledger.R.string.ui_basic_information), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                     RuleFieldGroup {
-                        RuleTextField("规则名称", editing.name, "请输入名称", { draft = editing.copy(name = it) })
+                        RuleTextField(textResources.getString(cn.turingzy.ledger.R.string.ui_rule_name), editing.name, textResources.getString(cn.turingzy.ledger.R.string.ui_enter_a_name), { draft = editing.copy(name = it) })
                         RuleDivider()
-                        RuleTextField("起始行", editing.startRow, "从第几行读取", { draft = editing.copy(startRow = it) }, KeyboardType.Number)
+                        RuleTextField(textResources.getString(cn.turingzy.ledger.R.string.ui_starting_row), editing.startRow, textResources.getString(cn.turingzy.ledger.R.string.ui_first_data_row), { draft = editing.copy(startRow = it) }, KeyboardType.Number)
                     }
-                    Text("字段对应", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                    Text(textResources.getString(cn.turingzy.ledger.R.string.ui_column_mapping), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                     RuleFieldGroup {
-                        RuleTextField("交易时间", editing.dateColumn, "如：交易时间", { draft = editing.copy(dateColumn = it) })
+                        RuleTextField(textResources.getString(cn.turingzy.ledger.R.string.ui_transaction_date), editing.dateColumn, textResources.getString(cn.turingzy.ledger.R.string.ui_e_g_transaction_date), { draft = editing.copy(dateColumn = it) })
                         RuleDivider()
-                        RuleTextField("金额", editing.amountColumn, "如：金额", { draft = editing.copy(amountColumn = it) })
+                        RuleTextField(textResources.getString(cn.turingzy.ledger.R.string.ui_amount), editing.amountColumn, textResources.getString(cn.turingzy.ledger.R.string.ui_e_g_amount), { draft = editing.copy(amountColumn = it) })
                         RuleDivider()
-                        RuleTextField("收支类型", editing.typeColumn, "如：收支类型", { draft = editing.copy(typeColumn = it) })
+                        RuleTextField(textResources.getString(cn.turingzy.ledger.R.string.ui_transaction_type), editing.typeColumn, textResources.getString(cn.turingzy.ledger.R.string.ui_e_g_transaction_type), { draft = editing.copy(typeColumn = it) })
                         RuleDivider()
-                        RuleTextField("分类", editing.categoryColumn, "选填", { draft = editing.copy(categoryColumn = it) })
+                        RuleTextField(textResources.getString(cn.turingzy.ledger.R.string.ui_category), editing.categoryColumn, textResources.getString(cn.turingzy.ledger.R.string.ui_optional), { draft = editing.copy(categoryColumn = it) })
                         RuleDivider()
-                        RuleTextField("备注", editing.noteColumn, "选填", { draft = editing.copy(noteColumn = it) })
+                        RuleTextField(textResources.getString(cn.turingzy.ledger.R.string.ui_note), editing.noteColumn, textResources.getString(cn.turingzy.ledger.R.string.ui_optional), { draft = editing.copy(noteColumn = it) })
                     }
-                    Text("填写原始账单列名；交易时间和金额必填。未设置收支列时按支出导入。", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
-                    Text("默认归属", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                    Text(textResources.getString(cn.turingzy.ledger.R.string.ui_enter_column_names_from_your_file_date_and), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                    Text(textResources.getString(cn.turingzy.ledger.R.string.ui_defaults), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                     RuleFieldGroup {
                         RuleChoiceDropdown(
-                            label = "默认账户",
-                            value = accounts.firstOrNull { it.account.id == editing.accountId }?.account?.name ?: "导入时选择",
-                            options = listOf(RuleOption(null, "导入时选择")) + accounts.map { RuleOption(it.account.id, it.account.name) },
+                            label = textResources.getString(cn.turingzy.ledger.R.string.ui_default_account),
+                            value = accounts.firstOrNull { it.account.id == editing.accountId }?.account?.name ?: textResources.getString(cn.turingzy.ledger.R.string.ui_choose_on_import),
+                            options = listOf(RuleOption(null, textResources.getString(cn.turingzy.ledger.R.string.ui_choose_on_import))) + accounts.map { RuleOption(it.account.id, it.account.name) },
                             selectedId = editing.accountId,
                             onSelect = { draft = editing.copy(accountId = it.id) },
                             menuTestTag = "ruleAccountOptions",
                         )
                         RuleDivider()
                         RuleChoiceDropdown(
-                            label = "默认分类",
-                            value = categories.firstOrNull { it.category.id == editing.categoryId }?.category?.name ?: "不指定分类",
-                            options = listOf(RuleOption(null, "不指定分类")) + categories.map { RuleOption(it.category.id, it.category.name) },
+                            label = textResources.getString(cn.turingzy.ledger.R.string.ui_default_category),
+                            value = categories.firstOrNull { it.category.id == editing.categoryId }?.category?.name ?: textResources.getString(cn.turingzy.ledger.R.string.ui_no_default_category),
+                            options = listOf(RuleOption(null, textResources.getString(cn.turingzy.ledger.R.string.ui_no_default_category))) + categories.map { RuleOption(it.category.id, it.category.name) },
                             selectedId = editing.categoryId,
                             onSelect = { draft = editing.copy(categoryId = it.id) },
                             menuTestTag = "ruleCategoryOptions",
@@ -190,7 +191,7 @@ internal fun ParseRulesScreen(
                             contentPadding = PaddingValues(vertical = 8.dp),
                             colors = ButtonDefaults.textButtonColors(contentColor = colors.error),
                         ) {
-                            Text("删除规则", style = MaterialTheme.typography.bodyLarge)
+                            Text(textResources.getString(cn.turingzy.ledger.R.string.ui_delete_rule), style = MaterialTheme.typography.bodyLarge)
                         }
                     }
                 }

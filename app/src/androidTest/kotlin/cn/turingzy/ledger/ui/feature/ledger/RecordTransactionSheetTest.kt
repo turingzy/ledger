@@ -258,10 +258,10 @@ class RecordTransactionSheetTest {
                     sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
                     sheetHeight = sheetHeight, initialTransaction = initialTransaction,
                     categories = categories, accounts = accounts, onDismissRequest = {},
-                    onConfirm = { type, amount, accountId, destinationId, categoryId, note, time ->
+                    onConfirm = { type, amount, accountId, destinationId, categoryId, note, time, toAmount ->
                         onSave(Transaction(
                             type = type, amount = amount, accountId = accountId, toAccountId = destinationId,
-                            categoryId = categoryId, note = note, transactionTime = time,
+                            categoryId = categoryId, note = note, transactionTime = time, toAmount = toAmount,
                         ))
                     },
                 )

@@ -28,6 +28,7 @@ import java.time.LocalDate
 
 @Composable
 internal fun AnalyticsStatisticsCard(state: AnalyticsUiState.Success, days: Map<LocalDate, AnalyticsDay>, modifier: Modifier = Modifier) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val average = remember(state, days) {
         val previous = previousAnalyticsRange(state.periodStart, state.periodEnd)
         val previousExpense = state.comparison?.totalExpense ?: days.filterKeys { it >= previous.start && it <= previous.end }.values.sumOf { it.expense }
@@ -41,14 +42,18 @@ internal fun AnalyticsStatisticsCard(state: AnalyticsUiState.Success, days: Map<
         border = BorderStroke(0.5.dp, colors.outlineVariant),
     ) {
         Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            AnalyticsCardTitle("收支统计")
+            AnalyticsCardTitle(textResources.getString(cn.turingzy.ledger.R.string.ui_income_and_expenses))
             Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                StatisticsMetric("支出", state.totalExpense, Modifier.weight(1f))
-                StatisticsMetric("收入", state.totalIncome, Modifier.weight(1f))
+                StatisticsMetric(textResources.getString(cn.turingzy.ledger.R.string.ui_expense), state.totalExpense, Modifier.weight(1f))
+                StatisticsMetric(textResources.getString(cn.turingzy.ledger.R.string.ui_income), state.totalIncome, Modifier.weight(1f))
             }
             Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                StatisticsMetric("结余", state.balance, Modifier.weight(1f))
-                StatisticsMetric(average.label, average.amount, Modifier.weight(1f), average)
+                StatisticsMetric(textResources.getString(cn.turingzy.ledger.R.string.ui_balance), state.balance, Modifier.weight(1f))
+                StatisticsMetric(when (average.label) {
+                    "月均支出" -> textResources.getString(cn.turingzy.ledger.R.string.ui_monthly_average)
+                    "年均支出" -> textResources.getString(cn.turingzy.ledger.R.string.ui_yearly_average)
+                    else -> textResources.getString(cn.turingzy.ledger.R.string.ui_daily_average)
+                }, average.amount, Modifier.weight(1f), average)
             }
         }
     }
@@ -56,6 +61,7 @@ internal fun AnalyticsStatisticsCard(state: AnalyticsUiState.Success, days: Map<
 
 @Composable
 private fun StatisticsMetric(label: String, amount: Long, modifier: Modifier = Modifier, average: AnalyticsExpenseAverage? = null) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val colors = MaterialTheme.colorScheme
     Surface(modifier.fillMaxHeight(), shape = RoundedCornerShape(14.dp), color = analyticsChartInfoColor()) {
         Column(Modifier.padding(horizontal = 8.dp, vertical = 5.dp), verticalArrangement = Arrangement.spacedBy(1.dp)) {
@@ -67,7 +73,7 @@ private fun StatisticsMetric(label: String, amount: Long, modifier: Modifier = M
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                         Icon(
                             if (it.direction > 0) MaterialSymbols.TrendingUp else MaterialSymbols.TrendingDown,
-                            if (it.direction > 0) "环比增长" else "环比下降",
+                            if (it.direction > 0) textResources.getString(cn.turingzy.ledger.R.string.ui_increase) else textResources.getString(cn.turingzy.ledger.R.string.ui_decrease),
                             Modifier.size(10.dp), tint = color,
                         )
                         Text(it.change.substringAfter(' '), fontSize = 9.sp, lineHeight = 11.sp, color = color, maxLines = 1)

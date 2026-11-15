@@ -49,7 +49,7 @@ internal fun AccountSaveButton(
     enabled: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    contentDescription: String = "保存账户",
+    contentDescription: String = androidx.compose.ui.res.stringResource(cn.turingzy.ledger.R.string.ui_save_account),
 ) {
     val color = MaterialTheme.colorScheme.tertiary
     IconButton(showPressFeedback = false, onClick = onClick, enabled = enabled, modifier = modifier) {
@@ -113,12 +113,13 @@ internal fun AccountCardFaceField(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    disabledHint: String = "先填写账户名称和四位尾号",
+    disabledHint: String = androidx.compose.ui.res.stringResource(cn.turingzy.ledger.R.string.ui_enter_an_account_name_and_last_four_digits),
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val colors = MaterialTheme.colorScheme
     val contentColor = if (enabled) colors.onSurface else colors.onSurface.copy(alpha = 0.38f)
     Column(modifier.fillMaxWidth().semantics { if (!enabled) disabled() }) {
-        AccountFieldFrame("卡面", readOnly = !enabled, onClick = if (enabled) onClick else null) {
+        AccountFieldFrame(textResources.getString(cn.turingzy.ledger.R.string.ui_card_design), readOnly = !enabled, onClick = if (enabled) onClick else null) {
             Text(value, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = contentColor, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Icon(MaterialSymbols.ChevronRight, null, Modifier.size(24.dp), tint = contentColor)
         }
@@ -134,6 +135,7 @@ internal fun AccountCardFaceField(
 
 @Composable
 internal fun AccountTailNumberField(value: String, onValueChange: (String) -> Unit, modifier: Modifier = Modifier) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val source = remember { MutableInteractionSource() }
     val focused by source.collectIsFocusedAsState()
     val focusRequester = remember { FocusRequester() }
@@ -141,7 +143,7 @@ internal fun AccountTailNumberField(value: String, onValueChange: (String) -> Un
     val focusManager = LocalFocusManager.current
     val keyboard = LocalSoftwareKeyboardController.current
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text("尾号", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+        Text(textResources.getString(cn.turingzy.ledger.R.string.ui_last_digits), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
         BasicTextField(
             value = value,
             onValueChange = { if (it.length <= 4 && it.all { digit -> digit in '0'..'9' }) onValueChange(it) },
@@ -150,7 +152,7 @@ internal fun AccountTailNumberField(value: String, onValueChange: (String) -> Un
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
             keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
             modifier = Modifier.width(200.dp).height(44.dp).focusRequester(focusRequester)
-                .semantics { contentDescription = "尾号" },
+                .semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_last_digits) },
             decorationBox = { inner ->
                 Box(
                     Modifier.clickable(

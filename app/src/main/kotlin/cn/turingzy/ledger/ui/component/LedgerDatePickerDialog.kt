@@ -32,6 +32,7 @@ internal fun LedgerDatePickerDialog(
     onConfirm: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     var day by rememberSaveable(initialDate) { mutableLongStateOf(initialDate.toEpochDay()) }
     val date = LocalDate.ofEpochDay(day)
     Dialog(onDismissRequest = onDismiss) {
@@ -47,10 +48,10 @@ internal fun LedgerDatePickerDialog(
                     LedgerDatePicker(date) { day = it.toEpochDay() }
                 }
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    LedgerIconButton(onDismiss, showPressFeedback = false) { Icon(MaterialSymbols.Close, "取消") }
+                    LedgerIconButton(onDismiss, showPressFeedback = false) { Icon(MaterialSymbols.Close, textResources.getString(cn.turingzy.ledger.R.string.ui_cancel)) }
                     Spacer(Modifier.weight(1f))
                     LedgerIconButton({ onConfirm(date) }, showPressFeedback = false) {
-                        Icon(MaterialSymbols.Check, "确认", tint = MaterialTheme.colorScheme.tertiary)
+                        Icon(MaterialSymbols.Check, textResources.getString(cn.turingzy.ledger.R.string.ui_confirm), tint = MaterialTheme.colorScheme.tertiary)
                     }
                 }
             }

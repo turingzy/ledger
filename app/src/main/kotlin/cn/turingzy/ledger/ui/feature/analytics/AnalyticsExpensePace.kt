@@ -1,5 +1,7 @@
 package cn.turingzy.ledger.ui.feature.analytics
 
+import cn.turingzy.ledger.ui.component.LocalLedgerCurrency
+import cn.turingzy.ledger.ui.component.currencySymbol
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,6 +41,7 @@ import java.time.LocalDate
 internal fun ExpensePace(days: Map<LocalDate, AnalyticsDay>, scope: AnalyticsTimeScope, start: LocalDate, end: LocalDate, today: LocalDate) {
     val data = remember(days, scope, start, end, today) { expensePaceData(days, scope, start, end, today) }
     var selectedIndex by remember(data) { mutableStateOf<Int?>(null) }
+    val currencySymbol = currencySymbol(LocalLedgerCurrency.current)
     val colors = MaterialTheme.colorScheme
     val measurer = rememberTextMeasurer()
     val labelStyle = TextStyle(fontSize = 10.sp, lineHeight = 12.sp, color = colors.onSurfaceVariant)
@@ -48,7 +51,7 @@ internal fun ExpensePace(days: Map<LocalDate, AnalyticsDay>, scope: AnalyticsTim
         val canvasWidth = with(density) { maxWidth.toPx() }
         val labels = (0..4).map { tick ->
             val amount = BigDecimal.valueOf(data.scale).multiply(BigDecimal.valueOf(tick.toLong())).divide(BigDecimal.valueOf(4), 0, RoundingMode.HALF_UP).longValueExact()
-            measurer.measure(expenseAxisLabel(amount), labelStyle)
+            measurer.measure(expenseAxisLabel(amount, currencySymbol), labelStyle)
         }
         val tickIndices = expensePaceTickIndices(data.dates.size, scope)
         val initialTicks = tickIndices.associateWith { index -> measurer.measure(expensePaceDateLabel(scope, data.dates[index]), labelStyle) }
@@ -132,6 +135,8 @@ internal fun ExpensePace(days: Map<LocalDate, AnalyticsDay>, scope: AnalyticsTim
 
 @Composable
 private fun ExpensePaceReadout(date: LocalDate, current: Long, previous: Long, modifier: Modifier = Modifier) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
+    val currencySymbol = currencySymbol(LocalLedgerCurrency.current)
     val colors = MaterialTheme.colorScheme
     val direction = current.compareTo(previous)
     val changeColor = when {
@@ -141,21 +146,21 @@ private fun ExpensePaceReadout(date: LocalDate, current: Long, previous: Long, m
     }
     Surface(color = analyticsChartInfoColor(), shape = RoundedCornerShape(5.dp),
         modifier = modifier.wrapContentWidth(Alignment.CenterHorizontally).height(18.dp).semantics {
-            contentDescription = "$date，本期支出${current.toFormattedAmount(true)}，上期支出${previous.toFormattedAmount(true)}${if (previous > 0L) "，${expensePaceChangeLabel(current, previous)}" else ""}"
+            contentDescription = "$date，本期支出${current.toFormattedAmount(true, symbol = currencySymbol)}，上期支出${previous.toFormattedAmount(true, symbol = currencySymbol)}${if (previous > 0L) "，${expensePaceChangeLabel(current, previous)}" else ""}"
         }) {
         Row(Modifier.padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Text("${date.monthValue}.${date.dayOfMonth}", fontSize = 10.sp, lineHeight = 12.sp, color = colors.onSurfaceVariant)
-            Text("本期 ${current.toFormattedAmount(true)}", fontSize = 10.sp, lineHeight = 12.sp,
+            Text("本期 ${current.toFormattedAmount(true, symbol = currencySymbol)}", fontSize = 10.sp, lineHeight = 12.sp,
                 color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Row(verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text("上期 ${previous.toFormattedAmount(true)}", fontSize = 10.sp, lineHeight = 12.sp,
+                Text("上期 ${previous.toFormattedAmount(true, symbol = currencySymbol)}", fontSize = 10.sp, lineHeight = 12.sp,
                     color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (previous > 0L) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(1.dp)) {
                     if (direction != 0) Icon(
                         if (direction > 0) MaterialSymbols.TrendingUp else MaterialSymbols.TrendingDown,
-                        if (direction > 0) "环比增长" else "环比下降", Modifier.size(10.dp), tint = changeColor,
+                        if (direction > 0) textResources.getString(cn.turingzy.ledger.R.string.ui_increase) else textResources.getString(cn.turingzy.ledger.R.string.ui_decrease), Modifier.size(10.dp), tint = changeColor,
                     )
                     Text(expensePaceChangeLabel(current, previous).removePrefix("增长 ").removePrefix("下降 "),
                         fontSize = 10.sp, lineHeight = 12.sp, color = changeColor, maxLines = 1)
@@ -174,10 +179,10 @@ internal fun smoothChartPath(points: List<Offset>): Path = Path().apply {
     }
 }
 
-internal fun expenseAxisLabel(cents: Long): String {
-    if (cents < 100_000L) return cents.toFormattedAmount(showSymbol = true).removeSuffix(".00")
+internal fun expenseAxisLabel(cents: Long, currencySymbol: String = "¥"): String {
+    if (cents < 100_000L) return cents.toFormattedAmount(showSymbol = true, symbol = currencySymbol).removeSuffix(".00")
     val thousands = BigDecimal.valueOf(cents).divide(BigDecimal.valueOf(100_000L), 2, RoundingMode.HALF_UP)
-    return "¥${thousands.stripTrailingZeros().toPlainString()}k"
+    return "$currencySymbol${thousands.stripTrailingZeros().toPlainString()}k"
 }
 
 internal fun expensePaceTickIndices(count: Int, scope: AnalyticsTimeScope? = null): List<Int> {

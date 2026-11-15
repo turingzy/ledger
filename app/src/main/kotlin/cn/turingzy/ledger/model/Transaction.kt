@@ -13,6 +13,14 @@ data class Transaction(
     val transactionTime: Long,
     val note: String? = null,
     val isDeleted: Boolean = false,
+    val importKey: String? = null,
+    val baseAmount: Long? = null,
+    val baseCurrency: String? = null,
+    val baseRate: String? = null,
+    val baseRateDate: String? = null,
+    val toAmount: Long? = null,
+    val transferRate: String? = null,
+    val currencySnapshots: List<CurrencySnapshot> = emptyList(),
 )
 
 @Serializable
@@ -23,3 +31,6 @@ data class TransactionDetail(
     val category: CategoryWithIcon,
 )
 
+
+@Serializable
+data class CurrencySnapshot(val currency: String, val amount: Long, val rate: String, val date: String)

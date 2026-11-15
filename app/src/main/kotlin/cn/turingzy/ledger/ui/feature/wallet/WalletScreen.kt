@@ -239,6 +239,7 @@ fun WalletContent(
     onCardTransparencyChange: (Int) -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState, Modifier.padding(bottom = LocalBottomBarContentPadding.current)) },
         containerColor = MaterialTheme.colorScheme.background,
@@ -260,9 +261,8 @@ fun WalletContent(
 
             is WalletUiState.Success -> {
                 val accounts = uiState.accounts
-                var selectedCurrency by rememberSaveable { mutableStateOf("CNY") }
                 val currencyTotals = uiState.currencyTotals.ifEmpty { listOf(WalletCurrencyTotals("CNY", assets = uiState.totalAsset)) }
-                val totals = currencyTotals.firstOrNull { it.currency == selectedCurrency } ?: currencyTotals.first()
+                val totals = currencyTotals.first()
                 var isListView by rememberSaveable { mutableStateOf(false) }
                 var selectedAccountId by rememberSaveable { mutableStateOf<Long?>(null) }
 
@@ -291,7 +291,7 @@ fun WalletContent(
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     Text(
-                                        text = "钱包",
+                                        text = textResources.getString(cn.turingzy.ledger.R.string.ui_wallet),
                                         fontSize = 28.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onSurface,
@@ -301,25 +301,13 @@ fun WalletContent(
 
                                     TopBarIconButton(
                                         imageVector = MaterialSymbols.AddCard,
-                                        contentDescription = "添加账户",
+                                        contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_add_account),
                                         onClick = onAddAccountClick,
                                     )
                                 }
                             }
 
-                            if (currencyTotals.size > 1) LedgerDropdown(
-                                options = currencyTotals,
-                                optionLabel = { it.currency },
-                                isSelected = { it.currency == totals.currency },
-                                onSelect = { selectedCurrency = it.currency },
-                                menuTestTag = "walletCurrencyOptions",
-                            ) { anchorModifier, _, onToggle ->
-                                Row(anchorModifier.clickable(onClick = onToggle).padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    Text(totals.currency, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    Icon(MaterialSymbols.ArrowDropDown, "选择资产币种", Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                            }
-                            WalletHeroCard(
+                            if (uiState.amountsAvailable) WalletHeroCard(
                                 totalAsset = totals.assets,
                                 totalExpense = totals.expense,
                                 totalIncome = totals.income,
@@ -329,7 +317,7 @@ fun WalletContent(
                                 settingsEnabled = cardSettingsEnabled,
                                 onUploadBackground = onUploadCardBackground,
                                 onTransparencyChange = onCardTransparencyChange,
-                            )
+                            ) else Text(textResources.getString(cn.turingzy.ledger.R.string.ui_exchange_rate_needed_refresh_or_enter_a_rate), color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
 
@@ -343,7 +331,7 @@ fun WalletContent(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Text(
-                                    text = "账户",
+                                    text = textResources.getString(cn.turingzy.ledger.R.string.ui_account),
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -351,7 +339,7 @@ fun WalletContent(
 
                                 TopBarIconButton(
                                     imageVector = if (isListView) MaterialSymbols.ViewCarousel else MaterialSymbols.ViewAgenda,
-                                    contentDescription = if (isListView) "切换为卡片堆叠视图" else "切换为纵向层叠视图",
+                                    contentDescription = if (isListView) textResources.getString(cn.turingzy.ledger.R.string.ui_switch_to_horizontal_cards) else textResources.getString(cn.turingzy.ledger.R.string.ui_switch_to_vertical_cards),
                                     onClick = { isListView = !isListView },
                                 )
                             }
@@ -392,6 +380,7 @@ fun WalletHeroCard(
     onTransparencyChange: (Int) -> Unit = {},
     currency: String = "CNY",
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     var amountsHidden by rememberSaveable { mutableStateOf(false) }
     SummaryCard(
         modifier = modifier,
@@ -403,15 +392,15 @@ fun WalletHeroCard(
         onTransparencyChange = onTransparencyChange,
     ) {
         SummaryCardContent(
-            title = "总资产",
+            title = textResources.getString(cn.turingzy.ledger.R.string.ui_total_assets),
             amount = totalAsset,
             amountsHidden = amountsHidden,
             onToggleAmounts = { amountsHidden = !amountsHidden },
             leftAmount = totalExpense,
             rightAmount = totalIncome,
             currency = currency,
-            leftLabel = "总支出",
-            rightLabel = "总收入",
+            leftLabel = textResources.getString(cn.turingzy.ledger.R.string.ui_total_expenses),
+            rightLabel = textResources.getString(cn.turingzy.ledger.R.string.ui_total_income),
         )
     }
 }

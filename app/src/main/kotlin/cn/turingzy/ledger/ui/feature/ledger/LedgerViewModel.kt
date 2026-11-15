@@ -1,6 +1,8 @@
 package cn.turingzy.ledger.ui.feature.ledger
 
 import cn.turingzy.ledger.ui.component.weekLabel
+import cn.turingzy.ledger.model.primaryAmount
+import kotlinx.coroutines.flow.map
 import cn.turingzy.ledger.model.DateFilterType
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -17,6 +19,10 @@ import cn.turingzy.ledger.util.LedgerDispatchers
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.CoroutineDispatcher
+import cn.turingzy.ledger.data.repository.CurrencyRepository
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.asStateFlow
+import timber.log.Timber
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -60,6 +66,7 @@ class LedgerViewModel @Inject constructor(
     categoryRepository: CategoryRepository,
     accountRepository: AccountRepository,
     @param:Dispatcher(LedgerDispatchers.Default) private val defaultDispatcher: CoroutineDispatcher,
+    private val currencies: CurrencyRepository,
 ) : ViewModel() {
 
     private val dateFilter = MutableStateFlow<LedgerDateFilter>(LedgerDateFilter.Month(YearMonth.now()))
@@ -78,7 +85,15 @@ class LedgerViewModel @Inject constructor(
             initialValue = emptyList(),
         )
 
-    val uiState: StateFlow<LedgerUiState> = dateFilter.flatMapLatest { filter ->
+    private val searchQuery = MutableStateFlow("")
+    private val _saveState = MutableStateFlow(TransactionSaveState())
+    internal val saveState = _saveState.asStateFlow()
+    fun search(query: String) { searchQuery.value = query.trim() }
+    internal fun resetSaveState() { if (!_saveState.value.saving) _saveState.value = TransactionSaveState() }
+
+    val uiState: StateFlow<LedgerUiState> = combine(dateFilter, currencies.selection, searchQuery) { filter, currency, query ->
+        Triple(filter, currency, query)
+    }.flatMapLatest { (filter, currency, query) ->
         val zone = ZoneId.systemDefault()
         val calc = when (filter) {
             is LedgerDateFilter.Week -> {
@@ -116,12 +131,20 @@ class LedgerViewModel @Inject constructor(
         }
 
         combine(
-            transactionRepository.getAmountSum(TransactionType.INCOME, calc.startEpoch, calc.endEpoch),
-            transactionRepository.getAmountSum(TransactionType.EXPENSE, calc.startEpoch, calc.endEpoch),
-            transactionRepository.getTransactionsBetween(calc.startEpoch, calc.endEpoch),
-        ) { income, expense, transactions ->
-            val dayGroups = groupTransactionsByDay(transactions, zone)
+            transactionRepository.getTransactionsBetween(calc.startEpoch, calc.endEpoch, currency.currency),
+            if (query.isBlank()) kotlinx.coroutines.flow.flowOf(emptyList()) else transactionRepository.searchTransactions(query),
+        ) { periodTransactions, searchTransactions ->
+            val transactions = if (query.isBlank()) periodTransactions else searchTransactions
+            val available = periodTransactions.filter { it.transaction.type != TransactionType.TRANSFER }.all { it.primaryAmount(currency.currency) != null }
+            fun total(type: TransactionType) = periodTransactions.filter { it.transaction.type == type }
+                .fold(0L) { total, entry -> Math.addExact(total, entry.primaryAmount(currency.currency) ?: 0L) }
+            val income = total(TransactionType.INCOME)
+            val expense = total(TransactionType.EXPENSE)
+            val dayGroups = groupTransactionsByDay(transactions, zone, currency.currency)
             LedgerUiState.Success(
+                currency = currency.currency,
+                searchQuery = query,
+                amountsAvailable = available,
                 year = calc.year,
                 month = calc.month,
                 monthDisplay = calc.headerDisplay,
@@ -174,7 +197,10 @@ class LedgerViewModel @Inject constructor(
         categoryId: Long,
         note: String? = null,
         transactionTime: Long = System.currentTimeMillis(),
+        toAmount: Long? = null,
     ) {
+        if (_saveState.value.saving || _saveState.value.saved) return
+        _saveState.value = TransactionSaveState(saving = true)
         viewModelScope.launch {
             val transaction = Transaction(
                 type = type,
@@ -184,8 +210,18 @@ class LedgerViewModel @Inject constructor(
                 categoryId = categoryId,
                 transactionTime = transactionTime,
                 note = note?.trim()?.takeIf { it.isNotEmpty() },
+                toAmount = toAmount,
             )
-            transactionRepository.createTransaction(transaction)
+            try {
+                transactionRepository.createTransaction(transaction)
+                _saveState.value = TransactionSaveState(saved = true)
+            } catch (error: CancellationException) {
+                _saveState.value = TransactionSaveState()
+                throw error
+            } catch (error: Exception) {
+                Timber.e(error, "Unable to create transaction")
+                _saveState.value = TransactionSaveState(error = "保存失败，请重试")
+            }
         }
     }
 
@@ -198,6 +234,7 @@ class LedgerViewModel @Inject constructor(
     private fun groupTransactionsByDay(
         transactions: List<TransactionDetail>,
         zone: ZoneId,
+        primary: String,
     ): List<DayTransactionGroup> {
         val dateFormatter = DateTimeFormatter.ofPattern("MM/dd E", Locale.CHINESE)
 
@@ -208,10 +245,10 @@ class LedgerViewModel @Inject constructor(
             .map { (date, txList) ->
                 val dayExpense = txList
                     .filter { it.transaction.type == TransactionType.EXPENSE }
-                    .sumOf { it.transaction.amount }
+                    .sumOf { it.primaryAmount(primary) ?: 0L }
                 val dayIncome = txList
                     .filter { it.transaction.type == TransactionType.INCOME }
-                    .sumOf { it.transaction.amount }
+                    .sumOf { it.primaryAmount(primary) ?: 0L }
 
                 DayTransactionGroup(
                     dateEpochDay = date.toEpochDay(),
@@ -219,6 +256,11 @@ class LedgerViewModel @Inject constructor(
                     totalExpense = dayExpense,
                     totalIncome = dayIncome,
                     transactions = txList.sortedByDescending { it.transaction.transactionTime },
+                    currencyAmounts = txList.groupBy { it.account.currency }.map { (code, entries) ->
+                        DayCurrencyAmounts(code,
+                            entries.filter { it.transaction.type == TransactionType.EXPENSE }.sumOf { it.transaction.amount },
+                            entries.filter { it.transaction.type == TransactionType.INCOME }.sumOf { it.transaction.amount })
+                    },
                 )
             }
             .sortedByDescending { it.dateEpochDay }

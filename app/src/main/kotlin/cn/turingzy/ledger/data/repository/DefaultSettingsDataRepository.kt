@@ -5,6 +5,7 @@ import android.net.Uri
 import android.util.Base64
 import androidx.room.withTransaction
 import cn.turingzy.ledger.data.transfer.BillFileCodec
+import cn.turingzy.ledger.data.transfer.planBillImport
 import cn.turingzy.ledger.data.transfer.LedgerBackupValidator
 import cn.turingzy.ledger.data.transfer.readBytesLimited
 import cn.turingzy.ledger.database.LedgerDatabase
@@ -36,9 +37,12 @@ class DefaultSettingsDataRepository @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val database: LedgerDatabase,
     private val appearances: LedgerCardAppearanceRepository,
+    private val preferences: AppPreferencesRepository,
+    private val valuation: MoneyValuation,
+    private val exchangeRates: ExchangeRateRepository,
     @param:Dispatcher(LedgerDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
 ) : SettingsDataRepository {
-    private val json = Json { encodeDefaults = true }
+    private val json = Json { encodeDefaults = true; ignoreUnknownKeys = true }
 
     override suspend fun ensureDefaultRules() = withContext(ioDispatcher) {
         database.withTransaction {
@@ -91,29 +95,46 @@ class DefaultSettingsDataRepository @Inject constructor(
 
     override suspend fun exportBills(uri: Uri, excel: Boolean, start: Long, end: Long): Int = withContext(ioDispatcher) {
         val details = database.transactionDao().getPopulatedTransactionsBetween(start, end).first().map { it.asExternalModel() }
-        val header = listOf("交易时间", "金额", "收支类型", "分类", "备注", "账户", "转入账户", "币种")
+        val header = listOf("交易时间", "金额", "收支类型", "分类", "备注", "账户", "转入账户", "币种", "来源交易号", "转入金额", "主要货币", "主要货币金额", "主要货币汇率", "汇率日期")
         val dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault())
         val rows = listOf(header) + details.map { detail ->
             val transaction = detail.transaction
             listOf(dateFormat.format(Instant.ofEpochMilli(transaction.transactionTime)),
                 BigDecimal.valueOf(transaction.amount, 2).toPlainString(),
                 when (transaction.type) { TransactionType.EXPENSE -> "支出"; TransactionType.INCOME -> "收入"; TransactionType.TRANSFER -> "转账" },
-                detail.category.category.name, transaction.note.orEmpty(), detail.account.name, detail.toAccount?.name.orEmpty(), detail.account.currency)
+                detail.category.category.name, transaction.note.orEmpty(), detail.account.name, detail.toAccount?.name.orEmpty(), detail.account.currency, transaction.importKey.orEmpty(),
+                transaction.toAmount?.let { BigDecimal.valueOf(it, 2).toPlainString() }.orEmpty(), transaction.baseCurrency.orEmpty(),
+                transaction.baseAmount?.let { BigDecimal.valueOf(it, 2).toPlainString() }.orEmpty(), transaction.baseRate.orEmpty(), transaction.baseRateDate.orEmpty())
         }
         val bytes = if (excel) BillFileCodec.workbook(rows) else BillFileCodec.csv(rows)
         write(uri, bytes)
         details.size
     }
 
-    override suspend fun importBills(uri: Uri, rule: BillParseRule, selectedAccountId: Long?): Int = withContext(ioDispatcher) {
+    private suspend fun readImport(uri: Uri, rule: BillParseRule, selectedAccountId: Long?): List<Transaction> {
         require(rule.valid) { "解析规则无效" }
         val rows = BillFileCodec.read(read(uri, BillFileCodec.MAX_BYTES))
         val accounts = database.accountDao().backupRows().map { it.asExternalModel() }.filterNot { it.isDeleted }
         val categories = database.categoryDao().backupRows().map { it.asExternalModel() }.filterNot { it.isDeleted }
-        val pending = cn.turingzy.ledger.data.transfer.BillImportPlanner.plan(rows, rule, selectedAccountId, accounts, categories)
+        return cn.turingzy.ledger.data.transfer.BillImportPlanner.plan(rows, rule, selectedAccountId, accounts, categories)
+    }
+
+    override suspend fun previewImport(uri: Uri, rule: BillParseRule, selectedAccountId: Long?): BillImportResult = withContext(ioDispatcher) {
+        val plan = planBillImport(readImport(uri, rule, selectedAccountId), database.transactionDao().backupRows().map { it.asExternalModel() }, false)
+        BillImportResult(plan.transactions.size, plan.duplicates, plan.possibleDuplicates)
+    }
+
+    override suspend fun importBills(uri: Uri, rule: BillParseRule, selectedAccountId: Long?, includePossibleDuplicates: Boolean): BillImportResult = withContext(ioDispatcher) {
+        val prepared = planBillImport(readImport(uri, rule, selectedAccountId), database.transactionDao().backupRows().map { it.asExternalModel() }, includePossibleDuplicates)
+        val primary = preferences.preferences.first().primaryCurrency
+        val accounts = database.accountDao().backupRows().associate { it.accountId to it.asExternalModel() }
+        val pending = prepared.transactions.map { transaction ->
+            valuation.transaction(transaction, accounts.getValue(transaction.accountId), transaction.toAccountId?.let(accounts::getValue), primary)
+        }
         database.withTransaction {
+            val plan = planBillImport(pending, database.transactionDao().backupRows().map { it.asExternalModel() }, includePossibleDuplicates)
             val balances = database.accountDao().backupRows().associate { it.accountId to it.currentBalance }.toMutableMap()
-            pending.forEach { transaction ->
+            plan.transactions.forEach { transaction ->
                 currentCoroutineContext().ensureActive()
                 fun add(id: Long, delta: Long) { balances[id] = Math.addExact(balances.getValue(id), delta) }
                 check(database.accountDao().getAccountByIdOnce(transaction.accountId) != null) { "导入账户已删除" }
@@ -122,16 +143,16 @@ class DefaultSettingsDataRepository @Inject constructor(
                 else add(transaction.accountId, -transaction.amount)
                 transaction.toAccountId?.let { id ->
                     check(database.accountDao().getAccountByIdOnce(id) != null) { "转入账户已删除" }
-                    add(id, transaction.amount)
+                    add(id, checkNotNull(transaction.toAmount))
                 }
                 database.transactionDao().insertTransaction(transaction.asEntity())
             }
             balances.forEach { (id, balance) ->
                 val account = database.accountDao().getAccountByIdOnce(id)
-                if (account != null && account.currentBalance != balance) database.accountDao().updateAccount(account.copy(currentBalance = balance))
+                if (account != null && account.currentBalance != balance) database.accountDao().updateAccount(account.copy(currentBalance = balance, baseBalance = null))
             }
+            BillImportResult(plan.transactions.size, prepared.duplicates + plan.duplicates, if (includePossibleDuplicates) 0 else prepared.possibleDuplicates + plan.possibleDuplicates)
         }
-        pending.size
     }
 
     override suspend fun backup(uri: Uri, includeBills: Boolean, includeSettings: Boolean) = withContext(ioDispatcher) {
@@ -157,7 +178,8 @@ class DefaultSettingsDataRepository @Inject constructor(
         fun pack(template: CardTemplate) = template.copy(coverUri = packImage(template.coverUri))
         val packed = snapshot.copy(
             bills = snapshot.bills?.copy(templates = snapshot.bills.templates.map(::pack)),
-            settings = snapshot.settings?.copy(templates = snapshot.settings.templates.map(::pack), appearances = appearanceData),
+            settings = snapshot.settings?.copy(templates = snapshot.settings.templates.map(::pack), appearances = appearanceData,
+                preferences = preferences.preferences.first(), rates = database.exchangeRateDao().rows().map { BackupExchangeRate(it.date, it.currency, it.perUsd, it.manual) }),
         )
         LedgerBackupValidator.validate(packed)
         val bytes = json.encodeToString(packed).toByteArray(Charsets.UTF_8)
@@ -176,6 +198,8 @@ class DefaultSettingsDataRepository @Inject constructor(
         val prepared = mutableMapOf<SummaryCardTarget, String?>()
         val previous = mutableMapOf<SummaryCardTarget, Pair<Int, String?>>()
         var appearanceChanged = false
+        var preferencesChanged = false
+        val previousPreferences = preferences.preferences.first()
         try {
             settings?.appearances.orEmpty().forEach { appearance ->
                 prepared[appearance.target] = appearance.image?.let { encoded ->
@@ -224,6 +248,11 @@ class DefaultSettingsDataRepository @Inject constructor(
                         database.parseRuleDao().insertRule(restored.asEntity())
                     }
                 }
+                if (settings != null) {
+                    database.exchangeRateDao().clear()
+                    database.exchangeRateDao().insert(settings.rates.map { cn.turingzy.ledger.database.model.ExchangeRateEntity(it.date, it.currency, it.perUsd, it.manual) })
+                    settings.preferences?.let { preferencesChanged = true; preferences.save(it) }
+                }
                 settings?.appearances?.forEach { appearance ->
                     appearanceChanged = true
                     val image = prepared[appearance.target]
@@ -232,6 +261,14 @@ class DefaultSettingsDataRepository @Inject constructor(
                 }
             }
         } catch (error: Exception) {
+            if (preferencesChanged) withContext(NonCancellable) {
+                try { preferences.save(previousPreferences) }
+                catch (rollback: Exception) {
+                    if (rollback is kotlinx.coroutines.CancellationException) throw rollback
+                    timber.log.Timber.e(rollback, "Unable to roll back general settings")
+                    error.addSuppressed(rollback)
+                }
+            }
             if (appearanceChanged) withContext(NonCancellable) {
                 previous.forEach { (target, old) ->
                     try {
@@ -248,6 +285,7 @@ class DefaultSettingsDataRepository @Inject constructor(
             throw error
         } finally {
             withContext(NonCancellable) {
+                exchangeRates.invalidate()
                 (prepared.values + previous.values.map { it.second }).filterNotNull().forEach { appearances.discardPreparedBackground(it) }
             }
         }

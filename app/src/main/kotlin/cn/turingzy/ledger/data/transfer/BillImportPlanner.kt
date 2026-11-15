@@ -38,9 +38,25 @@ object BillImportPlanner {
                     ?: error("找不到匹配的分类")
                 val target = if (type == TransactionType.TRANSFER) accounts.singleOrNull { it.name == field("转入账户") }
                     ?: error("找不到转入账户") else null
-                require(target == null || (target.id != account.id && target.currency == account.currency)) { "转账账户或币种无效" }
+                require(target == null || target.id != account.id) { "转账账户或币种无效" }
+                val transferred = if (target == null) null else field("转入金额").takeIf { it.isNotBlank() }?.let(BillFileCodec::amount)
+                require(transferred == null || transferred > 0L && (target?.currency != account.currency || transferred == kotlin.math.abs(signed))) { "转入金额无效" }
+                val baseCurrency = field("主要货币").takeIf { it.isNotBlank() }
+                val baseRate = field("主要货币汇率").takeIf { it.isNotBlank() }
+                val baseAmount = field("主要货币金额").takeIf { it.isNotBlank() }?.let(BillFileCodec::amount)
+                if (baseCurrency != null || baseRate != null || baseAmount != null) {
+                    require(baseCurrency in supportedCurrencyCodes && baseRate != null && baseAmount != null &&
+                        convertCents(kotlin.math.abs(signed), baseRate) == baseAmount) { "主要货币换算数据无效" }
+                }
                 Transaction(type = type, amount = kotlin.math.abs(signed), accountId = account.id, toAccountId = target?.id,
-                    categoryId = category.id, transactionTime = BillFileCodec.timestamp(field(rule.dateColumn)), note = field(rule.noteColumn).ifEmpty { null })
+                    categoryId = category.id, transactionTime = BillFileCodec.timestamp(field(rule.dateColumn)), note = field(rule.noteColumn).ifEmpty { null },
+                    toAmount = transferred, baseCurrency = baseCurrency, baseRate = baseRate, baseAmount = baseAmount,
+                    baseRateDate = field("汇率日期").takeIf { it.isNotBlank() },
+                    importKey = field("来源交易号").ifBlank {
+                        listOf("交易号", "交易单号", "流水号", "交易流水号").firstNotNullOfOrNull { column ->
+                            field(column).takeIf { it.isNotBlank() && it != "-" }?.let { "$column:$it" }
+                        }.orEmpty()
+                    }.ifBlank { null })
             } catch (error: ArithmeticException) {
                 throw IllegalArgumentException("第 ${maxOf(start, headerIndex + 1) + index + 1} 行：金额超出范围或小数位超过两位", error)
             } catch (error: IllegalArgumentException) {

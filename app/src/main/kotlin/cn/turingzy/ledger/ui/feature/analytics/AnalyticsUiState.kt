@@ -28,6 +28,8 @@ data class AnalyticsTransaction(
     val type: cn.turingzy.ledger.model.TransactionType = cn.turingzy.ledger.model.TransactionType.EXPENSE,
     val category: cn.turingzy.ledger.model.CategoryWithIcon? = null,
     val time: java.time.LocalTime? = null,
+    val currency: String = "CNY",
+    val primaryAmount: Long = amount,
 )
 
 data class AnalyticsComparison(
@@ -59,5 +61,7 @@ sealed interface AnalyticsUiState {
             AnalyticsTimeScope.ALL -> periodStart
         },
         val comparison: AnalyticsComparison? = null,
+        val currency: String = "CNY",
+        val amountsAvailable: Boolean = true,
     ) : AnalyticsUiState
 }

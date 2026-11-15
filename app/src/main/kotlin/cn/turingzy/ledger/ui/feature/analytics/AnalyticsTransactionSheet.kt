@@ -1,5 +1,7 @@
 package cn.turingzy.ledger.ui.feature.analytics
 
+import cn.turingzy.ledger.ui.component.LocalLedgerCurrency
+import cn.turingzy.ledger.ui.component.currencySymbol
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -35,6 +37,7 @@ internal fun AnalyticsTransactionSheet(
     groupByDate: Boolean = true,
     summaryType: TransactionType? = null,
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val height = LocalConfiguration.current.screenHeightDp.dp * 2 / 3
     val colors = MaterialTheme.colorScheme
     val groups = remember(transactions, groupByDate) {
@@ -56,7 +59,7 @@ internal fun AnalyticsTransactionSheet(
                 Text(title, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
                 LedgerIconButton(showPressFeedback = false, onClick = onDismiss) {
-                    Icon(MaterialSymbols.Close, "关闭交易明细", tint = colors.onSurfaceVariant)
+                    Icon(MaterialSymbols.Close, textResources.getString(cn.turingzy.ledger.R.string.ui_close_transaction_details), tint = colors.onSurfaceVariant)
                 }
             }
             HorizontalDivider(color = colors.outlineVariant, thickness = 0.5.dp)
@@ -65,7 +68,7 @@ internal fun AnalyticsTransactionSheet(
                 Text(subtitle, Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                 AnalyticsTransactionTotals(transactions, summaryType)
             }
-            if (transactions.isEmpty()) Text("暂无交易记录", Modifier.padding(16.dp), color = colors.onSurfaceVariant)
+            if (transactions.isEmpty()) Text(textResources.getString(cn.turingzy.ledger.R.string.ui_no_transactions), Modifier.padding(16.dp), color = colors.onSurfaceVariant)
             else LazyColumn(Modifier.fillMaxWidth().weight(1f), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 12.dp)) {
                 groups.forEach { (date, entries) ->
                     if (date != null) item(key = "date:$date") {
@@ -91,6 +94,7 @@ internal fun AnalyticsTransactionSheet(
                                 timeText = if (groupByDate) entry.time?.format(timeFormatter).orEmpty()
                                 else listOfNotNull(entry.date.format(shortDateFormatter), entry.time?.format(timeFormatter)).joinToString(" "),
                                 amount = entry.amount,
+                                currency = entry.currency,
                                 type = entry.type,
                                 icon = entry.category?.icon?.categoryGlyph() ?: MaterialSymbols.Payments,
                             )
@@ -104,14 +108,15 @@ internal fun AnalyticsTransactionSheet(
 
 @Composable
 private fun AnalyticsTransactionTotals(transactions: List<AnalyticsTransaction>, summaryType: TransactionType?) {
-    val expense = remember(transactions) { transactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount } }
-    val income = remember(transactions) { transactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amount } }
+    val currencySymbol = currencySymbol(LocalLedgerCurrency.current)
+    val expense = remember(transactions) { transactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.primaryAmount } }
+    val income = remember(transactions) { transactions.filter { it.type == TransactionType.INCOME }.sumOf { it.primaryAmount } }
     val showExpense = summaryType == TransactionType.EXPENSE || (summaryType == null && (expense > 0L || income == 0L))
     val showIncome = summaryType == TransactionType.INCOME || (summaryType == null && income > 0L)
     Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        if (showExpense) Text("总支出 ${expense.toFormattedAmount(true)}", fontSize = 12.sp, lineHeight = 16.sp,
+        if (showExpense) Text("总支出 ${expense.toFormattedAmount(true, symbol = currencySymbol)}", fontSize = 12.sp, lineHeight = 16.sp,
             color = MaterialTheme.colorScheme.onSurface)
-        if (showIncome) Text("总收入 ${income.toFormattedAmount(true)}", fontSize = 12.sp, lineHeight = 16.sp,
+        if (showIncome) Text("总收入 ${income.toFormattedAmount(true, symbol = currencySymbol)}", fontSize = 12.sp, lineHeight = 16.sp,
             color = MaterialTheme.colorScheme.onSurface)
     }
 }

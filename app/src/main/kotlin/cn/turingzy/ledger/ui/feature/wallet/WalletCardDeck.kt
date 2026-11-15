@@ -116,6 +116,7 @@ private fun BankCardDeck(
     selectedAccountId: Long? = null,
     onSelectedAccountChange: (Long) -> Unit = {},
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     if (accounts.isEmpty()) {
         EmptyCardDeck(modifier)
         return
@@ -184,10 +185,10 @@ private fun BankCardDeck(
                     stateDescription = "第 ${Math.floorMod(state.settledValue, accounts.size) + 1} 张，共 ${accounts.size} 张卡片"
                     customActions = buildList {
                         if (state.settledValue > firstPage) {
-                            add(CustomAccessibilityAction("上一张卡片") { select(state.settledValue - 1); true })
+                            add(CustomAccessibilityAction(textResources.getString(cn.turingzy.ledger.R.string.ui_previous_card)) { select(state.settledValue - 1); true })
                         }
                         if (state.settledValue < lastPage) {
-                            add(CustomAccessibilityAction("下一张卡片") { select(state.settledValue + 1); true })
+                            add(CustomAccessibilityAction(textResources.getString(cn.turingzy.ledger.R.string.ui_next_card)) { select(state.settledValue + 1); true })
                         }
                     }
                 }
@@ -243,7 +244,8 @@ private fun BankCardDeck(
 
 @Composable
 private fun EmptyCardDeck(modifier: Modifier = Modifier) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     Box(modifier.fillMaxWidth().aspectRatio(BankCardAspectRatio), contentAlignment = Alignment.Center) {
-        Text("暂无账户", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(textResources.getString(cn.turingzy.ledger.R.string.ui_no_accounts), color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

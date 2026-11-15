@@ -13,6 +13,20 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TransactionDao {
+    @Transaction
+    @Query("""SELECT t.* FROM tb_transaction t
+        JOIN tb_account a ON a.account_id = t.account_id
+        JOIN tb_category c ON c.category_id = t.category_id
+        LEFT JOIN tb_account target ON target.account_id = t.to_account_id
+        WHERE t.is_deleted = 0 AND (instr(lower(COALESCE(t.note, '')), lower(:query)) > 0
+        OR instr(lower(c.name), lower(:query)) > 0 OR instr(lower(a.name), lower(:query)) > 0
+        OR instr(lower(COALESCE(target.name, '')), lower(:query)) > 0)
+        ORDER BY t.transaction_time DESC, t.transaction_id DESC""")
+    fun searchTransactions(query: String): Flow<List<PopulatedTransaction>>
+
+    @Query("UPDATE tb_transaction SET base_amount = :amount, base_currency = :currency, base_rate = :rate, base_rate_date = :date, to_amount = :toAmount, transfer_rate = :transferRate, currency_snapshots = :snapshots WHERE transaction_id = :id AND amount = :originalAmount AND transaction_time = :originalTime")
+    suspend fun updateValuation(id: Long, originalAmount: Long, originalTime: Long, amount: Long?, currency: String?, rate: String?, date: String?, toAmount: Long?, transferRate: String?, snapshots: String)
+
     @Query("SELECT * FROM tb_transaction")
     suspend fun backupRows(): List<TransactionEntity>
 

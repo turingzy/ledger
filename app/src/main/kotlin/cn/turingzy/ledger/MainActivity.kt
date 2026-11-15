@@ -4,7 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import cn.turingzy.ledger.ui.LedgerApp
+import cn.turingzy.ledger.ui.LedgerRoot
 import cn.turingzy.ledger.ui.theme.LedgerTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -14,9 +14,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            LedgerTheme {
-                LedgerApp()
-            }
+            LedgerRoot()
         }
     }
 }

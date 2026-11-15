@@ -1,5 +1,7 @@
 package cn.turingzy.ledger.ui.feature.analytics
 
+import cn.turingzy.ledger.ui.component.LocalLedgerCurrency
+import cn.turingzy.ledger.ui.component.currencySymbol
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -38,6 +40,7 @@ import kotlin.math.roundToInt
 
 @Composable
 internal fun MonthlyCashflowCard(days: Map<LocalDate, AnalyticsDay>, month: YearMonth, modifier: Modifier = Modifier, transactions: List<AnalyticsTransaction> = emptyList()) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val colors = MaterialTheme.colorScheme
     Surface(
         modifier.fillMaxWidth().padding(top = AnalyticsCardTopSpacing), shape = RoundedCornerShape(20.dp),
@@ -45,10 +48,10 @@ internal fun MonthlyCashflowCard(days: Map<LocalDate, AnalyticsDay>, month: Year
     ) {
         Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                AnalyticsCardTitle("收支与结余", Modifier.weight(1f))
-                CashflowLegend("支出", colors.error)
-                CashflowLegend("收入", colors.tertiary)
-                CashflowLegend("结余", colors.primary, line = true)
+                AnalyticsCardTitle(textResources.getString(cn.turingzy.ledger.R.string.ui_monthly_cash_flow), Modifier.weight(1f))
+                CashflowLegend(textResources.getString(cn.turingzy.ledger.R.string.ui_expense), colors.error)
+                CashflowLegend(textResources.getString(cn.turingzy.ledger.R.string.ui_income), colors.tertiary)
+                CashflowLegend(textResources.getString(cn.turingzy.ledger.R.string.ui_balance), colors.primary, line = true)
             }
             MonthlyCashflow(days, month, transactions)
         }
@@ -68,6 +71,8 @@ private fun CashflowLegend(label: String, color: Color, line: Boolean = false) {
 
 @Composable
 private fun MonthlyCashflow(days: Map<LocalDate, AnalyticsDay>, month: YearMonth, transactions: List<AnalyticsTransaction>) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
+    val currencySymbol = currencySymbol(LocalLedgerCurrency.current)
     val months = remember(days, month) { monthlyAnalytics(days, month) }
     var selectedMonth by remember(month, months) { mutableStateOf<YearMonth?>(null) }
     var showDetails by remember(month, months) { mutableStateOf(false) }
@@ -111,7 +116,7 @@ private fun MonthlyCashflow(days: Map<LocalDate, AnalyticsDay>, month: YearMonth
         }
         Box {
             Column(Modifier.horizontalScroll(scroll)) {
-                Canvas(Modifier.width(slot * months.size).height(AnalyticsChartPlotHeight + 6.dp).semantics { contentDescription = "收入支出双柱与结余折线组合图" }.pointerInput(months, slotPx) {
+                Canvas(Modifier.width(slot * months.size).height(AnalyticsChartPlotHeight + 6.dp).semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_monthly_income_expenses_and_balance) }.pointerInput(months, slotPx) {
                     detectTapGestures { point ->
                         val tappedMonth = months[(point.x / slotPx).toInt().coerceIn(months.indices)].month
                         selectedMonth = tappedMonth.takeUnless { it == selectedMonth }
@@ -180,9 +185,9 @@ private fun MonthlyCashflow(days: Map<LocalDate, AnalyticsDay>, month: YearMonth
                     Column(Modifier.padding(horizontal = 7.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(0.dp)) {
                         Text("${selected.month.year}年${selected.month.monthValue}月", fontSize = 12.sp, lineHeight = 14.sp, color = colors.onSurfaceVariant)
                         Spacer(Modifier.height(3.dp))
-                        CashflowSummary("收入", selected.income.toFormattedAmount(true))
-                        CashflowSummary("支出", selected.expense.toFormattedAmount(true))
-                        CashflowSummary("净结余", selected.balance.toFormattedAmount(true))
+                        CashflowSummary(textResources.getString(cn.turingzy.ledger.R.string.ui_income), selected.income.toFormattedAmount(true, symbol = currencySymbol))
+                        CashflowSummary(textResources.getString(cn.turingzy.ledger.R.string.ui_expense), selected.expense.toFormattedAmount(true, symbol = currencySymbol))
+                        CashflowSummary(textResources.getString(cn.turingzy.ledger.R.string.ui_net_balance), selected.balance.toFormattedAmount(true, symbol = currencySymbol))
                     }
                 }
             }

@@ -51,6 +51,7 @@ internal fun CardBackgroundDialog(
     onLocalImage: (Uri) -> Unit,
     onConfirm: (restoreDefault: Boolean) -> Unit,
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     var restoreDefault by rememberSaveable { mutableStateOf(false) }
     val colors = MaterialTheme.colorScheme
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
@@ -64,18 +65,18 @@ internal fun CardBackgroundDialog(
     BasicAlertDialog(onDismissRequest = { if (!busy) onDismiss() }) {
         Surface(shape = RoundedCornerShape(28.dp), color = colors.background) {
             Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp)) {
-                Text("更换卡片背景", style = MaterialTheme.typography.titleLarge)
+                Text(textResources.getString(cn.turingzy.ledger.R.string.ui_change_card_background), style = MaterialTheme.typography.titleLarge)
                 Spacer(Modifier.height(20.dp))
                 Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(20.dp)) {
                     BackgroundSourceButton(
-                        label = "本地图片",
+                        label = textResources.getString(cn.turingzy.ledger.R.string.ui_choose_image),
                         filename = preparedFilename.takeUnless { restoreDefault },
                         enabled = !busy,
                         onClick = { imagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
                         modifier = Modifier.fillMaxWidth(),
                     )
                     BackgroundSourceButton(
-                        label = "恢复初始",
+                        label = textResources.getString(cn.turingzy.ledger.R.string.ui_reset_to_default),
                         filename = defaultFilename.takeIf { restoreDefault },
                         enabled = !busy,
                         onClick = { restoreDefault = true },
@@ -83,7 +84,7 @@ internal fun CardBackgroundDialog(
                     )
                 }
                 if (busy) {
-                    Text("正在处理图片…", Modifier.padding(top = 8.dp), fontSize = 12.sp, color = colors.onSurfaceVariant)
+                    Text(textResources.getString(cn.turingzy.ledger.R.string.ui_processing_image), Modifier.padding(top = 8.dp), fontSize = 12.sp, color = colors.onSurfaceVariant)
                 }
                 if (error != null) {
                     Text(error, Modifier.padding(top = 8.dp), fontSize = 12.sp, color = colors.error)
@@ -91,13 +92,13 @@ internal fun CardBackgroundDialog(
                 Spacer(Modifier.height(24.dp))
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     IconButton(showPressFeedback = false, onClick = onDismiss, enabled = !busy, modifier = Modifier.offset(x = (-8).dp).size(40.dp)) {
-                        Icon(MaterialSymbols.Close, contentDescription = "关闭更换背景", modifier = Modifier.size(24.dp))
+                        Icon(MaterialSymbols.Close, contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_close_background_settings), modifier = Modifier.size(24.dp))
                     }
                     Spacer(Modifier.weight(1f))
                     IconButton(showPressFeedback = false, onClick = { onConfirm(restoreDefault) }, enabled = canConfirm, modifier = Modifier.size(40.dp)) {
                         Icon(
                             MaterialSymbols.Check,
-                            contentDescription = "应用背景",
+                            contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_apply_background),
                             tint = if (canConfirm) colors.tertiary else colors.onSurface.copy(alpha = 0.38f),
                             modifier = Modifier.size(24.dp),
                         )

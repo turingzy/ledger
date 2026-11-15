@@ -25,7 +25,12 @@ data class LedgerSettingsSnapshot(
     val rules: List<ParseRule>,
     val templates: List<CardTemplate>,
     val appearances: List<BackupAppearance> = emptyList(),
+    val preferences: AppPreferences? = null,
+    val rates: List<BackupExchangeRate> = emptyList(),
 )
 
 @Serializable
 data class BackupAppearance(val target: SummaryCardTarget, val transparency: Int, val image: String? = null)
+
+@Serializable
+data class BackupExchangeRate(val date: String, val currency: String, val perUsd: String, val manual: Boolean = false)

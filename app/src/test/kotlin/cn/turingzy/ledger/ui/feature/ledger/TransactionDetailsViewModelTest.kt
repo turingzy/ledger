@@ -66,7 +66,7 @@ class TransactionDetailsViewModelTest {
     fun selectedIdLoadsExactTransactionAndReflectsDeletion() = runTest(dispatcher) {
         val transactions = MutableStateFlow<TransactionDetail?>(detail)
         every { repository.getTransaction(42L) } returns transactions
-        val viewModel = TransactionDetailsViewModel(SavedStateHandle(mapOf("editingTransactionId" to 42L)), repository, categoryRepository, accountRepository)
+        val viewModel = TransactionDetailsViewModel(SavedStateHandle(mapOf("editingTransactionId" to 42L)), repository, categoryRepository, accountRepository, mockk(relaxed = true))
         viewModel.uiState.test {
             assertEquals(TransactionDetailsUiState.Loading, awaitItem())
             dispatcher.scheduler.advanceUntilIdle()
@@ -83,7 +83,7 @@ class TransactionDetailsViewModelTest {
     @Test
     fun repositoryFailureShowsErrorInsteadOfEmptyDetails() = runTest(dispatcher) {
         every { repository.getTransaction(42L) } returns flow { throw java.io.IOException("Read failure") }
-        val viewModel = TransactionDetailsViewModel(SavedStateHandle(mapOf("editingTransactionId" to 42L)), repository, categoryRepository, accountRepository)
+        val viewModel = TransactionDetailsViewModel(SavedStateHandle(mapOf("editingTransactionId" to 42L)), repository, categoryRepository, accountRepository, mockk(relaxed = true))
         viewModel.uiState.test {
             assertEquals(TransactionDetailsUiState.Loading, awaitItem())
             dispatcher.scheduler.advanceUntilIdle()
@@ -95,8 +95,7 @@ class TransactionDetailsViewModelTest {
         every { repository.getTransaction(42L) } returns flowOf(detail)
         coEvery { repository.updateTransaction(any()) } returns Unit
         val viewModel = TransactionDetailsViewModel(
-            SavedStateHandle(mapOf("editingTransactionId" to 42L)), repository, categoryRepository, accountRepository,
-        )
+            SavedStateHandle(mapOf("editingTransactionId" to 42L)), repository, categoryRepository, accountRepository, mockk(relaxed = true))
         viewModel.uiState.test {
             awaitItem()
             dispatcher.scheduler.advanceUntilIdle()
@@ -106,7 +105,7 @@ class TransactionDetailsViewModelTest {
             assertEquals(true, viewModel.saveState.value.saving)
             viewModel.save(edited)
             dispatcher.scheduler.advanceUntilIdle()
-            coVerify(exactly = 1) { repository.updateTransaction(edited.copy(id = 42L)) }
+            coVerify(exactly = 1) { repository.updateTransaction(edited.copy(id = 42L, toAmount = edited.amount)) }
             coVerify(exactly = 0) { repository.createTransaction(any()) }
             assertEquals(TransactionSaveState(saved = true), viewModel.saveState.value)
         }
@@ -117,8 +116,7 @@ class TransactionDetailsViewModelTest {
         every { repository.getTransaction(42L) } returns flowOf(detail)
         coEvery { repository.updateTransaction(any()) } throws java.io.IOException("Write failure")
         val viewModel = TransactionDetailsViewModel(
-            SavedStateHandle(mapOf("editingTransactionId" to 42L)), repository, categoryRepository, accountRepository,
-        )
+            SavedStateHandle(mapOf("editingTransactionId" to 42L)), repository, categoryRepository, accountRepository, mockk(relaxed = true))
         viewModel.uiState.test {
             awaitItem()
             dispatcher.scheduler.advanceUntilIdle()
@@ -131,7 +129,7 @@ class TransactionDetailsViewModelTest {
             viewModel.save(detail.transaction)
             dispatcher.scheduler.advanceUntilIdle()
             assertEquals(TransactionSaveState(saved = true), viewModel.saveState.value)
-            coVerify(exactly = 2) { repository.updateTransaction(detail.transaction) }
+            coVerify(exactly = 2) { repository.updateTransaction(detail.transaction.copy(toAmount = detail.transaction.amount)) }
         }
     }
 
@@ -141,8 +139,7 @@ class TransactionDetailsViewModelTest {
         val next = detail.copy(transaction = detail.transaction.copy(id = 43L, note = "另一笔交易"))
         every { repository.getTransaction(43L) } returns flowOf(next)
         val viewModel = TransactionDetailsViewModel(
-            SavedStateHandle(), repository, categoryRepository, accountRepository,
-        )
+            SavedStateHandle(), repository, categoryRepository, accountRepository, mockk(relaxed = true))
         viewModel.uiState.test {
             assertEquals(TransactionDetailsUiState.Loading, awaitItem())
             viewModel.selectTransaction(42L)
@@ -161,8 +158,7 @@ class TransactionDetailsViewModelTest {
         every { repository.getTransaction(43L) } returns flowOf(next)
         coEvery { repository.updateTransaction(any()) } returns Unit
         val viewModel = TransactionDetailsViewModel(
-            SavedStateHandle(), repository, categoryRepository, accountRepository,
-        )
+            SavedStateHandle(), repository, categoryRepository, accountRepository, mockk(relaxed = true))
         viewModel.uiState.test {
             awaitItem()
             viewModel.selectTransaction(42L)
@@ -181,7 +177,7 @@ class TransactionDetailsViewModelTest {
             assertEquals(TransactionDetailsUiState.Success(next, categories, accounts), expectMostRecentItem())
             viewModel.save(next.transaction)
             dispatcher.scheduler.advanceUntilIdle()
-            coVerify(exactly = 1) { repository.updateTransaction(next.transaction) }
+            coVerify(exactly = 1) { repository.updateTransaction(next.transaction.copy(toAmount = next.transaction.amount)) }
         }
     }
 
@@ -192,8 +188,7 @@ class TransactionDetailsViewModelTest {
         every { repository.getTransaction(42L) } returns first
         every { repository.getTransaction(43L) } returns flowOf(next)
         val viewModel = TransactionDetailsViewModel(
-            SavedStateHandle(), repository, categoryRepository, accountRepository,
-        )
+            SavedStateHandle(), repository, categoryRepository, accountRepository, mockk(relaxed = true))
         viewModel.uiState.test {
             awaitItem()
             viewModel.selectTransaction(42L)

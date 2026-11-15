@@ -109,7 +109,8 @@ class SettingsViewModel @Inject constructor(
     }
     suspend fun createTemplate(template: CardTemplate): Long? = attempt { dataRepository.saveTemplate(template.copy(id = 0)) }
     suspend fun copyImage(uri: Uri): String? = attempt { dataRepository.copyImage(uri) }
-    suspend fun importBills(uri: Uri, rule: BillParseRule, accountId: Long?): Int = dataRepository.importBills(uri, rule, accountId)
+    suspend fun previewImport(uri: Uri, rule: BillParseRule, accountId: Long?) = dataRepository.previewImport(uri, rule, accountId)
+    suspend fun importBills(uri: Uri, rule: BillParseRule, accountId: Long?, includePossibleDuplicates: Boolean) = dataRepository.importBills(uri, rule, accountId, includePossibleDuplicates)
     suspend fun exportBills(uri: Uri, excel: Boolean, start: Long, end: Long): Int = dataRepository.exportBills(uri, excel, start, end)
     suspend fun backup(uri: Uri, bills: Boolean, settings: Boolean) {
         templateJobs.values.toList().joinAll()

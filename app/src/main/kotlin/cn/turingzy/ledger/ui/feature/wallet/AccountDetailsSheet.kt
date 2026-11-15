@@ -81,6 +81,7 @@ fun AccountDetailsContent(
     modifier: Modifier = Modifier,
     templates: List<CardTemplate> = emptyList(),
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     var confirmDelete by rememberSaveable(account.id) { mutableStateOf(false) }
     AccountEditorContent(
         account = account,
@@ -98,7 +99,7 @@ fun AccountDetailsContent(
             val deleteIconInset = 8.dp + 24.dp * (160f / 960f)
             Surface(shape = RoundedCornerShape(28.dp), color = colors.surface) {
                 Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text("删除账户？", style = MaterialTheme.typography.headlineSmall)
+                    Text(textResources.getString(cn.turingzy.ledger.R.string.ui_delete_account_2), style = MaterialTheme.typography.headlineSmall)
                     Text(
                         "删除“${account.name}”后，该账户将不再显示，历史交易保留。",
                         style = MaterialTheme.typography.bodyMedium,
@@ -112,13 +113,13 @@ fun AccountDetailsContent(
                             onClick = { confirmDelete = false },
                             modifier = Modifier.offset(x = -closeIconInset).size(40.dp), showPressFeedback = false,
                         ) {
-                            Icon(MaterialSymbols.Close, "取消删除账户", Modifier.size(24.dp), tint = colors.onSurface)
+                            Icon(MaterialSymbols.Close, textResources.getString(cn.turingzy.ledger.R.string.ui_cancel_account_deletion), Modifier.size(24.dp), tint = colors.onSurface)
                         }
                         LedgerIconButton(
                             onClick = { confirmDelete = false; onDelete() },
                             modifier = Modifier.offset(x = deleteIconInset).size(40.dp), showPressFeedback = false,
                         ) {
-                            Icon(MaterialSymbols.Delete, "确认删除账户", Modifier.size(24.dp), tint = colors.error)
+                            Icon(MaterialSymbols.Delete, textResources.getString(cn.turingzy.ledger.R.string.ui_delete_account_3), Modifier.size(24.dp), tint = colors.error)
                         }
                     }
                 }
@@ -130,9 +131,10 @@ fun AccountDetailsContent(
 @Preview(showBackground = true)
 @Composable
 private fun AccountDetailsPreview() {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     LedgerTheme {
         AccountDetailsContent(
-            account = Account(id = 1L, name = "工资卡", type = AccountType.DEBIT, currentBalance = 123456L, cardNumber = "1234"),
+            account = Account(id = 1L, name = textResources.getString(cn.turingzy.ledger.R.string.ui_salary_account), type = AccountType.DEBIT, currentBalance = 123456L, cardNumber = "1234"),
             onClose = {},
             onSave = {},
             onDelete = {},

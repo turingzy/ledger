@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.ledger
 
+import androidx.compose.material3.SheetValue
 import cn.turingzy.ledger.ui.component.PeriodPickerSheet
 import cn.turingzy.ledger.model.DateFilterType
 import androidx.compose.foundation.LocalIndication
@@ -93,6 +94,7 @@ import cn.turingzy.ledger.model.Transaction
 import cn.turingzy.ledger.model.TransactionDetail
 import cn.turingzy.ledger.model.TransactionType
 import cn.turingzy.ledger.ui.theme.IosSecondary
+import cn.turingzy.ledger.model.primaryAmount
 import cn.turingzy.ledger.util.toFormattedAmount
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -123,19 +125,35 @@ fun LedgerScreen(
         cardViewModel.clearError()
     }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val saveState by viewModel.saveState.collectAsStateWithLifecycle()
     val categories by viewModel.categories.collectAsStateWithLifecycle()
     val accounts by viewModel.accounts.collectAsStateWithLifecycle()
 
     val drawerHeight = LocalConfiguration.current.screenHeightDp.dp * 0.8f
-    val recordSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val recordSheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true,
+        confirmValueChange = { !saveState.saving || it != SheetValue.Hidden },
+    )
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(showRecordSheet) {
-        if (showRecordSheet) transactionViewModel.selectTransaction(null)
+        if (showRecordSheet) {
+            transactionViewModel.selectTransaction(null)
+            viewModel.resetSaveState()
+        }
+    }
+
+    LaunchedEffect(saveState.saved) {
+        if (saveState.saved) {
+            recordSheetState.hide()
+            onRecordSheetDismiss()
+            viewModel.resetSaveState()
+        }
     }
 
     LedgerContent(
         uiState = uiState,
+        onSearch = viewModel::search,
         modifier = modifier,
         cardAppearance = cardUiState.appearance,
         cardBackground = background,
@@ -184,14 +202,12 @@ fun LedgerScreen(
             sheetHeight = drawerHeight,
             categories = categories,
             accounts = accounts,
-            onDismissRequest = onRecordSheetDismiss,
-            onConfirm = { type, amount, accountId, toAccountId, categoryId, note, transactionTime ->
-                viewModel.createTransaction(type, amount, accountId, toAccountId, categoryId, note, transactionTime)
-                scope.launch { recordSheetState.hide() }.invokeOnCompletion {
-                    if (!recordSheetState.isVisible) {
-                        onRecordSheetDismiss()
-                    }
-                }
+            onDismissRequest = { if (!saveState.saving) onRecordSheetDismiss() },
+            saving = saveState.saving,
+            error = saveState.error,
+            onLoadTransferRate = transactionViewModel::exchangeRate,
+            onConfirm = { type, amount, accountId, toAccountId, categoryId, note, transactionTime, toAmount ->
+                viewModel.createTransaction(type, amount, accountId, toAccountId, categoryId, note, transactionTime, toAmount)
             },
         )
     }
@@ -202,6 +218,7 @@ fun LedgerContent(
     uiState: LedgerUiState,
     modifier: Modifier = Modifier,
     initialSearchActive: Boolean = false,
+    onSearch: (String) -> Unit = {},
     onTransactionClick: (Long) -> Unit = {},
     onSelectPeriod: (DateFilterType, LocalDate) -> Unit = { _, _ -> },
     cardAppearance: LedgerCardAppearance = LedgerCardAppearance(),
@@ -211,10 +228,12 @@ fun LedgerContent(
     onCardTransparencyChange: (Int) -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     var isSearchActive by rememberSaveable { mutableStateOf(initialSearchActive) }
     var showPeriodPicker by rememberSaveable { mutableStateOf(false) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
     var submittedSearchQuery by rememberSaveable { mutableStateOf("") }
+    LaunchedEffect(submittedSearchQuery) { onSearch(submittedSearchQuery) }
     val focusManager = LocalFocusManager.current
     val focusRequester = remember { FocusRequester() }
 
@@ -245,26 +264,7 @@ fun LedgerContent(
             }
 
             is LedgerUiState.Success -> {
-                val filteredDayGroups = remember(uiState.dayGroups, submittedSearchQuery) {
-                    if (submittedSearchQuery.isBlank()) {
-                        uiState.dayGroups
-                    } else {
-                        uiState.dayGroups.mapNotNull { group ->
-                            val matchedTxs = group.transactions.filter { tx ->
-                                tx.transaction.note?.contains(submittedSearchQuery, ignoreCase = true) == true ||
-                                    tx.category.category.name.contains(submittedSearchQuery, ignoreCase = true) ||
-                                    tx.account.name.contains(submittedSearchQuery, ignoreCase = true)
-                            }
-                            if (matchedTxs.isNotEmpty()) {
-                                group.copy(
-                                    transactions = matchedTxs,
-                                    totalExpense = matchedTxs.filter { it.transaction.type == TransactionType.EXPENSE }.sumOf { it.transaction.amount },
-                                    totalIncome = matchedTxs.filter { it.transaction.type == TransactionType.INCOME }.sumOf { it.transaction.amount },
-                                )
-                            } else null
-                        }
-                    }
-                }
+                val filteredDayGroups = uiState.dayGroups
 
                 LazyColumn(
                     modifier = Modifier
@@ -299,7 +299,7 @@ fun LedgerContent(
                                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                                         ) {
                                             Text(
-                                                text = "账本",
+                                                text = textResources.getString(cn.turingzy.ledger.R.string.ui_ledger),
                                                 fontSize = 28.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = MaterialTheme.colorScheme.onSurface,
@@ -316,7 +316,7 @@ fun LedgerContent(
                                                     modifier = Modifier.weight(1f, fill = false).alignByBaseline()
                                                         .clip(RoundedCornerShape(50))
                                                         .background(MaterialTheme.colorScheme.surfaceVariant)
-                                                        .semantics { contentDescription = "选择账本日期" }
+                                                        .semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_select_ledger_period) }
                                                         .clickable(
                                                             interactionSource = remember { MutableInteractionSource() },
                                                             indication = LocalIndication.current,
@@ -331,7 +331,7 @@ fun LedgerContent(
 
                                         TopBarIconButton(
                                             imageVector = MaterialSymbols.Search,
-                                            contentDescription = "搜索",
+                                            contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_search),
                                             onClick = { isSearchActive = true },
                                             modifier = Modifier.align(Alignment.CenterEnd),
                                         )
@@ -407,7 +407,7 @@ fun LedgerContent(
                                                     ) {
                                                         if (searchQuery.isEmpty()) {
                                                             Text(
-                                                                text = "搜索账单备注、分类、账户",
+                                                                text = textResources.getString(cn.turingzy.ledger.R.string.ui_search_notes_categories_accounts),
                                                                 fontSize = 15.sp,
                                                                 lineHeight = 22.sp,
                                                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -424,7 +424,7 @@ fun LedgerContent(
 
                                         TopBarIconButton(
                                             imageVector = MaterialSymbols.Close,
-                                            contentDescription = "关闭搜索",
+                                            contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_close_search),
                                             onClick = {
                                                 isSearchActive = false
                                                 searchQuery = ""
@@ -437,17 +437,18 @@ fun LedgerContent(
                             }
 
                             // 月度结余 Hero 大卡片 (整体向上移动，与顶栏间距减半至 5.dp)
-                            SummaryHeroBanner(
+                            if (uiState.amountsAvailable) SummaryHeroBanner(
                                 cardMonthDisplay = uiState.cardMonthDisplay,
                                 balance = uiState.monthBalance,
                                 expense = uiState.monthExpense,
                                 income = uiState.monthIncome,
+                                currency = uiState.currency,
                                 appearance = cardAppearance,
                                 background = cardBackground,
                                 settingsEnabled = cardSettingsEnabled,
                                 onUploadBackground = onUploadCardBackground,
                                 onTransparencyChange = onCardTransparencyChange,
-                            )
+                            ) else Text(textResources.getString(cn.turingzy.ledger.R.string.ui_exchange_rate_needed_refresh_or_enter_a_rate), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
                         }
                     }
 
@@ -460,7 +461,7 @@ fun LedgerContent(
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Text(
-                                    text = if (submittedSearchQuery.isNotBlank()) "未找到相关账单" else "本期暂无交易明细，点击右下角开始记账",
+                                    text = if (submittedSearchQuery.isNotBlank()) textResources.getString(cn.turingzy.ledger.R.string.ui_no_matching_transactions) else textResources.getString(cn.turingzy.ledger.R.string.ui_no_transactions_for_this_period_tap_to_add),
                                     fontSize = 14.sp,
                                     color = IosSecondary,
                                 )
@@ -469,7 +470,7 @@ fun LedgerContent(
                     } else {
                         filteredDayGroups.forEach { dayGroup ->
                             item(key = "group_${dayGroup.dateEpochDay}") {
-                                DayGroupSection(dayGroup = dayGroup, onTransactionClick = onTransactionClick)
+                                DayGroupSection(dayGroup = dayGroup, onTransactionClick = onTransactionClick, currency = uiState.currency)
                             }
                         }
                     }
@@ -494,17 +495,21 @@ fun DayGroupSection(
     dayGroup: DayTransactionGroup,
     modifier: Modifier = Modifier,
     onTransactionClick: (Long) -> Unit = {},
+    currency: String = "CNY",
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
+    val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
     var expanded by rememberSaveable(dayGroup.dateEpochDay) { mutableStateOf(true) }
     val summary = buildList {
-        if (dayGroup.totalExpense != 0L) add("支出: ${dayGroup.totalExpense.toFormattedAmount(showSymbol = true)}")
-        if (dayGroup.totalIncome != 0L) add("收入: ${dayGroup.totalIncome.toFormattedAmount(showSymbol = true)}")
+        if (dayGroup.transactions.any { it.transaction.type != TransactionType.TRANSFER && it.primaryAmount(currency) == null }) return@buildList
+        if (dayGroup.totalExpense != 0L) add(textResources.getString(cn.turingzy.ledger.R.string.ui_expense) + ": ${dayGroup.totalExpense.toFormattedAmount()}")
+        if (dayGroup.totalIncome != 0L) add(textResources.getString(cn.turingzy.ledger.R.string.ui_income) + ": ${dayGroup.totalIncome.toFormattedAmount()}")
     }.joinToString("  ")
     val colors = MaterialTheme.colorScheme
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth()
-                .semantics { stateDescription = if (expanded) "已展开" else "已折叠" }
+                .semantics { stateDescription = if (expanded) textResources.getString(cn.turingzy.ledger.R.string.ui_expanded) else textResources.getString(cn.turingzy.ledger.R.string.ui_collapsed) }
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
@@ -514,7 +519,7 @@ fun DayGroupSection(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = dayGroup.displayDate,
+                text = java.time.LocalDate.ofEpochDay(dayGroup.dateEpochDay).format(DateTimeFormatter.ofPattern("MM/dd E", locale)),
                 modifier = Modifier.padding(end = 4.dp),
                 maxLines = 1,
                 fontSize = 13.sp,
@@ -536,7 +541,7 @@ fun DayGroupSection(
             )
             Icon(
                 if (expanded) MaterialSymbols.ExpandMore else MaterialSymbols.ChevronRight,
-                contentDescription = if (expanded) "隐藏当日交易" else "显示当日交易",
+                contentDescription = if (expanded) textResources.getString(cn.turingzy.ledger.R.string.ui_hide_transactions) else textResources.getString(cn.turingzy.ledger.R.string.ui_show_transactions),
                 tint = colors.onSurfaceVariant,
                 modifier = Modifier.size(24.dp),
             )
@@ -576,6 +581,7 @@ fun DayTransactionRowItem(
         supportingText = listOfNotNull(detail.account.name, tx.note?.takeIf { it.isNotBlank() }).joinToString(" · "),
         timeText = timeStr,
         amount = tx.amount,
+        currency = detail.account.currency,
         type = tx.type,
         icon = detail.category.icon.categoryGlyph(),
         modifier = modifier,
@@ -586,13 +592,14 @@ fun DayTransactionRowItem(
 @Preview(showBackground = true)
 @Composable
 fun LedgerContentPreview() {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     MaterialTheme {
         LedgerContent(
             uiState = LedgerUiState.Success(
                 year = 2026,
                 month = 11,
                 monthDisplay = "2026.11",
-                cardMonthDisplay = "结余",
+                cardMonthDisplay = textResources.getString(cn.turingzy.ledger.R.string.ui_balance),
                 monthIncome = 2400000L,
                 monthExpense = 1155000L,
                 monthBalance = 1245000L,
@@ -616,7 +623,7 @@ fun LedgerContentPreview() {
                                 account = Account(id = 1L, name = "支付宝", type = AccountType.WALLET),
                                 category = CategoryWithIcon(
                                     category = Category(id = 2L, name = "兼职收入", type = CategoryType.INCOME, iconId = 2L),
-                                    icon = ModelIcon(id = 2L, keyName = "ic_income", displayName = "收入", iconUri = "res://"),
+                                    icon = ModelIcon(id = 2L, keyName = "ic_income", displayName = textResources.getString(cn.turingzy.ledger.R.string.ui_income), iconUri = "res://"),
                                 ),
                             ),
                             TransactionDetail(
@@ -646,6 +653,7 @@ fun LedgerContentPreview() {
 @Preview(showBackground = true)
 @Composable
 fun LedgerContentSearchActivePreview() {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     MaterialTheme {
         LedgerContent(
             initialSearchActive = true,
@@ -653,7 +661,7 @@ fun LedgerContentSearchActivePreview() {
                 year = 2026,
                 month = 11,
                 monthDisplay = "2026.11",
-                cardMonthDisplay = "结余",
+                cardMonthDisplay = textResources.getString(cn.turingzy.ledger.R.string.ui_balance),
                 monthIncome = 2400000L,
                 monthExpense = 1155000L,
                 monthBalance = 1245000L,

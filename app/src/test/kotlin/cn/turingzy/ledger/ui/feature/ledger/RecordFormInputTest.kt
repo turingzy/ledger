@@ -111,4 +111,11 @@ class RecordFormInputTest {
         assertEquals(LocalDate.of(2024, 4, 30), recordDateInMonth(LocalDate.of(2024, 3, 31), YearMonth.of(2024, 4)))
     }
 
+    @Test
+    fun transfersRequireMatchingAccountCurrencies() {
+        val foreignAccounts = accounts.map { if (it.account.id == 2L) it.copy(account = it.account.copy(currency = "USD")) else it }
+        val transfer = input.copy(type = TransactionType.TRANSFER, categoryId = 11L, toAccountId = 2L)
+        assertNull(transfer.toTransactionOrNull(foreignAccounts, categories))
+    }
+
 }

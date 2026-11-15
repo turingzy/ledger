@@ -41,6 +41,7 @@ import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -143,27 +144,37 @@ internal fun <T> LedgerDropdown(
     modifier: Modifier = Modifier,
     alignMenuToStart: Boolean = false,
     menuTestTag: String = "dropdownOptions",
+    direction: DropdownDirection = DropdownDirection.UP,
     anchor: @Composable (Modifier, Boolean, () -> Unit) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val menuPositionProvider = remember(alignMenuToStart) { FormMenuPositionProvider(alignMenuToStart) }
+    val menuPositionProvider = remember(alignMenuToStart, direction) { FormMenuPositionProvider(alignMenuToStart, direction) }
     var menuMaxHeight by remember { mutableStateOf(200.dp) }
     val fieldCoordinates = remember { FormDropdownAnchor() }
     val density = LocalDensity.current
     val colors = MaterialTheme.colorScheme
     val focusManager = LocalFocusManager.current
+    val view = LocalView.current
+    fun updateMenuHeight(coordinates: LayoutCoordinates) {
+        val top = coordinates.positionInWindow().y
+        val available = when (direction) {
+            DropdownDirection.UP -> top
+            DropdownDirection.DOWN -> view.rootView.height - top - coordinates.size.height
+        }
+        menuMaxHeight = with(density) { available.coerceAtLeast(0f).toDp().coerceAtMost(200.dp) }
+    }
     Box(modifier.fillMaxWidth()) {
         anchor(
             Modifier.onGloballyPositioned {
                 fieldCoordinates.coordinates = it
-                if (expanded) menuMaxHeight = with(density) { it.positionInWindow().y.toDp().coerceIn(0.dp, 200.dp) }
+                if (expanded) updateMenuHeight(it)
             },
             expanded,
             {
                 focusManager.clearFocus()
                 if (!expanded) {
                     fieldCoordinates.coordinates?.takeIf { it.isAttached }?.let {
-                        menuMaxHeight = with(density) { it.positionInWindow().y.toDp().coerceIn(0.dp, 200.dp) }
+                        updateMenuHeight(it)
                     }
                 }
                 expanded = !expanded
@@ -217,7 +228,12 @@ private class FormDropdownAnchor {
     var coordinates: LayoutCoordinates? = null
 }
 
-private class FormMenuPositionProvider(private val alignToStart: Boolean) : PopupPositionProvider {
+internal enum class DropdownDirection { UP, DOWN }
+
+internal class FormMenuPositionProvider(
+    private val alignToStart: Boolean,
+    private val direction: DropdownDirection = DropdownDirection.UP,
+) : PopupPositionProvider {
     override fun calculatePosition(
         anchorBounds: IntRect,
         windowSize: IntSize,
@@ -226,6 +242,9 @@ private class FormMenuPositionProvider(private val alignToStart: Boolean) : Popu
     ): IntOffset = IntOffset(
         x = (if (alignToStart) anchorBounds.left else anchorBounds.right - popupContentSize.width)
             .coerceIn(0, (windowSize.width - popupContentSize.width).coerceAtLeast(0)),
-        y = (anchorBounds.top - popupContentSize.height).coerceAtLeast(0),
+        y = when (direction) {
+            DropdownDirection.UP -> (anchorBounds.top - popupContentSize.height).coerceAtLeast(0)
+            DropdownDirection.DOWN -> anchorBounds.bottom.coerceIn(0, windowSize.height)
+        },
     )
 }

@@ -49,6 +49,7 @@ internal fun SettingsPage(
     action: @Composable () -> Unit = { Box(Modifier.size(48.dp)) },
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val back = onBack ?: onDismissRequest
     BackHandler(onBack = back)
     Surface(modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -83,7 +84,7 @@ internal fun SettingsPage(
                     .clickable(interactionSource = null, indication = null, role = Role.Button, onClick = back),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(MaterialSymbols.ArrowBack, "返回", tint = IosLabel)
+                Icon(MaterialSymbols.ArrowBack, textResources.getString(cn.turingzy.ledger.R.string.ui_back), tint = IosLabel)
             }
         }
     }

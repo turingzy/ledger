@@ -46,6 +46,7 @@ fun BuiltInKeypad(
     actionColor: Color = MaterialTheme.colorScheme.tertiary,
     actionContentColor: Color = MaterialTheme.colorScheme.onPrimary,
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     Layout(
         modifier = modifier.fillMaxWidth(),
         content = {
@@ -55,7 +56,7 @@ fun BuiltInKeypad(
             KeypadButton("−÷", { onOperatorClick("-") }, Modifier.testTag("keypad_subtract"))
             for (digit in 7..9) KeypadButton(digit.toString(), { onNumberClick(digit.toString()) }, Modifier.testTag("keypad_$digit"))
             KeypadIconButton(MaterialSymbols.Backspace, onBackspaceClick, Modifier.testTag("keypad_backspace"))
-            KeypadButton("·", onDotClick, Modifier.testTag("keypad_dot").semantics { contentDescription = "小数点" })
+            KeypadButton("·", onDotClick, Modifier.testTag("keypad_dot").semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_decimal_point) })
             KeypadButton("0", { onNumberClick("0") }, Modifier.testTag("keypad_0"))
             KeypadButton("AC", onClearClick, Modifier.testTag("keypad_clear"))
             Box(
@@ -64,7 +65,7 @@ fun BuiltInKeypad(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    if (hasPendingCalculation) "=" else "完成",
+                    if (hasPendingCalculation) "=" else textResources.getString(cn.turingzy.ledger.R.string.ui_done),
                     fontSize = if (hasPendingCalculation) 20.sp else 16.sp,
                     fontWeight = FontWeight.Normal,
                     color = actionContentColor.copy(alpha = if (actionEnabled) 1f else 0.55f),
@@ -119,6 +120,7 @@ fun KeypadIconButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val interactionSource = remember { MutableInteractionSource() }
     Box(
         modifier = modifier
@@ -129,7 +131,7 @@ fun KeypadIconButton(
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = "删除最后一位",
+            contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_delete_last_digit),
             tint = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.size(26.dp),
         )

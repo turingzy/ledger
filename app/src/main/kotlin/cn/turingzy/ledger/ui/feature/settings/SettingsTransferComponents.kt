@@ -81,6 +81,7 @@ internal fun SettingsTransferFileRow(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val colors = MaterialTheme.colorScheme
     Surface(modifier, shape = RoundedCornerShape(16.dp), color = colors.surface) {
         Row(
@@ -90,9 +91,9 @@ internal fun SettingsTransferFileRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("账单文件", style = MaterialTheme.typography.bodyLarge)
+            Text(textResources.getString(cn.turingzy.ledger.R.string.ui_transaction_file), style = MaterialTheme.typography.bodyLarge)
             Text(
-                fileName ?: "选择文件", Modifier.weight(1f), textAlign = TextAlign.End,
+                fileName ?: textResources.getString(cn.turingzy.ledger.R.string.ui_choose_file), Modifier.weight(1f), textAlign = TextAlign.End,
                 maxLines = 1, overflow = TextOverflow.Ellipsis,
                 style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
             )

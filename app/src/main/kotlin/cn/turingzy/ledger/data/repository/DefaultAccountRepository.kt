@@ -8,6 +8,7 @@ import cn.turingzy.ledger.model.AccountWithTemplate
 import cn.turingzy.ledger.util.Dispatcher
 import cn.turingzy.ledger.util.LedgerDispatchers
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
@@ -16,26 +17,30 @@ import javax.inject.Inject
 
 class DefaultAccountRepository @Inject constructor(
     private val accountDao: AccountDao,
+    private val preferences: AppPreferencesRepository,
+    private val valuation: MoneyValuation,
+    private val rates: ExchangeRateRepository,
     @param:Dispatcher(LedgerDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
 ) : AccountRepository {
 
     override fun getAccountsStream(): Flow<List<AccountWithTemplate>> =
-        accountDao.getPopulatedAccounts()
-            .map { list -> list.map { it.asExternalModel() } }
+        combine(accountDao.getPopulatedAccounts(), preferences.preferences, rates.changes) { entries, settings, _ -> entries to settings.primaryCurrency }
+            .map { (entries, primary) -> valuation.accounts(entries.map { it.asExternalModel() }, primary) }
             .flowOn(ioDispatcher)
 
     override fun getAccount(id: Long): Flow<AccountWithTemplate?> =
-        accountDao.getPopulatedAccountById(id)
-            .map { it?.asExternalModel() }
+        getAccountsStream().map { entries -> entries.firstOrNull { it.account.id == id } }
             .flowOn(ioDispatcher)
 
     override fun getTotalAsset(): Flow<Long> =
-        accountDao.getTotalAsset()
-            .flowOn(ioDispatcher)
+        getAccountsStream().map { entries -> entries.filter { it.account.includeInTotal }.fold(0L) { total, entry ->
+            Math.addExact(total, checkNotNull(entry.account.baseBalance) { "缺少汇率" })
+        } }
 
     override fun getTotalCreditDebt(): Flow<Long> =
-        accountDao.getTotalCreditDebt()
-            .flowOn(ioDispatcher)
+        getAccountsStream().map { entries -> entries.filter { it.account.type == cn.turingzy.ledger.model.AccountType.CREDIT }.fold(0L) { total, entry ->
+            Math.addExact(total, checkNotNull(entry.account.baseBalance) { "缺少汇率" })
+        } }
 
     override suspend fun createAccount(account: Account): Long =
         withContext(ioDispatcher) {

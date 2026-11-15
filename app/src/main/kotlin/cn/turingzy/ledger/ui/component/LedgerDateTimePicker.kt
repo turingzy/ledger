@@ -63,12 +63,13 @@ internal fun LedgerDateTimePicker(
     onHourChange: (String) -> Unit,
     onMinuteChange: (String) -> Unit,
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         LedgerDatePicker(date, onDateChange)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-            RecordTimeWheel("小时", hour, 24, onHourChange)
+            RecordTimeWheel(textResources.getString(cn.turingzy.ledger.R.string.ui_hour), hour, 24, onHourChange)
             Text(":", Modifier.padding(horizontal = 12.dp), style = MaterialTheme.typography.titleLarge)
-            RecordTimeWheel("分钟", minute, 60, onMinuteChange)
+            RecordTimeWheel(textResources.getString(cn.turingzy.ledger.R.string.ui_minute), minute, 60, onMinuteChange)
         }
     }
 }
@@ -77,6 +78,7 @@ private enum class RecordCalendarPanel { DAYS, MONTHS, YEARS }
 
 @Composable
 internal fun LedgerDatePicker(selectedDate: LocalDate, onSelect: (LocalDate) -> Unit) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     var month by remember { mutableStateOf(YearMonth.from(selectedDate)) }
     var panel by remember { mutableStateOf(RecordCalendarPanel.DAYS) }
     val colors = MaterialTheme.colorScheme
@@ -92,11 +94,11 @@ internal fun LedgerDatePicker(selectedDate: LocalDate, onSelect: (LocalDate) -> 
     Column {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             RecordCalendarHeading(
-                text = "${month.year}年", description = "选择年份", expanded = panel == RecordCalendarPanel.YEARS,
+                text = "${month.year}年", description = textResources.getString(cn.turingzy.ledger.R.string.ui_select_year), expanded = panel == RecordCalendarPanel.YEARS,
                 onClick = { panel = if (panel == RecordCalendarPanel.YEARS) RecordCalendarPanel.DAYS else RecordCalendarPanel.YEARS },
             )
             RecordCalendarHeading(
-                text = "${month.monthValue}月", description = "选择月份", expanded = panel == RecordCalendarPanel.MONTHS,
+                text = "${month.monthValue}月", description = textResources.getString(cn.turingzy.ledger.R.string.ui_select_month), expanded = panel == RecordCalendarPanel.MONTHS,
                 onClick = { panel = if (panel == RecordCalendarPanel.MONTHS) RecordCalendarPanel.DAYS else RecordCalendarPanel.MONTHS },
             )
         }
@@ -122,7 +124,7 @@ internal fun LedgerDatePicker(selectedDate: LocalDate, onSelect: (LocalDate) -> 
                 )
                 RecordCalendarPanel.DAYS -> Column {
                     Row(Modifier.fillMaxWidth()) {
-                        listOf("一", "二", "三", "四", "五", "六", "日").forEach {
+                        listOf(textResources.getString(cn.turingzy.ledger.R.string.ui_mon), textResources.getString(cn.turingzy.ledger.R.string.ui_tue), textResources.getString(cn.turingzy.ledger.R.string.ui_wed), textResources.getString(cn.turingzy.ledger.R.string.ui_thu_2), textResources.getString(cn.turingzy.ledger.R.string.ui_fri), textResources.getString(cn.turingzy.ledger.R.string.ui_sat), textResources.getString(cn.turingzy.ledger.R.string.ui_sun_2)).forEach {
                             Text(it, Modifier.weight(1f).padding(vertical = 4.dp), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                         }
                     }
@@ -161,10 +163,11 @@ internal fun LedgerDatePicker(selectedDate: LocalDate, onSelect: (LocalDate) -> 
 
 @Composable
 private fun RecordCalendarHeading(text: String, description: String, expanded: Boolean, onClick: () -> Unit) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     Row(
         Modifier.semantics {
             contentDescription = description
-            stateDescription = if (expanded) "展开" else "收起"
+            stateDescription = if (expanded) textResources.getString(cn.turingzy.ledger.R.string.ui_expand) else textResources.getString(cn.turingzy.ledger.R.string.ui_collapse)
         }.clickable(
             interactionSource = remember { MutableInteractionSource() }, indication = null,
             role = Role.Button, onClick = onClick,

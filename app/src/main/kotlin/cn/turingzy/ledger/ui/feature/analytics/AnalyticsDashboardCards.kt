@@ -23,11 +23,17 @@ internal const val AnalyticsChartGridIntervals = 8
 
 @Composable
 internal fun AnalyticsDashboardCards(state: AnalyticsUiState.Success, dashboard: AnalyticsDashboardState, onCategoryTypeChange: (cn.turingzy.ledger.model.CategoryType) -> Unit = {}) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
+    if (state.currency != dashboard.currency) return
+    if (!state.amountsAvailable || !dashboard.amountsAvailable) {
+        Text(textResources.getString(cn.turingzy.ledger.R.string.ui_exchange_rate_needed_refresh_or_enter_a_rate), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        return
+    }
     val today = LocalDate.now()
     val anchor = minOf(state.periodEnd, today)
     AnalyticsStatisticsCard(state, dashboard.days)
     AnalyticsCategoryShareCard(state, onCategoryTypeChange)
-    DashboardCard("累计支出对比") {
+    DashboardCard(textResources.getString(cn.turingzy.ledger.R.string.ui_cumulative_expenses)) {
         ExpensePace(dashboard.days, state.timeScope, state.periodStart, state.periodEnd, today)
     }
     MonthlyCashflowCard(dashboard.days, YearMonth.from(anchor), transactions = dashboard.transactions)

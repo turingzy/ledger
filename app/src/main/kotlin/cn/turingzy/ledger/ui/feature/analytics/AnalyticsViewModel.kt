@@ -3,6 +3,8 @@ package cn.turingzy.ledger.ui.feature.analytics
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cn.turingzy.ledger.data.repository.TransactionRepository
+import cn.turingzy.ledger.data.repository.CurrencyRepository
+import cn.turingzy.ledger.model.primaryAmount
 import cn.turingzy.ledger.model.CategoryType
 import cn.turingzy.ledger.model.TransactionDetail
 import cn.turingzy.ledger.model.TransactionType
@@ -32,18 +34,21 @@ import javax.inject.Inject
 class AnalyticsViewModel @Inject constructor(
     private val transactionRepository: TransactionRepository,
     @Dispatcher(LedgerDispatchers.Default) private val defaultDispatcher: CoroutineDispatcher,
+    private val currencies: CurrencyRepository,
 ) : ViewModel() {
 
     private val period =
         MutableStateFlow(AnalyticsPeriod(AnalyticsTimeScope.MONTH, LocalDate.now()))
     private val categoryType = MutableStateFlow(CategoryType.EXPENSE)
 
+
     private val analyticsState = combine(
         period,
         categoryType,
-    ) { selectedPeriod, catType ->
-        selectedPeriod to catType
-    }.flatMapLatest { (selectedPeriod, catType) ->
+        currencies.selection,
+    ) { selectedPeriod, catType, currency ->
+        Triple(selectedPeriod, catType, currency)
+    }.flatMapLatest { (selectedPeriod, catType, currency) ->
         val scope = selectedPeriod.scope
         val zone = ZoneId.systemDefault()
         if (scope == AnalyticsTimeScope.ALL) {
@@ -52,15 +57,17 @@ class AnalyticsViewModel @Inject constructor(
             val queryEnd = customRange?.let {
                 it.end.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
             } ?: Long.MAX_VALUE
-            return@flatMapLatest transactionRepository.getTransactionsBetween(queryStart, queryEnd).map { entries ->
+            return@flatMapLatest transactionRepository.getTransactionsBetween(queryStart, queryEnd, currency.currency).map { entries ->
                 val transactions = entries.filterNot { it.transaction.isDeleted }
                 val dates = transactions.map { Instant.ofEpochMilli(it.transaction.transactionTime).atZone(zone).toLocalDate() }
                 val start = customRange?.start ?: dates.minOrNull() ?: LocalDate.now()
                 val end = customRange?.end ?: dates.maxOrNull() ?: start
-                val expense = transactions.filter { it.transaction.type == TransactionType.EXPENSE }.sumOf { it.transaction.amount }
-                val income = transactions.filter { it.transaction.type == TransactionType.INCOME }.sumOf { it.transaction.amount }
+                val expense = transactions.filter { it.transaction.type == TransactionType.EXPENSE }.sumOf { it.transaction.baseAmount ?: it.transaction.amount }
+                val income = transactions.filter { it.transaction.type == TransactionType.INCOME }.sumOf { it.transaction.baseAmount ?: it.transaction.amount }
                 AnalyticsUiState.Success(
-                    timeScope = scope,
+                    amountsAvailable = transactions.filter { it.transaction.type != TransactionType.TRANSFER }.all { it.primaryAmount(currency.currency) != null },
+                    currency = currency.currency,
+                        timeScope = scope,
                     categoryType = catType,
                     periodDisplay = "$start - $end",
                     totalExpense = expense,
@@ -80,14 +87,19 @@ class AnalyticsViewModel @Inject constructor(
         val previousStart = previousRange.start.atStartOfDay(zone).toInstant().toEpochMilli()
         val previousEnd = previousRange.end.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
         combine(
-            transactionRepository.getAmountSum(TransactionType.EXPENSE, startEpoch, endEpoch),
-            transactionRepository.getAmountSum(TransactionType.INCOME, startEpoch, endEpoch),
-            transactionRepository.getTransactionsBetween(startEpoch, endEpoch),
-            transactionRepository.getAmountSum(TransactionType.EXPENSE, previousStart, previousEnd),
-            transactionRepository.getAmountSum(TransactionType.INCOME, previousStart, previousEnd),
-        ) { totalExpense, totalIncome, transactions, previousExpense, previousIncome ->
+            transactionRepository.getTransactionsBetween(startEpoch, endEpoch, currency.currency),
+            transactionRepository.getTransactionsBetween(previousStart, previousEnd, currency.currency),
+        ) { transactions, previous ->
+            fun total(entries: List<TransactionDetail>, type: TransactionType) = entries.filter { it.transaction.type == type }
+                .fold(0L) { total, entry -> Math.addExact(total, entry.primaryAmount(currency.currency) ?: 0L) }
+            val totalExpense = total(transactions, TransactionType.EXPENSE)
+            val totalIncome = total(transactions, TransactionType.INCOME)
+            val previousExpense = total(previous, TransactionType.EXPENSE)
+            val previousIncome = total(previous, TransactionType.INCOME)
             val rankings = calculateCategoryRankings(transactions, catType)
             AnalyticsUiState.Success(
+                amountsAvailable = (transactions + previous).filter { it.transaction.type != TransactionType.TRANSFER }.all { it.primaryAmount(currency.currency) != null },
+                currency = currency.currency,
                 timeScope = scope,
                 categoryType = catType,
                 periodDisplay = selection.analyticsDisplayRange(),
@@ -188,7 +200,7 @@ class AnalyticsViewModel @Inject constructor(
 
         val filtered =
             transactions.filter { !it.transaction.isDeleted && it.transaction.type == targetTxType }
-        val totalAmount = filtered.sumOf { it.transaction.amount }
+        val totalAmount = filtered.sumOf { it.transaction.baseAmount ?: it.transaction.amount }
 
         if (totalAmount <= 0L) return emptyList()
 
@@ -196,7 +208,7 @@ class AnalyticsViewModel @Inject constructor(
             .groupBy { it.category.category.id }
             .map { (catId, txList) ->
                 val catName = txList.first().category.category.name
-                val catTotal = txList.sumOf { it.transaction.amount }
+                val catTotal = txList.sumOf { it.transaction.baseAmount ?: it.transaction.amount }
                 val percentage = analyticsRatio(catTotal, totalAmount)
                 CategoryExpenseRanking(
                     categoryId = catId,

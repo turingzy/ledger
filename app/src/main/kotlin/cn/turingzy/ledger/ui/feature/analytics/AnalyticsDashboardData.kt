@@ -18,8 +18,8 @@ internal fun analyticsDays(entries: List<TransactionDetail>, zone: ZoneId): Map<
     entries.filter { !it.transaction.isDeleted && it.transaction.type != TransactionType.TRANSFER }
         .groupBy { Instant.ofEpochMilli(it.transaction.transactionTime).atZone(zone).toLocalDate() }
         .mapValues { (_, daily) -> AnalyticsDay(
-            daily.filter { it.transaction.type == TransactionType.EXPENSE }.sumOf { it.transaction.amount },
-            daily.filter { it.transaction.type == TransactionType.INCOME }.sumOf { it.transaction.amount },
+            daily.filter { it.transaction.type == TransactionType.EXPENSE }.sumOf { it.transaction.baseAmount ?: it.transaction.amount },
+            daily.filter { it.transaction.type == TransactionType.INCOME }.sumOf { it.transaction.baseAmount ?: it.transaction.amount },
         ) }
 
 internal fun monthlyAnalytics(days: Map<LocalDate, AnalyticsDay>, end: YearMonth): List<AnalyticsMonth> {
@@ -57,6 +57,8 @@ internal fun analyticsTransaction(detail: TransactionDetail, zone: ZoneId): Anal
         note = detail.transaction.note.orEmpty().ifBlank { detail.category.category.name },
         accountName = detail.account.name,
         amount = detail.transaction.amount,
+        primaryAmount = detail.transaction.baseAmount ?: detail.transaction.amount,
+        currency = detail.account.currency,
         type = detail.transaction.type,
         category = detail.category,
         time = time.toLocalTime(),

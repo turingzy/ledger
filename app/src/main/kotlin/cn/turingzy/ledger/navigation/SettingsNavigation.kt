@@ -13,7 +13,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 
-internal enum class SettingsDestination { ROOT, CARDS, PARSE_RULES, BILL_TRANSFER, BACKUP, ABOUT, OPEN_SOURCE_LICENSES }
+internal enum class SettingsDestination { ROOT, GENERAL, CARDS, PARSE_RULES, BILL_TRANSFER, BACKUP, ABOUT, OPEN_SOURCE_LICENSES }
 
 @Composable
 internal fun SettingsNavigation(

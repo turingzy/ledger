@@ -72,6 +72,7 @@ private fun Color.asHex(): String {
 
 @Composable
 internal fun CardTextColorPicker(value: String, onChange: (String) -> Unit) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val colors = MaterialTheme.colorScheme
     val focusManager = LocalFocusManager.current
     val presets = listOf(SurfaceLight, IosLabel, colors.primary, colors.tertiary, colors.error, IosOrange, IosPurple, IosYellow, IosTeal)
@@ -79,9 +80,9 @@ internal fun CardTextColorPicker(value: String, onChange: (String) -> Unit) {
     val current = value.asCardTextColor() ?: SurfaceLight
     Column {
         Row(Modifier.fillMaxWidth().height(SettingsItemHeight), verticalAlignment = Alignment.CenterVertically) {
-            Text("文字颜色", Modifier.weight(1f).padding(start = 12.dp), style = MaterialTheme.typography.bodyLarge)
+            Text(textResources.getString(cn.turingzy.ledger.R.string.ui_text_color), Modifier.weight(1f).padding(start = 12.dp), style = MaterialTheme.typography.bodyLarge)
             LedgerIconButton(onClick = { focusManager.clearFocus(); showDialog = true }) {
-                Icon(MaterialSymbols.Palette, "更多颜色", Modifier.size(24.dp))
+                Icon(MaterialSymbols.Palette, textResources.getString(cn.turingzy.ledger.R.string.ui_more_colors), Modifier.size(24.dp))
             }
         }
         Row(
@@ -110,6 +111,7 @@ internal fun CardTextColorPicker(value: String, onChange: (String) -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CardTextColorDialog(initialColor: Color, onDismiss: () -> Unit, onConfirm: (Color) -> Unit) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val initialHsv = remember(initialColor) {
         FloatArray(3).also { android.graphics.Color.colorToHSV(initialColor.toArgb(), it) }
     }
@@ -127,7 +129,7 @@ private fun CardTextColorDialog(initialColor: Color, onDismiss: () -> Unit, onCo
                 Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text("自定义颜色", style = MaterialTheme.typography.titleLarge)
+                Text(textResources.getString(cn.turingzy.ledger.R.string.ui_custom_color), style = MaterialTheme.typography.titleLarge)
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     ColorSquare(hue, saturation, brightness, onSelect = { newHue, newSaturation ->
                         hue = newHue
@@ -136,11 +138,11 @@ private fun CardTextColorDialog(initialColor: Color, onDismiss: () -> Unit, onCo
                     })
                 }
                 Row(Modifier.fillMaxWidth().height(40.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("明暗", style = MaterialTheme.typography.bodyMedium)
+                    Text(textResources.getString(cn.turingzy.ledger.R.string.ui_brightness), style = MaterialTheme.typography.bodyMedium)
                     CompactSlider(
                         value = brightness,
                         onValueChange = { brightness = it; updateColor() },
-                        modifier = Modifier.weight(1f).padding(start = 12.dp).semantics { contentDescription = "明暗" },
+                        modifier = Modifier.weight(1f).padding(start = 12.dp).semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_brightness) },
                     )
                 }
                 Surface(shape = RoundedCornerShape(12.dp), color = colors.surface) {
@@ -158,7 +160,7 @@ private fun CardTextColorDialog(initialColor: Color, onDismiss: () -> Unit, onCo
                                     hue = hsv[0]; saturation = hsv[1]; brightness = hsv[2]; alpha = color.alpha
                                 }
                             },
-                            modifier = Modifier.weight(1f).semantics { contentDescription = "HEX 颜色值" },
+                            modifier = Modifier.weight(1f).semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_hex_color) },
                             singleLine = true,
                             textStyle = MaterialTheme.typography.bodyLarge.copy(color = if (parsed == null) colors.error else colors.onSurface),
                             cursorBrush = SolidColor(colors.onSurface),
@@ -167,9 +169,9 @@ private fun CardTextColorDialog(initialColor: Color, onDismiss: () -> Unit, onCo
                     }
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    LedgerIconButton(onClick = onDismiss, modifier = Modifier.size(40.dp)) { Icon(MaterialSymbols.Close, "取消颜色选择") }
+                    LedgerIconButton(onClick = onDismiss, modifier = Modifier.size(40.dp)) { Icon(MaterialSymbols.Close, textResources.getString(cn.turingzy.ledger.R.string.ui_cancel_color_selection)) }
                     LedgerIconButton(modifier = Modifier.size(40.dp), enabled = parsed != null, onClick = { parsed?.let(onConfirm) }) {
-                        Icon(MaterialSymbols.Check, "确认文字颜色", tint = colors.tertiary.copy(alpha = if (parsed == null) 0.38f else 1f))
+                        Icon(MaterialSymbols.Check, textResources.getString(cn.turingzy.ledger.R.string.ui_apply_text_color), tint = colors.tertiary.copy(alpha = if (parsed == null) 0.38f else 1f))
                     }
                 }
             }
@@ -179,11 +181,12 @@ private fun CardTextColorDialog(initialColor: Color, onDismiss: () -> Unit, onCo
 
 @Composable
 private fun ColorSquare(hue: Float, saturation: Float, brightness: Float, onSelect: (Float, Float) -> Unit) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val update by rememberUpdatedState(onSelect)
     val hueColors = remember(brightness) { (0..6).map { Color.hsv((it % 6) * 60f, 1f, brightness) } }
     Canvas(
         Modifier.fillMaxWidth().height(180.dp).clip(RoundedCornerShape(12.dp))
-            .semantics { contentDescription = "方形色板" }
+            .semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_color_palette) }
             .pointerInput(Unit) {
                 detectTapGestures { point ->
                     update((point.x / size.width).coerceIn(0f, 1f) * 359.99f, (point.y / size.height).coerceIn(0f, 1f))

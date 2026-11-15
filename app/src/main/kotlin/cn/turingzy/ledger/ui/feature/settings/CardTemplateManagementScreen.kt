@@ -71,6 +71,7 @@ internal fun CardTemplateManagementScreen(
     onDelete: (Long) -> Unit,
     onCopyImage: suspend (Uri) -> String?,
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val scope = rememberCoroutineScope()
     var saving by remember { mutableStateOf(false) }
     val drafts = remember { mutableStateListOf<CardTemplate>().apply { addAll(templates) } }
@@ -114,7 +115,7 @@ internal fun CardTemplateManagementScreen(
             val pending = newFace
             val canSave = !saving && pending.name.isNotBlank() && pending.coverUri.isNotBlank()
             SettingsPage(
-                title = "新增卡面",
+                title = textResources.getString(cn.turingzy.ledger.R.string.ui_new_card_design),
                 onDismissRequest = { if (drafts.isEmpty()) onDismissRequest() else creating = false },
                 avoidKeyboard = true,
                 action = {
@@ -129,7 +130,7 @@ internal fun CardTemplateManagementScreen(
                             } finally { saving = false }
                         }
                     }) {
-                        Icon(MaterialSymbols.Check, "确认新增卡面", tint = MaterialTheme.colorScheme.tertiary.copy(alpha = if (canSave) 1f else 0.38f))
+                        Icon(MaterialSymbols.Check, textResources.getString(cn.turingzy.ledger.R.string.ui_add_card_design), tint = MaterialTheme.colorScheme.tertiary.copy(alpha = if (canSave) 1f else 0.38f))
                     }
                 },
             ) {
@@ -146,14 +147,14 @@ internal fun CardTemplateManagementScreen(
             }
         } else {
             SettingsPage(
-                title = "卡面管理",
+                title = textResources.getString(cn.turingzy.ledger.R.string.ui_card_designs),
                 onDismissRequest = onDismissRequest,
                 avoidKeyboard = true,
                 action = {
                     LedgerIconButton(onClick = {
                         newFace = CardTemplate(id = minOf(drafts.minOfOrNull { it.id } ?: 0L, 0L) - 1L, name = "", coverUri = "")
                         creating = true
-                    }) { Icon(MaterialSymbols.Add, "新增卡面") }
+                    }) { Icon(MaterialSymbols.Add, textResources.getString(cn.turingzy.ledger.R.string.ui_new_card_design)) }
                 },
             ) {
                 Column(
@@ -204,6 +205,7 @@ private fun CardFaceProperties(
     template: CardTemplate,
     onChange: (CardTemplate) -> Unit,
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val colors = MaterialTheme.colorScheme
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Surface(shape = RoundedCornerShape(16.dp), color = colors.surface) {
@@ -211,17 +213,17 @@ private fun CardFaceProperties(
                 Modifier.fillMaxWidth().heightIn(min = SettingsItemHeight).padding(horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("卡面名称", Modifier.width(96.dp), style = MaterialTheme.typography.bodyLarge)
+                Text(textResources.getString(cn.turingzy.ledger.R.string.ui_design_name), Modifier.width(96.dp), style = MaterialTheme.typography.bodyLarge)
                 BasicTextField(
                     value = template.name,
                     onValueChange = { onChange(template.copy(name = it)) },
-                    modifier = Modifier.weight(1f).semantics { contentDescription = "卡面名称" },
+                    modifier = Modifier.weight(1f).semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_design_name) },
                     singleLine = true,
                     textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.onSurfaceVariant, textAlign = TextAlign.End),
                     cursorBrush = SolidColor(colors.onSurface),
                     decorationBox = { field ->
                         Box(contentAlignment = Alignment.CenterEnd) {
-                            if (template.name.isEmpty()) Text("请输入卡面名称", color = colors.onSurfaceVariant)
+                            if (template.name.isEmpty()) Text(textResources.getString(cn.turingzy.ledger.R.string.ui_enter_a_design_name), color = colors.onSurfaceVariant)
                             field()
                         }
                     },
@@ -240,6 +242,7 @@ private fun TemplateCoverPreview(
     onChooseImage: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null,
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val placeholder = onChooseImage != null && template.coverUri.isBlank()
     val borderColor = IosLabel.copy(alpha = 0.4f)
     Box(
@@ -252,7 +255,7 @@ private fun TemplateCoverPreview(
             } else Modifier),
         contentAlignment = Alignment.Center,
     ) {
-        if (placeholder) Icon(MaterialSymbols.AddPhotoAlternate, "选择卡面图片", Modifier.size(40.dp), tint = IosLabel)
+        if (placeholder) Icon(MaterialSymbols.AddPhotoAlternate, textResources.getString(cn.turingzy.ledger.R.string.ui_choose_card_image), Modifier.size(40.dp), tint = IosLabel)
         if (!placeholder) AccountCardBackground(
             account = Account(name = "", type = AccountType.DEBIT, templateId = template.id),
             template = template,
@@ -269,12 +272,12 @@ private fun TemplateCoverPreview(
         )
         if (!placeholder) {
             if (onDelete != null) SummaryCardIconButton(
-                MaterialSymbols.Delete, "删除卡面", onDelete,
+                MaterialSymbols.Delete, textResources.getString(cn.turingzy.ledger.R.string.ui_delete_card_design), onDelete,
                 modifier = Modifier.align(Alignment.BottomStart).padding(12.dp),
                 contentColor = MaterialTheme.colorScheme.error,
             )
             if (onChooseImage != null) SummaryCardIconButton(
-                MaterialSymbols.AddPhotoAlternate, "更换卡面", onChooseImage,
+                MaterialSymbols.AddPhotoAlternate, textResources.getString(cn.turingzy.ledger.R.string.ui_change_card_design), onChooseImage,
                 modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp),
             )
         }

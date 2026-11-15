@@ -14,6 +14,10 @@ data class Account(
     val cardNumber: String? = null,
     val includeInTotal: Boolean = true,
     val isDeleted: Boolean = false,
+    val baseBalance: Long? = null,
+    val baseCurrency: String? = null,
+    val baseRate: String? = null,
+    val baseRateDate: String? = null,
 )
 
 @Serializable

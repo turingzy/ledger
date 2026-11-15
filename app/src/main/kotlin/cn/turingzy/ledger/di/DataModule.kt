@@ -27,6 +27,10 @@ import javax.inject.Singleton
 interface DataModule {
     @Binds
     @Singleton
+    fun bindsExchangeRateSource(impl: cn.turingzy.ledger.data.repository.FrankfurterExchangeRateSource): cn.turingzy.ledger.data.repository.ExchangeRateSource
+
+    @Binds
+    @Singleton
     fun bindsAppUpdateRepository(
         impl: cn.turingzy.ledger.data.repository.DefaultAppUpdateRepository,
     ): cn.turingzy.ledger.data.repository.AppUpdateRepository

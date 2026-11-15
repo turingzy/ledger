@@ -52,6 +52,7 @@ class TransactionDetailsViewModel @Inject constructor(
     private val repository: TransactionRepository,
     categoryRepository: CategoryRepository,
     accountRepository: AccountRepository,
+    private val exchangeRates: cn.turingzy.ledger.data.repository.ExchangeRateRepository,
 ) : ViewModel() {
     internal val selectedTransactionId = savedStateHandle.getStateFlow<Long?>("editingTransactionId", null)
     private val _saveState = MutableStateFlow(TransactionSaveState())
@@ -73,6 +74,9 @@ class TransactionDetailsViewModel @Inject constructor(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TransactionDetailsUiState.Loading)
 
+    internal suspend fun exchangeRate(from: String, to: String, time: Long): String = exchangeRates.quote(from, to,
+        java.time.Instant.ofEpochMilli(time).atZone(java.time.ZoneId.systemDefault()).toLocalDate()).rate
+
     internal fun selectTransaction(id: Long?) {
         if (_saveState.value.saving || id == selectedTransactionId.value) return
         _saveState.value = TransactionSaveState()
@@ -86,7 +90,7 @@ class TransactionDetailsViewModel @Inject constructor(
         if (state.detail.transaction.id != transactionId) return
         val validated = RecordFormInput(
             transaction.type, transaction.amount.toFormattedAmount(), transaction.accountId, transaction.toAccountId,
-            transaction.categoryId, transaction.transactionTime, transaction.note.orEmpty(),
+            transaction.categoryId, transaction.transactionTime, transaction.note.orEmpty(), transaction.transferRate,
         ).toTransactionOrNull(state.accounts, state.categories)
         if (validated == null) {
             _saveState.value = TransactionSaveState(error = "请检查金额、分类和账户")
@@ -95,7 +99,10 @@ class TransactionDetailsViewModel @Inject constructor(
         _saveState.value = TransactionSaveState(saving = true)
         viewModelScope.launch {
             try {
-                repository.updateTransaction(validated.copy(id = transactionId))
+                val sourceCurrency = state.accounts.firstOrNull { it.account.id == transaction.accountId }?.account?.currency
+                val targetCurrency = state.accounts.firstOrNull { it.account.id == transaction.toAccountId }?.account?.currency
+                val toAmount = if (sourceCurrency == targetCurrency) validated.toAmount else transaction.toAmount ?: validated.toAmount
+                repository.updateTransaction(validated.copy(id = transactionId, toAmount = toAmount))
                 _saveState.value = TransactionSaveState(saved = true)
             } catch (error: CancellationException) {
                 _saveState.value = TransactionSaveState()

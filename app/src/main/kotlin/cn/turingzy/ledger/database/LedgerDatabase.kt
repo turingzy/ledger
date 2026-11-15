@@ -28,12 +28,14 @@ import cn.turingzy.ledger.database.model.TransactionEntity
         TransactionEntity::class,
         ParseRuleEntity::class,
         BackupConfigEntity::class,
+        cn.turingzy.ledger.database.model.ExchangeRateEntity::class,
     ],
-    version = 2,
+    version = 4,
     exportSchema = false,
 )
 @TypeConverters(RoomTypeConverters::class)
 abstract class LedgerDatabase : RoomDatabase() {
+    abstract fun exchangeRateDao(): cn.turingzy.ledger.database.dao.ExchangeRateDao
     abstract fun iconDao(): IconDao
     abstract fun cardTemplateDao(): CardTemplateDao
     abstract fun categoryDao(): CategoryDao

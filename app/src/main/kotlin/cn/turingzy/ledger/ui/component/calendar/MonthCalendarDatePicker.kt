@@ -121,13 +121,14 @@ internal fun MonthCalendarDatePickerCard(
 
 @Composable
 private fun CalendarHeader(state: CalendarPickerState) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     Column(
         Modifier.fillMaxWidth().height(44.dp),
         verticalArrangement = Arrangement.Center,
     ) {
         Row(Modifier.fillMaxWidth().height(40.dp), verticalAlignment = Alignment.CenterVertically) {
             if (state.view == CalendarView.DAY) {
-                listOf("一", "二", "三", "四", "五", "六", "日").forEach { day ->
+                listOf(textResources.getString(cn.turingzy.ledger.R.string.ui_mon), textResources.getString(cn.turingzy.ledger.R.string.ui_tue), textResources.getString(cn.turingzy.ledger.R.string.ui_wed), textResources.getString(cn.turingzy.ledger.R.string.ui_thu_2), textResources.getString(cn.turingzy.ledger.R.string.ui_fri), textResources.getString(cn.turingzy.ledger.R.string.ui_sat), textResources.getString(cn.turingzy.ledger.R.string.ui_sun_2)).forEach { day ->
                     Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                         Text(day, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -158,6 +159,7 @@ private fun CalendarHeader(state: CalendarPickerState) {
 
 @Composable
 private fun CalendarGrid(state: CalendarPickerState, view: CalendarView) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     // Keep the outgoing animation's cells fixed while the new view is composed.
     val dates = remember(state.month, view) {
         val snapshot = CalendarPickerState(state.month, state.selection)
@@ -174,8 +176,8 @@ private fun CalendarGrid(state: CalendarPickerState, view: CalendarView) {
             .semantics {
                 contentDescription = when (view) {
                     CalendarView.DAY -> "${state.month.year}年${state.month.monthValue}月，双指展开选择月份"
-                    CalendarView.MONTH -> "双指展开选择年份，捏合返回日期"
-                    CalendarView.YEAR -> "点击已选年份后拖动两端选择连续年份，双指捏合返回月份"
+                    CalendarView.MONTH -> textResources.getString(cn.turingzy.ledger.R.string.ui_spread_two_fingers_for_years_pinch_for_dates)
+                    CalendarView.YEAR -> textResources.getString(cn.turingzy.ledger.R.string.ui_drag_either_end_to_select_years_pinch_to)
                 }
             }
             .pointerInput(state, view) {
@@ -302,6 +304,7 @@ private fun CalendarFooter(
     onDismiss: () -> Unit,
     onConfirm: (LocalDate, LocalDate) -> Unit,
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     Row(
         Modifier.fillMaxWidth().padding(top = 8.dp),
         horizontalArrangement = Arrangement.End,
@@ -310,7 +313,7 @@ private fun CalendarFooter(
         IconButton(showPressFeedback = false, onClick = onDismiss, modifier = Modifier.size(40.dp)) {
             Icon(
                 MaterialSymbols.Close,
-                contentDescription = "关闭日期选择器",
+                contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_close_date_picker_2),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(20.dp),
             )
@@ -322,7 +325,7 @@ private fun CalendarFooter(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             contentAlignment = Alignment.Center,
         ) {
-            Text("重置", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(textResources.getString(cn.turingzy.ledger.R.string.ui_reset), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Box(
             Modifier.clip(RoundedCornerShape(8.dp))
@@ -330,7 +333,7 @@ private fun CalendarFooter(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             contentAlignment = Alignment.Center,
         ) {
-            Text("确认", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.tertiary)
+            Text(textResources.getString(cn.turingzy.ledger.R.string.ui_confirm), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.tertiary)
         }
     }
 }

@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.analytics
 
+import cn.turingzy.ledger.ui.component.LocalLedgerCurrency
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.LocalIndication
@@ -86,103 +87,108 @@ fun AnalyticsContent(
     onCategoryTypeChange: (cn.turingzy.ledger.model.CategoryType) -> Unit = {},
     onOpenCalendar: (LocalDate) -> Unit = {},
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     var showPeriodPicker by rememberSaveable { mutableStateOf(false) }
     var dateEndpoint by rememberSaveable { mutableStateOf<AnalyticsDateEndpoint?>(null) }
-    AnalyticsChartInteractionHost {
-        Scaffold(
-            containerColor = MaterialTheme.colorScheme.background,
-            modifier = modifier.fillMaxSize().statusBarsPadding(),
-        ) { innerPadding ->
-            when (uiState) {
-                AnalyticsUiState.Loading -> Box(
-                    Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                }
-                is AnalyticsUiState.Success -> Column(
-                    Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding()).verticalScroll(rememberScrollState())
-                        .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp + innerPadding.calculateBottomPadding() + LocalBottomBarContentPadding.current),
-                    verticalArrangement = Arrangement.spacedBy(5.dp),
-                ) {
-                    Box(Modifier.fillMaxWidth().height(44.dp), contentAlignment = Alignment.CenterStart) {
-                        Text(
-                            "分析", fontSize = 28.sp, fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface, letterSpacing = (-0.6).sp,
-                        )
-                        TopBarIconButton(MaterialSymbols.CalendarMonth, "消费日历热力图",
-                            { onOpenCalendar(minOf(uiState.periodEnd, LocalDate.now())) },
-                            Modifier.align(Alignment.CenterEnd))
-                    }
-                    AnalyticsTimeScopeSelector(uiState.timeScope, onTimeScopeChange)
-                    Row(
-                        Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                        horizontalArrangement = Arrangement.spacedBy(
-                            if (uiState.timeScope == AnalyticsTimeScope.ALL) 16.dp else 0.dp,
-                            Alignment.CenterHorizontally,
-                        ),
-                        verticalAlignment = Alignment.CenterVertically,
+    androidx.compose.runtime.CompositionLocalProvider(LocalLedgerCurrency provides ((uiState as? AnalyticsUiState.Success)?.currency ?: "CNY")) {
+        AnalyticsChartInteractionHost {
+            Scaffold(
+                containerColor = MaterialTheme.colorScheme.background,
+                modifier = modifier.fillMaxSize().statusBarsPadding(),
+            ) { innerPadding ->
+                when (uiState) {
+                    AnalyticsUiState.Loading -> Box(
+                        Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center,
                     ) {
-                        if (uiState.timeScope == AnalyticsTimeScope.ALL) {
-                            AnalyticsRangeDate(
-                                uiState.periodStart, "选择分析开始日期", { dateEndpoint = AnalyticsDateEndpoint.START },
-                            )
-                            Text("～", fontSize = 17.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            AnalyticsRangeDate(
-                                uiState.periodEnd, "选择分析结束日期", { dateEndpoint = AnalyticsDateEndpoint.END },
-                            )
-                        } else {
-                            PeriodNavigationArrow(false, { onNavigatePeriod(-1) })
-                            Text(
-                                uiState.periodDisplay,
-                                Modifier.weight(1f).semantics { contentDescription = "选择分析日期" }
-                                    .clickable(
-                                        interactionSource = remember { MutableInteractionSource() },
-                                        indication = null,
-                                    ) { showPeriodPicker = true }.padding(horizontal = 6.dp, vertical = 2.dp),
-                                fontSize = 17.sp, fontWeight = FontWeight.Normal,
-                                color = MaterialTheme.colorScheme.onSurface, maxLines = 1,
-                                overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,
-                            )
-                            PeriodNavigationArrow(true, { onNavigatePeriod(1) })
-                        }
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                     }
-                    if (dashboard.loading) {
-                        androidx.compose.material3.LinearProgressIndicator(Modifier.fillMaxWidth())
-                    } else {
-                        AnalyticsDashboardCards(uiState, dashboard, onCategoryTypeChange)
+                    is AnalyticsUiState.Success -> Column(
+                        Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding()).verticalScroll(rememberScrollState())
+                            .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp + innerPadding.calculateBottomPadding() + LocalBottomBarContentPadding.current),
+                        verticalArrangement = Arrangement.spacedBy(5.dp),
+                    ) {
+                        Box(Modifier.fillMaxWidth().height(44.dp), contentAlignment = Alignment.CenterStart) {
+                            Text(
+                                textResources.getString(cn.turingzy.ledger.R.string.ui_analytics), fontSize = 28.sp, fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface, letterSpacing = (-0.6).sp,
+                            )
+                            Row(Modifier.align(Alignment.CenterEnd), verticalAlignment = Alignment.CenterVertically) {
+                                TopBarIconButton(MaterialSymbols.CalendarMonth, textResources.getString(cn.turingzy.ledger.R.string.ui_spending_calendar_2),
+                                    { onOpenCalendar(minOf(uiState.periodEnd, LocalDate.now())) },
+                                    Modifier)
+                            }
+                        }
+                        AnalyticsTimeScopeSelector(uiState.timeScope, onTimeScopeChange)
+                        Row(
+                            Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(
+                                if (uiState.timeScope == AnalyticsTimeScope.ALL) 16.dp else 0.dp,
+                                Alignment.CenterHorizontally,
+                            ),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            if (uiState.timeScope == AnalyticsTimeScope.ALL) {
+                                AnalyticsRangeDate(
+                                    uiState.periodStart, textResources.getString(cn.turingzy.ledger.R.string.ui_select_analytics_start_date), { dateEndpoint = AnalyticsDateEndpoint.START },
+                                )
+                                Text("～", fontSize = 17.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                AnalyticsRangeDate(
+                                    uiState.periodEnd, textResources.getString(cn.turingzy.ledger.R.string.ui_select_analytics_end_date), { dateEndpoint = AnalyticsDateEndpoint.END },
+                                )
+                            } else {
+                                PeriodNavigationArrow(false, { onNavigatePeriod(-1) })
+                                Text(
+                                    uiState.periodDisplay,
+                                    Modifier.weight(1f).semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_select_analytics_period) }
+                                        .clickable(
+                                            interactionSource = remember { MutableInteractionSource() },
+                                            indication = null,
+                                        ) { showPeriodPicker = true }.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    fontSize = 17.sp, fontWeight = FontWeight.Normal,
+                                    color = MaterialTheme.colorScheme.onSurface, maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,
+                                )
+                                PeriodNavigationArrow(true, { onNavigatePeriod(1) })
+                            }
+                        }
+                        if (dashboard.loading) {
+                            androidx.compose.material3.LinearProgressIndicator(Modifier.fillMaxWidth())
+                        } else {
+                            AnalyticsDashboardCards(uiState, dashboard, onCategoryTypeChange)
+                        }
                     }
                 }
             }
         }
-    }
-    val periodState = uiState as? AnalyticsUiState.Success ?: return
-    val pickerType = when (periodState.timeScope) {
-        AnalyticsTimeScope.WEEK -> DateFilterType.WEEK
-        AnalyticsTimeScope.MONTH -> DateFilterType.MONTH
-        AnalyticsTimeScope.YEAR -> DateFilterType.YEAR
-        else -> null
-    }
-    if (showPeriodPicker && pickerType != null) {
-        PeriodPickerSheet(
-            type = pickerType, initialDate = periodState.periodStart,
-            onDismiss = { showPeriodPicker = false }, onSelect = { _, date -> onSelectPeriod(date) },
-            showViewSelector = false,
-        )
-    }
-    val endpoint = dateEndpoint
-    if (endpoint != null && periodState.timeScope == AnalyticsTimeScope.ALL) {
-        LedgerDatePickerDialog(
-            initialDate = if (endpoint == AnalyticsDateEndpoint.START) periodState.periodStart else periodState.periodEnd,
-            onDismiss = { dateEndpoint = null },
-            onConfirm = { date ->
-                if (endpoint == AnalyticsDateEndpoint.START) {
-                    onSelectRange(date, maxOf(date, periodState.periodEnd))
-                } else {
-                    onSelectRange(minOf(periodState.periodStart, date), date)
-                }
-                dateEndpoint = null
-            },
-        )
+        val periodState = uiState as? AnalyticsUiState.Success ?: return@CompositionLocalProvider
+        val pickerType = when (periodState.timeScope) {
+            AnalyticsTimeScope.WEEK -> DateFilterType.WEEK
+            AnalyticsTimeScope.MONTH -> DateFilterType.MONTH
+            AnalyticsTimeScope.YEAR -> DateFilterType.YEAR
+            else -> null
+        }
+        if (showPeriodPicker && pickerType != null) {
+            PeriodPickerSheet(
+                type = pickerType, initialDate = periodState.periodStart,
+                onDismiss = { showPeriodPicker = false }, onSelect = { _, date -> onSelectPeriod(date) },
+                showViewSelector = false,
+            )
+        }
+        val endpoint = dateEndpoint
+        if (endpoint != null && periodState.timeScope == AnalyticsTimeScope.ALL) {
+            LedgerDatePickerDialog(
+                initialDate = if (endpoint == AnalyticsDateEndpoint.START) periodState.periodStart else periodState.periodEnd,
+                onDismiss = { dateEndpoint = null },
+                onConfirm = { date ->
+                    if (endpoint == AnalyticsDateEndpoint.START) {
+                        onSelectRange(date, maxOf(date, periodState.periodEnd))
+                    } else {
+                        onSelectRange(minOf(periodState.periodStart, date), date)
+                    }
+                    dateEndpoint = null
+                },
+            )
+        }
     }
 }
 
@@ -211,10 +217,11 @@ fun AnalyticsTimeScopeSelector(
     onScopeSelected: (AnalyticsTimeScope) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val scopes = listOf(AnalyticsTimeScope.WEEK, AnalyticsTimeScope.MONTH, AnalyticsTimeScope.YEAR, AnalyticsTimeScope.ALL)
     var selectedScope by remember(currentScope) { mutableStateOf(currentScope) }
     LedgerSegmentedControl(
-        labels = listOf("周", "月", "年", "全部"),
+        labels = listOf(textResources.getString(cn.turingzy.ledger.R.string.ui_week), textResources.getString(cn.turingzy.ledger.R.string.ui_month), textResources.getString(cn.turingzy.ledger.R.string.ui_year), textResources.getString(cn.turingzy.ledger.R.string.ui_all)),
         selectedIndex = scopes.indexOf(selectedScope).coerceAtLeast(0),
         onSelect = { selectedScope = scopes[it]; onScopeSelected(scopes[it]) },
         modifier = modifier.fillMaxWidth(), emphasizeSelection = false,
@@ -227,6 +234,7 @@ private fun PeriodNavigationArrow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     Box(
         modifier.size(28.dp).clip(CircleShape)
             .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
@@ -238,7 +246,7 @@ private fun PeriodNavigationArrow(
     ) {
         Icon(
             if (forward) MaterialSymbols.ChevronRight else MaterialSymbols.ChevronLeft,
-            if (forward) "下一周期" else "上一周期",
+            if (forward) textResources.getString(cn.turingzy.ledger.R.string.ui_next_period) else textResources.getString(cn.turingzy.ledger.R.string.ui_previous_period),
             Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary,
         )
     }

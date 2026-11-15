@@ -44,9 +44,10 @@ private val openSourceLibraries = listOf(
 
 @Composable
 internal fun OpenSourceLibrariesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val uriHandler = LocalUriHandler.current
     SettingsPage(
-        title = "开源许可证",
+        title = textResources.getString(cn.turingzy.ledger.R.string.ui_open_source_licenses),
         onDismissRequest = onBack,
         modifier = modifier,
     ) {

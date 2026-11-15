@@ -9,7 +9,8 @@ interface SettingsDataRepository {
     suspend fun saveTemplate(template: CardTemplate): Long
     suspend fun copyImage(uri: Uri): String
     suspend fun exportBills(uri: Uri, excel: Boolean, start: Long, end: Long): Int
-    suspend fun importBills(uri: Uri, rule: BillParseRule, selectedAccountId: Long?): Int
+    suspend fun previewImport(uri: Uri, rule: BillParseRule, selectedAccountId: Long?): cn.turingzy.ledger.model.BillImportResult
+    suspend fun importBills(uri: Uri, rule: BillParseRule, selectedAccountId: Long?, includePossibleDuplicates: Boolean = false): cn.turingzy.ledger.model.BillImportResult
     suspend fun backup(uri: Uri, includeBills: Boolean, includeSettings: Boolean)
     suspend fun restore(uri: Uri)
 }

@@ -22,6 +22,7 @@ internal fun TransactionDetailsScreen(
     viewModel: TransactionDetailsViewModel = hiltViewModel(),
     sheetHeight: Dp = 520.dp,
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val selectedId by viewModel.selectedTransactionId.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val saveState by viewModel.saveState.collectAsStateWithLifecycle()
@@ -29,10 +30,10 @@ internal fun TransactionDetailsScreen(
         if (selectedId == null) return@LaunchedEffect
         when (val state = uiState) {
             is TransactionDetailsUiState.Error -> {
-                if (state.transactionId == selectedId) onLoadFailure("交易加载失败，请重试")
+                if (state.transactionId == selectedId) onLoadFailure(textResources.getString(cn.turingzy.ledger.R.string.ui_could_not_load_transaction_please_try_again))
             }
             is TransactionDetailsUiState.Unavailable -> {
-                if (state.transactionId == selectedId) onLoadFailure("该交易不存在或已删除")
+                if (state.transactionId == selectedId) onLoadFailure(textResources.getString(cn.turingzy.ledger.R.string.ui_transaction_unavailable_or_deleted))
             }
             else -> Unit
         }
@@ -40,7 +41,7 @@ internal fun TransactionDetailsScreen(
     val state = uiState as? TransactionDetailsUiState.Success ?: return
     if (state.detail.transaction.id != selectedId) return
     key(selectedId) {
-        TransactionDetailsContent(state, onBack, modifier, saveState, viewModel::save, sheetHeight)
+        TransactionDetailsContent(state, onBack, modifier, saveState, viewModel::save, sheetHeight, viewModel::exchangeRate)
     }
 }
 
@@ -53,7 +54,9 @@ internal fun TransactionDetailsContent(
     saveState: TransactionSaveState = TransactionSaveState(),
     onSave: (Transaction) -> Unit = {},
     sheetHeight: Dp = 520.dp,
+    onLoadTransferRate: suspend (String, String, Long) -> String? = { _, _, _ -> null },
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val sheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true,
         confirmValueChange = { !saveState.saving || it != SheetValue.Hidden },
@@ -70,15 +73,17 @@ internal fun TransactionDetailsContent(
         categories = uiState.categories,
         accounts = uiState.accounts,
         onDismissRequest = { if (!saveState.saving) onBack() },
-        onConfirm = { type, amount, accountId, toAccountId, categoryId, note, time ->
+        onLoadTransferRate = onLoadTransferRate,
+        onConfirm = { type, amount, accountId, toAccountId, categoryId, note, time, toAmount ->
             onSave(uiState.detail.transaction.copy(
                 type = type, amount = amount, accountId = accountId, toAccountId = toAccountId,
-                categoryId = categoryId, note = note, transactionTime = time,
+                categoryId = categoryId, note = note, transactionTime = time, toAmount = toAmount,
+                transferRate = toAmount?.let { java.math.BigDecimal.valueOf(it).divide(java.math.BigDecimal.valueOf(amount), 18, java.math.RoundingMode.HALF_UP).toPlainString() },
             ))
         },
         modifier = modifier,
         initialTransaction = uiState.detail.transaction,
-        title = "交易详情",
+        title = textResources.getString(cn.turingzy.ledger.R.string.ui_transaction_details),
         saving = saveState.saving,
         error = saveState.error,
     )

@@ -17,14 +17,23 @@ internal data class RecordFormInput(
     val categoryId: Long,
     val transactionTime: Long,
     val note: String,
+    val transferRate: String? = null,
 ) {
     fun toTransactionOrNull(accounts: List<AccountWithTemplate>, categories: List<CategoryWithIcon>): Transaction? {
         val amount = AmountFormatter.parseToCents(evaluateMathExpression(expression))?.takeIf { it > 0L } ?: return null
-        if (accounts.none { it.account.id == accountId && !it.account.isDeleted }) return null
+        val account = accounts.firstOrNull { it.account.id == accountId && !it.account.isDeleted }?.account ?: return null
         if (categories.none { it.category.id == categoryId && it.category.type == type.categoryType() && !it.category.isDeleted }) return null
         val destination = if (type == TransactionType.TRANSFER) {
             toAccountId?.takeIf { id -> id != accountId && accounts.any { it.account.id == id && !it.account.isDeleted } } ?: return null
         } else null
+        val target = accounts.firstOrNull { it.account.id == destination }?.account
+        val converted = if (target == null) null else if (target.currency == account.currency) amount else {
+            val rate = transferRate ?: return null
+            try { cn.turingzy.ledger.model.convertCents(amount, rate).takeIf { it > 0L } ?: return null }
+            catch (_: NumberFormatException) { return null }
+            catch (_: ArithmeticException) { return null }
+            catch (_: IllegalArgumentException) { return null }
+        }
         return Transaction(
             type = type,
             amount = amount,
@@ -33,6 +42,8 @@ internal data class RecordFormInput(
             categoryId = categoryId,
             transactionTime = transactionTime,
             note = note.trim().takeIf { it.isNotEmpty() },
+            toAmount = converted,
+            transferRate = transferRate,
         )
     }
 }

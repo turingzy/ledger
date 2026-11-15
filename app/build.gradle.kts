@@ -9,6 +9,7 @@ plugins {
 android {
     namespace = "cn.turingzy.ledger"
     buildFeatures { buildConfig = true }
+    bundle { language { enableSplit = false } }
 
     defaultConfig {
         applicationId = "cn.turingzy.ledger"

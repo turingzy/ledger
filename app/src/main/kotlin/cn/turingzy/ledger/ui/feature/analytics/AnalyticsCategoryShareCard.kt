@@ -1,5 +1,7 @@
 package cn.turingzy.ledger.ui.feature.analytics
 
+import cn.turingzy.ledger.ui.component.LocalLedgerCurrency
+import cn.turingzy.ledger.ui.component.currencySymbol
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
@@ -50,6 +52,8 @@ internal fun AnalyticsCategoryShareCard(
     onCategoryTypeChange: (CategoryType) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
+    val currencySymbol = currencySymbol(LocalLedgerCurrency.current)
     val colors = MaterialTheme.colorScheme
     val income = state.categoryType == CategoryType.INCOME
     val rankings = remember(state.rankings) { state.rankings.sortedByDescending { it.totalAmount } }
@@ -63,21 +67,21 @@ internal fun AnalyticsCategoryShareCard(
     ) {
         Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                AnalyticsCardTitle("分类占比", Modifier.weight(1f))
+                AnalyticsCardTitle(textResources.getString(cn.turingzy.ledger.R.string.ui_category_breakdown), Modifier.weight(1f))
                 LedgerSegmentedControl(
-                    listOf("支出", "收入"), if (income) 1 else 0,
+                    listOf(textResources.getString(cn.turingzy.ledger.R.string.ui_expense), textResources.getString(cn.turingzy.ledger.R.string.ui_income)), if (income) 1 else 0,
                     { onCategoryTypeChange(if (it == 1) CategoryType.INCOME else CategoryType.EXPENSE) },
                     Modifier.width(88.dp), height = 26.dp, fontSize = 12.sp, emphasizeSelection = false,
                 )
             }
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(if (income) "总收入" else "总支出", Modifier.weight(1f),
+                    Text(if (income) textResources.getString(cn.turingzy.ledger.R.string.ui_total_income) else textResources.getString(cn.turingzy.ledger.R.string.ui_total_expenses), Modifier.weight(1f),
                         fontSize = 14.sp, lineHeight = 18.sp, color = colors.onSurfaceVariant)
                     AnalyticsAmountText(periodTotal, textAlign = TextAlign.End)
                 }
                 Canvas(Modifier.fillMaxWidth().height(40.dp).semantics {
-                    contentDescription = "${if (income) "收入" else "支出"}分类占比条，总额${periodTotal.toFormattedAmount(true)}"
+                    contentDescription = "${if (income) "收入" else "支出"}分类占比条，总额${periodTotal.toFormattedAmount(true, symbol = currencySymbol)}"
                 }) {
                     val barTop = 6.dp.toPx()
                     val barHeight = size.height - barTop * 2
@@ -99,7 +103,7 @@ internal fun AnalyticsCategoryShareCard(
                 }
             }
             if (rankings.isEmpty()) {
-                Text(if (income) "暂无收入记录" else "暂无支出记录", Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                Text(if (income) textResources.getString(cn.turingzy.ledger.R.string.ui_no_income) else textResources.getString(cn.turingzy.ledger.R.string.ui_no_expenses), Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
             } else CategoryLegendLayout(Modifier.fillMaxWidth()) {
                 rankings.forEachIndexed { index, item ->
                     key(item.categoryId) {

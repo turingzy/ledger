@@ -50,6 +50,7 @@ internal fun BackupAndRestoreScreen(
     onBackup: suspend (Uri, Boolean, Boolean) -> Unit,
     onRestore: suspend (Uri) -> Unit,
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     var restoring by remember { mutableStateOf(false) }
     val context = LocalContext.current
     var includeBills by remember { mutableStateOf(true) }
@@ -77,14 +78,14 @@ internal fun BackupAndRestoreScreen(
                 if (restoring) onRestore(requireNotNull(fileUri))
                 else onBackup(requireNotNull(destination), includeBills, includeSettings)
                 state = TransferState(100, TransferStatus.COMPLETED)
-                resultMessage = if (restoring) "恢复完成" else "备份已保存"
+                resultMessage = if (restoring) textResources.getString(cn.turingzy.ledger.R.string.ui_restore_completed) else textResources.getString(cn.turingzy.ledger.R.string.ui_backup_saved)
             } catch (cancelled: CancellationException) {
                 state = state.copy(status = TransferStatus.CANCELLED)
                 throw cancelled
             } catch (error: Exception) {
                 Timber.e(error, "Backup or restore failed")
                 state = TransferState()
-                resultMessage = error.message ?: "操作失败，请重试"
+                resultMessage = error.message ?: textResources.getString(cn.turingzy.ledger.R.string.ui_operation_failed_please_try_again)
             } finally { operationJob = null }
         }
     }
@@ -101,13 +102,13 @@ internal fun BackupAndRestoreScreen(
     }
     if (confirmRestore) androidx.compose.material3.AlertDialog(
         onDismissRequest = { confirmRestore = false },
-        title = { Text("恢复备份") },
-        text = { Text("包含账单数据的备份将替换本地账户、账单和分类。应用设置将按备份恢复，是否继续？") },
-        confirmButton = { androidx.compose.material3.TextButton(onClick = { confirmRestore = false; runTransfer() }) { Text("恢复") } },
-        dismissButton = { androidx.compose.material3.TextButton(onClick = { confirmRestore = false }) { Text("取消") } },
+        title = { Text(textResources.getString(cn.turingzy.ledger.R.string.ui_restore_backup_2)) },
+        text = { Text(textResources.getString(cn.turingzy.ledger.R.string.ui_bill_backups_replace_local_accounts_transactions_and_categories)) },
+        confirmButton = { androidx.compose.material3.TextButton(onClick = { confirmRestore = false; runTransfer() }) { Text(textResources.getString(cn.turingzy.ledger.R.string.ui_restore)) } },
+        dismissButton = { androidx.compose.material3.TextButton(onClick = { confirmRestore = false }) { Text(textResources.getString(cn.turingzy.ledger.R.string.ui_cancel)) } },
     )
 
-    SettingsPage(title = "备份与恢复", onDismissRequest = onDismissRequest) {
+    SettingsPage(title = textResources.getString(cn.turingzy.ledger.R.string.ui_backup_and_restore), onDismissRequest = onDismissRequest) {
         if (resultMessage != null) Text(resultMessage.orEmpty(), color = MaterialTheme.colorScheme.onSurfaceVariant)
         DataTransferContent(
             restoring = restoring,
@@ -138,6 +139,7 @@ private fun DataTransferContent(
     onAction: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val colors = MaterialTheme.colorScheme
     val running = state.status == TransferStatus.RUNNING
     Column(
@@ -145,7 +147,7 @@ private fun DataTransferContent(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         LedgerSegmentedControl(
-            labels = listOf("备份", "恢复"),
+            labels = listOf(textResources.getString(cn.turingzy.ledger.R.string.ui_backup), textResources.getString(cn.turingzy.ledger.R.string.ui_restore)),
             selectedIndex = if (restoring) 1 else 0,
             onSelect = { onModeChange(it == 1) },
             modifier = Modifier.fillMaxWidth(),
@@ -154,18 +156,18 @@ private fun DataTransferContent(
         if (restoring) {
             SettingsTransferFileRow(fileName = fileName, enabled = !running, onClick = onChooseFile)
         } else {
-            Text("备份内容", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+            Text(textResources.getString(cn.turingzy.ledger.R.string.ui_backup_contents), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
             Surface(shape = RoundedCornerShape(16.dp), color = colors.surface) {
                 Column(Modifier.fillMaxWidth()) {
-                    BackupContentOption("账单数据", includeBills, !running, onBillsChange)
+                    BackupContentOption(textResources.getString(cn.turingzy.ledger.R.string.ui_transactions_and_accounts), includeBills, !running, onBillsChange)
                     HorizontalDivider(Modifier.padding(horizontal = 12.dp), thickness = 0.5.dp, color = colors.outlineVariant)
-                    BackupContentOption("应用设置", includeSettings, !running, onSettingsChange)
+                    BackupContentOption(textResources.getString(cn.turingzy.ledger.R.string.ui_app_settings), includeSettings, !running, onSettingsChange)
                 }
             }
         }
         TransferActionContent(
-            title = if (restoring) "开始恢复" else "开始备份",
-            cancelTitle = if (restoring) "取消恢复" else "取消备份",
+            title = if (restoring) textResources.getString(cn.turingzy.ledger.R.string.ui_restore_backup) else textResources.getString(cn.turingzy.ledger.R.string.ui_create_backup),
+            cancelTitle = if (restoring) textResources.getString(cn.turingzy.ledger.R.string.ui_cancel_restore) else textResources.getString(cn.turingzy.ledger.R.string.ui_cancel_backup),
             state = state,
             enabled = running || if (restoring) fileName != null else includeBills || includeSettings,
             onClick = onAction,

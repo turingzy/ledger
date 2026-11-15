@@ -51,6 +51,7 @@ fun SummaryCard(
     onTransparencyChange: (Int) -> Unit = {},
     content: @Composable BoxScope.() -> Unit,
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     var settingsVisible by rememberSaveable { mutableStateOf(false) }
     var previewPercent by remember(appearance.transparencyPercent) {
         mutableFloatStateOf(appearance.transparencyPercent.toFloat())
@@ -110,7 +111,7 @@ fun SummaryCard(
         }
         SummaryCardIconButton(
             imageVector = if (settingsVisible) MaterialSymbols.Close else MaterialSymbols.MoreHoriz,
-            contentDescription = if (settingsVisible) "关闭卡片设置" else "更多卡片设置",
+            contentDescription = if (settingsVisible) textResources.getString(cn.turingzy.ledger.R.string.ui_close_card_settings) else textResources.getString(cn.turingzy.ledger.R.string.ui_card_settings),
             onClick = { settingsVisible = !settingsVisible },
             showPressFeedback = !settingsVisible,
             modifier = Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 12.dp).size(36.dp),

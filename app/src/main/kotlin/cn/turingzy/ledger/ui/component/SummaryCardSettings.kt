@@ -31,12 +31,13 @@ internal fun SummaryCardSettings(
     onTransparencyChangeFinished: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val colors = MaterialTheme.colorScheme
     val sliderEnabled = enabled
     Box(modifier) {
         Column(Modifier.fillMaxWidth().align(Alignment.Center).padding(horizontal = 18.dp)) {
             Row(Modifier.fillMaxWidth().height(48.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("透明度", Modifier.width(52.dp), fontSize = 13.sp, color = colors.onPrimary)
+                Text(textResources.getString(cn.turingzy.ledger.R.string.ui_transparency), Modifier.width(52.dp), fontSize = 13.sp, color = colors.onPrimary)
                 BoxWithConstraints(Modifier.weight(1f).height(40.dp)) {
                     CompactSlider(
                         value = appearance.transparencyPercent.toFloat(),
@@ -45,7 +46,7 @@ internal fun SummaryCardSettings(
                         enabled = sliderEnabled,
                         valueRange = 0f..100f,
                         color = colors.tertiary,
-                        modifier = Modifier.fillMaxWidth().semantics { contentDescription = "透明度" },
+                        modifier = Modifier.fillMaxWidth().semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_transparency) },
                     )
                     Text(
                         "${appearance.transparencyPercent}%",
@@ -63,7 +64,7 @@ internal fun SummaryCardSettings(
         }
         SummaryCardIconButton(
             imageVector = MaterialSymbols.AddPhotoAlternate,
-            contentDescription = "更换卡片背景",
+            contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_change_card_background),
             onClick = onUploadBackground,
             enabled = enabled,
             modifier = Modifier.align(Alignment.TopStart).padding(top = 8.dp, start = 12.dp).size(36.dp),

@@ -6,6 +6,8 @@ import cn.turingzy.ledger.data.repository.CardTemplateRepository
 import cn.turingzy.ledger.data.repository.TransactionRepository
 import cn.turingzy.ledger.data.repository.AccountRepository
 import cn.turingzy.ledger.model.Account
+import cn.turingzy.ledger.model.primaryAmount
+import cn.turingzy.ledger.model.primaryBalance
 import cn.turingzy.ledger.util.Dispatcher
 import cn.turingzy.ledger.util.LedgerDispatchers
 import kotlinx.coroutines.CoroutineDispatcher
@@ -25,6 +27,7 @@ class WalletViewModel @Inject constructor(
     private val cardTemplateRepository: CardTemplateRepository,
     @Dispatcher(LedgerDispatchers.Default) private val defaultDispatcher: CoroutineDispatcher,
     private val transactionRepository: TransactionRepository,
+    private val currencies: cn.turingzy.ledger.data.repository.CurrencyRepository,
 ) : ViewModel() {
 
     init {
@@ -37,12 +40,14 @@ class WalletViewModel @Inject constructor(
         accountRepository.getAccountsStream(),
         cardTemplateRepository.getTemplatesStream(),
         transactionRepository.getTransactionsBetween(Long.MIN_VALUE, Long.MAX_VALUE),
-    ) { accounts, templates, transactions ->
-        val totals = walletCurrencyTotals(accounts, transactions)
+        currencies.selection,
+    ) { accounts, templates, transactions, selection ->
+        val totals = walletCurrencyTotals(accounts, transactions, selection.currency)
         val primary = totals.first()
 
         WalletUiState.Success(
             totalAsset = primary.assets,
+            amountsAvailable = accounts.filter { it.account.includeInTotal }.all { it.account.primaryBalance(selection.currency) != null } && transactions.filter { it.transaction.type != cn.turingzy.ledger.model.TransactionType.TRANSFER }.all { it.primaryAmount(selection.currency) != null },
             totalDebt = primary.creditBalance,
             currencyTotals = totals,
             accounts = accounts,

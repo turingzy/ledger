@@ -15,6 +15,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -33,7 +36,11 @@ internal fun TransactionRow(
     icon: ImageVector,
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
+    currency: String = LocalLedgerCurrency.current,
 ) {
+    val primary = LocalLedgerCurrency.current
+    val foreignCurrency = currency != primary
+    val formattedAmount = if (foreignCurrency) amount.toFormattedAmount() else transactionAmount(amount, currency, primary)
     val colors = MaterialTheme.colorScheme
     val typeColor = when (type) {
         TransactionType.EXPENSE -> colors.error
@@ -41,9 +48,9 @@ internal fun TransactionRow(
         TransactionType.TRANSFER -> IosYellow
     }
     val amountText = when (type) {
-        TransactionType.EXPENSE -> "−${amount.toFormattedAmount(showSymbol = true)}"
-        TransactionType.INCOME -> "+${amount.toFormattedAmount(showSymbol = true)}"
-        TransactionType.TRANSFER -> amount.toFormattedAmount(showSymbol = true)
+        TransactionType.EXPENSE -> "−${formattedAmount}"
+        TransactionType.INCOME -> "+${formattedAmount}"
+        TransactionType.TRANSFER -> formattedAmount
     }
     Row(
         modifier = modifier.fillMaxWidth()
@@ -90,7 +97,12 @@ internal fun TransactionRow(
         }
         Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
-                text = amountText,
+                text = buildAnnotatedString {
+                    if (foreignCurrency) withStyle(SpanStyle(color = colors.onSurfaceVariant)) {
+                        append("$currency ")
+                    }
+                    append(amountText)
+                },
                 fontSize = 16.sp,
                 lineHeight = 18.sp,
                 fontWeight = FontWeight.Normal,

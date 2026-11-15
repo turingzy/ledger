@@ -72,5 +72,21 @@ data class TransactionEntity(
     val note: String? = null,
     @ColumnInfo(name = "is_deleted", defaultValue = "0")
     val isDeleted: Boolean = false,
+    @ColumnInfo(name = "import_key")
+    val importKey: String? = null,
+    @ColumnInfo(name = "base_amount")
+    val baseAmount: Long? = null,
+    @ColumnInfo(name = "base_currency")
+    val baseCurrency: String? = null,
+    @ColumnInfo(name = "base_rate")
+    val baseRate: String? = null,
+    @ColumnInfo(name = "base_rate_date")
+    val baseRateDate: String? = null,
+    @ColumnInfo(name = "to_amount")
+    val toAmount: Long? = null,
+    @ColumnInfo(name = "transfer_rate")
+    val transferRate: String? = null,
+    @ColumnInfo(name = "currency_snapshots", defaultValue = "'[]'")
+    val currencySnapshots: String = "[]",
 )
 

@@ -1,5 +1,8 @@
 package cn.turingzy.ledger.database.mapper
 
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+
 import cn.turingzy.ledger.database.model.AccountEntity
 import cn.turingzy.ledger.database.model.BackupConfigEntity
 import cn.turingzy.ledger.database.model.CardTemplateEntity
@@ -95,6 +98,10 @@ fun AccountEntity.asExternalModel(): Account = Account(
     cardNumber = cardNumber,
     includeInTotal = includeInTotal,
     isDeleted = isDeleted,
+    baseBalance = baseBalance,
+    baseCurrency = baseCurrency,
+    baseRate = baseRate,
+    baseRateDate = baseRateDate,
 )
 
 fun Account.asEntity(): AccountEntity = AccountEntity(
@@ -108,6 +115,10 @@ fun Account.asEntity(): AccountEntity = AccountEntity(
     cardNumber = cardNumber,
     includeInTotal = includeInTotal,
     isDeleted = isDeleted,
+    baseBalance = baseBalance,
+    baseCurrency = baseCurrency,
+    baseRate = baseRate,
+    baseRateDate = baseRateDate,
 )
 
 fun PopulatedAccount.asExternalModel(): AccountWithTemplate = AccountWithTemplate(
@@ -125,6 +136,14 @@ fun TransactionEntity.asExternalModel(): Transaction = Transaction(
     transactionTime = transactionTime,
     note = note,
     isDeleted = isDeleted,
+    importKey = importKey,
+    baseAmount = baseAmount,
+    baseCurrency = baseCurrency,
+    baseRate = baseRate,
+    baseRateDate = baseRateDate,
+    toAmount = toAmount,
+    transferRate = transferRate,
+    currencySnapshots = Json.decodeFromString(currencySnapshots),
 )
 
 fun Transaction.asEntity(): TransactionEntity = TransactionEntity(
@@ -137,6 +156,14 @@ fun Transaction.asEntity(): TransactionEntity = TransactionEntity(
     transactionTime = transactionTime,
     note = note,
     isDeleted = isDeleted,
+    importKey = importKey,
+    baseAmount = baseAmount,
+    baseCurrency = baseCurrency,
+    baseRate = baseRate,
+    baseRateDate = baseRateDate,
+    toAmount = toAmount,
+    transferRate = transferRate,
+    currencySnapshots = Json.encodeToString(currencySnapshots),
 )
 
 fun PopulatedTransaction.asExternalModel(): TransactionDetail = TransactionDetail(

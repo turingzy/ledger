@@ -59,6 +59,7 @@ internal fun PeriodPickerSheet(
     modifier: Modifier = Modifier,
     showViewSelector: Boolean = true,
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val views = listOf(DateFilterType.WEEK, DateFilterType.MONTH, DateFilterType.YEAR)
     var view by rememberSaveable(type) { mutableStateOf(type.takeIf { it in views } ?: DateFilterType.MONTH) }
     var contentView by remember { mutableStateOf(view) }
@@ -94,11 +95,11 @@ internal fun PeriodPickerSheet(
         ) {
             Box(Modifier.fillMaxWidth().height(48.dp), contentAlignment = Alignment.Center) {
                 LedgerIconButton(onDismiss, modifier = Modifier.align(Alignment.CenterStart), showPressFeedback = false) {
-                    Icon(MaterialSymbols.Close, "关闭日期选择")
+                    Icon(MaterialSymbols.Close, textResources.getString(cn.turingzy.ledger.R.string.ui_close_date_picker))
                 }
                 if (showViewSelector) {
                     LedgerSegmentedControl(
-                        labels = listOf("周", "月", "年"),
+                        labels = listOf(textResources.getString(cn.turingzy.ledger.R.string.ui_week), textResources.getString(cn.turingzy.ledger.R.string.ui_month), textResources.getString(cn.turingzy.ledger.R.string.ui_year)),
                         selectedIndex = views.indexOf(view),
                         onSelect = { view = views[it] },
                         modifier = Modifier.width(168.dp).testTag("periodViewSelector"), height = 28.dp,
@@ -134,6 +135,7 @@ private fun PeriodList(
     onSelect: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val listType = if (type == DateFilterType.MONTH) DateFilterType.YEAR else type
     val series = remember(listType, initialDate) { PeriodSeries(listType, initialDate) }
     val precedingItems = if (type == DateFilterType.YEAR) 4 else if (type == DateFilterType.WEEK) 1 else 0
@@ -142,7 +144,7 @@ private fun PeriodList(
     Column(modifier.fillMaxWidth()) {
         if (type == DateFilterType.WEEK) {
             Row(Modifier.fillMaxWidth().padding(vertical = 14.dp)) {
-                listOf("周一", "周二", "周三", "周四", "周五", "周六", "周日").forEach { day ->
+                listOf(textResources.getString(cn.turingzy.ledger.R.string.ui_mon_2), textResources.getString(cn.turingzy.ledger.R.string.ui_tue_2), textResources.getString(cn.turingzy.ledger.R.string.ui_wed_2), textResources.getString(cn.turingzy.ledger.R.string.ui_thu), textResources.getString(cn.turingzy.ledger.R.string.ui_fri_2), textResources.getString(cn.turingzy.ledger.R.string.ui_sat_2), textResources.getString(cn.turingzy.ledger.R.string.ui_sun)).forEach { day ->
                     Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                         Text(day, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -170,7 +172,8 @@ private fun PeriodList(
 
 @Composable
 private fun LedgerWeekOption(date: LocalDate, chosen: Boolean, today: LocalDate, onSelect: (LocalDate) -> Unit) {
-    val label = weekLabel(date) + if (date == weekStart(today)) "（本周）" else ""
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
+    val label = weekLabel(date) + if (date == weekStart(today)) textResources.getString(cn.turingzy.ledger.R.string.ui_this_week) else ""
     Column(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
             .periodSelection(date, chosen, onSelect),

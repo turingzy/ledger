@@ -68,6 +68,7 @@ internal fun RecordAccountSheet(
     onDismiss: () -> Unit,
     onSelect: (Long) -> Unit,
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val selectionColor = when (transactionType) {
         TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
         TransactionType.INCOME -> MaterialTheme.colorScheme.tertiary
@@ -84,12 +85,12 @@ internal fun RecordAccountSheet(
             Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(title, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
                 IconButton(showPressFeedback = false, onClick = onDismiss) {
-                    Icon(MaterialSymbols.Close, "关闭账户选择", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Icon(MaterialSymbols.Close, textResources.getString(cn.turingzy.ledger.R.string.ui_close_account_picker), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 0.5.dp)
             if (accounts.isEmpty()) {
-                Text("暂无可选账户，请先在钱包中添加", Modifier.padding(16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(textResources.getString(cn.turingzy.ledger.R.string.ui_no_accounts_available_add_one_in_wallet), Modifier.padding(16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else LazyColumn(Modifier.fillMaxWidth().weight(1f)) {
                 items(accounts, key = { it.account.id }) { item ->
                     Row(
@@ -99,9 +100,9 @@ internal fun RecordAccountSheet(
                         RecordAccountAvatar(item.account)
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Text(item.account.name, style = MaterialTheme.typography.bodyMedium)
-                            Text(item.account.currentBalance.toFormattedAmount(showSymbol = true), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(cn.turingzy.ledger.ui.component.transactionAmount(item.account.currentBalance, item.account.currency, cn.turingzy.ledger.ui.component.LocalLedgerCurrency.current), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        if (item.account.id == selectedId) Icon(MaterialSymbols.Check, "已选择", tint = selectionColor)
+                        if (item.account.id == selectedId) Icon(MaterialSymbols.Check, textResources.getString(cn.turingzy.ledger.R.string.ui_selected), tint = selectionColor)
                     }
                 }
             }
@@ -111,6 +112,7 @@ internal fun RecordAccountSheet(
 
 @Composable
 internal fun RecordDateTimeDialog(initialTime: Long, onDismiss: () -> Unit, onConfirm: (Long) -> Unit) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val zone = remember { ZoneId.systemDefault() }
     val initial = remember(initialTime) { Instant.ofEpochMilli(initialTime).atZone(zone) }
     var day by rememberSaveable(initialTime) { mutableLongStateOf(initial.toLocalDate().toEpochDay()) }
@@ -128,10 +130,10 @@ internal fun RecordDateTimeDialog(initialTime: Long, onDismiss: () -> Unit, onCo
                     LedgerDateTimePicker(date, hour, minute, { day = it.toEpochDay() }, { hour = it }, { minute = it })
                 }
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(showPressFeedback = false, onClick = onDismiss) { Icon(MaterialSymbols.Close, "取消") }
+                    IconButton(showPressFeedback = false, onClick = onDismiss) { Icon(MaterialSymbols.Close, textResources.getString(cn.turingzy.ledger.R.string.ui_cancel)) }
                     Spacer(Modifier.weight(1f))
                     IconButton(showPressFeedback = false, onClick = { selectedTime?.let(onConfirm) }, enabled = selectedTime != null) {
-                        Icon(MaterialSymbols.Check, "确认", tint = MaterialTheme.colorScheme.tertiary.copy(alpha = if (selectedTime != null) 1f else 0.38f))
+                        Icon(MaterialSymbols.Check, textResources.getString(cn.turingzy.ledger.R.string.ui_confirm), tint = MaterialTheme.colorScheme.tertiary.copy(alpha = if (selectedTime != null) 1f else 0.38f))
                     }
                 }
             }

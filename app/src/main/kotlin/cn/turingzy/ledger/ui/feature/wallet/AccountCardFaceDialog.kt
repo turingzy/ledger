@@ -48,6 +48,7 @@ internal fun AccountCardFaceDialog(
     onDismiss: () -> Unit,
     onConfirm: (Long?) -> Unit,
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val faces = remember(templates) { listOf<CardTemplate?>(null) + templates.filterNot { it.isDeleted } }
     val pager = rememberCircularCardPagerState(faces.map { it?.id }, selectedId)
     val colors = MaterialTheme.colorScheme
@@ -56,15 +57,15 @@ internal fun AccountCardFaceDialog(
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(Modifier.fillMaxWidth().height(40.dp), contentAlignment = Alignment.Center) {
                     SummaryCardIconButton(
-                        MaterialSymbols.Close, "关闭卡面选择", onDismiss,
+                        MaterialSymbols.Close, textResources.getString(cn.turingzy.ledger.R.string.ui_close_card_design_picker), onDismiss,
                         Modifier.align(Alignment.CenterStart), containerColor = colors.surface, contentColor = colors.onSurface,
                     )
-                    Text("选择卡面", style = MaterialTheme.typography.titleMedium)
+                    Text(textResources.getString(cn.turingzy.ledger.R.string.ui_select_card_design), style = MaterialTheme.typography.titleMedium)
                     AccountSaveButton(
                         enabled = !pager.isScrollInProgress,
                         onClick = { onConfirm(faces[Math.floorMod(pager.settledPage, faces.size)]?.id) },
                         modifier = Modifier.align(Alignment.CenterEnd),
-                        contentDescription = "应用卡面",
+                        contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_apply_card_design),
                     )
                 }
                 HorizontalPager(state = pager, key = { it }, pageSpacing = 12.dp) { page ->
@@ -77,7 +78,7 @@ internal fun AccountCardFaceDialog(
                     ) {
                         AccountCardBackground(account, face, Modifier.fillMaxSize())
                         Text(
-                            accountName.ifBlank { "账户名称" },
+                            accountName.ifBlank { textResources.getString(cn.turingzy.ledger.R.string.ui_account_name) },
                             Modifier.align(Alignment.TopStart).padding(16.dp),
                             style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold,
                             color = textColor, maxLines = 1, overflow = TextOverflow.Ellipsis,
@@ -95,7 +96,7 @@ internal fun AccountCardFaceDialog(
                 }
                 CardPageIndicator(faces.size, Math.floorMod(pager.currentPage, faces.size))
                 Text(
-                    faces[Math.floorMod(pager.currentPage, faces.size)]?.name ?: "默认卡面",
+                    faces[Math.floorMod(pager.currentPage, faces.size)]?.name ?: textResources.getString(cn.turingzy.ledger.R.string.ui_default_card_design),
                     Modifier.align(Alignment.CenterHorizontally),
                     style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
                     maxLines = 1, overflow = TextOverflow.Ellipsis,

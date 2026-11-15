@@ -23,7 +23,9 @@ fun SummaryHeroBanner(
     settingsEnabled: Boolean = true,
     onUploadBackground: () -> Unit = {},
     onTransparencyChange: (Int) -> Unit = {},
+    currency: String = "CNY",
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     var amountsHidden by rememberSaveable { mutableStateOf(false) }
     SummaryCard(
         modifier = modifier,
@@ -34,8 +36,9 @@ fun SummaryHeroBanner(
         onTransparencyChange = onTransparencyChange,
     ) {
         SummaryCardContent(
-            title = cardMonthDisplay.ifBlank { "结余" },
+            title = cardMonthDisplay.ifBlank { textResources.getString(cn.turingzy.ledger.R.string.ui_balance) },
             amount = balance,
+            currency = currency,
             amountsHidden = amountsHidden,
             onToggleAmounts = { amountsHidden = !amountsHidden },
             leftAmount = expense,

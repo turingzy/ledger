@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.ledger
 
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -99,15 +100,17 @@ fun RecordTransactionSheet(
     onDismissRequest: () -> Unit,
     onConfirm: (
         type: TransactionType, amount: Long, accountId: Long, toAccountId: Long?,
-        categoryId: Long, note: String?, transactionTime: Long,
+        categoryId: Long, note: String?, transactionTime: Long, toAmount: Long?,
     ) -> Unit,
     modifier: Modifier = Modifier,
     initialTransaction: Transaction? = null,
-    title: String = "记一笔",
+    title: String = androidx.compose.ui.res.stringResource(cn.turingzy.ledger.R.string.ui_new_transaction),
     saving: Boolean = false,
     error: String? = null,
     sheetHeight: Dp = 520.dp,
+    onLoadTransferRate: suspend (String, String, Long) -> String? = { _, _, _ -> null },
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val fixedHeight = remember { sheetHeight }
     var expression by rememberSaveable(initialTransaction?.id) { mutableStateOf(initialTransaction?.amount?.toFormattedAmount().orEmpty()) }
     var note by rememberSaveable(initialTransaction?.id) { mutableStateOf(initialTransaction?.note.orEmpty()) }
@@ -127,7 +130,23 @@ fun RecordTransactionSheet(
     }
     val hasCalculation = expression.drop(1).any { it in "+-×÷" }
     val canEvaluate = !saving && hasCalculation && AmountFormatter.parseToCents(evaluateMathExpression(expression)) != null
-    val transaction = RecordFormInput(type, expression, accountId, destinationId, categoryId, transactionTime, note)
+    val sourceCurrency = accounts.firstOrNull { it.account.id == accountId }?.account?.currency
+    val targetCurrency = accounts.firstOrNull { it.account.id == destinationId }?.account?.currency
+    val crossCurrency = type == TransactionType.TRANSFER && sourceCurrency != null && targetCurrency != null && sourceCurrency != targetCurrency
+    var transferRate by rememberSaveable(accountId, destinationId, transactionTime) {
+        mutableStateOf(initialTransaction?.takeIf { it.accountId == accountId && it.toAccountId == destinationId && it.transactionTime == transactionTime }?.transferRate.orEmpty())
+    }
+    var rateEdited by remember(accountId, destinationId, transactionTime) { mutableStateOf(false) }
+    var rateError by remember(accountId, destinationId, transactionTime) { mutableStateOf<String?>(null) }
+    LaunchedEffect(sourceCurrency, targetCurrency, transactionTime, crossCurrency) {
+        if (!crossCurrency || transferRate.isNotBlank()) return@LaunchedEffect
+        try {
+            val quote = onLoadTransferRate(checkNotNull(sourceCurrency), checkNotNull(targetCurrency), transactionTime)
+            if (!rateEdited) transferRate = quote.orEmpty()
+        } catch (error: kotlinx.coroutines.CancellationException) { throw error }
+        catch (error: Exception) { timber.log.Timber.w(error, "Unable to load transfer rate"); rateError = textResources.getString(cn.turingzy.ledger.R.string.ui_enter_an_exchange_rate) }
+    }
+    val transaction = RecordFormInput(type, expression, accountId, destinationId, categoryId, transactionTime, note, transferRate.takeIf { crossCurrency })
         .toTransactionOrNull(accounts, categories)
 
     fun openPanel(target: RecordPanel) {
@@ -158,10 +177,15 @@ fun RecordTransactionSheet(
             modifier = Modifier.height(fixedHeight).testTag("recordDrawer").padding(WindowInsets.navigationBars.asPaddingValues()),
             expression = expression, note = note, type = type, categories = matchingCategories,
             selectedCategoryId = categoryId,
+            currency = accounts.firstOrNull { it.account.id == accountId }?.account?.currency ?: "CNY",
             accountName = accounts.firstOrNull { it.account.id == accountId }?.account?.name,
             destinationName = accounts.firstOrNull { it.account.id == destinationId }?.account?.name,
             timeLabel = recordTimeLabel(transactionTime, zone),
-            title = title, error = error,
+            title = title, error = error ?: rateError,
+            transferRate = transferRate.takeIf { crossCurrency },
+            transferLabel = "1 ${sourceCurrency.orEmpty()} = … ${targetCurrency.orEmpty()}",
+            transferredAmount = transaction?.toAmount?.toFormattedAmount()?.let { "$it ${targetCurrency.orEmpty()}" },
+            onTransferRateChange = { rateEdited = true; transferRate = it; rateError = null },
             hasCalculation = hasCalculation,
             actionEnabled = if (hasCalculation) canEvaluate else !saving && transaction != null,
             onDismiss = onDismissRequest,
@@ -182,7 +206,7 @@ fun RecordTransactionSheet(
                 if (!saving) {
                     if (hasCalculation) expression = evaluateMathExpression(expression)
                     else transaction?.let { value ->
-                        onConfirm(value.type, value.amount, value.accountId, value.toAccountId, value.categoryId, value.note, value.transactionTime)
+                        onConfirm(value.type, value.amount, value.accountId, value.toAccountId, value.categoryId, value.note, value.transactionTime, value.toAmount)
                     }
                 }
             },
@@ -192,7 +216,7 @@ fun RecordTransactionSheet(
     if (panel == RecordPanel.ACCOUNT || panel == RecordPanel.DESTINATION) {
         val destination = panel == RecordPanel.DESTINATION
         RecordAccountSheet(
-            title = if (destination) "选择转入账户" else if (type == TransactionType.TRANSFER) "选择转出账户" else "选择账户",
+            title = if (destination) textResources.getString(cn.turingzy.ledger.R.string.ui_select_destination_account) else if (type == TransactionType.TRANSFER) textResources.getString(cn.turingzy.ledger.R.string.ui_select_source_account) else textResources.getString(cn.turingzy.ledger.R.string.ui_select_account),
             accounts = accounts.filter { !it.account.isDeleted && (!destination || it.account.id != accountId) },
             selectedId = if (destination) destinationId else accountId,
             transactionType = type,
@@ -201,7 +225,8 @@ fun RecordTransactionSheet(
             onSelect = { id ->
                 if (destination) destinationId = id else {
                     accountId = id
-                    if (destinationId == id) destinationId = 0L
+                    val selectedCurrency = accounts.firstOrNull { it.account.id == id }?.account?.currency
+                    if (destinationId == id || accounts.firstOrNull { it.account.id == destinationId }?.account?.currency != selectedCurrency) destinationId = 0L
                 }
                 panel = RecordPanel.ENTRY
             },
@@ -241,7 +266,13 @@ internal fun RecordTransactionContent(
     modifier: Modifier = Modifier,
     error: String? = null,
     keyHeight: Dp = 48.dp,
+    currency: String = "CNY",
+    transferRate: String? = null,
+    transferLabel: String = "",
+    transferredAmount: String? = null,
+    onTransferRateChange: (String) -> Unit = {},
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val colors = MaterialTheme.colorScheme
     val focusManager = LocalFocusManager.current
     val density = LocalDensity.current
@@ -266,7 +297,7 @@ internal fun RecordTransactionContent(
                 modifier = Modifier.align(Alignment.CenterStart), containerColor = colors.surface, contentColor = colors.onSurface,
             )
             LedgerSegmentedControl(
-                listOf("支出", "收入", "转账"), TransactionType.entries.indexOf(type),
+                listOf(textResources.getString(cn.turingzy.ledger.R.string.ui_expense), textResources.getString(cn.turingzy.ledger.R.string.ui_income), textResources.getString(cn.turingzy.ledger.R.string.ui_transfer)), TransactionType.entries.indexOf(type),
                 { onTypeChange(TransactionType.entries[it]) },
                 modifier = Modifier.width(168.dp), height = 27.dp, fontSize = 12.sp,
                 containerColor = colors.surface, selectedContainerColor = colors.surfaceVariant,
@@ -288,15 +319,15 @@ internal fun RecordTransactionContent(
                 Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                         if (type != TransactionType.TRANSFER) RecordCompactSelector(
-                            accountName ?: "选择账户", MaterialSymbols.AccountBalanceWallet, onAccountClick,
-                            Modifier.weight(1f, fill = false), "选择账户",
+                            accountName ?: textResources.getString(cn.turingzy.ledger.R.string.ui_select_account), MaterialSymbols.AccountBalanceWallet, onAccountClick,
+                            Modifier.weight(1f, fill = false), textResources.getString(cn.turingzy.ledger.R.string.ui_select_account),
                         )
-                        RecordCompactSelector(timeLabel, MaterialSymbols.Schedule, onTimeClick, description = "选择时间")
+                        RecordCompactSelector(timeLabel, MaterialSymbols.Schedule, onTimeClick, description = textResources.getString(cn.turingzy.ledger.R.string.ui_select_time))
                     }
                     Surface(shape = RoundedCornerShape(20.dp), color = colors.surface) {
                         Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp)) {
                             Row(Modifier.fillMaxWidth().height(48.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Text("¥", fontSize = 20.sp, color = amountColor)
+                                Text(cn.turingzy.ledger.ui.component.currencySymbol(currency).trim(), fontSize = 20.sp, color = amountColor)
                                 Text(
                                     expression.ifEmpty { "0.00" },
                                     modifier = Modifier.weight(1f).horizontalScroll(expressionScroll),
@@ -310,15 +341,20 @@ internal fun RecordTransactionContent(
                                 textStyle = TextStyle(fontSize = 13.sp, lineHeight = 18.sp, color = colors.onSurfaceVariant),
                                 cursorBrush = SolidColor(colors.onSurface),
                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done), keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                                modifier = Modifier.fillMaxWidth().height(36.dp).semantics { contentDescription = "备注" },
+                                modifier = Modifier.fillMaxWidth().height(36.dp).semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_note) },
                                 decorationBox = { field ->
                                     Box(Modifier.fillMaxSize().padding(start = 6.dp), contentAlignment = Alignment.CenterStart) {
-                                        if (note.isEmpty()) Text("填写备注", fontSize = 13.sp, lineHeight = 18.sp, color = colors.onSurfaceVariant.copy(alpha = 0.6f))
+                                        if (note.isEmpty()) Text(textResources.getString(cn.turingzy.ledger.R.string.ui_add_a_note), fontSize = 13.sp, lineHeight = 18.sp, color = colors.onSurfaceVariant.copy(alpha = 0.6f))
                                         field()
                                     }
                                 },
                             )
                         }
+                    }
+                    if (transferRate != null) {
+                        OutlinedTextField(transferRate, onTransferRateChange, label = { Text(transferLabel) }, singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
+                            supportingText = { transferredAmount?.let { Text(textResources.getString(cn.turingzy.ledger.R.string.destination_amount, it)) } }, modifier = Modifier.fillMaxWidth())
                     }
                     error?.let { Text(it, color = colors.error, style = MaterialTheme.typography.bodySmall) }
                     BuiltInKeypad(
@@ -372,10 +408,11 @@ private fun RecordCategoryGrid(
     onSelect: (Long) -> Unit,
     bottomPadding: Dp,
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val colors = MaterialTheme.colorScheme
     if (categories.isEmpty()) {
         Box(Modifier.fillMaxSize().padding(bottom = bottomPadding), contentAlignment = Alignment.Center) {
-            Text("暂无可选分类", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+            Text(textResources.getString(cn.turingzy.ledger.R.string.ui_no_categories_available), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
         }
         return
     }
@@ -408,21 +445,22 @@ private fun RecordTransferAccounts(
     source: String?, destination: String?, onSource: () -> Unit, onDestination: () -> Unit, onSwap: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     Box(modifier, contentAlignment = Alignment.TopCenter) {
         Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface) {
             Row(
                 Modifier.fillMaxWidth().padding(4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                TransferAccountSelector("转出", source, onSource, Modifier.weight(1f))
+                TransferAccountSelector(textResources.getString(cn.turingzy.ledger.R.string.ui_from), source, onSource, Modifier.weight(1f))
                 IconButton(
                     onClick = onSwap,
                     enabled = source != null && destination != null,
                     modifier = Modifier.size(40.dp),
                 ) {
-                    Icon(MaterialSymbols.SwapHoriz, "交换转出转入账户")
+                    Icon(MaterialSymbols.SwapHoriz, textResources.getString(cn.turingzy.ledger.R.string.ui_swap_accounts))
                 }
-                TransferAccountSelector("转入", destination, onDestination, Modifier.weight(1f), alignment = Alignment.End)
+                TransferAccountSelector(textResources.getString(cn.turingzy.ledger.R.string.ui_to), destination, onDestination, Modifier.weight(1f), alignment = Alignment.End)
             }
         }
     }
@@ -436,6 +474,7 @@ private fun TransferAccountSelector(
     modifier: Modifier = Modifier,
     alignment: Alignment.Horizontal = Alignment.Start,
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val colors = MaterialTheme.colorScheme
     Column(
         modifier.clip(RoundedCornerShape(16.dp))
@@ -451,7 +490,7 @@ private fun TransferAccountSelector(
     ) {
         Text(label, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
         Text(
-            accountName ?: "选择账户",
+            accountName ?: textResources.getString(cn.turingzy.ledger.R.string.ui_select_account),
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Normal,
             color = if (accountName == null) colors.onSurfaceVariant else colors.onSurface,

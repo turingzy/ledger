@@ -57,6 +57,7 @@ import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.Job
 import android.net.Uri
 import cn.turingzy.ledger.model.AccountWithTemplate
+import cn.turingzy.ledger.model.BillImportResult
 import kotlinx.coroutines.CancellationException
 import timber.log.Timber
 import java.time.ZoneId
@@ -70,9 +71,11 @@ private enum class BillTransferStatus { IDLE, RUNNING, COMPLETED, CANCELLED }
 internal fun BillTransferScreen(
     rules: List<ParseRulePreview>, onDismissRequest: () -> Unit,
     accounts: List<AccountWithTemplate> = emptyList(),
-    onImport: suspend (Uri, ParseRulePreview, Long?) -> Int = { _, _, _ -> 0 },
+    onPreviewImport: suspend (Uri, ParseRulePreview, Long?) -> BillImportResult = { _, _, _ -> BillImportResult() },
+    onImport: suspend (Uri, ParseRulePreview, Long?, Boolean) -> BillImportResult = { _, _, _, _ -> BillImportResult() },
     onExport: suspend (Uri, Boolean, Long, Long) -> Int = { _, _, _, _ -> 0 },
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val today = remember { LocalDate.now() }
     val context = LocalContext.current
     var importing by remember { mutableStateOf(true) }
@@ -90,6 +93,7 @@ internal fun BillTransferScreen(
     var status by remember { mutableStateOf(BillTransferStatus.IDLE) }
     var exportCoolingDown by remember { mutableStateOf(false) }
     var progress by remember { mutableIntStateOf(0) }
+    var duplicateConfirmation by remember { mutableStateOf<BillImportResult?>(null) }
     var operation by remember { mutableStateOf<Job?>(null) }
     val scope = rememberCoroutineScope()
     val colors = MaterialTheme.colorScheme
@@ -117,27 +121,36 @@ internal fun BillTransferScreen(
         }
     }
 
-    fun runTransfer(destination: Uri? = null) {
+    fun runTransfer(destination: Uri? = null, preview: Boolean = true, includePossibleDuplicates: Boolean = false) {
         if (!importing && exportCoolingDown) return
         status = BillTransferStatus.RUNNING
         resultMessage = null
         operation = scope.launch {
             try {
-                val count = if (importing) onImport(requireNotNull(fileUri), requireNotNull(selectedRule), accountId)
-                else onExport(requireNotNull(destination), format == ExportFormat.EXCEL,
+                if (importing && preview) {
+                    val check = onPreviewImport(requireNotNull(fileUri), requireNotNull(selectedRule), accountId)
+                    if (check.possibleDuplicates > 0) {
+                        duplicateConfirmation = check
+                        status = BillTransferStatus.IDLE
+                        return@launch
+                    }
+                }
+                val imported = if (importing) onImport(requireNotNull(fileUri), requireNotNull(selectedRule), accountId, includePossibleDuplicates) else null
+                val count = if (imported != null) imported.imported else onExport(requireNotNull(destination), format == ExportFormat.EXCEL,
                     if (allBills) Long.MIN_VALUE else rangeStart.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
                     if (allBills) Long.MAX_VALUE else rangeEnd.withSecond(59).withNano(999_000_000).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
                 status = BillTransferStatus.COMPLETED
                 if (!importing) exportCoolingDown = true
                 progress = 100
-                resultMessage = "已${if (importing) "导入" else "导出"} $count 笔账单"
+                resultMessage = textResources.getString(if (importing) cn.turingzy.ledger.R.string.imported_count else cn.turingzy.ledger.R.string.exported_count, count) +
+                    imported?.let { result -> (result.duplicates + result.possibleDuplicates).takeIf { it > 0 }?.let { textResources.getString(cn.turingzy.ledger.R.string.skipped_count, it) } }.orEmpty()
             } catch (cancelled: CancellationException) {
                 status = BillTransferStatus.CANCELLED
                 throw cancelled
             } catch (error: Exception) {
                 Timber.e(error, "Bill transfer failed")
                 status = BillTransferStatus.IDLE
-                resultMessage = error.message ?: "操作失败，请重试"
+                resultMessage = error.message ?: textResources.getString(cn.turingzy.ledger.R.string.ui_operation_failed_please_try_again)
             } finally { operation = null }
         }
     }
@@ -148,20 +161,40 @@ internal fun BillTransferScreen(
         if (uri != null) runTransfer(uri)
     }
 
-    SettingsPage(title = "账单导入与导出", onDismissRequest = onDismissRequest) {
+    duplicateConfirmation?.let { preview ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { duplicateConfirmation = null },
+            title = { Text(textResources.getString(cn.turingzy.ledger.R.string.ui_possible_duplicate_transactions)) },
+            text = { Text(textResources.getString(cn.turingzy.ledger.R.string.duplicate_prompt, preview.possibleDuplicates)) },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    duplicateConfirmation = null
+                    runTransfer(preview = false)
+                }) { Text(textResources.getString(cn.turingzy.ledger.R.string.ui_skip_duplicates)) }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    duplicateConfirmation = null
+                    runTransfer(preview = false, includePossibleDuplicates = true)
+                }) { Text(textResources.getString(cn.turingzy.ledger.R.string.ui_import_anyway)) }
+            },
+        )
+    }
+
+    SettingsPage(title = textResources.getString(cn.turingzy.ledger.R.string.ui_import_and_export), onDismissRequest = onDismissRequest) {
         Column(
             Modifier.fillMaxWidth().settingsPageScroll(),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 LedgerSegmentedControl(
-                    labels = listOf("导入", "导出"),
+                    labels = listOf(textResources.getString(cn.turingzy.ledger.R.string.ui_import), textResources.getString(cn.turingzy.ledger.R.string.ui_export)),
                     selectedIndex = if (importing) 0 else 1,
                     onSelect = { importing = it == 0; resetResult() },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !running,
                 )
-                if (importing) Text("支持 Excel(XLSX)、CSV 账单", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                if (importing) Text(textResources.getString(cn.turingzy.ledger.R.string.ui_supports_excel_xlsx_and_csv), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
             }
             if (importing) {
                 SettingsTransferFileRow(fileName = fileName, enabled = !running) {
@@ -171,30 +204,30 @@ internal fun BillTransferScreen(
                     ))
                 }
                 BillTransferCard {
-                    BillImportRow("解析规则", selectedRule?.name ?: "请选择", enabled = !running) {
+                    BillImportRow(textResources.getString(cn.turingzy.ledger.R.string.ui_import_rule), selectedRule?.name ?: textResources.getString(cn.turingzy.ledger.R.string.ui_select), enabled = !running) {
                         picker = BillTransferPicker.RULE
                     }
                     if (selectedRule?.accountId == null) {
                         BillTransferDivider()
-                        BillImportRow("导入账户", accounts.firstOrNull { it.account.id == accountId }?.account?.name ?: "使用文件中的账户", enabled = !running) {
+                        BillImportRow(textResources.getString(cn.turingzy.ledger.R.string.ui_import_account), accounts.firstOrNull { it.account.id == accountId }?.account?.name ?: textResources.getString(cn.turingzy.ledger.R.string.ui_use_accounts_from_the_file), enabled = !running) {
                             picker = BillTransferPicker.ACCOUNT
                         }
                     }
                 }
             } else {
-                Text("导出范围", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                Text(textResources.getString(cn.turingzy.ledger.R.string.ui_export_range), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                 Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    BillTransferOption("全部账单", allBills, !running, Modifier.weight(1f)) { allBills = true; resetResult() }
-                    BillTransferOption("指定范围", !allBills, !running, Modifier.weight(1f)) { allBills = false; resetResult() }
+                    BillTransferOption(textResources.getString(cn.turingzy.ledger.R.string.ui_all_transactions), allBills, !running, Modifier.weight(1f)) { allBills = true; resetResult() }
+                    BillTransferOption(textResources.getString(cn.turingzy.ledger.R.string.ui_date_range), !allBills, !running, Modifier.weight(1f)) { allBills = false; resetResult() }
                 }
                 if (!allBills) {
                     BillTransferCard {
-                        BillImportRow("开始日期", rangeStart.format(billDateFormat), enabled = !running) { picker = BillTransferPicker.START }
+                        BillImportRow(textResources.getString(cn.turingzy.ledger.R.string.ui_start_date), rangeStart.format(billDateFormat), enabled = !running) { picker = BillTransferPicker.START }
                         BillTransferDivider()
-                        BillImportRow("结束日期", rangeEnd.format(billDateFormat), enabled = !running) { picker = BillTransferPicker.END }
+                        BillImportRow(textResources.getString(cn.turingzy.ledger.R.string.ui_end_date), rangeEnd.format(billDateFormat), enabled = !running) { picker = BillTransferPicker.END }
                     }
                 }
-                Text("导出格式", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                Text(textResources.getString(cn.turingzy.ledger.R.string.ui_export_format), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                 Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     ExportFormat.entries.forEach { option ->
                         BillTransferOption(option.label, format == option, !running, Modifier.weight(1f)) {
@@ -205,8 +238,8 @@ internal fun BillTransferScreen(
                 }
             }
             SettingsTransferAction(
-                title = if (running) { if (importing) "取消导入" else "取消导出" }
-                    else { if (importing) "导入账单" else "导出账单" },
+                title = if (running) { if (importing) textResources.getString(cn.turingzy.ledger.R.string.ui_cancel_import) else textResources.getString(cn.turingzy.ledger.R.string.ui_cancel_export) }
+                    else { if (importing) textResources.getString(cn.turingzy.ledger.R.string.ui_import_transactions) else textResources.getString(cn.turingzy.ledger.R.string.ui_export_transactions) },
                 enabled = (importing || !exportCoolingDown) && (running || !importing || (fileName != null && selectedRule != null)),
                 running = running,
                 progress = progress.takeIf { status == BillTransferStatus.COMPLETED },
@@ -226,7 +259,7 @@ internal fun BillTransferScreen(
                 BillTransferStatus.IDLE -> null
                 BillTransferStatus.RUNNING -> null
                 BillTransferStatus.COMPLETED -> null
-                BillTransferStatus.CANCELLED -> if (importing) "已取消导入" else "已取消导出"
+                BillTransferStatus.CANCELLED -> if (importing) textResources.getString(cn.turingzy.ledger.R.string.ui_import_cancelled) else textResources.getString(cn.turingzy.ledger.R.string.ui_export_cancelled)
             }
             if (resultMessage != null) Text(resultMessage.orEmpty(), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
             if (message != null) Text(message, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
@@ -235,9 +268,9 @@ internal fun BillTransferScreen(
 
     when (picker) {
         BillTransferPicker.ACCOUNT -> BillTransferDialog(
-            title = "导入账户", onDismiss = { picker = null }, onConfirm = { picker = null },
+            title = textResources.getString(cn.turingzy.ledger.R.string.ui_import_account), onDismiss = { picker = null }, onConfirm = { picker = null },
         ) {
-            ImportRuleChoice("使用文件中的账户", accountId == null) { accountId = null }
+            ImportRuleChoice(textResources.getString(cn.turingzy.ledger.R.string.ui_use_accounts_from_the_file), accountId == null) { accountId = null }
             accounts.forEach { item ->
                 ImportRuleChoice(item.account.name, accountId == item.account.id) { accountId = item.account.id }
             }
@@ -245,7 +278,7 @@ internal fun BillTransferScreen(
         BillTransferPicker.RULE -> {
             var pendingRuleId by remember { mutableStateOf(selectedRule?.id) }
             BillTransferDialog(
-                title = "解析规则",
+                title = textResources.getString(cn.turingzy.ledger.R.string.ui_import_rule),
                 onDismiss = { picker = null },
                 onConfirm = { selectedRuleId = pendingRuleId; picker = null; resetResult() },
                 confirmEnabled = pendingRuleId != null,
@@ -258,7 +291,7 @@ internal fun BillTransferScreen(
                 }
                 if (rules.isEmpty()) {
                     Text(
-                        "可在“账单解析规则”中新增规则。",
+                        textResources.getString(cn.turingzy.ledger.R.string.ui_add_a_rule_in_import_rules),
                         Modifier.padding(vertical = 8.dp),
                         style = MaterialTheme.typography.bodySmall,
                         color = colors.onSurfaceVariant,
@@ -275,7 +308,7 @@ internal fun BillTransferScreen(
             val pending = date.atTime(hour.toInt(), minute.toInt())
             val validRange = if (editingStart) pending <= rangeEnd else pending >= rangeStart
             BillTransferDialog(
-                title = if (editingStart) "开始日期" else "结束日期",
+                title = if (editingStart) textResources.getString(cn.turingzy.ledger.R.string.ui_start_date) else textResources.getString(cn.turingzy.ledger.R.string.ui_end_date),
                 onDismiss = { picker = null },
                 onConfirm = {
                     if (editingStart) rangeStart = pending else rangeEnd = pending
@@ -286,7 +319,7 @@ internal fun BillTransferScreen(
             ) {
                 LedgerDateTimePicker(date, hour, minute, { date = it }, { hour = it }, { minute = it })
                 if (!validRange) Text(
-                    "结束时间不能早于开始时间",
+                    textResources.getString(cn.turingzy.ledger.R.string.ui_end_time_must_not_precede_start_time),
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.error,
                 )
@@ -382,6 +415,7 @@ private fun BillTransferDialog(
     confirmEnabled: Boolean = true,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     BasicAlertDialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         BoxWithConstraints(Modifier.widthIn(max = 560.dp).fillMaxWidth().imePadding().padding(24.dp)) {
             Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surface) {
@@ -389,10 +423,10 @@ private fun BillTransferDialog(
                     Text(title, Modifier.padding(bottom = 12.dp), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()), content = content)
                     Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        LedgerIconButton(onClick = onDismiss) { Icon(MaterialSymbols.Close, "取消") }
+                        LedgerIconButton(onClick = onDismiss) { Icon(MaterialSymbols.Close, textResources.getString(cn.turingzy.ledger.R.string.ui_cancel)) }
                         Spacer(Modifier.weight(1f))
                         LedgerIconButton(onClick = onConfirm, enabled = confirmEnabled) {
-                            Icon(MaterialSymbols.Check, "确认", tint = MaterialTheme.colorScheme.tertiary.copy(alpha = if (confirmEnabled) 1f else 0.38f))
+                            Icon(MaterialSymbols.Check, textResources.getString(cn.turingzy.ledger.R.string.ui_confirm), tint = MaterialTheme.colorScheme.tertiary.copy(alpha = if (confirmEnabled) 1f else 0.38f))
                         }
                     }
                 }

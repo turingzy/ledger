@@ -37,6 +37,7 @@ internal fun LedgerBottomSheet(
     action: @Composable () -> Unit = { Box(Modifier.size(48.dp)) },
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
@@ -56,7 +57,7 @@ internal fun LedgerBottomSheet(
             IconButton(showPressFeedback = false, onClick = onBack ?: onDismissRequest, modifier = Modifier.align(Alignment.CenterStart)) {
                 Icon(
                     if (onBack != null) MaterialSymbols.ArrowBack else MaterialSymbols.Close,
-                    if (onBack != null) "返回" else "关闭$title",
+                    if (onBack != null) textResources.getString(cn.turingzy.ledger.R.string.ui_back) else "关闭$title",
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }

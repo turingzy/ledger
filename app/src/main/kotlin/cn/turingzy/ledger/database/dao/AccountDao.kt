@@ -13,6 +13,12 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface AccountDao {
+    @Query("UPDATE tb_account SET base_balance = :balance, base_currency = :currency, base_rate = :rate, base_rate_date = :date WHERE account_id = :id AND current_balance = :original")
+    suspend fun updateValuation(id: Long, original: Long, balance: Long, currency: String, rate: String?, date: String)
+
+    @Query("SELECT * FROM tb_account WHERE account_id = :id")
+    suspend fun getAccountIncludingDeleted(id: Long): AccountEntity?
+
     @Query("SELECT * FROM tb_account")
     suspend fun backupRows(): List<AccountEntity>
 
@@ -62,7 +68,7 @@ interface AccountDao {
     @Query("SELECT * FROM tb_account WHERE account_id = :id AND is_deleted = 0")
     suspend fun getAccountByIdOnce(id: Long): AccountEntity?
 
-    @Query("UPDATE tb_account SET current_balance = current_balance + :deltaAmount WHERE account_id = :accountId")
+    @Query("UPDATE tb_account SET current_balance = current_balance + :deltaAmount, base_balance = NULL WHERE account_id = :accountId")
     suspend fun updateBalance(accountId: Long, deltaAmount: Long): Int
 
     @Query("SELECT COALESCE(SUM(current_balance), 0) FROM tb_account WHERE include_in_total = 1 AND is_deleted = 0")
