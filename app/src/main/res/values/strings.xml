@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Ledger</string>
+    <string name="ui_scroll_to_top">回到顶部</string>
+    <string name="calendar_empty_supporting">休息一下，这是个省钱的日子\n点击下方记录一笔</string>
 </resources>

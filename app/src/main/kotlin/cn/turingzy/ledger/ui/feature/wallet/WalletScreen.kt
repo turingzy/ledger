@@ -1,5 +1,7 @@
 package cn.turingzy.ledger.ui.feature.wallet
 
+import cn.turingzy.ledger.ui.component.ScrollTitleContainer
+import androidx.compose.foundation.lazy.rememberLazyListState
 import cn.turingzy.ledger.ui.component.LedgerDropdown
 import cn.turingzy.ledger.ui.component.accountCardColors
 import cn.turingzy.ledger.ui.component.AccountCardBackground
@@ -266,98 +268,109 @@ fun WalletContent(
                 var isListView by rememberSaveable { mutableStateOf(false) }
                 var selectedAccountId by rememberSaveable { mutableStateOf<Long?>(null) }
 
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(top = 0.dp),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp + innerPadding.calculateBottomPadding() + LocalBottomBarContentPadding.current),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    // 与账本页面顶栏设计保持一致: 大标题“钱包” + 右侧添加按钮 + 资产卡片 (卡片与顶栏间距 5.dp)
-                    item(key = "header_and_hero") {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(5.dp),
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(44.dp),
-                                contentAlignment = Alignment.CenterEnd,
+                val listState = rememberLazyListState()
+                ScrollTitleContainer(
+                    title = textResources.getString(cn.turingzy.ledger.R.string.ui_wallet),
+                    scrollOffset = {
+                        if (listState.firstVisibleItemIndex == 0) listState.firstVisibleItemScrollOffset
+                        else Int.MAX_VALUE
+                    },
+                    onScrollToTop = { listState.animateScrollToItem(0) },
+                ) { scrollModifier ->
+                    LazyColumn(
+                        state = listState,
+                        modifier = scrollModifier
+                            .fillMaxSize()
+                            .padding(top = 0.dp),
+                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp + innerPadding.calculateBottomPadding() + LocalBottomBarContentPadding.current),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        // 与账本页面顶栏设计保持一致: 大标题“钱包” + 右侧添加按钮 + 资产卡片 (卡片与顶栏间距 5.dp)
+                        item(key = "header_and_hero") {
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(5.dp),
                             ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(44.dp),
+                                    contentAlignment = Alignment.CenterEnd,
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Text(
+                                            text = textResources.getString(cn.turingzy.ledger.R.string.ui_wallet),
+                                            fontSize = 28.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            letterSpacing = (-0.6).sp,
+                                            modifier = Modifier.padding(bottom = 2.dp),
+                                        )
+
+                                        TopBarIconButton(
+                                            imageVector = MaterialSymbols.AddCard,
+                                            contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_add_account),
+                                            onClick = onAddAccountClick,
+                                        )
+                                    }
+                                }
+
+                                if (uiState.amountsAvailable) WalletHeroCard(
+                                    totalAsset = totals.assets,
+                                    totalExpense = totals.expense,
+                                    totalIncome = totals.income,
+                                    currency = totals.currency,
+                                    appearance = cardAppearance,
+                                    background = cardBackground,
+                                    settingsEnabled = cardSettingsEnabled,
+                                    onUploadBackground = onUploadCardBackground,
+                                    onTransparencyChange = onCardTransparencyChange,
+                                ) else Text(textResources.getString(cn.turingzy.ledger.R.string.ui_exchange_rate_needed_refresh_or_enter_a_rate), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+
+                        item(key = "accounts_section") {
+                            Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                                 Row(
-                                    modifier = Modifier.fillMaxWidth(),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(start = 4.dp),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     Text(
-                                        text = textResources.getString(cn.turingzy.ledger.R.string.ui_wallet),
-                                        fontSize = 28.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        letterSpacing = (-0.6).sp,
-                                        modifier = Modifier.padding(bottom = 2.dp),
+                                        text = textResources.getString(cn.turingzy.ledger.R.string.ui_account),
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
 
                                     TopBarIconButton(
-                                        imageVector = MaterialSymbols.AddCard,
-                                        contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_add_account),
-                                        onClick = onAddAccountClick,
+                                        imageVector = if (isListView) MaterialSymbols.ViewCarousel else MaterialSymbols.ViewAgenda,
+                                        contentDescription = if (isListView) textResources.getString(cn.turingzy.ledger.R.string.ui_switch_to_horizontal_cards) else textResources.getString(cn.turingzy.ledger.R.string.ui_switch_to_vertical_cards),
+                                        onClick = { isListView = !isListView },
                                     )
                                 }
-                            }
 
-                            if (uiState.amountsAvailable) WalletHeroCard(
-                                totalAsset = totals.assets,
-                                totalExpense = totals.expense,
-                                totalIncome = totals.income,
-                                currency = totals.currency,
-                                appearance = cardAppearance,
-                                background = cardBackground,
-                                settingsEnabled = cardSettingsEnabled,
-                                onUploadBackground = onUploadCardBackground,
-                                onTransparencyChange = onCardTransparencyChange,
-                            ) else Text(textResources.getString(cn.turingzy.ledger.R.string.ui_exchange_rate_needed_refresh_or_enter_a_rate), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-
-                    item(key = "accounts_section") {
-                        Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(start = 4.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Text(
-                                    text = textResources.getString(cn.turingzy.ledger.R.string.ui_account),
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-
-                                TopBarIconButton(
-                                    imageVector = if (isListView) MaterialSymbols.ViewCarousel else MaterialSymbols.ViewAgenda,
-                                    contentDescription = if (isListView) textResources.getString(cn.turingzy.ledger.R.string.ui_switch_to_horizontal_cards) else textResources.getString(cn.turingzy.ledger.R.string.ui_switch_to_vertical_cards),
-                                    onClick = { isListView = !isListView },
-                                )
-                            }
-
-                            if (isListView) {
-                                VerticalBankCardDeck(
-                                    accounts = accounts,
-                                    onAdjustClick = onAdjustBalanceClick,
-                                    selectedAccountId = selectedAccountId,
-                                    onSelectedAccountChange = { selectedAccountId = it },
-                                )
-                            } else {
-                                SwipeableBankCardDeck(
-                                    accounts = accounts,
-                                    onAdjustClick = onAdjustBalanceClick,
-                                    selectedAccountId = selectedAccountId,
-                                    onSelectedAccountChange = { selectedAccountId = it },
-                                )
+                                if (isListView) {
+                                    VerticalBankCardDeck(
+                                        accounts = accounts,
+                                        onAdjustClick = onAdjustBalanceClick,
+                                        selectedAccountId = selectedAccountId,
+                                        onSelectedAccountChange = { selectedAccountId = it },
+                                    )
+                                } else {
+                                    SwipeableBankCardDeck(
+                                        accounts = accounts,
+                                        onAdjustClick = onAdjustBalanceClick,
+                                        selectedAccountId = selectedAccountId,
+                                        onSelectedAccountChange = { selectedAccountId = it },
+                                    )
+                                }
                             }
                         }
                     }

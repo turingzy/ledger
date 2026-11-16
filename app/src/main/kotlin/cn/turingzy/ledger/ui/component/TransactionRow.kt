@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cn.turingzy.ledger.model.TransactionType
+import cn.turingzy.ledger.ui.theme.IosSecondary
 import cn.turingzy.ledger.ui.theme.IosYellow
 import cn.turingzy.ledger.util.toFormattedAmount
 
@@ -98,10 +99,10 @@ internal fun TransactionRow(
         Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
                 text = buildAnnotatedString {
-                    if (foreignCurrency) withStyle(SpanStyle(color = colors.onSurfaceVariant)) {
-                        append("$currency ")
-                    }
                     append(amountText)
+                    if (foreignCurrency) withStyle(SpanStyle(color = IosSecondary, fontSize = 11.sp, letterSpacing = 0.sp)) {
+                        append(" $currency")
+                    }
                 },
                 fontSize = 16.sp,
                 lineHeight = 18.sp,

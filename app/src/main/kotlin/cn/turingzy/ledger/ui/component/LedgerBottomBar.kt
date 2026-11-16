@@ -2,10 +2,11 @@ package cn.turingzy.ledger.ui.component
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,25 +17,31 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Text
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontWeight
 import cn.turingzy.ledger.navigation.TopLevelDestination
 
 @Composable
-fun LedgerBottomBar(
+internal fun LedgerBottomBar(
     destinations: List<TopLevelDestination>,
     currentDestination: TopLevelDestination,
     onNavigateToDestination: (TopLevelDestination) -> Unit,
     modifier: Modifier = Modifier,
+    backdrop: BackdropState? = null,
 ) {
     val colors = MaterialTheme.colorScheme
     Surface(
@@ -43,7 +50,7 @@ fun LedgerBottomBar(
             .navigationBarsPadding()
             .padding(horizontal = 16.dp, vertical = BottomBarVerticalPadding),
         shape = CircleShape,
-        color = colors.surface,
+        color = Color.Transparent,
         shadowElevation = 2.dp,
         border = BorderStroke(
             width = 0.5.dp,
@@ -54,8 +61,9 @@ fun LedgerBottomBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(BottomBarHeight)
+                .frostedBackdrop(backdrop, colors.surface.copy(alpha = 0.72f), 12.dp)
                 .selectableGroup()
-                .padding(horizontal = 8.dp, vertical = 2.dp),
+                .padding(horizontal = 4.dp, vertical = 3.dp),
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -64,19 +72,26 @@ fun LedgerBottomBar(
                 val interactionSource = remember(destination) { MutableInteractionSource() }
                 val iconTint by animateColorAsState(
                     targetValue = if (selected) {
-                        colors.onSurface
+                        colors.primary.copy(alpha = 0.82f)
                     } else {
-                        colors.onSurfaceVariant.copy(alpha = 0.60f)
+                        colors.onSurface
                     },
                     animationSpec = tween(durationMillis = 120),
                     label = "TabIconTint",
                 )
 
-                Box(
+                val selectionColor by animateColorAsState(
+                    targetValue = if (selected) colors.primary.copy(alpha = 0.065f) else Color.Transparent,
+                    animationSpec = tween(durationMillis = 120),
+                    label = "TabSelectionColor",
+                )
+
+                Column(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
                         .clip(CircleShape)
+                        .background(selectionColor)
                         .navigationPressFeedback(interactionSource)
                         .selectable(
                             selected = selected,
@@ -86,13 +101,22 @@ fun LedgerBottomBar(
                         ) {
                             if (!selected) onNavigateToDestination(destination)
                         },
-                    contentAlignment = Alignment.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(1.dp, Alignment.CenterVertically),
                 ) {
                     Icon(
-                        imageVector = destination.icon,
-                        contentDescription = destination.labelText,
+                        imageVector = if (selected) destination.selectedIcon else destination.icon,
+                        contentDescription = null,
                         tint = iconTint,
-                        modifier = Modifier.size(28.dp),
+                        modifier = Modifier.size(25.dp),
+                    )
+                    Text(
+                        text = stringResource(destination.labelResource),
+                        fontSize = 11.sp,
+                        lineHeight = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = iconTint,
+                        maxLines = 1,
                     )
                 }
             }

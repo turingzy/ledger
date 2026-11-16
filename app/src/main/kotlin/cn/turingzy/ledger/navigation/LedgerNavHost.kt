@@ -11,6 +11,11 @@ import androidx.navigation.toRoute
 import androidx.navigation.compose.currentBackStackEntryAsState
 import cn.turingzy.ledger.ui.feature.analytics.ConsumptionCalendarScreen
 import java.time.YearMonth
+import java.time.LocalDate
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
+import cn.turingzy.ledger.ui.feature.ledger.CreateTransactionSheet
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.runtime.Composable
@@ -71,7 +76,14 @@ fun LedgerNavHost(
                         popExitTransition = { slideOutHorizontally(tween(240)) { it } },
                     ) { calendarEntry ->
                         val route = calendarEntry.toRoute<Route.ConsumptionCalendar>()
-                        ConsumptionCalendarScreen(YearMonth.parse(route.month), { navController.popBackStack() })
+                        var recordDate by rememberSaveable { mutableStateOf<Long?>(null) }
+                        ConsumptionCalendarScreen(
+                            YearMonth.parse(route.month), { navController.popBackStack() },
+                            onRecordTransaction = { recordDate = it.toEpochDay() },
+                        )
+                        recordDate?.let { epochDay ->
+                            CreateTransactionSheet(LocalDate.ofEpochDay(epochDay), onDismiss = { recordDate = null })
+                        }
                     }
                 }
                 TopLevelDestination.WALLET -> composable<Route.Wallet> { WalletScreen() }

@@ -61,7 +61,7 @@ internal fun PeriodPickerSheet(
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val views = listOf(DateFilterType.WEEK, DateFilterType.MONTH, DateFilterType.YEAR)
-    var view by rememberSaveable(type) { mutableStateOf(type.takeIf { it in views } ?: DateFilterType.MONTH) }
+    var view by rememberSaveable { mutableStateOf(type.takeIf { it in views } ?: DateFilterType.MONTH) }
     var contentView by remember { mutableStateOf(view) }
     val listStates = rememberSaveableStateHolder()
     LaunchedEffect(view) {
@@ -80,8 +80,12 @@ internal fun PeriodPickerSheet(
             onDismiss()
         }
     }
+    fun dismiss() {
+        if (view != type) onSelect(view, periodStart(view, today))
+        onDismiss()
+    }
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = ::dismiss,
         modifier = modifier,
         sheetState = sheetState,
         dragHandle = null,
@@ -94,7 +98,7 @@ internal fun PeriodPickerSheet(
                 .navigationBarsPadding().padding(horizontal = 12.dp),
         ) {
             Box(Modifier.fillMaxWidth().height(48.dp), contentAlignment = Alignment.Center) {
-                LedgerIconButton(onDismiss, modifier = Modifier.align(Alignment.CenterStart), showPressFeedback = false) {
+                LedgerIconButton(::dismiss, modifier = Modifier.align(Alignment.CenterStart), showPressFeedback = false) {
                     Icon(MaterialSymbols.Close, textResources.getString(cn.turingzy.ledger.R.string.ui_close_date_picker))
                 }
                 if (showViewSelector) {

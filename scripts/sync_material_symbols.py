@@ -7,7 +7,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 
 symbols = {
-'Add':'add', 'AddCard':'add_card', 'AddPhotoAlternate':'add_photo_alternate', 'ArrowBack':'arrow_back', 'ArrowForward':'arrow_forward',
+'Add':'add', 'AddCard':'add_card', 'AddPhotoAlternate':'add_photo_alternate', 'ArrowBack':'arrow_back', 'ArrowForward':'arrow_forward', 'ArrowUpward':'arrow_upward',
 'RadioButtonChecked':'radio_button_checked', 'RadioButtonUnchecked':'radio_button_unchecked',
 'Backspace':'backspace', 'Check':'check', 'ChevronLeft':'chevron_left', 'ChevronRight':'chevron_right',
 'CheckBox':'check_box', 'CheckBoxOutlineBlank':'check_box_outline_blank', 'CloudDownload':'cloud_download',
@@ -21,9 +21,9 @@ symbols = {
 'Memory':'memory', 'Contactless':'contactless', 'ShieldPerson':'shield_person',
 'Visibility':'visibility', 'VisibilityOff':'visibility_off',
 'TrendingUp':'trending_up', 'TrendingDown':'trending_down',
-'CalendarMonth':'calendar_month', 'Tune':'tune',
+'Leaderboard':'leaderboard', 'LeaderboardFilled':'leaderboard', 'ChartData':'chart_data', 'ChartDataFilled':'chart_data', 'HomeFilled':'home', 'CreditCard':'credit_card', 'CreditCardFilled':'credit_card', 'DateRange':'date_range', 'CalendarMonth':'calendar_month', 'Tune':'tune',
 'Book':'book', 'Paid':'paid', 'Receipt':'receipt', 'BarChart':'bar_chart', 'Wallet':'wallet', 'AccountBalanceWallet':'account_balance_wallet', 'Settings':'settings',
-'BookFilled':'book', 'BarChartFilled':'bar_chart', 'AccountBalanceWalletFilled':'account_balance_wallet', 'SettingsFilled':'settings',
+'ReceiptFilled':'receipt', 'Analytics':'analytics', 'AnalyticsFilled':'analytics', 'BookFilled':'book', 'BarChartFilled':'bar_chart', 'AccountBalanceWalletFilled':'account_balance_wallet', 'SettingsFilled':'settings',
 }
 ROOT = Path(__file__).resolve().parents[1]
 cache = Path(tempfile.gettempdir()) / 'ledger-material-symbols'

@@ -251,12 +251,23 @@ class RecordTransactionSheetTest {
         assertEquals(1L, saved?.categoryId)
     }
 
-    private fun showSheet(sheetHeight: Dp = 520.dp, initialTransaction: Transaction? = null, onSave: (Transaction) -> Unit) {
+    @Test
+    fun recordingFromCalendarKeepsTheSelectedDateWhenSaving() {
+        val initialTime = java.time.LocalDate.of(2024, 2, 29).atTime(12, 30)
+            .atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+        var saved: Transaction? = null
+        showSheet(initialTransactionTime = initialTime) { saved = it }
+        compose.onNodeWithText("1").performClick()
+        compose.onNodeWithText("完成").performClick()
+        compose.runOnIdle { assertEquals(initialTime, checkNotNull(saved).transactionTime) }
+    }
+
+    private fun showSheet(sheetHeight: Dp = 520.dp, initialTransaction: Transaction? = null, initialTransactionTime: Long? = null, onSave: (Transaction) -> Unit) {
         compose.setContent {
             MaterialTheme {
                 RecordTransactionSheet(
                     sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-                    sheetHeight = sheetHeight, initialTransaction = initialTransaction,
+                    sheetHeight = sheetHeight, initialTransaction = initialTransaction, initialTransactionTime = initialTransactionTime,
                     categories = categories, accounts = accounts, onDismissRequest = {},
                     onConfirm = { type, amount, accountId, destinationId, categoryId, note, time, toAmount ->
                         onSave(Transaction(

@@ -1,5 +1,7 @@
 package cn.turingzy.ledger.navigation
 
+import androidx.annotation.StringRes
+import cn.turingzy.ledger.R
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import androidx.compose.ui.graphics.vector.ImageVector
 import kotlinx.serialization.Serializable
@@ -24,27 +26,32 @@ sealed interface Route {
 
 enum class TopLevelDestination(
     val icon: ImageVector,
-    val labelText: String,
+    val selectedIcon: ImageVector,
+    @StringRes val labelResource: Int,
     val route: Route,
 ) {
     LEDGER(
-        icon = MaterialSymbols.Receipt,
-        labelText = "账本",
+        icon = MaterialSymbols.Home,
+        selectedIcon = MaterialSymbols.HomeFilled,
+        labelResource = R.string.ui_ledger,
         route = Route.Ledger,
     ),
     ANALYTICS(
-        icon = MaterialSymbols.BarChart,
-        labelText = "统计",
+        icon = MaterialSymbols.Leaderboard,
+        selectedIcon = MaterialSymbols.LeaderboardFilled,
+        labelResource = R.string.ui_analytics,
         route = Route.Analytics,
     ),
     WALLET(
-        icon = MaterialSymbols.Wallet,
-        labelText = "钱包",
+        icon = MaterialSymbols.CreditCard,
+        selectedIcon = MaterialSymbols.CreditCardFilled,
+        labelResource = R.string.ui_wallet,
         route = Route.Wallet,
     ),
     SETTINGS(
         icon = MaterialSymbols.Settings,
-        labelText = "设置",
+        selectedIcon = MaterialSymbols.SettingsFilled,
+        labelResource = R.string.ui_settings,
         route = Route.Settings,
     ),
 }

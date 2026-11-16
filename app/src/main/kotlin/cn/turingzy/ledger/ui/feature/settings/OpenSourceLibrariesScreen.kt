@@ -52,7 +52,7 @@ internal fun OpenSourceLibrariesScreen(onBack: () -> Unit, modifier: Modifier = 
         modifier = modifier,
     ) {
         LazyColumn(
-            contentPadding = PaddingValues(bottom = SettingsPageBottomPadding),
+            contentPadding = PaddingValues(top = SettingsPageContentTopPadding, bottom = SettingsPageBottomPadding),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             items(openSourceLibraries, key = { it.name }) { library ->

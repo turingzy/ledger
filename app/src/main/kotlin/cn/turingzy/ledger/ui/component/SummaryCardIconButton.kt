@@ -60,6 +60,7 @@ internal fun TopBarIconButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     showPressFeedback: Boolean = true,
+    iconSize: Dp = 24.dp,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     Box(
@@ -73,6 +74,21 @@ internal fun TopBarIconButton(
             ),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(imageVector, contentDescription, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Icon(imageVector, contentDescription, Modifier.size(iconSize), tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
+}
+
+@Composable
+internal fun TopBarBackButton(
+    onClick: () -> Unit,
+    contentDescription: String,
+    modifier: Modifier = Modifier,
+) {
+    TopBarIconButton(
+        imageVector = MaterialSymbols.ChevronLeft,
+        contentDescription = contentDescription,
+        onClick = onClick,
+        modifier = modifier.size(44.dp),
+        iconSize = 32.dp,
+    )
 }

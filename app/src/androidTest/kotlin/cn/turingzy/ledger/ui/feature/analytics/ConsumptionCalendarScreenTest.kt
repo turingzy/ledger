@@ -27,7 +27,8 @@ class ConsumptionCalendarScreenTest {
         )
         compose.setContent { LedgerTheme { ConsumptionCalendarContent(dashboard, YearMonth.from(today), {}, today = today) } }
         compose.onNodeWithText("消费日历").assertIsDisplayed()
-        compose.onNodeWithText("11月总支出 ¥123.45").assertIsDisplayed()
+        compose.onNodeWithText("11月总支出").assertIsDisplayed()
+        compose.onNodeWithText("¥123.45").assertIsDisplayed()
         compose.onNodeWithText("消费天数").assertDoesNotExist()
         compose.onNodeWithText("单日最高").assertDoesNotExist()
         compose.onNodeWithContentDescription("$day，支出¥123.45").performClick().assertIsSelected()
@@ -70,4 +71,28 @@ class ConsumptionCalendarScreenTest {
         compose.onNodeWithContentDescription("消费日历热力图").assertHasClickAction().performClick()
         compose.runOnIdle { assertEquals(LocalDate.of(2024, 2, 29), anchor) }
     }
+
+    @Test fun emptyDayOffersRecordingForTheSelectedDateAndKeepsTheHeaderFixed() {
+        val day = today.minusDays(3)
+        var recordDate: LocalDate? = null
+        compose.setContent { LedgerTheme {
+            ConsumptionCalendarContent(AnalyticsDashboardState(loading = false), YearMonth.from(today), {},
+                today = today, onRecordTransaction = { recordDate = it })
+        } }
+        compose.onNodeWithContentDescription("$day，支出¥0.00").performClick()
+        val title = compose.onNodeWithText("消费日历").fetchSemanticsNode().boundsInRoot
+        compose.onNodeWithText("这一天没有支出").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("记一笔").performScrollTo().performClick()
+        compose.runOnIdle { assertEquals(day, recordDate) }
+        assertEquals(title, compose.onNodeWithText("消费日历").fetchSemanticsNode().boundsInRoot)
+    }
+
+    @Test fun loadingDoesNotOfferAFalseEmptyStateOrRecordButton() {
+        compose.setContent { LedgerTheme {
+            ConsumptionCalendarContent(AnalyticsDashboardState(loading = true), YearMonth.from(today), {}, today = today)
+        } }
+        compose.onNodeWithText("这一天没有支出").assertDoesNotExist()
+        compose.onNodeWithText("记一笔").assertDoesNotExist()
+    }
+
 }

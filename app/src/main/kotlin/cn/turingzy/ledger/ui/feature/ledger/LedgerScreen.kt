@@ -1,9 +1,9 @@
 package cn.turingzy.ledger.ui.feature.ledger
 
-import androidx.compose.material3.SheetValue
+import cn.turingzy.ledger.ui.component.ScrollTitleContainer
+import androidx.compose.foundation.lazy.rememberLazyListState
 import cn.turingzy.ledger.ui.component.PeriodPickerSheet
 import cn.turingzy.ledger.model.DateFilterType
-import androidx.compose.foundation.LocalIndication
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
@@ -41,7 +41,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarHost
@@ -125,29 +124,13 @@ fun LedgerScreen(
         cardViewModel.clearError()
     }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val saveState by viewModel.saveState.collectAsStateWithLifecycle()
-    val categories by viewModel.categories.collectAsStateWithLifecycle()
-    val accounts by viewModel.accounts.collectAsStateWithLifecycle()
 
     val drawerHeight = LocalConfiguration.current.screenHeightDp.dp * 0.8f
-    val recordSheetState = rememberModalBottomSheetState(
-        skipPartiallyExpanded = true,
-        confirmValueChange = { !saveState.saving || it != SheetValue.Hidden },
-    )
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(showRecordSheet) {
         if (showRecordSheet) {
             transactionViewModel.selectTransaction(null)
-            viewModel.resetSaveState()
-        }
-    }
-
-    LaunchedEffect(saveState.saved) {
-        if (saveState.saved) {
-            recordSheetState.hide()
-            onRecordSheetDismiss()
-            viewModel.resetSaveState()
         }
     }
 
@@ -197,18 +180,11 @@ fun LedgerScreen(
     }
 
     if (showRecordSheet) {
-        RecordTransactionSheet(
-            sheetState = recordSheetState,
-            sheetHeight = drawerHeight,
-            categories = categories,
-            accounts = accounts,
-            onDismissRequest = { if (!saveState.saving) onRecordSheetDismiss() },
-            saving = saveState.saving,
-            error = saveState.error,
-            onLoadTransferRate = transactionViewModel::exchangeRate,
-            onConfirm = { type, amount, accountId, toAccountId, categoryId, note, transactionTime, toAmount ->
-                viewModel.createTransaction(type, amount, accountId, toAccountId, categoryId, note, transactionTime, toAmount)
-            },
+        CreateTransactionSheet(
+            date = LocalDate.now(),
+            onDismiss = onRecordSheetDismiss,
+            viewModel = viewModel,
+            transactionViewModel = transactionViewModel,
         )
     }
 }
@@ -266,37 +242,43 @@ fun LedgerContent(
             is LedgerUiState.Success -> {
                 val filteredDayGroups = uiState.dayGroups
 
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(top = 0.dp),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp + innerPadding.calculateBottomPadding() + LocalBottomBarContentPadding.current),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    item(key = "header_and_hero") {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(5.dp),
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(44.dp),
-                                contentAlignment = Alignment.CenterEnd,
+                val listState = rememberLazyListState()
+                ScrollTitleContainer(
+                    title = textResources.getString(cn.turingzy.ledger.R.string.ui_ledger),
+                    scrollOffset = {
+                        if (listState.firstVisibleItemIndex == 0) listState.firstVisibleItemScrollOffset
+                        else Int.MAX_VALUE
+                    },
+                    onScrollToTop = { listState.animateScrollToItem(0) },
+                ) { scrollModifier ->
+                    LazyColumn(
+                        state = listState,
+                        modifier = scrollModifier
+                            .fillMaxSize()
+                            .padding(top = 0.dp),
+                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp + innerPadding.calculateBottomPadding() + LocalBottomBarContentPadding.current),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        item(key = "header_and_hero") {
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(5.dp),
                             ) {
-                                androidx.compose.animation.AnimatedVisibility(
-                                    visible = !isSearchActive,
-                                    enter = fadeIn(tween(durationMillis = 280, delayMillis = 60)),
-                                    exit = fadeOut(tween(durationMillis = 180)),
-                                    modifier = Modifier.fillMaxWidth(),
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(44.dp),
+                                    contentAlignment = Alignment.CenterEnd,
                                 ) {
-                                    Box(
+                                    androidx.compose.animation.AnimatedVisibility(
+                                        visible = !isSearchActive,
+                                        enter = fadeIn(tween(durationMillis = 280, delayMillis = 60)),
+                                        exit = fadeOut(tween(durationMillis = 180)),
                                         modifier = Modifier.fillMaxWidth(),
-                                        contentAlignment = Alignment.Center,
                                     ) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth().padding(end = 44.dp),
-                                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                        Box(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            contentAlignment = Alignment.Center,
                                         ) {
                                             Text(
                                                 text = textResources.getString(cn.turingzy.ledger.R.string.ui_ledger),
@@ -304,173 +286,172 @@ fun LedgerContent(
                                                 fontWeight = FontWeight.Bold,
                                                 color = MaterialTheme.colorScheme.onSurface,
                                                 letterSpacing = (-0.6).sp,
-                                                modifier = Modifier.alignByBaseline(),
+                                                modifier = Modifier.align(Alignment.CenterStart),
                                             )
                                             Row(
-                                                modifier = Modifier.weight(1f).alignByBaseline(),
-                                                horizontalArrangement = Arrangement.Start,
+                                                modifier = Modifier.align(Alignment.Center)
+                                                    .clip(RoundedCornerShape(50))
+                                                    .background(Color.White)
+                                                    .semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_select_ledger_period) }
+                                                    .clickable { showPeriodPicker = true }
+                                                    .padding(horizontal = 12.dp, vertical = 3.dp),
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp),
                                                 verticalAlignment = Alignment.CenterVertically,
                                             ) {
                                                 Text(
                                                     text = uiState.monthDisplay,
-                                                    modifier = Modifier.weight(1f, fill = false).alignByBaseline()
-                                                        .clip(RoundedCornerShape(50))
-                                                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                                                        .semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_select_ledger_period) }
-                                                        .clickable(
-                                                            interactionSource = remember { MutableInteractionSource() },
-                                                            indication = LocalIndication.current,
-                                                        ) { showPeriodPicker = true }.padding(horizontal = 12.dp, vertical = 3.dp),
                                                     fontSize = 17.sp,
                                                     fontWeight = FontWeight.Medium,
-                                                    color = MaterialTheme.colorScheme.onSurface,
-                                                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                                    color = Color.Black,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                )
+                                                Icon(MaterialSymbols.DateRange, null, Modifier.size(17.dp), tint = Color.Black)
+                                            }
+
+                                            TopBarIconButton(
+                                                imageVector = MaterialSymbols.Search,
+                                                contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_search),
+                                                onClick = { isSearchActive = true },
+                                                modifier = Modifier.align(Alignment.CenterEnd),
+                                            )
+                                        }
+                                    }
+
+                                    // 展开的动态向左自然伸出、点击x向右优雅收缩的搜索框
+                                    androidx.compose.animation.AnimatedVisibility(
+                                        visible = isSearchActive,
+                                        enter = fadeIn(tween(durationMillis = 320)) + expandHorizontally(
+                                            expandFrom = Alignment.End,
+                                            animationSpec = tween(
+                                                durationMillis = 360,
+                                                easing = CubicBezierEasing(0.20f, 0.0f, 0.10f, 1.0f),
+                                            ),
+                                        ),
+                                        exit = fadeOut(tween(durationMillis = 240)) + shrinkHorizontally(
+                                            shrinkTowards = Alignment.End,
+                                            animationSpec = tween(
+                                                durationMillis = 320,
+                                                easing = CubicBezierEasing(0.20f, 0.0f, 0.10f, 1.0f),
+                                            ),
+                                        ),
+                                        modifier = Modifier.fillMaxWidth(),
+                                    ) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(44.dp)
+                                                .clip(RoundedCornerShape(22.dp))
+                                                .background(Color(0xFFE5E5EA))
+                                                .padding(horizontal = 12.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        ) {
+                                            Icon(
+                                                imageVector = MaterialSymbols.Search,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.size(24.dp),
+                                            )
+
+                                            Box(
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .fillMaxHeight(),
+                                                contentAlignment = Alignment.CenterStart,
+                                            ) {
+                                                BasicTextField(
+                                                    value = searchQuery,
+                                                    onValueChange = { searchQuery = it },
+                                                    textStyle = TextStyle(
+                                                        fontSize = 15.sp,
+                                                        lineHeight = 22.sp,
+                                                        color = MaterialTheme.colorScheme.onSurface,
+                                                    ),
+                                                    cursorBrush = SolidColor(MaterialTheme.colorScheme.onSurface),
+                                                    singleLine = true,
+                                                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                                                    keyboardActions = KeyboardActions(
+                                                        onSearch = {
+                                                            submittedSearchQuery = searchQuery.trim()
+                                                            focusManager.clearFocus()
+                                                        },
+                                                    ),
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .focusRequester(focusRequester),
+                                                    decorationBox = { innerTextField ->
+                                                        Box(
+                                                            modifier = Modifier.fillMaxWidth(),
+                                                            contentAlignment = Alignment.CenterStart,
+                                                        ) {
+                                                            if (searchQuery.isEmpty()) {
+                                                                Text(
+                                                                    text = textResources.getString(cn.turingzy.ledger.R.string.ui_search_notes_categories_accounts),
+                                                                    fontSize = 15.sp,
+                                                                    lineHeight = 22.sp,
+                                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                                    modifier = Modifier.padding(start = 6.dp),
+                                                                )
+                                                            }
+                                                            innerTextField()
+                                                        }
+                                                    },
                                                 )
                                             }
-                                        }
 
-                                        TopBarIconButton(
-                                            imageVector = MaterialSymbols.Search,
-                                            contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_search),
-                                            onClick = { isSearchActive = true },
-                                            modifier = Modifier.align(Alignment.CenterEnd),
-                                        )
-                                    }
-                                }
+                                            Spacer(modifier = Modifier.width(4.dp))
 
-                                // 展开的动态向左自然伸出、点击x向右优雅收缩的搜索框
-                                androidx.compose.animation.AnimatedVisibility(
-                                    visible = isSearchActive,
-                                    enter = fadeIn(tween(durationMillis = 320)) + expandHorizontally(
-                                        expandFrom = Alignment.End,
-                                        animationSpec = tween(
-                                            durationMillis = 360,
-                                            easing = CubicBezierEasing(0.20f, 0.0f, 0.10f, 1.0f),
-                                        ),
-                                    ),
-                                    exit = fadeOut(tween(durationMillis = 240)) + shrinkHorizontally(
-                                        shrinkTowards = Alignment.End,
-                                        animationSpec = tween(
-                                            durationMillis = 320,
-                                            easing = CubicBezierEasing(0.20f, 0.0f, 0.10f, 1.0f),
-                                        ),
-                                    ),
-                                    modifier = Modifier.fillMaxWidth(),
-                                ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(44.dp)
-                                            .clip(RoundedCornerShape(22.dp))
-                                            .background(Color(0xFFE5E5EA))
-                                            .padding(horizontal = 12.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    ) {
-                                        Icon(
-                                            imageVector = MaterialSymbols.Search,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.size(24.dp),
-                                        )
-
-                                        Box(
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .fillMaxHeight(),
-                                            contentAlignment = Alignment.CenterStart,
-                                        ) {
-                                            BasicTextField(
-                                                value = searchQuery,
-                                                onValueChange = { searchQuery = it },
-                                                textStyle = TextStyle(
-                                                    fontSize = 15.sp,
-                                                    lineHeight = 22.sp,
-                                                    color = MaterialTheme.colorScheme.onSurface,
-                                                ),
-                                                cursorBrush = SolidColor(MaterialTheme.colorScheme.onSurface),
-                                                singleLine = true,
-                                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                                                keyboardActions = KeyboardActions(
-                                                    onSearch = {
-                                                        submittedSearchQuery = searchQuery.trim()
-                                                        focusManager.clearFocus()
-                                                    },
-                                                ),
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .focusRequester(focusRequester),
-                                                decorationBox = { innerTextField ->
-                                                    Box(
-                                                        modifier = Modifier.fillMaxWidth(),
-                                                        contentAlignment = Alignment.CenterStart,
-                                                    ) {
-                                                        if (searchQuery.isEmpty()) {
-                                                            Text(
-                                                                text = textResources.getString(cn.turingzy.ledger.R.string.ui_search_notes_categories_accounts),
-                                                                fontSize = 15.sp,
-                                                                lineHeight = 22.sp,
-                                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                                modifier = Modifier.padding(start = 6.dp),
-                                                            )
-                                                        }
-                                                        innerTextField()
-                                                    }
+                                            TopBarIconButton(
+                                                imageVector = MaterialSymbols.Close,
+                                                contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_close_search),
+                                                onClick = {
+                                                    isSearchActive = false
+                                                    searchQuery = ""
+                                                    submittedSearchQuery = ""
+                                                    focusManager.clearFocus()
                                                 },
                                             )
                                         }
-
-                                        Spacer(modifier = Modifier.width(4.dp))
-
-                                        TopBarIconButton(
-                                            imageVector = MaterialSymbols.Close,
-                                            contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_close_search),
-                                            onClick = {
-                                                isSearchActive = false
-                                                searchQuery = ""
-                                                submittedSearchQuery = ""
-                                                focusManager.clearFocus()
-                                            },
-                                        )
                                     }
                                 }
-                            }
 
-                            // 月度结余 Hero 大卡片 (整体向上移动，与顶栏间距减半至 5.dp)
-                            if (uiState.amountsAvailable) SummaryHeroBanner(
-                                cardMonthDisplay = uiState.cardMonthDisplay,
-                                balance = uiState.monthBalance,
-                                expense = uiState.monthExpense,
-                                income = uiState.monthIncome,
-                                currency = uiState.currency,
-                                appearance = cardAppearance,
-                                background = cardBackground,
-                                settingsEnabled = cardSettingsEnabled,
-                                onUploadBackground = onUploadCardBackground,
-                                onTransparencyChange = onCardTransparencyChange,
-                            ) else Text(textResources.getString(cn.turingzy.ledger.R.string.ui_exchange_rate_needed_refresh_or_enter_a_rate), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
-                        }
-                    }
-
-                    if (filteredDayGroups.isEmpty()) {
-                        item(key = "empty_placeholder") {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 48.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Text(
-                                    text = if (submittedSearchQuery.isNotBlank()) textResources.getString(cn.turingzy.ledger.R.string.ui_no_matching_transactions) else textResources.getString(cn.turingzy.ledger.R.string.ui_no_transactions_for_this_period_tap_to_add),
-                                    fontSize = 14.sp,
-                                    color = IosSecondary,
-                                )
+                                // 月度结余 Hero 大卡片 (整体向上移动，与顶栏间距减半至 5.dp)
+                                if (uiState.amountsAvailable) SummaryHeroBanner(
+                                    cardMonthDisplay = uiState.cardMonthDisplay,
+                                    balance = uiState.monthBalance,
+                                    expense = uiState.monthExpense,
+                                    income = uiState.monthIncome,
+                                    currency = uiState.currency,
+                                    appearance = cardAppearance,
+                                    background = cardBackground,
+                                    settingsEnabled = cardSettingsEnabled,
+                                    onUploadBackground = onUploadCardBackground,
+                                    onTransparencyChange = onCardTransparencyChange,
+                                ) else Text(textResources.getString(cn.turingzy.ledger.R.string.ui_exchange_rate_needed_refresh_or_enter_a_rate), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
                             }
                         }
-                    } else {
-                        filteredDayGroups.forEach { dayGroup ->
-                            item(key = "group_${dayGroup.dateEpochDay}") {
-                                DayGroupSection(dayGroup = dayGroup, onTransactionClick = onTransactionClick, currency = uiState.currency)
+
+                        if (filteredDayGroups.isEmpty()) {
+                            item(key = "empty_placeholder") {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 48.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        text = if (submittedSearchQuery.isNotBlank()) textResources.getString(cn.turingzy.ledger.R.string.ui_no_matching_transactions) else textResources.getString(cn.turingzy.ledger.R.string.ui_no_transactions_for_this_period_tap_to_add),
+                                        fontSize = 14.sp,
+                                        color = IosSecondary,
+                                    )
+                                }
+                            }
+                        } else {
+                            filteredDayGroups.forEach { dayGroup ->
+                                item(key = "group_${dayGroup.dateEpochDay}") {
+                                    DayGroupSection(dayGroup = dayGroup, onTransactionClick = onTransactionClick, currency = uiState.currency)
+                                }
                             }
                         }
                     }
@@ -506,7 +487,7 @@ fun DayGroupSection(
         if (dayGroup.totalIncome != 0L) add(textResources.getString(cn.turingzy.ledger.R.string.ui_income) + ": ${dayGroup.totalIncome.toFormattedAmount()}")
     }.joinToString("  ")
     val colors = MaterialTheme.colorScheme
-    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth()
                 .semantics { stateDescription = if (expanded) textResources.getString(cn.turingzy.ledger.R.string.ui_expanded) else textResources.getString(cn.turingzy.ledger.R.string.ui_collapsed) }
@@ -514,7 +495,7 @@ fun DayGroupSection(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
                 ) { expanded = !expanded }
-                .padding(start = 4.dp, top = 3.dp, bottom = 3.dp),
+                .padding(start = 4.dp, top = 3.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {

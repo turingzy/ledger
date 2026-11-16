@@ -107,7 +107,7 @@ class PeriodPickerSheetTest {
     }
 
     @Test
-    fun ledgerDateIsTheOnlyEntryAndCancelKeepsCurrentView() {
+    fun closingAfterSwitchingViewAppliesTheCurrentPeriod() {
         var selected: Pair<DateFilterType, LocalDate>? = null
         compose.setContent {
             MaterialTheme {
@@ -131,7 +131,61 @@ class PeriodPickerSheetTest {
         compose.onNodeWithText("周一").assertIsDisplayed()
         compose.onNodeWithContentDescription("关闭日期选择").performClick()
         compose.onNodeWithTag("ledgerPeriodPicker").assertDoesNotExist()
-        compose.onNodeWithText("2024.02").assertIsDisplayed()
+        assertEquals(DateFilterType.WEEK to weekStart(LocalDate.now()), selected)
+    }
+
+    @Test
+    fun closingWithoutSwitchingKeepsTheHistoricalPeriod() {
+        var selected: Pair<DateFilterType, LocalDate>? = null
+        compose.setContent {
+            MaterialTheme {
+                PeriodPickerSheet(DateFilterType.MONTH, LocalDate.of(2024, 2, 1), {}, { type, date -> selected = type to date })
+            }
+        }
+        compose.onNodeWithContentDescription("关闭日期选择").performClick()
         assertNull(selected)
     }
+
+    @Test
+    fun switchingBackToTheOriginalViewKeepsTheHistoricalPeriod() {
+        var selected: Pair<DateFilterType, LocalDate>? = null
+        compose.setContent {
+            MaterialTheme {
+                PeriodPickerSheet(DateFilterType.MONTH, LocalDate.of(2024, 2, 1), {}, { type, date -> selected = type to date })
+            }
+        }
+        compose.onNodeWithText("年").performClick()
+        compose.onNodeWithText("月").performClick()
+        compose.onNodeWithContentDescription("关闭日期选择").performClick()
+        assertNull(selected)
+    }
+
+
+    @Test
+    fun closingAfterSwitchingToMonthAppliesThisMonth() {
+        var selected: Pair<DateFilterType, LocalDate>? = null
+        compose.setContent {
+            MaterialTheme {
+                PeriodPickerSheet(DateFilterType.YEAR, LocalDate.of(2024, 1, 1), {}, { type, date -> selected = type to date })
+            }
+        }
+        compose.onNodeWithText("月").performClick()
+        compose.onNodeWithContentDescription("关闭日期选择").performClick()
+        assertEquals(DateFilterType.MONTH to LocalDate.now().withDayOfMonth(1), selected)
+    }
+
+    @Test
+    fun systemBackAfterSwitchingToYearAppliesThisYear() {
+        var selected: Pair<DateFilterType, LocalDate>? = null
+        compose.setContent {
+            MaterialTheme {
+                PeriodPickerSheet(DateFilterType.MONTH, LocalDate.of(2024, 2, 1), {}, { type, date -> selected = type to date })
+            }
+        }
+        compose.onNodeWithText("年").performClick()
+        androidx.test.espresso.Espresso.pressBack()
+        compose.waitForIdle()
+        assertEquals(DateFilterType.YEAR to LocalDate.now().withDayOfYear(1), selected)
+    }
+
 }

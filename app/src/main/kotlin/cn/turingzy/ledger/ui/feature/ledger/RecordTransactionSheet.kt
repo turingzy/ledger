@@ -104,6 +104,7 @@ fun RecordTransactionSheet(
     ) -> Unit,
     modifier: Modifier = Modifier,
     initialTransaction: Transaction? = null,
+    initialTransactionTime: Long? = null,
     title: String = androidx.compose.ui.res.stringResource(cn.turingzy.ledger.R.string.ui_new_transaction),
     saving: Boolean = false,
     error: String? = null,
@@ -118,7 +119,9 @@ fun RecordTransactionSheet(
     var accountId by rememberSaveable(initialTransaction?.id) { mutableLongStateOf(initialTransaction?.accountId ?: 0L) }
     var destinationId by rememberSaveable(initialTransaction?.id) { mutableLongStateOf(initialTransaction?.toAccountId ?: 0L) }
     var categoryId by rememberSaveable(initialTransaction?.id) { mutableLongStateOf(initialTransaction?.categoryId ?: 0L) }
-    var transactionTime by rememberSaveable(initialTransaction?.id) { mutableLongStateOf(initialTransaction?.transactionTime ?: System.currentTimeMillis()) }
+    var transactionTime by rememberSaveable(initialTransaction?.id, initialTransactionTime) {
+        mutableLongStateOf(initialTransaction?.transactionTime ?: initialTransactionTime ?: System.currentTimeMillis())
+    }
     var panel by rememberSaveable { mutableStateOf(RecordPanel.ENTRY) }
     val focusManager = LocalFocusManager.current
     val zone = ZoneId.systemDefault()

@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.analytics
 
+import cn.turingzy.ledger.ui.component.ScrollTitleContainer
 import cn.turingzy.ledger.ui.component.LocalLedgerCurrency
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -102,59 +103,68 @@ fun AnalyticsContent(
                     ) {
                         CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                     }
-                    is AnalyticsUiState.Success -> Column(
-                        Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding()).verticalScroll(rememberScrollState())
-                            .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp + innerPadding.calculateBottomPadding() + LocalBottomBarContentPadding.current),
-                        verticalArrangement = Arrangement.spacedBy(5.dp),
-                    ) {
-                        Box(Modifier.fillMaxWidth().height(44.dp), contentAlignment = Alignment.CenterStart) {
-                            Text(
-                                textResources.getString(cn.turingzy.ledger.R.string.ui_analytics), fontSize = 28.sp, fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface, letterSpacing = (-0.6).sp,
-                            )
-                            Row(Modifier.align(Alignment.CenterEnd), verticalAlignment = Alignment.CenterVertically) {
-                                TopBarIconButton(MaterialSymbols.CalendarMonth, textResources.getString(cn.turingzy.ledger.R.string.ui_spending_calendar_2),
-                                    { onOpenCalendar(minOf(uiState.periodEnd, LocalDate.now())) },
-                                    Modifier)
+                    is AnalyticsUiState.Success -> {
+                        val scrollState = rememberScrollState()
+                        ScrollTitleContainer(
+                            title = textResources.getString(cn.turingzy.ledger.R.string.ui_analytics),
+                            scrollOffset = { scrollState.value },
+                            onScrollToTop = { scrollState.animateScrollTo(0) },
+                        ) { scrollModifier ->
+                            Column(
+                                scrollModifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding()).verticalScroll(scrollState)
+                                    .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp + innerPadding.calculateBottomPadding() + LocalBottomBarContentPadding.current),
+                                verticalArrangement = Arrangement.spacedBy(5.dp),
+                            ) {
+                                Box(Modifier.fillMaxWidth().height(44.dp), contentAlignment = Alignment.CenterStart) {
+                                    Text(
+                                        textResources.getString(cn.turingzy.ledger.R.string.ui_analytics), fontSize = 28.sp, fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface, letterSpacing = (-0.6).sp,
+                                    )
+                                    Row(Modifier.align(Alignment.CenterEnd), verticalAlignment = Alignment.CenterVertically) {
+                                        TopBarIconButton(MaterialSymbols.CalendarMonth, textResources.getString(cn.turingzy.ledger.R.string.ui_spending_calendar_2),
+                                            { onOpenCalendar(minOf(uiState.periodEnd, LocalDate.now())) },
+                                            Modifier)
+                                    }
+                                }
+                                AnalyticsTimeScopeSelector(uiState.timeScope, onTimeScopeChange)
+                                Row(
+                                    Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(
+                                        if (uiState.timeScope == AnalyticsTimeScope.ALL) 16.dp else 0.dp,
+                                        Alignment.CenterHorizontally,
+                                    ),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    if (uiState.timeScope == AnalyticsTimeScope.ALL) {
+                                        AnalyticsRangeDate(
+                                            uiState.periodStart, textResources.getString(cn.turingzy.ledger.R.string.ui_select_analytics_start_date), { dateEndpoint = AnalyticsDateEndpoint.START },
+                                        )
+                                        Text("～", fontSize = 17.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        AnalyticsRangeDate(
+                                            uiState.periodEnd, textResources.getString(cn.turingzy.ledger.R.string.ui_select_analytics_end_date), { dateEndpoint = AnalyticsDateEndpoint.END },
+                                        )
+                                    } else {
+                                        PeriodNavigationArrow(false, { onNavigatePeriod(-1) })
+                                        Text(
+                                            uiState.periodDisplay,
+                                            Modifier.weight(1f).semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_select_analytics_period) }
+                                                .clickable(
+                                                    interactionSource = remember { MutableInteractionSource() },
+                                                    indication = null,
+                                                ) { showPeriodPicker = true }.padding(horizontal = 6.dp, vertical = 2.dp),
+                                            fontSize = 17.sp, fontWeight = FontWeight.Normal,
+                                            color = MaterialTheme.colorScheme.onSurface, maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,
+                                        )
+                                        PeriodNavigationArrow(true, { onNavigatePeriod(1) })
+                                    }
+                                }
+                                if (dashboard.loading) {
+                                    androidx.compose.material3.LinearProgressIndicator(Modifier.fillMaxWidth())
+                                } else {
+                                    AnalyticsDashboardCards(uiState, dashboard, onCategoryTypeChange)
+                                }
                             }
-                        }
-                        AnalyticsTimeScopeSelector(uiState.timeScope, onTimeScopeChange)
-                        Row(
-                            Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                            horizontalArrangement = Arrangement.spacedBy(
-                                if (uiState.timeScope == AnalyticsTimeScope.ALL) 16.dp else 0.dp,
-                                Alignment.CenterHorizontally,
-                            ),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            if (uiState.timeScope == AnalyticsTimeScope.ALL) {
-                                AnalyticsRangeDate(
-                                    uiState.periodStart, textResources.getString(cn.turingzy.ledger.R.string.ui_select_analytics_start_date), { dateEndpoint = AnalyticsDateEndpoint.START },
-                                )
-                                Text("～", fontSize = 17.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                AnalyticsRangeDate(
-                                    uiState.periodEnd, textResources.getString(cn.turingzy.ledger.R.string.ui_select_analytics_end_date), { dateEndpoint = AnalyticsDateEndpoint.END },
-                                )
-                            } else {
-                                PeriodNavigationArrow(false, { onNavigatePeriod(-1) })
-                                Text(
-                                    uiState.periodDisplay,
-                                    Modifier.weight(1f).semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_select_analytics_period) }
-                                        .clickable(
-                                            interactionSource = remember { MutableInteractionSource() },
-                                            indication = null,
-                                        ) { showPeriodPicker = true }.padding(horizontal = 6.dp, vertical = 2.dp),
-                                    fontSize = 17.sp, fontWeight = FontWeight.Normal,
-                                    color = MaterialTheme.colorScheme.onSurface, maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,
-                                )
-                                PeriodNavigationArrow(true, { onNavigatePeriod(1) })
-                            }
-                        }
-                        if (dashboard.loading) {
-                            androidx.compose.material3.LinearProgressIndicator(Modifier.fillMaxWidth())
-                        } else {
-                            AnalyticsDashboardCards(uiState, dashboard, onCategoryTypeChange)
                         }
                     }
                 }

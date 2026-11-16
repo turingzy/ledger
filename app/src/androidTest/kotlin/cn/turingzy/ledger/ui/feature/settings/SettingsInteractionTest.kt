@@ -33,6 +33,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalDensity
@@ -59,6 +60,46 @@ import org.junit.Test
 
 class SettingsInteractionTest {
     @get:Rule val compose = createComposeRule()
+
+    @Test
+    fun scrollingSubpageKeepsTheTitleAndActionsFixed() {
+        var actionCount = 0
+        compose.setContent {
+            LedgerTheme {
+                SettingsPage(title = "子页标题", onDismissRequest = {}, action = {
+                    cn.turingzy.ledger.ui.component.TopBarIconButton(
+                        MaterialSymbols.Check, "保存子页", { actionCount++ },
+                    )
+                }) {
+                    Column(Modifier.fillMaxSize().settingsPageScroll().testTag("subpageScroll")) {
+                        repeat(60) { androidx.compose.material3.Text("内容 $it", Modifier.padding(vertical = 12.dp)) }
+                    }
+                }
+            }
+        }
+        val before = compose.onNodeWithText("子页标题").fetchSemanticsNode().boundsInRoot
+        compose.onNodeWithTag("subpageScroll").performTouchInput { swipeUp() }
+        assertEquals(before, compose.onNodeWithText("子页标题").fetchSemanticsNode().boundsInRoot)
+        compose.onNodeWithContentDescription("保存子页").performClick()
+        compose.runOnIdle { assertEquals(1, actionCount) }
+        compose.onNodeWithContentDescription("回到顶部").assertDoesNotExist()
+    }
+
+    @Test
+    fun subpageBackButtonSitsBesideTheTitle() {
+        var backCount = 0
+        compose.setContent {
+            LedgerTheme {
+                SettingsPage(title = "设置子页", onDismissRequest = { backCount++ }) {}
+            }
+        }
+        val title = compose.onNodeWithText("设置子页").fetchSemanticsNode().boundsInRoot
+        val back = compose.onNodeWithContentDescription("返回").fetchSemanticsNode().boundsInRoot
+        assertTrue(back.right <= title.left)
+        assertEquals(title.center.y, back.center.y, 1f)
+        compose.onNodeWithContentDescription("返回").performClick()
+        compose.runOnIdle { assertEquals(1, backCount) }
+    }
 
     @Test
     fun detailNavigationAndBackRestoreSettingsList() {

@@ -124,7 +124,7 @@ internal fun ParseRulesScreen(
             if (editing == null) {
                 LazyColumn(
                     Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(bottom = SettingsPageBottomPadding),
+                    contentPadding = PaddingValues(top = SettingsPageContentTopPadding, bottom = SettingsPageBottomPadding),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     items(rules, key = { it.id }) { rule ->

@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.selection.selectable
@@ -18,18 +19,16 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,8 +36,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cn.turingzy.ledger.model.DateFilterType
 import cn.turingzy.ledger.model.TransactionType
-import cn.turingzy.ledger.ui.component.LedgerIconButton
 import cn.turingzy.ledger.ui.component.MaterialSymbols
+import cn.turingzy.ledger.ui.component.TopBarBackButton
+import cn.turingzy.ledger.ui.component.rememberBackdropState
+import cn.turingzy.ledger.ui.component.recordBackdrop
+import cn.turingzy.ledger.ui.component.frostedBackdrop
 import cn.turingzy.ledger.ui.component.PeriodPickerSheet
 import cn.turingzy.ledger.ui.component.TransactionRow
 import cn.turingzy.ledger.ui.component.categoryGlyph
@@ -52,11 +54,12 @@ internal fun ConsumptionCalendarScreen(
     initialMonth: YearMonth,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onRecordTransaction: (LocalDate) -> Unit = {},
     viewModel: AnalyticsDashboardViewModel = hiltViewModel(),
 ) {
     val dashboard by viewModel.uiState.collectAsStateWithLifecycle()
     CompositionLocalProvider(LocalLedgerCurrency provides dashboard.currency) {
-        ConsumptionCalendarContent(dashboard, initialMonth, onBack, modifier)
+        ConsumptionCalendarContent(dashboard, initialMonth, onBack, modifier, onRecordTransaction = onRecordTransaction)
     }
 }
 
@@ -67,6 +70,7 @@ internal fun ConsumptionCalendarContent(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     today: LocalDate = LocalDate.now(),
+    onRecordTransaction: (LocalDate) -> Unit = {},
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
@@ -84,40 +88,45 @@ internal fun ConsumptionCalendarContent(
     }
     val dayFormatter = remember(configuration) { DateTimeFormatter.ofPattern(if (configuration.locales[0].language == "en") "MMM d" else "M月d日", configuration.locales[0]) }
     val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
+    val listState = rememberLazyListState()
+    val backdrop = rememberBackdropState()
     BackHandler(onBack = onBack)
     Surface(modifier.fillMaxSize(), color = colors.background) {
         Box(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
-            Column(Modifier.fillMaxSize()) {
-                Row(Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically) {
-                    LedgerIconButton(onClick = onBack) {
-                        Icon(MaterialSymbols.ArrowBack, textResources.getString(cn.turingzy.ledger.R.string.ui_back_to_analytics), tint = colors.onSurface)
-                    }
-                    Spacer(Modifier.width(4.dp))
-                    Text(textResources.getString(cn.turingzy.ledger.R.string.ui_spending_calendar), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                }
-                if (dashboard.loading) LinearProgressIndicator(Modifier.fillMaxWidth())
+            LazyColumn(
+                Modifier.fillMaxSize().recordBackdrop(backdrop).testTag("consumptionCalendarList"),
+                state = listState,
+                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 68.dp, bottom = 24.dp),
+            ) {
                 if (!dashboard.amountsAvailable) {
-                    Text(textResources.getString(cn.turingzy.ledger.R.string.ui_exchange_rate_needed_refresh_or_enter_a_rate),
-                        Modifier.padding(20.dp), color = colors.onSurfaceVariant)
-                    return@Column
-                }
-                LazyColumn(
-                    Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 24.dp),
-                ) {
+                    item(key = "missing_rates") {
+                        Text(textResources.getString(cn.turingzy.ledger.R.string.ui_exchange_rate_needed_refresh_or_enter_a_rate),
+                            color = colors.onSurfaceVariant)
+                    }
+                } else {
                     item(key = "calendar") {
                         Surface(shape = RoundedCornerShape(20.dp), color = colors.surface,
                             border = BorderStroke(0.5.dp, colors.outlineVariant)) {
                             Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                    Text(month.format(DateTimeFormatter.ofPattern(if (configuration.locales[0].language == "en") "MMM yyyy" else "yyyy年M月", configuration.locales[0])), Modifier.clip(RoundedCornerShape(10.dp))
-                                        .clickable { showPicker = true }.padding(vertical = 6.dp),
-                                        fontSize = 17.sp, textAlign = TextAlign.Start)
-                                    Text(buildAnnotatedString {
-                                        append(textResources.getString(cn.turingzy.ledger.R.string.calendar_month_expense, month.monthValue))
-                                        withStyle(SpanStyle(color = colors.onSurface)) { append(data.totalExpense.toFormattedAmount(true, symbol = currencySymbol)) }
-                                    }, Modifier.weight(1f).padding(start = 8.dp), fontSize = 13.sp, lineHeight = 18.sp,
-                                        color = colors.onSurfaceVariant, textAlign = TextAlign.End, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(20.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        month.format(DateTimeFormatter.ofPattern(if (configuration.locales[0].language == "en") "MMM yyyy" else "yyyy年M月", configuration.locales[0])),
+                                        Modifier.clip(RoundedCornerShape(10.dp))
+                                            .clickable { showPicker = true }.padding(vertical = 6.dp),
+                                        fontSize = 16.sp, fontWeight = FontWeight.SemiBold,
+                                        color = colors.onSurface, maxLines = 1,
+                                    )
+                                    Spacer(Modifier.weight(1f))
+                                    Column(horizontalAlignment = Alignment.End) {
+                                        Text(textResources.getString(cn.turingzy.ledger.R.string.calendar_month_expense, month.monthValue).trim(),
+                                            fontSize = 11.sp, lineHeight = 13.sp,
+                                            style = LocalTextStyle.current.copy(platformStyle = PlatformTextStyle(includeFontPadding = false)),
+                                            color = colors.onSurfaceVariant)
+                                        Text(data.totalExpense.toFormattedAmount(true, symbol = currencySymbol),
+                                            fontSize = 15.sp, lineHeight = 17.sp,
+                                            style = LocalTextStyle.current.copy(platformStyle = PlatformTextStyle(includeFontPadding = false)),
+                                            fontWeight = FontWeight.SemiBold, color = colors.onSurface)
+                                    }
                                 }
                                 ConsumptionMonthGrid(data, selectedDate, today, { selectedEpoch = it.toEpochDay() })
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.End),
@@ -138,9 +147,12 @@ internal fun ConsumptionCalendarContent(
                         }
                     }
                     if (entries.isEmpty()) item(key = "empty") {
-                        Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), color = colors.surface) {
-                            Text(if (selectedDate > today) textResources.getString(cn.turingzy.ledger.R.string.ui_future_date) else if (dashboard.loading) textResources.getString(cn.turingzy.ledger.R.string.ui_loading_transactions) else textResources.getString(cn.turingzy.ledger.R.string.ui_no_expenses_on_this_day),
-                                Modifier.padding(20.dp), fontSize = 13.sp, color = colors.onSurfaceVariant)
+                        when {
+                            dashboard.loading -> Text(textResources.getString(cn.turingzy.ledger.R.string.ui_loading_transactions),
+                                Modifier.padding(vertical = 20.dp), color = colors.onSurfaceVariant)
+                            selectedDate > today -> Text(textResources.getString(cn.turingzy.ledger.R.string.ui_future_date),
+                                Modifier.padding(vertical = 20.dp), color = colors.onSurfaceVariant)
+                            else -> ConsumptionCalendarEmptyState(onRecord = { onRecordTransaction(selectedDate) })
                         }
                     }
                     itemsIndexed(entries, key = { _, entry -> entry.id }) { index, entry ->
@@ -158,6 +170,20 @@ internal fun ConsumptionCalendarContent(
                     }
                 }
             }
+            Row(
+                Modifier.fillMaxWidth().height(56.dp)
+                    .frostedBackdrop(backdrop, colors.background.copy(alpha = if (listState.canScrollBackward) 0.55f else 1f),
+                        blurRadius = 3.dp, fadeBottom = 4.dp)
+                    .padding(horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TopBarBackButton(onClick = onBack,
+                    contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_back_to_analytics))
+                Spacer(Modifier.width(4.dp))
+                Text(textResources.getString(cn.turingzy.ledger.R.string.ui_spending_calendar),
+                    style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            }
+            if (dashboard.loading) LinearProgressIndicator(Modifier.fillMaxWidth().padding(top = 56.dp))
         }
     }
     if (showPicker) PeriodPickerSheet(DateFilterType.MONTH, month.atDay(1), { showPicker = false },
@@ -178,8 +204,9 @@ private fun ConsumptionMonthGrid(
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
             listOf(textResources.getString(cn.turingzy.ledger.R.string.ui_mon), textResources.getString(cn.turingzy.ledger.R.string.ui_tue), textResources.getString(cn.turingzy.ledger.R.string.ui_wed), textResources.getString(cn.turingzy.ledger.R.string.ui_thu_2), textResources.getString(cn.turingzy.ledger.R.string.ui_fri), textResources.getString(cn.turingzy.ledger.R.string.ui_sat), textResources.getString(cn.turingzy.ledger.R.string.ui_sun_2)).forEachIndexed { index, label ->
                 val highlighted = today.dayOfWeek.value == index + 1
-                Text(label, Modifier.weight(1f).semantics { selected = highlighted }, fontSize = 12.sp, lineHeight = 16.sp,
-                    fontWeight = if (highlighted) FontWeight.SemiBold else FontWeight.Normal,
+                Text(label, Modifier.weight(1f).padding(vertical = 5.dp).semantics { selected = highlighted }, fontSize = 12.sp, lineHeight = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 0.5.sp,
                     color = if (highlighted) colors.tertiary else colors.onSurfaceVariant, textAlign = TextAlign.Center)
             }
         }
@@ -199,6 +226,7 @@ private fun ConsumptionMonthGrid(
                             .semantics { contentDescription = "$date，支出${(data.expenses[date] ?: 0L).toFormattedAmount(true, symbol = currencySymbol)}" },
                             contentAlignment = Alignment.Center) {
                             Text(date.dayOfMonth.toString(), fontSize = 13.sp, lineHeight = 16.sp,
+                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
                                 color = color.copy(alpha = if (future) 0.35f else 1f))
                             if (date == today) Box(Modifier.align(Alignment.BottomCenter).padding(bottom = 3.dp)
                                 .size(3.dp).background(colors.error, CircleShape))

@@ -1,5 +1,7 @@
 package cn.turingzy.ledger.ui.feature.settings
 
+import cn.turingzy.ledger.ui.component.ScrollTitleContainer
+import androidx.compose.foundation.lazy.rememberLazyListState
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -142,32 +144,96 @@ fun SettingsContent(
             }
 
             is SettingsUiState.Success -> {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp + innerPadding.calculateBottomPadding() + LocalBottomBarContentPadding.current),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    item(key = "header_and_settings") {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(5.dp),
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(44.dp),
-                                contentAlignment = Alignment.CenterStart,
+                val listState = rememberLazyListState()
+                ScrollTitleContainer(
+                    title = textResources.getString(cn.turingzy.ledger.R.string.ui_settings),
+                    scrollOffset = {
+                        if (listState.firstVisibleItemIndex == 0) listState.firstVisibleItemScrollOffset
+                        else Int.MAX_VALUE
+                    },
+                    onScrollToTop = { listState.animateScrollToItem(0) },
+                ) { scrollModifier ->
+                    LazyColumn(
+                        state = listState,
+                        modifier = scrollModifier.fillMaxSize(),
+                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp + innerPadding.calculateBottomPadding() + LocalBottomBarContentPadding.current),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        item(key = "header_and_settings") {
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(5.dp),
                             ) {
-                                Text(
-                                    text = textResources.getString(cn.turingzy.ledger.R.string.ui_settings),
-                                    fontSize = 28.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    letterSpacing = (-0.6).sp,
-                                    modifier = Modifier.padding(bottom = 2.dp),
-                                )
-                            }
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(44.dp),
+                                    contentAlignment = Alignment.CenterStart,
+                                ) {
+                                    Text(
+                                        text = textResources.getString(cn.turingzy.ledger.R.string.ui_settings),
+                                        fontSize = 28.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        letterSpacing = (-0.6).sp,
+                                        modifier = Modifier.padding(bottom = 2.dp),
+                                    )
+                                }
 
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .shadow(
+                                            elevation = 2.dp,
+                                            shape = RoundedCornerShape(16.dp),
+                                            ambientColor = Color.Black.copy(alpha = 0.04f),
+                                            spotColor = Color.Black.copy(alpha = 0.04f),
+                                        ),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                ) {
+                                    Column(modifier = Modifier.fillMaxWidth()) {
+                                        SettingsRowItem(
+                                            icon = MaterialSymbols.Tune,
+                                            iconColor = MaterialTheme.colorScheme.primary,
+                                            title = androidx.compose.ui.res.stringResource(cn.turingzy.ledger.R.string.general_settings),
+                                            onClick = onGeneralSettingsClick,
+                                        )
+                                        HorizontalDivider(Modifier.padding(start = 58.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+                                        SettingsRowItem(
+                                            icon = MaterialSymbols.DashboardCustomize,
+                                            iconColor = MaterialTheme.colorScheme.primary,
+                                            title = textResources.getString(cn.turingzy.ledger.R.string.ui_card_designs),
+                                            onClick = onCardManagementClick,
+                                        )
+                                        HorizontalDivider(
+                                            modifier = Modifier.padding(start = 58.dp),
+                                            thickness = 0.5.dp,
+                                            color = MaterialTheme.colorScheme.outlineVariant,
+                                        )
+                                        SettingsRowItem(
+                                            icon = MaterialSymbols.Code,
+                                            iconColor = MaterialTheme.colorScheme.secondary,
+                                            title = textResources.getString(cn.turingzy.ledger.R.string.ui_import_rules),
+                                            onClick = onParseRulesClick,
+                                        )
+                                        HorizontalDivider(
+                                            modifier = Modifier.padding(start = 58.dp),
+                                            thickness = 0.5.dp,
+                                            color = MaterialTheme.colorScheme.outlineVariant,
+                                        )
+                                        SettingsRowItem(
+                                            icon = MaterialSymbols.ImportExport,
+                                            iconColor = MaterialTheme.colorScheme.tertiary,
+                                            title = textResources.getString(cn.turingzy.ledger.R.string.ui_import_and_export),
+                                            onClick = onBillTransferClick,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        item(key = "backup_and_about") {
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -182,76 +248,23 @@ fun SettingsContent(
                             ) {
                                 Column(modifier = Modifier.fillMaxWidth()) {
                                     SettingsRowItem(
-                                        icon = MaterialSymbols.Tune,
-                                        iconColor = MaterialTheme.colorScheme.primary,
-                                        title = androidx.compose.ui.res.stringResource(cn.turingzy.ledger.R.string.general_settings),
-                                        onClick = onGeneralSettingsClick,
-                                    )
-                                    HorizontalDivider(Modifier.padding(start = 58.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
-                                    SettingsRowItem(
-                                        icon = MaterialSymbols.DashboardCustomize,
-                                        iconColor = MaterialTheme.colorScheme.primary,
-                                        title = textResources.getString(cn.turingzy.ledger.R.string.ui_card_designs),
-                                        onClick = onCardManagementClick,
-                                    )
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(start = 58.dp),
-                                        thickness = 0.5.dp,
-                                        color = MaterialTheme.colorScheme.outlineVariant,
-                                    )
-                                    SettingsRowItem(
-                                        icon = MaterialSymbols.Code,
-                                        iconColor = MaterialTheme.colorScheme.secondary,
-                                        title = textResources.getString(cn.turingzy.ledger.R.string.ui_import_rules),
-                                        onClick = onParseRulesClick,
-                                    )
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(start = 58.dp),
-                                        thickness = 0.5.dp,
-                                        color = MaterialTheme.colorScheme.outlineVariant,
-                                    )
-                                    SettingsRowItem(
-                                        icon = MaterialSymbols.ImportExport,
+                                        icon = MaterialSymbols.CloudUpload,
                                         iconColor = MaterialTheme.colorScheme.tertiary,
-                                        title = textResources.getString(cn.turingzy.ledger.R.string.ui_import_and_export),
-                                        onClick = onBillTransferClick,
+                                        title = textResources.getString(cn.turingzy.ledger.R.string.ui_backup_and_restore),
+                                        onClick = onBackupClick,
+                                    )
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(start = 58.dp),
+                                        thickness = 0.5.dp,
+                                        color = MaterialTheme.colorScheme.outlineVariant,
+                                    )
+                                    SettingsRowItem(
+                                        icon = MaterialSymbols.Info,
+                                        iconColor = MaterialTheme.colorScheme.primary,
+                                        title = textResources.getString(cn.turingzy.ledger.R.string.ui_about),
+                                        onClick = onAboutClick,
                                     )
                                 }
-                            }
-                        }
-                    }
-
-                    item(key = "backup_and_about") {
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .shadow(
-                                    elevation = 2.dp,
-                                    shape = RoundedCornerShape(16.dp),
-                                    ambientColor = Color.Black.copy(alpha = 0.04f),
-                                    spotColor = Color.Black.copy(alpha = 0.04f),
-                                ),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        ) {
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                SettingsRowItem(
-                                    icon = MaterialSymbols.CloudUpload,
-                                    iconColor = MaterialTheme.colorScheme.tertiary,
-                                    title = textResources.getString(cn.turingzy.ledger.R.string.ui_backup_and_restore),
-                                    onClick = onBackupClick,
-                                )
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(start = 58.dp),
-                                    thickness = 0.5.dp,
-                                    color = MaterialTheme.colorScheme.outlineVariant,
-                                )
-                                SettingsRowItem(
-                                    icon = MaterialSymbols.Info,
-                                    iconColor = MaterialTheme.colorScheme.primary,
-                                    title = textResources.getString(cn.turingzy.ledger.R.string.ui_about),
-                                    onClick = onAboutClick,
-                                )
                             }
                         }
                     }
