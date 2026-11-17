@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.wallet
 
+import cn.turingzy.ledger.ui.components.base.BaseModalBottomSheet
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -27,7 +28,8 @@ fun AddAccountSheet(
     sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
     templates: List<CardTemplate> = emptyList(),
 ) {
-    AccountSheet(
+    BaseModalBottomSheet(
+        contentHandlesInsets = true,
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
         modifier = modifier,

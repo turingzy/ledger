@@ -1,5 +1,10 @@
 package cn.turingzy.ledger.ui.feature.settings
 
+import cn.turingzy.ledger.ui.theme.LedgerStyle
+import cn.turingzy.ledger.ui.components.base.BaseSurface
+import cn.turingzy.ledger.ui.components.base.BaseButtonVariant
+import cn.turingzy.ledger.ui.components.base.BaseActionButton
+import cn.turingzy.ledger.ui.components.base.BaseAlertDialog
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
@@ -13,10 +18,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -74,21 +77,21 @@ fun AboutScreen(
         }
     }
 
-    if (updateMessage != null) androidx.compose.material3.AlertDialog(
+    if (updateMessage != null) BaseAlertDialog(
         onDismissRequest = { updateMessage = null }, text = { Text(updateMessage.orEmpty()) },
         containerColor = MaterialTheme.colorScheme.surface,
         textContentColor = MaterialTheme.colorScheme.onSurface,
         tonalElevation = 0.dp,
         confirmButton = {
-            androidx.compose.material3.TextButton(
+            BaseActionButton(variant = BaseButtonVariant.Text,
                 onClick = { updateMessage = null },
                 colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.tertiary),
             ) { Text(textResources.getString(cn.turingzy.ledger.R.string.ui_ok)) }
         },
     )
-    SettingsPage(
+    SettingsSubpageScaffold(
         title = textResources.getString(cn.turingzy.ledger.R.string.ui_about),
-        onDismissRequest = onDismissRequest,
+        onBack = onDismissRequest,
         modifier = modifier,
         titleStyle = MaterialTheme.typography.headlineMedium,
     ) {
@@ -121,27 +124,27 @@ private fun AboutContent(
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val colors = MaterialTheme.colorScheme
     Column(modifier.fillMaxWidth().settingsPageScroll()) {
-        Surface(
+        BaseSurface(
             onClick = onCheckUpdate,
             enabled = updateState != UpdateCheckState.CHECKING,
             modifier = Modifier.semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_check_for_updates) },
-            shape = RoundedCornerShape(16.dp),
+            shape = LedgerStyle.shapes.card,
             color = colors.surface,
             border = BorderStroke(0.5.dp, colors.onSurface.copy(alpha = 0.28f)),
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(12.dp),
-                horizontalArrangement = Arrangement.spacedBy(20.dp),
+                modifier = Modifier.fillMaxWidth().padding(LedgerStyle.spacing.large),
+                horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.section),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box(Modifier.size(80.dp).clip(CircleShape)) {
                     Image(painterResource(R.drawable.ic_launcher_background), null, Modifier.fillMaxSize())
                     Image(painterResource(R.drawable.ic_launcher_foreground), textResources.getString(cn.turingzy.ledger.R.string.ui_ledger_app_icon), Modifier.fillMaxSize())
                 }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.extraSmall)) {
                     Text("Ledger", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(

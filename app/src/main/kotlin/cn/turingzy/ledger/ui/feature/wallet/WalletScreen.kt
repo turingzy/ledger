@@ -2,16 +2,18 @@ package cn.turingzy.ledger.ui.feature.wallet
 
 import cn.turingzy.ledger.ui.component.ScrollTitleContainer
 import androidx.compose.foundation.lazy.rememberLazyListState
-import cn.turingzy.ledger.ui.component.LedgerDropdown
 import cn.turingzy.ledger.ui.component.accountCardColors
 import cn.turingzy.ledger.ui.component.AccountCardBackground
 
-import cn.turingzy.ledger.ui.component.PressFeedback
+import cn.turingzy.ledger.ui.interaction.rememberUiIndication
 import cn.turingzy.ledger.ui.component.TopBarIconButton
 import cn.turingzy.ledger.ui.component.MaterialSymbols
-import cn.turingzy.ledger.ui.theme.IosYellow
+import cn.turingzy.ledger.ui.components.base.BasePageFrame
+import cn.turingzy.ledger.ui.interaction.rememberUiEvent
+import cn.turingzy.ledger.ui.interaction.rememberUiAction
+import cn.turingzy.ledger.ui.interaction.UiInteractionKind
+import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -26,7 +28,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -43,7 +44,6 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import cn.turingzy.ledger.model.LedgerCardAppearance
 import cn.turingzy.ledger.ui.component.CardBackgroundDialog
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -60,10 +60,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -73,9 +70,7 @@ import cn.turingzy.ledger.ui.component.SummaryCardContent
 import cn.turingzy.ledger.R
 import cn.turingzy.ledger.model.Account
 import cn.turingzy.ledger.model.AccountType
-import cn.turingzy.ledger.model.AccountWithTemplate
 import cn.turingzy.ledger.model.CardTemplate
-import cn.turingzy.ledger.util.toFormattedAmount
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -242,19 +237,13 @@ fun WalletContent(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState, Modifier.padding(bottom = LocalBottomBarContentPadding.current)) },
-        containerColor = MaterialTheme.colorScheme.background,
-        modifier = modifier
-            .fillMaxSize()
-            .statusBarsPadding(),
-    ) { innerPadding ->
+    val openAccount = rememberUiEvent(onAdjustBalanceClick, UiInteractionKind.Navigation)
+    BasePageFrame(modifier) {
         when (uiState) {
             WalletUiState.Loading -> {
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
+                        .fillMaxSize(),
                     contentAlignment = Alignment.Center,
                 ) {
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.onSurface)
@@ -280,12 +269,14 @@ fun WalletContent(
                     LazyColumn(
                         state = listState,
                         modifier = scrollModifier
-                            .fillMaxSize()
-                            .padding(top = 0.dp),
-                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp + innerPadding.calculateBottomPadding() + LocalBottomBarContentPadding.current),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                            .fillMaxSize(),
+                        contentPadding = PaddingValues(
+                            start = LedgerStyle.spacing.extraLarge, end = LedgerStyle.spacing.extraLarge,
+                            top = LedgerStyle.spacing.extraSmall,
+                            bottom = LedgerStyle.spacing.block + LocalBottomBarContentPadding.current,
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.sectionGap),
                     ) {
-                        // 与账本页面顶栏设计保持一致: 大标题“钱包” + 右侧添加按钮 + 资产卡片 (卡片与顶栏间距 5.dp)
                         item(key = "header_and_hero") {
                             Column(
                                 modifier = Modifier.fillMaxWidth(),
@@ -304,7 +295,7 @@ fun WalletContent(
                                     ) {
                                         Text(
                                             text = textResources.getString(cn.turingzy.ledger.R.string.ui_wallet),
-                                            fontSize = 28.sp,
+                                            fontSize = LedgerStyle.typography.screenTitle.fontSize,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.onSurface,
                                             letterSpacing = (-0.6).sp,
@@ -314,7 +305,7 @@ fun WalletContent(
                                         TopBarIconButton(
                                             imageVector = MaterialSymbols.AddCard,
                                             contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_add_account),
-                                            onClick = onAddAccountClick,
+                                            onClick = rememberUiAction(onAddAccountClick, UiInteractionKind.Navigation),
                                         )
                                     }
                                 }
@@ -344,7 +335,7 @@ fun WalletContent(
                                 ) {
                                     Text(
                                         text = textResources.getString(cn.turingzy.ledger.R.string.ui_account),
-                                        fontSize = 15.sp,
+                                        fontSize = LedgerStyle.typography.transactionTitle.fontSize,
                                         fontWeight = FontWeight.SemiBold,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
@@ -359,14 +350,14 @@ fun WalletContent(
                                 if (isListView) {
                                     VerticalBankCardDeck(
                                         accounts = accounts,
-                                        onAdjustClick = onAdjustBalanceClick,
+                                        onAdjustClick = openAccount,
                                         selectedAccountId = selectedAccountId,
                                         onSelectedAccountChange = { selectedAccountId = it },
                                     )
                                 } else {
                                     SwipeableBankCardDeck(
                                         accounts = accounts,
-                                        onAdjustClick = onAdjustBalanceClick,
+                                        onAdjustClick = openAccount,
                                         selectedAccountId = selectedAccountId,
                                         onSelectedAccountChange = { selectedAccountId = it },
                                     )
@@ -377,6 +368,10 @@ fun WalletContent(
                 }
             }
         }
+        SnackbarHost(
+            snackbarHostState,
+            Modifier.align(Alignment.BottomCenter).padding(bottom = LocalBottomBarContentPadding.current),
+        )
     }
 }
 
@@ -428,7 +423,7 @@ fun BankCardItem(
     showDetails: Boolean = true,
     showBackPlaceholder: Boolean = false,
 ) {
-    val pressColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.05f)
+    val pressColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = LedgerStyle.opacity.pressed)
     val isCenturion = account.templateId == 2L || account.name.contains("百夫长") || account.name.contains("运通")
 
     val cardGradients = accountCardColors(account)
@@ -439,17 +434,17 @@ fun BankCardItem(
         modifier = modifier
             .shadow(
                 elevation = 10.dp,
-                shape = RoundedCornerShape(14.dp),
-                ambientColor = Color.Black.copy(alpha = 0.35f),
-                spotColor = Color.Black.copy(alpha = 0.35f),
+                shape = LedgerStyle.shapes.bankCard,
+                ambientColor = MaterialTheme.colorScheme.scrim.copy(alpha = 0.35f),
+                spotColor = MaterialTheme.colorScheme.scrim.copy(alpha = 0.35f),
             )
-            .clip(RoundedCornerShape(14.dp))
+            .clip(LedgerStyle.shapes.bankCard)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = remember(pressColor) { PressFeedback(pressColor) },
+                indication = rememberUiIndication(pressColor),
                 onClick = onAdjustClick,
             ),
-        shape = RoundedCornerShape(14.dp),
+        shape = LedgerStyle.shapes.bankCard,
         colors = CardDefaults.cardColors(containerColor = cardGradients.first()),
     ) {
         Box(
@@ -474,7 +469,7 @@ fun BankCardItem(
                     ) {
                         Text(
                             text = "AMERICAN EXPRESS",
-                            fontSize = 12.sp,
+                            fontSize = LedgerStyle.typography.label.fontSize,
                             fontWeight = FontWeight.ExtraBold,
                             color = textColor,
                             letterSpacing = 2.sp,
@@ -498,7 +493,7 @@ fun BankCardItem(
                             modifier = Modifier.weight(1f),
                             maxLines = 1,
                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                            fontSize = 14.sp,
+                            fontSize = LedgerStyle.typography.bodyMedium.fontSize,
                             fontWeight = FontWeight.Bold,
                             color = textColor,
                         )
@@ -511,7 +506,7 @@ fun BankCardItem(
 
                 if (isCenturion) {
                     Box(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = LedgerStyle.spacing.tiny),
                         contentAlignment = Alignment.Center,
                     ) {
                         CenturionSoldierBadge()
@@ -531,7 +526,7 @@ fun BankCardItem(
                     if (cardNumber != null) {
                         Text(
                             text = "•••• ${cardNumber.takeLast(4)}",
-                            fontSize = 13.sp,
+                            fontSize = LedgerStyle.typography.bodySmall.fontSize,
                             fontWeight = FontWeight.Medium,
                             color = textColor,
                             letterSpacing = 1.5.sp,
@@ -569,7 +564,7 @@ fun EmvChip(modifier: Modifier = Modifier) {
         imageVector = MaterialSymbols.Memory,
         contentDescription = null,
         modifier = modifier.size(width = 32.dp, height = 22.dp),
-        tint = IosYellow,
+        tint = LedgerStyle.decorationColors.chip,
     )
 }
 
@@ -591,15 +586,15 @@ fun UnionPayBadge(
                 .size(width = 15.dp, height = 11.dp)
                 .clip(RoundedCornerShape(2.dp)),
         ) {
-            Box(modifier = Modifier.weight(1f).fillMaxHeight().background(Color(0xFFE60012)))
-            Box(modifier = Modifier.weight(1f).fillMaxHeight().background(Color(0xFF003882)))
-            Box(modifier = Modifier.weight(1f).fillMaxHeight().background(Color(0xFF008453)))
+            Box(modifier = Modifier.weight(1f).fillMaxHeight().background(LedgerStyle.decorationColors.unionPayRed))
+            Box(modifier = Modifier.weight(1f).fillMaxHeight().background(LedgerStyle.decorationColors.unionPayBlue))
+            Box(modifier = Modifier.weight(1f).fillMaxHeight().background(LedgerStyle.decorationColors.unionPayGreen))
         }
         Text(
             text = label,
             fontSize = 9.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White,
+            color = LedgerStyle.decorationColors.onBrand,
         )
     }
 }
@@ -626,101 +621,5 @@ fun CenturionSoldierBadge(modifier: Modifier = Modifier) {
             modifier = Modifier.size(30.dp),
             tint = MaterialTheme.colorScheme.onPrimary,
         )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun WalletContentPreview() {
-    MaterialTheme {
-        WalletContent(
-            uiState = WalletUiState.Success(
-                totalAsset = 26115000L,
-                totalDebt = 1400000L,
-                accounts = listOf(
-                    AccountWithTemplate(
-                        account = Account(
-                            id = 1L,
-                            name = "美国运通 · 百夫长黑金卡",
-                            type = AccountType.DEBIT,
-                            initialBalance = 10000000L,
-                            currentBalance = 11850000L,
-                            cardNumber = "3759876543215288",
-                            templateId = 2L,
-                        ),
-                        template = null,
-                    ),
-                    AccountWithTemplate(
-                        account = Account(
-                            id = 2L,
-                            name = "微信支付",
-                            type = AccountType.WALLET,
-                            initialBalance = 200000L,
-                            currentBalance = 1235000L,
-                            cardNumber = "8820",
-                            templateId = 3L,
-                        ),
-                        template = null,
-                    ),
-                    AccountWithTemplate(
-                        account = Account(
-                            id = 3L,
-                            name = "招商银行 · 经典白金卡",
-                            type = AccountType.CREDIT,
-                            initialBalance = 0L,
-                            currentBalance = 1400000L,
-                            cardNumber = "4392258877619012",
-                            templateId = 1L,
-                        ),
-                        template = null,
-                    ),
-                ),
-            ),
-            onAddAccountClick = {},
-            onAdjustBalanceClick = {},
-            onDeleteAccountClick = {},
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun TwoCardsDeckPreview() {
-    MaterialTheme {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-        ) {
-            SwipeableBankCardDeck(
-                accounts = listOf(
-                    AccountWithTemplate(
-                        account = Account(
-                            id = 1L,
-                            name = "美国运通 · 百夫长黑金卡",
-                            type = AccountType.DEBIT,
-                            initialBalance = 10000000L,
-                            currentBalance = 11850000L,
-                            cardNumber = "3759876543215288",
-                            templateId = 2L,
-                        ),
-                        template = null,
-                    ),
-                    AccountWithTemplate(
-                        account = Account(
-                            id = 2L,
-                            name = "微信支付",
-                            type = AccountType.WALLET,
-                            initialBalance = 200000L,
-                            currentBalance = 1235000L,
-                            cardNumber = "8820",
-                            templateId = 3L,
-                        ),
-                        template = null,
-                    ),
-                ),
-                onAdjustClick = {},
-            )
-        }
     }
 }

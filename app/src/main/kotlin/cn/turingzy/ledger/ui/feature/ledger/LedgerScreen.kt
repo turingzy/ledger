@@ -26,20 +26,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.material3.SnackbarHostState
@@ -48,7 +43,15 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import cn.turingzy.ledger.model.LedgerCardAppearance
 import cn.turingzy.ledger.ui.component.LocalBottomBarContentPadding
-import cn.turingzy.ledger.ui.component.TransactionRow
+import cn.turingzy.ledger.ui.components.base.BasePageFrame
+import cn.turingzy.ledger.ui.components.base.BaseCard
+import cn.turingzy.ledger.ui.components.base.BaseDivider
+import cn.turingzy.ledger.ui.components.base.BaseEmptyState
+import cn.turingzy.ledger.ui.components.business.BusinessTransactionRow
+import cn.turingzy.ledger.ui.interaction.rememberUiAction
+import cn.turingzy.ledger.ui.interaction.uiClickable
+import cn.turingzy.ledger.ui.interaction.UiInteractionKind
+import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.runtime.LaunchedEffect
@@ -66,15 +69,12 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -82,17 +82,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cn.turingzy.ledger.ui.component.TopBarIconButton
 import cn.turingzy.ledger.ui.component.CardBackgroundDialog
 import cn.turingzy.ledger.ui.component.categoryGlyph
-import cn.turingzy.ledger.ui.theme.IosYellow
-import cn.turingzy.ledger.model.Account
-import cn.turingzy.ledger.model.AccountType
-import cn.turingzy.ledger.model.Category
-import cn.turingzy.ledger.model.CategoryType
-import cn.turingzy.ledger.model.CategoryWithIcon
-import cn.turingzy.ledger.model.Icon as ModelIcon
-import cn.turingzy.ledger.model.Transaction
 import cn.turingzy.ledger.model.TransactionDetail
 import cn.turingzy.ledger.model.TransactionType
-import cn.turingzy.ledger.ui.theme.IosSecondary
 import cn.turingzy.ledger.model.primaryAmount
 import cn.turingzy.ledger.util.toFormattedAmount
 import kotlinx.coroutines.delay
@@ -220,19 +211,12 @@ fun LedgerContent(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState, Modifier.padding(bottom = LocalBottomBarContentPadding.current)) },
-        containerColor = MaterialTheme.colorScheme.background,
-        modifier = modifier
-            .fillMaxSize()
-            .statusBarsPadding(),
-    ) { innerPadding ->
+    BasePageFrame(modifier) {
         when (uiState) {
             LedgerUiState.Loading -> {
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
+                        .fillMaxSize(),
                     contentAlignment = Alignment.Center,
                 ) {
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.onSurface)
@@ -254,9 +238,12 @@ fun LedgerContent(
                     LazyColumn(
                         state = listState,
                         modifier = scrollModifier
-                            .fillMaxSize()
-                            .padding(top = 0.dp),
-                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp + innerPadding.calculateBottomPadding() + LocalBottomBarContentPadding.current),
+                            .fillMaxSize(),
+                        contentPadding = PaddingValues(
+                            start = LedgerStyle.spacing.extraLarge, end = LedgerStyle.spacing.extraLarge,
+                            top = LedgerStyle.spacing.extraSmall,
+                            bottom = LedgerStyle.spacing.block + LocalBottomBarContentPadding.current,
+                        ),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         item(key = "header_and_hero") {
@@ -282,7 +269,7 @@ fun LedgerContent(
                                         ) {
                                             Text(
                                                 text = textResources.getString(cn.turingzy.ledger.R.string.ui_ledger),
-                                                fontSize = 28.sp,
+                                                fontSize = LedgerStyle.typography.screenTitle.fontSize,
                                                 fontWeight = FontWeight.Bold,
                                                 color = MaterialTheme.colorScheme.onSurface,
                                                 letterSpacing = (-0.6).sp,
@@ -290,35 +277,34 @@ fun LedgerContent(
                                             )
                                             Row(
                                                 modifier = Modifier.align(Alignment.Center)
-                                                    .clip(RoundedCornerShape(50))
-                                                    .background(Color.White)
+                                                    .clip(LedgerStyle.shapes.pill)
+                                                    .background(LedgerStyle.colors.surface)
                                                     .semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_select_ledger_period) }
-                                                    .clickable { showPeriodPicker = true }
+                                                    .uiClickable(kind = UiInteractionKind.Navigation) { showPeriodPicker = true }
                                                     .padding(horizontal = 12.dp, vertical = 3.dp),
-                                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                                horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.small),
                                                 verticalAlignment = Alignment.CenterVertically,
                                             ) {
                                                 Text(
                                                     text = uiState.monthDisplay,
-                                                    fontSize = 17.sp,
+                                                    fontSize = LedgerStyle.typography.sectionTitle.fontSize,
                                                     fontWeight = FontWeight.Medium,
-                                                    color = Color.Black,
+                                                    color = LedgerStyle.colors.textPrimary,
                                                     maxLines = 1,
                                                     overflow = TextOverflow.Ellipsis,
                                                 )
-                                                Icon(MaterialSymbols.DateRange, null, Modifier.size(17.dp), tint = Color.Black)
+                                                Icon(MaterialSymbols.DateRange, null, Modifier.size(17.dp), tint = LedgerStyle.colors.textPrimary)
                                             }
 
                                             TopBarIconButton(
                                                 imageVector = MaterialSymbols.Search,
                                                 contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_search),
-                                                onClick = { isSearchActive = true },
+                                                onClick = rememberUiAction({ isSearchActive = true }, UiInteractionKind.Navigation),
                                                 modifier = Modifier.align(Alignment.CenterEnd),
                                             )
                                         }
                                     }
 
-                                    // 展开的动态向左自然伸出、点击x向右优雅收缩的搜索框
                                     androidx.compose.animation.AnimatedVisibility(
                                         visible = isSearchActive,
                                         enter = fadeIn(tween(durationMillis = 320)) + expandHorizontally(
@@ -341,17 +327,17 @@ fun LedgerContent(
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .height(44.dp)
-                                                .clip(RoundedCornerShape(22.dp))
-                                                .background(Color(0xFFE5E5EA))
-                                                .padding(horizontal = 12.dp),
+                                                .clip(LedgerStyle.shapes.pill)
+                                                .background(LedgerStyle.colors.fieldBackground)
+                                                .padding(horizontal = LedgerStyle.spacing.large),
                                             verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium),
                                         ) {
                                             Icon(
                                                 imageVector = MaterialSymbols.Search,
                                                 contentDescription = null,
                                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                modifier = Modifier.size(24.dp),
+                                                modifier = Modifier.size(LedgerStyle.icons.default),
                                             )
 
                                             Box(
@@ -363,11 +349,7 @@ fun LedgerContent(
                                                 BasicTextField(
                                                     value = searchQuery,
                                                     onValueChange = { searchQuery = it },
-                                                    textStyle = TextStyle(
-                                                        fontSize = 15.sp,
-                                                        lineHeight = 22.sp,
-                                                        color = MaterialTheme.colorScheme.onSurface,
-                                                    ),
+                                                    textStyle = LedgerStyle.typography.searchInput.copy(color = LedgerStyle.colors.textPrimary),
                                                     cursorBrush = SolidColor(MaterialTheme.colorScheme.onSurface),
                                                     singleLine = true,
                                                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
@@ -388,7 +370,7 @@ fun LedgerContent(
                                                             if (searchQuery.isEmpty()) {
                                                                 Text(
                                                                     text = textResources.getString(cn.turingzy.ledger.R.string.ui_search_notes_categories_accounts),
-                                                                    fontSize = 15.sp,
+                                                                    fontSize = LedgerStyle.typography.transactionTitle.fontSize,
                                                                     lineHeight = 22.sp,
                                                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                                                     modifier = Modifier.padding(start = 6.dp),
@@ -405,18 +387,17 @@ fun LedgerContent(
                                             TopBarIconButton(
                                                 imageVector = MaterialSymbols.Close,
                                                 contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_close_search),
-                                                onClick = {
+                                                onClick = rememberUiAction({
                                                     isSearchActive = false
                                                     searchQuery = ""
                                                     submittedSearchQuery = ""
                                                     focusManager.clearFocus()
-                                                },
+                                                }, UiInteractionKind.Navigation),
                                             )
                                         }
                                     }
                                 }
 
-                                // 月度结余 Hero 大卡片 (整体向上移动，与顶栏间距减半至 5.dp)
                                 if (uiState.amountsAvailable) SummaryHeroBanner(
                                     cardMonthDisplay = uiState.cardMonthDisplay,
                                     balance = uiState.monthBalance,
@@ -428,24 +409,19 @@ fun LedgerContent(
                                     settingsEnabled = cardSettingsEnabled,
                                     onUploadBackground = onUploadCardBackground,
                                     onTransparencyChange = onCardTransparencyChange,
-                                ) else Text(textResources.getString(cn.turingzy.ledger.R.string.ui_exchange_rate_needed_refresh_or_enter_a_rate), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+                                ) else Text(textResources.getString(cn.turingzy.ledger.R.string.ui_exchange_rate_needed_refresh_or_enter_a_rate), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = LedgerStyle.typography.bodySmall.fontSize)
                             }
                         }
 
                         if (filteredDayGroups.isEmpty()) {
                             item(key = "empty_placeholder") {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 48.dp),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    Text(
-                                        text = if (submittedSearchQuery.isNotBlank()) textResources.getString(cn.turingzy.ledger.R.string.ui_no_matching_transactions) else textResources.getString(cn.turingzy.ledger.R.string.ui_no_transactions_for_this_period_tap_to_add),
-                                        fontSize = 14.sp,
-                                        color = IosSecondary,
-                                    )
-                                }
+                                BaseEmptyState(
+                                    title = if (submittedSearchQuery.isNotBlank()) textResources.getString(cn.turingzy.ledger.R.string.ui_no_matching_transactions)
+                                        else textResources.getString(cn.turingzy.ledger.R.string.ui_no_transactions_for_this_period_tap_to_add),
+                                    contentPadding = PaddingValues(vertical = LedgerStyle.spacing.block * 2),
+                                    titleStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = LedgerStyle.typography.bodyMedium.fontSize),
+                                    titleColor = MaterialTheme.colorScheme.secondary,
+                                )
                             }
                         } else {
                             filteredDayGroups.forEach { dayGroup ->
@@ -458,6 +434,10 @@ fun LedgerContent(
                 }
             }
         }
+        SnackbarHost(
+            snackbarHostState,
+            Modifier.align(Alignment.BottomCenter).padding(bottom = LocalBottomBarContentPadding.current),
+        )
     }
     val periodState = uiState as? LedgerUiState.Success
     if (showPeriodPicker && periodState != null) {
@@ -487,7 +467,7 @@ fun DayGroupSection(
         if (dayGroup.totalIncome != 0L) add(textResources.getString(cn.turingzy.ledger.R.string.ui_income) + ": ${dayGroup.totalIncome.toFormattedAmount()}")
     }.joinToString("  ")
     val colors = MaterialTheme.colorScheme
-    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.tiny)) {
         Row(
             modifier = Modifier.fillMaxWidth()
                 .semantics { stateDescription = if (expanded) textResources.getString(cn.turingzy.ledger.R.string.ui_expanded) else textResources.getString(cn.turingzy.ledger.R.string.ui_collapsed) }
@@ -496,14 +476,14 @@ fun DayGroupSection(
                     indication = null,
                 ) { expanded = !expanded }
                 .padding(start = 4.dp, top = 3.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.extraSmall),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = java.time.LocalDate.ofEpochDay(dayGroup.dateEpochDay).format(DateTimeFormatter.ofPattern("MM/dd E", locale)),
                 modifier = Modifier.padding(end = 4.dp),
                 maxLines = 1,
-                fontSize = 13.sp,
+                fontSize = LedgerStyle.typography.bodySmall.fontSize,
                 lineHeight = 18.sp,
                 fontWeight = FontWeight.Normal,
                 color = colors.onSurfaceVariant,
@@ -515,7 +495,7 @@ fun DayGroupSection(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.End,
-                fontSize = 13.sp,
+                fontSize = LedgerStyle.typography.bodySmall.fontSize,
                 lineHeight = 18.sp,
                 fontWeight = FontWeight.Normal,
                 color = colors.onSurfaceVariant,
@@ -524,20 +504,18 @@ fun DayGroupSection(
                 if (expanded) MaterialSymbols.ExpandMore else MaterialSymbols.ChevronRight,
                 contentDescription = if (expanded) textResources.getString(cn.turingzy.ledger.R.string.ui_hide_transactions) else textResources.getString(cn.turingzy.ledger.R.string.ui_show_transactions),
                 tint = colors.onSurfaceVariant,
-                modifier = Modifier.size(24.dp),
+                modifier = Modifier.size(LedgerStyle.icons.default),
             )
         }
         if (expanded) {
-            Column(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(colors.surface),
+            BaseCard(
+                shape = LedgerStyle.shapes.summaryCard,
+                contentPadding = PaddingValues(LedgerStyle.spacing.none),
+                contentSpacing = LedgerStyle.spacing.none,
             ) {
                 dayGroup.transactions.forEachIndexed { index, detail ->
                     key(detail.transaction.id) {
-                        if (index > 0) HorizontalDivider(
-                            modifier = Modifier.padding(start = 62.dp, end = 14.dp),
-                            thickness = 0.5.dp,
-                            color = colors.outlineVariant,
-                        )
+                        if (index > 0) BaseDivider(Modifier.padding(start = 62.dp, end = 14.dp))
                         DayTransactionRowItem(detail = detail, onClick = { onTransactionClick(detail.transaction.id) })
                     }
                 }
@@ -557,7 +535,7 @@ fun DayTransactionRowItem(
     val timeStr = remember(tx.transactionTime) {
         Instant.ofEpochMilli(tx.transactionTime).atZone(ZoneId.systemDefault()).format(timeFormatter)
     }
-    TransactionRow(
+    BusinessTransactionRow(
         categoryName = detail.category.category.name,
         supportingText = listOfNotNull(detail.account.name, tx.note?.takeIf { it.isNotBlank() }).joinToString(" · "),
         timeText = timeStr,
@@ -568,86 +546,4 @@ fun DayTransactionRowItem(
         modifier = modifier,
         onClick = onClick,
     )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun LedgerContentPreview() {
-    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
-    MaterialTheme {
-        LedgerContent(
-            uiState = LedgerUiState.Success(
-                year = 2026,
-                month = 11,
-                monthDisplay = "2026.11",
-                cardMonthDisplay = textResources.getString(cn.turingzy.ledger.R.string.ui_balance),
-                monthIncome = 2400000L,
-                monthExpense = 1155000L,
-                monthBalance = 1245000L,
-                dayGroups = listOf(
-                    DayTransactionGroup(
-                        dateEpochDay = 20000L,
-                        displayDate = "11/01 周日",
-                        totalExpense = 1111L,
-                        totalIncome = 1100L,
-                        transactions = listOf(
-                            TransactionDetail(
-                                transaction = Transaction(
-                                    id = 1L,
-                                    type = TransactionType.INCOME,
-                                    amount = 1100L,
-                                    accountId = 1L,
-                                    categoryId = 2L,
-                                    transactionTime = System.currentTimeMillis(),
-                                    note = "理财收益",
-                                ),
-                                account = Account(id = 1L, name = "支付宝", type = AccountType.WALLET),
-                                category = CategoryWithIcon(
-                                    category = Category(id = 2L, name = "兼职收入", type = CategoryType.INCOME, iconId = 2L),
-                                    icon = ModelIcon(id = 2L, keyName = "ic_income", displayName = textResources.getString(cn.turingzy.ledger.R.string.ui_income), iconUri = "res://"),
-                                ),
-                            ),
-                            TransactionDetail(
-                                transaction = Transaction(
-                                    id = 2L,
-                                    type = TransactionType.EXPENSE,
-                                    amount = 1111L,
-                                    accountId = 2L,
-                                    categoryId = 1L,
-                                    transactionTime = System.currentTimeMillis() - 3600000L,
-                                    note = "午餐便当",
-                                ),
-                                account = Account(id = 2L, name = "招商银行", type = AccountType.DEBIT),
-                                category = CategoryWithIcon(
-                                    category = Category(id = 1L, name = "餐饮食品", type = CategoryType.EXPENSE, iconId = 1L),
-                                    icon = ModelIcon(id = 1L, keyName = "ic_food", displayName = "餐饮", iconUri = "res://"),
-                                ),
-                            ),
-                        ),
-                    ),
-                ),
-            ),
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun LedgerContentSearchActivePreview() {
-    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
-    MaterialTheme {
-        LedgerContent(
-            initialSearchActive = true,
-            uiState = LedgerUiState.Success(
-                year = 2026,
-                month = 11,
-                monthDisplay = "2026.11",
-                cardMonthDisplay = textResources.getString(cn.turingzy.ledger.R.string.ui_balance),
-                monthIncome = 2400000L,
-                monthExpense = 1155000L,
-                monthBalance = 1245000L,
-                dayGroups = emptyList(),
-            ),
-        )
-    }
 }

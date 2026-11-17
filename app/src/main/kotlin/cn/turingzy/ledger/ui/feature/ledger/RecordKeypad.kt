@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.ledger
 
+import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.ui.semantics.semantics
@@ -60,7 +61,7 @@ fun BuiltInKeypad(
             KeypadButton("0", { onNumberClick("0") }, Modifier.testTag("keypad_0"))
             KeypadButton("AC", onClearClick, Modifier.testTag("keypad_clear"))
             Box(
-                Modifier.testTag("keypad_action").clip(RoundedCornerShape(12.dp))
+                Modifier.testTag("keypad_action").clip(LedgerStyle.shapes.field)
                     .background(actionColor).clickable(enabled = actionEnabled, onClick = onActionClick),
                 contentAlignment = Alignment.Center,
             ) {
@@ -100,7 +101,7 @@ fun KeypadButton(
     val interactionSource = remember { MutableInteractionSource() }
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
+            .clip(LedgerStyle.shapes.field)
             .background(MaterialTheme.colorScheme.surface)
             .clickable(interactionSource = interactionSource, indication = LocalIndication.current, role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
@@ -124,7 +125,7 @@ fun KeypadIconButton(
     val interactionSource = remember { MutableInteractionSource() }
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
+            .clip(LedgerStyle.shapes.field)
             .background(MaterialTheme.colorScheme.surface)
             .clickable(interactionSource = interactionSource, indication = LocalIndication.current, role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,

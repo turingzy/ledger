@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.component
 
+import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.offset
@@ -37,7 +38,7 @@ internal fun SummaryCardSettings(
     Box(modifier) {
         Column(Modifier.fillMaxWidth().align(Alignment.Center).padding(horizontal = 18.dp)) {
             Row(Modifier.fillMaxWidth().height(48.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(textResources.getString(cn.turingzy.ledger.R.string.ui_transparency), Modifier.width(52.dp), fontSize = 13.sp, color = colors.onPrimary)
+                Text(textResources.getString(cn.turingzy.ledger.R.string.ui_transparency), Modifier.width(52.dp), fontSize = LedgerStyle.typography.bodySmall.fontSize, color = colors.onPrimary)
                 BoxWithConstraints(Modifier.weight(1f).height(40.dp)) {
                     CompactSlider(
                         value = appearance.transparencyPercent.toFloat(),
@@ -54,7 +55,7 @@ internal fun SummaryCardSettings(
                             x = (maxWidth - 40.dp).coerceAtLeast(0.dp) * (appearance.transparencyPercent / 100f),
                             y = (-2).dp,
                         ),
-                        fontSize = 10.sp,
+                        fontSize = LedgerStyle.typography.chartLabel.fontSize,
                         lineHeight = 12.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = colors.onPrimary,
@@ -67,7 +68,7 @@ internal fun SummaryCardSettings(
             contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_change_card_background),
             onClick = onUploadBackground,
             enabled = enabled,
-            modifier = Modifier.align(Alignment.TopStart).padding(top = 8.dp, start = 12.dp).size(36.dp),
+            modifier = Modifier.align(Alignment.TopStart).padding(top = 8.dp, start = 12.dp).size(LedgerStyle.dimensions.compactIconButton),
         )
     }
 }

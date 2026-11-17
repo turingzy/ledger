@@ -1,5 +1,11 @@
 package cn.turingzy.ledger.ui.feature.settings
 
+import cn.turingzy.ledger.ui.components.base.BaseDivider
+import cn.turingzy.ledger.ui.theme.LedgerStyle
+import cn.turingzy.ledger.ui.components.base.BaseSurface
+import cn.turingzy.ledger.ui.components.base.BaseButtonVariant
+import cn.turingzy.ledger.ui.components.base.BaseActionButton
+import cn.turingzy.ledger.ui.components.base.BaseAlertDialog
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -10,11 +16,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -100,15 +103,15 @@ internal fun BackupAndRestoreScreen(
         if (restoring) confirmRestore = true
         else destinationPicker.launch("Ledger-backup-${java.time.LocalDate.now()}.json")
     }
-    if (confirmRestore) androidx.compose.material3.AlertDialog(
+    if (confirmRestore) BaseAlertDialog(
         onDismissRequest = { confirmRestore = false },
         title = { Text(textResources.getString(cn.turingzy.ledger.R.string.ui_restore_backup_2)) },
         text = { Text(textResources.getString(cn.turingzy.ledger.R.string.ui_bill_backups_replace_local_accounts_transactions_and_categories)) },
-        confirmButton = { androidx.compose.material3.TextButton(onClick = { confirmRestore = false; runTransfer() }) { Text(textResources.getString(cn.turingzy.ledger.R.string.ui_restore)) } },
-        dismissButton = { androidx.compose.material3.TextButton(onClick = { confirmRestore = false }) { Text(textResources.getString(cn.turingzy.ledger.R.string.ui_cancel)) } },
+        confirmButton = { BaseActionButton(variant = BaseButtonVariant.Text, onClick = { confirmRestore = false; runTransfer() }) { Text(textResources.getString(cn.turingzy.ledger.R.string.ui_restore)) } },
+        dismissButton = { BaseActionButton(variant = BaseButtonVariant.Text, onClick = { confirmRestore = false }) { Text(textResources.getString(cn.turingzy.ledger.R.string.ui_cancel)) } },
     )
 
-    SettingsPage(title = textResources.getString(cn.turingzy.ledger.R.string.ui_backup_and_restore), onDismissRequest = onDismissRequest) {
+    SettingsSubpageScaffold(title = textResources.getString(cn.turingzy.ledger.R.string.ui_backup_and_restore), onBack = onDismissRequest) {
         if (resultMessage != null) Text(resultMessage.orEmpty(), color = MaterialTheme.colorScheme.onSurfaceVariant)
         DataTransferContent(
             restoring = restoring,
@@ -144,7 +147,7 @@ private fun DataTransferContent(
     val running = state.status == TransferStatus.RUNNING
     Column(
         modifier.fillMaxWidth().settingsPageScroll(),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large),
     ) {
         LedgerSegmentedControl(
             labels = listOf(textResources.getString(cn.turingzy.ledger.R.string.ui_backup), textResources.getString(cn.turingzy.ledger.R.string.ui_restore)),
@@ -157,10 +160,10 @@ private fun DataTransferContent(
             SettingsTransferFileRow(fileName = fileName, enabled = !running, onClick = onChooseFile)
         } else {
             Text(textResources.getString(cn.turingzy.ledger.R.string.ui_backup_contents), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-            Surface(shape = RoundedCornerShape(16.dp), color = colors.surface) {
+            BaseSurface(shape = LedgerStyle.shapes.card, color = colors.surface) {
                 Column(Modifier.fillMaxWidth()) {
                     BackupContentOption(textResources.getString(cn.turingzy.ledger.R.string.ui_transactions_and_accounts), includeBills, !running, onBillsChange)
-                    HorizontalDivider(Modifier.padding(horizontal = 12.dp), thickness = 0.5.dp, color = colors.outlineVariant)
+                    BaseDivider(Modifier.padding(horizontal = LedgerStyle.spacing.large))
                     BackupContentOption(textResources.getString(cn.turingzy.ledger.R.string.ui_app_settings), includeSettings, !running, onSettingsChange)
                 }
             }
@@ -187,8 +190,8 @@ private fun BackupContentOption(title: String, selected: Boolean, enabled: Boole
         Icon(
             if (selected) MaterialSymbols.CheckBox else MaterialSymbols.CheckBoxOutlineBlank,
             null,
-            Modifier.size(24.dp),
-            tint = (if (selected) colors.tertiary else colors.onSurfaceVariant).copy(alpha = if (enabled) 1f else 0.38f),
+            Modifier.size(LedgerStyle.icons.default),
+            tint = (if (selected) colors.tertiary else colors.onSurfaceVariant).copy(alpha = if (enabled) 1f else LedgerStyle.opacity.disabled),
         )
         Text(title, Modifier.padding(start = 12.dp).weight(1f), style = MaterialTheme.typography.bodyLarge)
     }
@@ -203,7 +206,7 @@ private fun TransferActionContent(
     onClick: () -> Unit,
 ) {
     val running = state.status == TransferStatus.RUNNING
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium)) {
         SettingsTransferAction(
             title = if (running) cancelTitle else title,
             running = running,

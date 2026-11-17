@@ -1,10 +1,10 @@
 package cn.turingzy.ledger.ui.feature.wallet
 
+import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -12,12 +12,8 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -26,27 +22,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.SummaryCardIconButton
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-internal fun AccountSheet(
-    onDismissRequest: () -> Unit,
-    sheetState: SheetState,
-    modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    ModalBottomSheet(
-        onDismissRequest = onDismissRequest,
-        sheetState = sheetState,
-        modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        dragHandle = null,
-        contentWindowInsets = { WindowInsets(0, 0, 0, 0) },
-        content = content,
-    )
-}
 
 @Composable
 internal fun AccountSheetContent(
@@ -60,9 +35,9 @@ internal fun AccountSheetContent(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
-    Column(modifier.fillMaxWidth().heightIn(max = 640.dp).imePadding().navigationBarsPadding()) {
+    Column(modifier.fillMaxWidth().heightIn(max = LedgerStyle.dimensions.sheetMaxHeight).imePadding().navigationBarsPadding()) {
         Box(
-            Modifier.fillMaxWidth().height(44.dp).padding(horizontal = 12.dp),
+            Modifier.fillMaxWidth().height(44.dp).padding(horizontal = LedgerStyle.spacing.large),
             contentAlignment = Alignment.Center,
         ) {
             SummaryCardIconButton(
@@ -79,7 +54,7 @@ internal fun AccountSheetContent(
         }
         Column(
             Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp).padding(top = 8.dp, bottom = 16.dp),
+                .padding(horizontal = LedgerStyle.spacing.section).padding(top = 8.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(contentSpacing),
             content = content,
         )

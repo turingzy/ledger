@@ -1,6 +1,8 @@
 package cn.turingzy.ledger.ui.feature.settings
 
-import androidx.compose.foundation.clickable
+import cn.turingzy.ledger.ui.interaction.uiClickable
+import cn.turingzy.ledger.ui.theme.LedgerStyle
+import cn.turingzy.ledger.ui.components.base.BaseSurface
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,16 +12,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 
@@ -46,19 +45,19 @@ private val openSourceLibraries = listOf(
 internal fun OpenSourceLibrariesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val uriHandler = LocalUriHandler.current
-    SettingsPage(
+    SettingsSubpageScaffold(
         title = textResources.getString(cn.turingzy.ledger.R.string.ui_open_source_licenses),
-        onDismissRequest = onBack,
+        onBack = onBack,
         modifier = modifier,
     ) {
         LazyColumn(
             contentPadding = PaddingValues(top = SettingsPageContentTopPadding, bottom = SettingsPageBottomPadding),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium),
         ) {
             items(openSourceLibraries, key = { it.name }) { library ->
-                Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surface) {
+                BaseSurface(shape = LedgerStyle.shapes.card, color = MaterialTheme.colorScheme.surface) {
                     Column(
-                        Modifier.fillMaxWidth().clickable(role = Role.Button) { uriHandler.openUri(library.url) }
+                        Modifier.fillMaxWidth().uiClickable { uriHandler.openUri(library.url) }
                             .padding(horizontal = 12.dp, vertical = 10.dp),
                         verticalArrangement = Arrangement.spacedBy(3.dp),
                     ) {

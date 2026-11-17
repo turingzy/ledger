@@ -2,6 +2,18 @@ package cn.turingzy.ledger.ui.feature.analytics
 
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.hapticfeedback.HapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toPixelMap
+import androidx.compose.material3.MaterialTheme
+import cn.turingzy.ledger.ui.theme.LedgerStyle
+import androidx.compose.ui.text.font.FontWeight
 import cn.turingzy.ledger.model.*
 import cn.turingzy.ledger.ui.theme.LedgerTheme
 import java.time.LocalDate
@@ -93,6 +105,100 @@ class ConsumptionCalendarScreenTest {
         } }
         compose.onNodeWithText("这一天没有支出").assertDoesNotExist()
         compose.onNodeWithText("记一笔").assertDoesNotExist()
+    }
+
+    @Test fun missingRatesDoNotExposeAZeroTotalOrRecordAction() {
+        compose.setContent { LedgerTheme {
+            ConsumptionCalendarContent(AnalyticsDashboardState(loading = false, amountsAvailable = false),
+                YearMonth.from(today), {}, today = today)
+        } }
+        compose.onNodeWithText("缺少汇率，请在常规中刷新或填写").assertIsDisplayed()
+        compose.onNodeWithText("记一笔").assertDoesNotExist()
+        compose.onNodeWithContentDescription("$today，支出¥0.00").assertDoesNotExist()
+    }
+
+    @Test fun onlyANewSelectableDayProducesSelectionHaptics() {
+        val events = mutableListOf<HapticFeedbackType>()
+        val feedback = object : HapticFeedback {
+            override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) { events.add(hapticFeedbackType) }
+        }
+        compose.setContent {
+            CompositionLocalProvider(LocalHapticFeedback provides feedback) {
+                LedgerTheme {
+                    ConsumptionCalendarContent(AnalyticsDashboardState(loading = false), YearMonth.from(today), {}, today = today)
+                }
+            }
+        }
+        compose.onNodeWithContentDescription("$today，支出¥0.00").performClick()
+        compose.onNodeWithContentDescription("${today.plusDays(1)}，支出¥0.00").performTouchInput { click() }
+        compose.runOnIdle { assertTrue(events.isEmpty()) }
+        val day = today.minusDays(1)
+        compose.onNodeWithContentDescription("$day，支出¥0.00").performClick().assertIsSelected().performClick()
+        compose.runOnIdle { assertEquals(listOf(HapticFeedbackType.TextHandleMove), events) }
+    }
+
+    @Test fun dayCountKeepsSecondaryTypographyBelowThePageTitle() {
+        compose.setContent { LedgerTheme {
+            ConsumptionCalendarContent(AnalyticsDashboardState(loading = false), YearMonth.from(today), {}, today = today)
+        } }
+        val header = mutableListOf<TextLayoutResult>()
+        val count = mutableListOf<TextLayoutResult>()
+        compose.onNodeWithText("消费日历").performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(header) }
+        compose.onNodeWithText("11月14日 共0笔消费").performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(count) }
+        assertEquals(17.sp, header.single().layoutInput.style.fontSize)
+        assertEquals(14.sp, count.single().layoutInput.style.fontSize)
+    }
+
+    @Test fun monthHeadingKeepsItsOriginalNeutralColorAndTypography() {
+        var foreground = Color.Unspecified
+        compose.setContent { LedgerTheme {
+            foreground = MaterialTheme.colorScheme.onSurface
+            ConsumptionCalendarContent(AnalyticsDashboardState(loading = false), YearMonth.from(today), {}, today = today)
+        } }
+        val month = mutableListOf<TextLayoutResult>()
+        val amount = mutableListOf<TextLayoutResult>()
+        val label = mutableListOf<TextLayoutResult>()
+        compose.onNodeWithText("2026年11月").performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(month) }
+        compose.onNodeWithText("11月总支出").performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(label) }
+        compose.onAllNodesWithText("¥0.00")[0].performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(amount) }
+        assertEquals(16.sp, month.single().layoutInput.style.fontSize)
+        assertEquals(FontWeight.SemiBold, month.single().layoutInput.style.fontWeight)
+        assertEquals(foreground, month.single().layoutInput.style.color)
+        assertEquals(11.sp, label.single().layoutInput.style.fontSize)
+        assertEquals(15.sp, amount.single().layoutInput.style.fontSize)
+        assertEquals(FontWeight.SemiBold, amount.single().layoutInput.style.fontWeight)
+    }
+
+    @Test fun recordActionKeepsANeutralBackgroundAndRightHandIcon() {
+        var background = Color.Unspecified
+        var foreground = Color.Unspecified
+        compose.setContent { LedgerTheme {
+            background = LedgerStyle.colors.background
+            foreground = LedgerStyle.colors.textSecondary
+            ConsumptionCalendarContent(AnalyticsDashboardState(loading = false), YearMonth.from(today), {}, today = today)
+        } }
+        val action = compose.onNodeWithText("记一笔").performScrollTo()
+        val pixels = action.captureToImage().toPixelMap()
+        assertEquals(background, pixels[pixels.width / 2, 2])
+        val text = compose.onNodeWithText("记一笔", useUnmergedTree = true)
+        val icon = compose.onNodeWithTag("baseButtonTrailingIcon", useUnmergedTree = true)
+        assertTrue(icon.fetchSemanticsNode().boundsInRoot.left >= text.fetchSemanticsNode().boundsInRoot.right)
+        val layout = mutableListOf<TextLayoutResult>()
+        text.performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layout) }
+        assertEquals(foreground, layout.single().layoutInput.style.color)
+    }
+
+    @Test fun aFutureMonthReusesTheSameEmptyStateAndRecordAction() {
+        val month = YearMonth.from(today).plusMonths(1)
+        var recordDate: LocalDate? = null
+        compose.setContent { LedgerTheme {
+            ConsumptionCalendarContent(AnalyticsDashboardState(loading = false), month, {}, today = today,
+                onRecordTransaction = { recordDate = it })
+        } }
+        compose.onNodeWithText("尚未到来").assertDoesNotExist()
+        compose.onNodeWithText("这一天没有支出").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("记一笔").performScrollTo().performClick()
+        compose.runOnIdle { assertEquals(month.atDay(1), recordDate) }
     }
 
 }

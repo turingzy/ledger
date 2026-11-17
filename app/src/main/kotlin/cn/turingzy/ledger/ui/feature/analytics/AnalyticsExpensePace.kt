@@ -1,11 +1,12 @@
 package cn.turingzy.ledger.ui.feature.analytics
 
+import cn.turingzy.ledger.ui.theme.LedgerStyle
+import cn.turingzy.ledger.ui.components.base.BaseSurface
 import cn.turingzy.ledger.ui.component.LocalLedgerCurrency
 import cn.turingzy.ledger.ui.component.currencySymbol
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -44,7 +45,7 @@ internal fun ExpensePace(days: Map<LocalDate, AnalyticsDay>, scope: AnalyticsTim
     val currencySymbol = currencySymbol(LocalLedgerCurrency.current)
     val colors = MaterialTheme.colorScheme
     val measurer = rememberTextMeasurer()
-    val labelStyle = TextStyle(fontSize = 10.sp, lineHeight = 12.sp, color = colors.onSurfaceVariant)
+    val labelStyle = TextStyle(fontSize = LedgerStyle.typography.chartLabel.fontSize, lineHeight = 12.sp, color = colors.onSurfaceVariant)
     val description = "累计支出对比，$start 至 $end，红色实线为本期，黑色虚线为上期"
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val density = LocalDensity.current
@@ -61,7 +62,7 @@ internal fun ExpensePace(days: Map<LocalDate, AnalyticsDay>, scope: AnalyticsTim
             ((canvasWidth - gridLeft - initialLabelWidth - with(density) { 4.dp.toPx() }) / (tickIndices.size - 1) / initialLabelWidth).coerceIn(0.75f, 1f)
         } else 1f
         val tickLabels = if (yearLabelScale == 1f) initialTicks else tickIndices.associateWith { index ->
-            measurer.measure(expensePaceDateLabel(scope, data.dates[index]), labelStyle.copy(fontSize = 10.sp * yearLabelScale))
+            measurer.measure(expensePaceDateLabel(scope, data.dates[index]), labelStyle.copy(fontSize = LedgerStyle.typography.chartLabel.fontSize * yearLabelScale))
         }
         val gridRight = canvasWidth
         val left = gridLeft
@@ -144,18 +145,18 @@ private fun ExpensePaceReadout(date: LocalDate, current: Long, previous: Long, m
         direction > 0 -> colors.error
         else -> colors.tertiary
     }
-    Surface(color = analyticsChartInfoColor(), shape = RoundedCornerShape(5.dp),
+    BaseSurface(color = analyticsChartInfoColor(), shape = LedgerStyle.shapes.chartTooltip,
         modifier = modifier.wrapContentWidth(Alignment.CenterHorizontally).height(18.dp).semantics {
             contentDescription = "$date，本期支出${current.toFormattedAmount(true, symbol = currencySymbol)}，上期支出${previous.toFormattedAmount(true, symbol = currencySymbol)}${if (previous > 0L) "，${expensePaceChangeLabel(current, previous)}" else ""}"
         }) {
-        Row(Modifier.padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("${date.monthValue}.${date.dayOfMonth}", fontSize = 10.sp, lineHeight = 12.sp, color = colors.onSurfaceVariant)
-            Text("本期 ${current.toFormattedAmount(true, symbol = currencySymbol)}", fontSize = 10.sp, lineHeight = 12.sp,
+        Row(Modifier.padding(horizontal = LedgerStyle.spacing.extraSmall), verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.small)) {
+            Text("${date.monthValue}.${date.dayOfMonth}", fontSize = LedgerStyle.typography.chartLabel.fontSize, lineHeight = 12.sp, color = colors.onSurfaceVariant)
+            Text("本期 ${current.toFormattedAmount(true, symbol = currencySymbol)}", fontSize = LedgerStyle.typography.chartLabel.fontSize, lineHeight = 12.sp,
                 color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Row(verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text("上期 ${previous.toFormattedAmount(true, symbol = currencySymbol)}", fontSize = 10.sp, lineHeight = 12.sp,
+                Text("上期 ${previous.toFormattedAmount(true, symbol = currencySymbol)}", fontSize = LedgerStyle.typography.chartLabel.fontSize, lineHeight = 12.sp,
                     color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (previous > 0L) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(1.dp)) {
                     if (direction != 0) Icon(
@@ -163,7 +164,7 @@ private fun ExpensePaceReadout(date: LocalDate, current: Long, previous: Long, m
                         if (direction > 0) textResources.getString(cn.turingzy.ledger.R.string.ui_increase) else textResources.getString(cn.turingzy.ledger.R.string.ui_decrease), Modifier.size(10.dp), tint = changeColor,
                     )
                     Text(expensePaceChangeLabel(current, previous).removePrefix("增长 ").removePrefix("下降 "),
-                        fontSize = 10.sp, lineHeight = 12.sp, color = changeColor, maxLines = 1)
+                        fontSize = LedgerStyle.typography.chartLabel.fontSize, lineHeight = 12.sp, color = changeColor, maxLines = 1)
                 }
             }
         }

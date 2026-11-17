@@ -1,8 +1,16 @@
 package cn.turingzy.ledger.ui.feature.settings
 
+import cn.turingzy.ledger.ui.components.base.BaseIconButtonContent
+import cn.turingzy.ledger.ui.interaction.uiClickable
+import cn.turingzy.ledger.ui.components.base.BaseDivider
+import cn.turingzy.ledger.ui.theme.LedgerStyle
+import cn.turingzy.ledger.ui.components.base.BaseSurface
+import cn.turingzy.ledger.ui.components.base.BaseButtonVariant
+import cn.turingzy.ledger.ui.components.base.BaseActionButton
+import cn.turingzy.ledger.ui.components.base.BaseDialogWindow
+import cn.turingzy.ledger.ui.components.base.BaseAlertDialog
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.ui.semantics.Role
@@ -14,19 +22,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import kotlinx.coroutines.delay
@@ -46,8 +49,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.DialogProperties
-import cn.turingzy.ledger.ui.component.LedgerIconButton
 import cn.turingzy.ledger.ui.component.LedgerSegmentedControl
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.LedgerDateTimePicker
@@ -162,18 +163,18 @@ internal fun BillTransferScreen(
     }
 
     duplicateConfirmation?.let { preview ->
-        androidx.compose.material3.AlertDialog(
+        BaseAlertDialog(
             onDismissRequest = { duplicateConfirmation = null },
             title = { Text(textResources.getString(cn.turingzy.ledger.R.string.ui_possible_duplicate_transactions)) },
             text = { Text(textResources.getString(cn.turingzy.ledger.R.string.duplicate_prompt, preview.possibleDuplicates)) },
             confirmButton = {
-                androidx.compose.material3.TextButton(onClick = {
+                BaseActionButton(variant = BaseButtonVariant.Text, onClick = {
                     duplicateConfirmation = null
                     runTransfer(preview = false)
                 }) { Text(textResources.getString(cn.turingzy.ledger.R.string.ui_skip_duplicates)) }
             },
             dismissButton = {
-                androidx.compose.material3.TextButton(onClick = {
+                BaseActionButton(variant = BaseButtonVariant.Text, onClick = {
                     duplicateConfirmation = null
                     runTransfer(preview = false, includePossibleDuplicates = true)
                 }) { Text(textResources.getString(cn.turingzy.ledger.R.string.ui_import_anyway)) }
@@ -181,12 +182,12 @@ internal fun BillTransferScreen(
         )
     }
 
-    SettingsPage(title = textResources.getString(cn.turingzy.ledger.R.string.ui_import_and_export), onDismissRequest = onDismissRequest) {
+    SettingsSubpageScaffold(title = textResources.getString(cn.turingzy.ledger.R.string.ui_import_and_export), onBack = onDismissRequest) {
         Column(
             Modifier.fillMaxWidth().settingsPageScroll(),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large),
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.small)) {
                 LedgerSegmentedControl(
                     labels = listOf(textResources.getString(cn.turingzy.ledger.R.string.ui_import), textResources.getString(cn.turingzy.ledger.R.string.ui_export)),
                     selectedIndex = if (importing) 0 else 1,
@@ -216,7 +217,7 @@ internal fun BillTransferScreen(
                 }
             } else {
                 Text(textResources.getString(cn.turingzy.ledger.R.string.ui_export_range), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-                Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large)) {
                     BillTransferOption(textResources.getString(cn.turingzy.ledger.R.string.ui_all_transactions), allBills, !running, Modifier.weight(1f)) { allBills = true; resetResult() }
                     BillTransferOption(textResources.getString(cn.turingzy.ledger.R.string.ui_date_range), !allBills, !running, Modifier.weight(1f)) { allBills = false; resetResult() }
                 }
@@ -228,7 +229,7 @@ internal fun BillTransferScreen(
                     }
                 }
                 Text(textResources.getString(cn.turingzy.ledger.R.string.ui_export_format), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-                Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large)) {
                     ExportFormat.entries.forEach { option ->
                         BillTransferOption(option.label, format == option, !running, Modifier.weight(1f)) {
                             format = option
@@ -292,7 +293,7 @@ internal fun BillTransferScreen(
                 if (rules.isEmpty()) {
                     Text(
                         textResources.getString(cn.turingzy.ledger.R.string.ui_add_a_rule_in_import_rules),
-                        Modifier.padding(vertical = 8.dp),
+                        Modifier.padding(vertical = LedgerStyle.spacing.medium),
                         style = MaterialTheme.typography.bodySmall,
                         color = colors.onSurfaceVariant,
                     )
@@ -333,7 +334,7 @@ private val billDateFormat = DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm")
 
 @Composable
 private fun BillTransferCard(content: @Composable ColumnScope.() -> Unit) {
-    Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surface) {
+    BaseSurface(shape = LedgerStyle.shapes.card, color = MaterialTheme.colorScheme.surface) {
         Column(Modifier.fillMaxWidth(), content = content)
     }
 }
@@ -346,7 +347,7 @@ private fun BillTransferOption(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
-    Surface(modifier, shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surface) {
+    BaseSurface(modifier, shape = LedgerStyle.shapes.card, color = MaterialTheme.colorScheme.surface) {
         Row(
             Modifier.fillMaxWidth().heightIn(min = SettingsItemHeight)
                 .selectable(selected = selected, enabled = enabled, role = Role.RadioButton, onClick = onClick)
@@ -354,14 +355,14 @@ private fun BillTransferOption(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(title, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-            if (selected) Icon(MaterialSymbols.Check, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.tertiary)
+            if (selected) Icon(MaterialSymbols.Check, null, Modifier.size(LedgerStyle.icons.inline), tint = MaterialTheme.colorScheme.tertiary)
         }
     }
 }
 
 @Composable
 private fun BillTransferDivider() {
-    HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+    BaseDivider()
 }
 
 @Composable
@@ -374,10 +375,10 @@ private fun BillImportRow(
     val colors = MaterialTheme.colorScheme
     Row(
         Modifier.fillMaxWidth().heightIn(min = SettingsItemHeight)
-            .clip(RoundedCornerShape(8.dp)).clickable(enabled = enabled, onClick = onClick)
+            .clip(LedgerStyle.shapes.control).uiClickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium),
     ) {
         Text(label, style = MaterialTheme.typography.bodyLarge)
         Text(
@@ -385,21 +386,21 @@ private fun BillImportRow(
             overflow = TextOverflow.Ellipsis, color = colors.onSurfaceVariant,
             style = MaterialTheme.typography.bodyMedium,
         )
-        Icon(MaterialSymbols.ChevronRight, null, Modifier.size(20.dp), tint = colors.onSurfaceVariant)
+        Icon(MaterialSymbols.ChevronRight, null, Modifier.size(LedgerStyle.icons.inline), tint = colors.onSurfaceVariant)
     }
 }
 
 @Composable
 private fun ImportRuleChoice(title: String, selected: Boolean, onClick: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(RoundedCornerShape(8.dp))
-            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick).padding(vertical = 8.dp),
+        Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(LedgerStyle.shapes.control)
+            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick).padding(vertical = LedgerStyle.spacing.medium),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large),
     ) {
         Icon(
             if (selected) MaterialSymbols.RadioButtonChecked else MaterialSymbols.RadioButtonUnchecked,
-            null, Modifier.size(20.dp),
+            null, Modifier.size(LedgerStyle.icons.inline),
             tint = if (selected) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(title, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
@@ -416,17 +417,17 @@ private fun BillTransferDialog(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
-    BasicAlertDialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        BoxWithConstraints(Modifier.widthIn(max = 560.dp).fillMaxWidth().imePadding().padding(24.dp)) {
-            Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surface) {
-                Column(Modifier.fillMaxWidth().heightIn(max = maxHeight).padding(16.dp)) {
+    BaseDialogWindow(onDismissRequest = onDismiss) {
+        BoxWithConstraints(Modifier.widthIn(max = LedgerStyle.dimensions.wideDialogMaxWidth).fillMaxWidth()) {
+            BaseSurface(shape = LedgerStyle.shapes.dialog, color = MaterialTheme.colorScheme.surface) {
+                Column(Modifier.fillMaxWidth().heightIn(max = maxHeight).padding(LedgerStyle.spacing.extraLarge)) {
                     Text(title, Modifier.padding(bottom = 12.dp), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()), content = content)
                     Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        LedgerIconButton(onClick = onDismiss) { Icon(MaterialSymbols.Close, textResources.getString(cn.turingzy.ledger.R.string.ui_cancel)) }
+                        BaseIconButtonContent(onClick = onDismiss) { Icon(MaterialSymbols.Close, textResources.getString(cn.turingzy.ledger.R.string.ui_cancel)) }
                         Spacer(Modifier.weight(1f))
-                        LedgerIconButton(onClick = onConfirm, enabled = confirmEnabled) {
-                            Icon(MaterialSymbols.Check, textResources.getString(cn.turingzy.ledger.R.string.ui_confirm), tint = MaterialTheme.colorScheme.tertiary.copy(alpha = if (confirmEnabled) 1f else 0.38f))
+                        BaseIconButtonContent(onClick = onConfirm, enabled = confirmEnabled) {
+                            Icon(MaterialSymbols.Check, textResources.getString(cn.turingzy.ledger.R.string.ui_confirm), tint = MaterialTheme.colorScheme.tertiary.copy(alpha = if (confirmEnabled) 1f else LedgerStyle.opacity.disabled))
                         }
                     }
                 }

@@ -1,5 +1,7 @@
 package cn.turingzy.ledger.ui.component.calendar
 
+import cn.turingzy.ledger.ui.components.base.BaseIconButtonContent
+import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
@@ -25,9 +27,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import cn.turingzy.ledger.ui.component.LedgerIconButton as IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -52,7 +52,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import java.time.LocalDate
 import java.time.YearMonth
@@ -77,9 +76,9 @@ internal fun MonthCalendarDatePickerCard(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(LedgerStyle.shapes.summaryCard)
             .background(MaterialTheme.colorScheme.background)
-            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(20.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outline, LedgerStyle.shapes.summaryCard)
             .pointerInput(state) {
                 awaitEachGesture {
                     awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
@@ -130,7 +129,7 @@ private fun CalendarHeader(state: CalendarPickerState) {
             if (state.view == CalendarView.DAY) {
                 listOf(textResources.getString(cn.turingzy.ledger.R.string.ui_mon), textResources.getString(cn.turingzy.ledger.R.string.ui_tue), textResources.getString(cn.turingzy.ledger.R.string.ui_wed), textResources.getString(cn.turingzy.ledger.R.string.ui_thu_2), textResources.getString(cn.turingzy.ledger.R.string.ui_fri), textResources.getString(cn.turingzy.ledger.R.string.ui_sat), textResources.getString(cn.turingzy.ledger.R.string.ui_sun_2)).forEach { day ->
                     Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                        Text(day, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(day, fontSize = LedgerStyle.typography.bodySmall.fontSize, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             } else {
@@ -138,16 +137,16 @@ private fun CalendarHeader(state: CalendarPickerState) {
                     state.month = state.month.minusYears(if (state.view == CalendarView.YEAR) 12 else 1)
                 }
                 Box(
-                    Modifier.weight(1f).clip(RoundedCornerShape(8.dp)).clickable {
+                    Modifier.weight(1f).clip(LedgerStyle.shapes.control).clickable {
                         state.view = if (state.view == CalendarView.MONTH) CalendarView.YEAR else CalendarView.MONTH
-                    }.padding(vertical = 8.dp),
+                    }.padding(vertical = LedgerStyle.spacing.medium),
                     contentAlignment = Alignment.Center,
                 ) {
                     val label = if (state.view == CalendarView.YEAR) {
                         val first = state.month.year - Math.floorMod(state.month.year, 12)
                         "$first – ${first + 11}年"
                     } else "${state.month.year}年"
-                    Text(label, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+                    Text(label, fontSize = LedgerStyle.typography.transactionTitle.fontSize, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
                 }
                 CalendarArrow("下一${if (state.view == CalendarView.YEAR) "组年份" else "年"}", true) {
                     state.month = state.month.plusYears(if (state.view == CalendarView.YEAR) 12 else 1)
@@ -287,7 +286,7 @@ private fun CalendarGrid(state: CalendarPickerState, view: CalendarView) {
                                 CalendarView.MONTH -> "${date.monthValue}月"
                                 CalendarView.YEAR -> "${date.year}"
                             },
-                            fontSize = 14.sp,
+                            fontSize = LedgerStyle.typography.bodyMedium.fontSize,
                             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
                             color = if (view == CalendarView.DAY && YearMonth.from(date) != state.month && !selected) colors.onSurface.copy(alpha = 0.35f) else colors.onSurface,
                         )
@@ -310,42 +309,42 @@ private fun CalendarFooter(
         horizontalArrangement = Arrangement.End,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconButton(showPressFeedback = false, onClick = onDismiss, modifier = Modifier.size(40.dp)) {
+        BaseIconButtonContent(showPressFeedback = false, onClick = onDismiss, modifier = Modifier.size(40.dp)) {
             Icon(
                 MaterialSymbols.Close,
                 contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_close_date_picker_2),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier.size(LedgerStyle.icons.inline),
             )
         }
         Spacer(Modifier.weight(1f))
         Box(
-            Modifier.clip(RoundedCornerShape(8.dp))
+            Modifier.clip(LedgerStyle.shapes.control)
                 .clickable { state.reset(LocalDate.now()) }
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             contentAlignment = Alignment.Center,
         ) {
-            Text(textResources.getString(cn.turingzy.ledger.R.string.ui_reset), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(textResources.getString(cn.turingzy.ledger.R.string.ui_reset), fontSize = LedgerStyle.typography.bodySmall.fontSize, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Box(
-            Modifier.clip(RoundedCornerShape(8.dp))
+            Modifier.clip(LedgerStyle.shapes.control)
                 .clickable { onConfirm(state.selection.start, state.selection.end) }
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             contentAlignment = Alignment.Center,
         ) {
-            Text(textResources.getString(cn.turingzy.ledger.R.string.ui_confirm), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.tertiary)
+            Text(textResources.getString(cn.turingzy.ledger.R.string.ui_confirm), fontSize = LedgerStyle.typography.bodySmall.fontSize, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.tertiary)
         }
     }
 }
 
 @Composable
 private fun CalendarArrow(description: String, forward: Boolean, onClick: () -> Unit) {
-    IconButton(onClick = onClick, modifier = Modifier.size(40.dp)) {
+    BaseIconButtonContent(onClick = onClick, modifier = Modifier.size(40.dp)) {
         Icon(
             if (forward) MaterialSymbols.ChevronRight else MaterialSymbols.ChevronLeft,
             contentDescription = description,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(20.dp),
+            modifier = Modifier.size(LedgerStyle.icons.inline),
         )
     }
 }

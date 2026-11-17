@@ -1,5 +1,8 @@
 package cn.turingzy.ledger.ui.feature.wallet
 
+import cn.turingzy.ledger.ui.theme.LedgerStyle
+import cn.turingzy.ledger.ui.components.base.BaseSurface
+import cn.turingzy.ledger.ui.components.base.BaseDialogWindow
 import cn.turingzy.ledger.ui.component.accountCardColors
 import cn.turingzy.ledger.ui.component.AccountCardBackground
 import androidx.compose.foundation.background
@@ -14,7 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -28,7 +30,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import cn.turingzy.ledger.model.Account
 import cn.turingzy.ledger.model.AccountType
 import cn.turingzy.ledger.model.CardTemplate
@@ -52,9 +53,9 @@ internal fun AccountCardFaceDialog(
     val faces = remember(templates) { listOf<CardTemplate?>(null) + templates.filterNot { it.isDeleted } }
     val pager = rememberCircularCardPagerState(faces.map { it?.id }, selectedId)
     val colors = MaterialTheme.colorScheme
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(shape = RoundedCornerShape(24.dp), color = colors.surface) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    BaseDialogWindow(onDismissRequest = onDismiss) {
+        BaseSurface(shape = LedgerStyle.shapes.dialog, color = colors.surface) {
+            Column(Modifier.padding(LedgerStyle.spacing.extraLarge), verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large)) {
                 Box(Modifier.fillMaxWidth().height(40.dp), contentAlignment = Alignment.Center) {
                     SummaryCardIconButton(
                         MaterialSymbols.Close, textResources.getString(cn.turingzy.ledger.R.string.ui_close_card_design_picker), onDismiss,
@@ -73,20 +74,20 @@ internal fun AccountCardFaceDialog(
                     val account = Account(name = accountName, type = accountType, templateId = face?.id)
                     val textColor = face?.textColor?.cardFaceTextColor(colors.onPrimary) ?: colors.onPrimary
                     Box(
-                        Modifier.fillMaxWidth().aspectRatio(BankCardAspectRatio).clip(RoundedCornerShape(16.dp))
+                        Modifier.fillMaxWidth().aspectRatio(BankCardAspectRatio).clip(LedgerStyle.shapes.card)
                             .background(Brush.linearGradient(accountCardColors(account))),
                     ) {
                         AccountCardBackground(account, face, Modifier.fillMaxSize())
                         Text(
                             accountName.ifBlank { textResources.getString(cn.turingzy.ledger.R.string.ui_account_name) },
-                            Modifier.align(Alignment.TopStart).padding(16.dp),
+                            Modifier.align(Alignment.TopStart).padding(LedgerStyle.spacing.extraLarge),
                             style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold,
                             color = textColor, maxLines = 1, overflow = TextOverflow.Ellipsis,
                         )
                         if (accountType == AccountType.DEBIT || accountType == AccountType.CREDIT) {
                             Text(
                                 "•••• •••• •••• ${tailNumber.filter { it in '0'..'9' }.takeLast(4)}",
-                                Modifier.align(Alignment.BottomStart).padding(16.dp),
+                                Modifier.align(Alignment.BottomStart).padding(LedgerStyle.spacing.extraLarge),
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Medium,
                                 letterSpacing = 1.sp, color = textColor,

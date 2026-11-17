@@ -1,6 +1,7 @@
 package cn.turingzy.ledger.ui.feature.analytics
 
-import androidx.compose.foundation.BorderStroke
+import cn.turingzy.ledger.ui.theme.LedgerStyle
+import cn.turingzy.ledger.ui.components.base.BaseSurface
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -13,7 +14,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -35,26 +35,19 @@ internal fun AnalyticsStatisticsCard(state: AnalyticsUiState.Success, days: Map<
         analyticsExpenseAverage(state.timeScope, state.totalExpense, state.periodStart, state.periodEnd,
             previousExpense, state.comparison?.periodStart ?: previous.start, state.comparison?.periodEnd ?: previous.end)
     }
-    val colors = MaterialTheme.colorScheme
-    Surface(
-        modifier.fillMaxWidth().padding(top = AnalyticsCardTopSpacing),
-        shape = RoundedCornerShape(20.dp), color = colors.surface,
-        border = BorderStroke(0.5.dp, colors.outlineVariant),
-    ) {
-        Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            AnalyticsCardTitle(textResources.getString(cn.turingzy.ledger.R.string.ui_income_and_expenses))
-            Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                StatisticsMetric(textResources.getString(cn.turingzy.ledger.R.string.ui_expense), state.totalExpense, Modifier.weight(1f))
-                StatisticsMetric(textResources.getString(cn.turingzy.ledger.R.string.ui_income), state.totalIncome, Modifier.weight(1f))
-            }
-            Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                StatisticsMetric(textResources.getString(cn.turingzy.ledger.R.string.ui_balance), state.balance, Modifier.weight(1f))
-                StatisticsMetric(when (average.label) {
-                    "月均支出" -> textResources.getString(cn.turingzy.ledger.R.string.ui_monthly_average)
-                    "年均支出" -> textResources.getString(cn.turingzy.ledger.R.string.ui_yearly_average)
-                    else -> textResources.getString(cn.turingzy.ledger.R.string.ui_daily_average)
-                }, average.amount, Modifier.weight(1f), average)
-            }
+    DashboardCard(modifier) {
+        AnalyticsCardTitle(textResources.getString(cn.turingzy.ledger.R.string.ui_income_and_expenses))
+        Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            StatisticsMetric(textResources.getString(cn.turingzy.ledger.R.string.ui_expense), state.totalExpense, Modifier.weight(1f))
+            StatisticsMetric(textResources.getString(cn.turingzy.ledger.R.string.ui_income), state.totalIncome, Modifier.weight(1f))
+        }
+        Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            StatisticsMetric(textResources.getString(cn.turingzy.ledger.R.string.ui_balance), state.balance, Modifier.weight(1f))
+            StatisticsMetric(when (average.label) {
+                "月均支出" -> textResources.getString(cn.turingzy.ledger.R.string.ui_monthly_average)
+                "年均支出" -> textResources.getString(cn.turingzy.ledger.R.string.ui_yearly_average)
+                else -> textResources.getString(cn.turingzy.ledger.R.string.ui_daily_average)
+            }, average.amount, Modifier.weight(1f), average)
         }
     }
 }
@@ -63,14 +56,14 @@ internal fun AnalyticsStatisticsCard(state: AnalyticsUiState.Success, days: Map<
 private fun StatisticsMetric(label: String, amount: Long, modifier: Modifier = Modifier, average: AnalyticsExpenseAverage? = null) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val colors = MaterialTheme.colorScheme
-    Surface(modifier.fillMaxHeight(), shape = RoundedCornerShape(14.dp), color = analyticsChartInfoColor()) {
+    BaseSurface(modifier.fillMaxHeight(), shape = LedgerStyle.shapes.bankCard, color = analyticsChartInfoColor()) {
         Column(Modifier.padding(horizontal = 8.dp, vertical = 5.dp), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-            Text(label, fontSize = 11.sp, lineHeight = 14.sp, color = colors.onSurfaceVariant)
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                AnalyticsAmountText(amount, Modifier.weight(1f), fontSize = 14.sp)
+            Text(label, fontSize = LedgerStyle.typography.caption.fontSize, lineHeight = 14.sp, color = colors.onSurfaceVariant)
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.extraSmall)) {
+                AnalyticsAmountText(amount, Modifier.weight(1f), fontSize = LedgerStyle.typography.bodyMedium.fontSize)
                 average?.takeIf { it.direction != 0 }?.let {
                     val color = if (it.direction > 0) colors.error else colors.tertiary
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.tiny)) {
                         Icon(
                             if (it.direction > 0) MaterialSymbols.TrendingUp else MaterialSymbols.TrendingDown,
                             if (it.direction > 0) textResources.getString(cn.turingzy.ledger.R.string.ui_increase) else textResources.getString(cn.turingzy.ledger.R.string.ui_decrease),

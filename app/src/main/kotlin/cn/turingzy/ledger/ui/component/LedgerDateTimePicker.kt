@@ -1,5 +1,7 @@
 package cn.turingzy.ledger.ui.component
 
+import cn.turingzy.ledger.ui.components.base.BaseDropdownIndicator
+import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -64,11 +66,11 @@ internal fun LedgerDateTimePicker(
     onMinuteChange: (String) -> Unit,
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium)) {
         LedgerDatePicker(date, onDateChange)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
             RecordTimeWheel(textResources.getString(cn.turingzy.ledger.R.string.ui_hour), hour, 24, onHourChange)
-            Text(":", Modifier.padding(horizontal = 12.dp), style = MaterialTheme.typography.titleLarge)
+            Text(":", Modifier.padding(horizontal = LedgerStyle.spacing.large), style = MaterialTheme.typography.titleLarge)
             RecordTimeWheel(textResources.getString(cn.turingzy.ledger.R.string.ui_minute), minute, 60, onMinuteChange)
         }
     }
@@ -125,7 +127,7 @@ internal fun LedgerDatePicker(selectedDate: LocalDate, onSelect: (LocalDate) -> 
                 RecordCalendarPanel.DAYS -> Column {
                     Row(Modifier.fillMaxWidth()) {
                         listOf(textResources.getString(cn.turingzy.ledger.R.string.ui_mon), textResources.getString(cn.turingzy.ledger.R.string.ui_tue), textResources.getString(cn.turingzy.ledger.R.string.ui_wed), textResources.getString(cn.turingzy.ledger.R.string.ui_thu_2), textResources.getString(cn.turingzy.ledger.R.string.ui_fri), textResources.getString(cn.turingzy.ledger.R.string.ui_sat), textResources.getString(cn.turingzy.ledger.R.string.ui_sun_2)).forEach {
-                            Text(it, Modifier.weight(1f).padding(vertical = 4.dp), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                            Text(it, Modifier.weight(1f).padding(vertical = LedgerStyle.spacing.extraSmall), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                         }
                     }
                     LazyVerticalGrid(columns = GridCells.Fixed(7), modifier = Modifier.height(180.dp), userScrollEnabled = false) {
@@ -167,16 +169,16 @@ private fun RecordCalendarHeading(text: String, description: String, expanded: B
     Row(
         Modifier.semantics {
             contentDescription = description
-            stateDescription = if (expanded) textResources.getString(cn.turingzy.ledger.R.string.ui_expand) else textResources.getString(cn.turingzy.ledger.R.string.ui_collapse)
+            stateDescription = if (expanded) textResources.getString(cn.turingzy.ledger.R.string.ui_expanded) else textResources.getString(cn.turingzy.ledger.R.string.ui_collapsed)
         }.clickable(
             interactionSource = remember { MutableInteractionSource() }, indication = null,
             role = Role.Button, onClick = onClick,
         ).padding(horizontal = 6.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.tiny),
     ) {
         Text(text, style = MaterialTheme.typography.bodyLarge)
-        Icon(MaterialSymbols.ArrowDropDown, null, Modifier.size(24.dp).rotate(if (expanded) 180f else 0f))
+        BaseDropdownIndicator(expanded)
     }
 }
 
@@ -187,7 +189,7 @@ private fun RecordPeriodChoices(values: List<Int>, selected: Int, tag: String, d
     val state = rememberLazyGridState(initialFirstVisibleItemIndex = (values.indexOf(selected) - 8).coerceAtLeast(0) / 4 * 4)
     LazyVerticalGrid(
         GridCells.Fixed(4), Modifier.fillMaxWidth().height(204.dp).testTag(tag), state = state,
-        horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.extraSmall), verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.extraSmall),
     ) {
         items(values, key = { it }) { value ->
             Box(
@@ -224,7 +226,7 @@ private fun RecordTimeWheel(label: String, value: String, count: Int, onChange: 
         }
     }
     Box(Modifier.width(80.dp).height(120.dp), contentAlignment = Alignment.Center) {
-        Box(Modifier.fillMaxWidth().height(40.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant))
+        Box(Modifier.fillMaxWidth().height(40.dp).clip(LedgerStyle.shapes.field).background(MaterialTheme.colorScheme.surfaceVariant))
         LazyColumn(
             state = state, flingBehavior = rememberSnapFlingBehavior(state),
             contentPadding = PaddingValues(vertical = 40.dp),

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="business_deleted">已删除</string>
+    <string name="business_uncategorized">未分类</string>
+    <string name="business_unavailable_account">目标账户不可用</string>
+    <string name="business_received_amount">到账 %1$s</string>
+</resources>

@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.component
 
+import cn.turingzy.ledger.ui.components.base.BaseIconButtonContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -92,7 +93,7 @@ class PressFeedbackTest {
         compose.setContent {
             LedgerTheme {
                 Box(Modifier.background(MaterialTheme.colorScheme.surface)) {
-                    LedgerIconButton({}, Modifier.testTag("dismiss"), showPressFeedback = false) {}
+                    BaseIconButtonContent({}, Modifier.testTag("dismiss"), showPressFeedback = false) {}
                 }
             }
         }

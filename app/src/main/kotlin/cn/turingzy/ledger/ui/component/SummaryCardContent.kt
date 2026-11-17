@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.component
 
+import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.layout.Arrangement
@@ -48,7 +49,7 @@ fun SummaryCardContent(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = title,
-                    fontSize = 15.sp,
+                    fontSize = LedgerStyle.typography.transactionTitle.fontSize,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onPrimary,
                     style = TextStyle(
@@ -63,7 +64,7 @@ fun SummaryCardContent(
                     imageVector = if (amountsHidden) MaterialSymbols.VisibilityOff else MaterialSymbols.Visibility,
                     contentDescription = if (amountsHidden) textResources.getString(cn.turingzy.ledger.R.string.ui_show_amounts) else textResources.getString(cn.turingzy.ledger.R.string.ui_hide_amounts),
                     onClick = onToggleAmounts,
-                    modifier = Modifier.size(24.dp),
+                    modifier = Modifier.size(LedgerStyle.icons.default),
                     containerColor = Color.Transparent,
                     iconSize = visibilityIconSize,
                 )
@@ -71,7 +72,7 @@ fun SummaryCardContent(
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = if (amountsHidden) "****" else amount.toFormattedAmount(showSymbol = true, symbol = currencySymbol, useGrouping = true),
-                fontSize = 26.sp,
+                fontSize = LedgerStyle.typography.heroAmount.fontSize,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimary,
                 letterSpacing = (-0.6).sp,
@@ -104,7 +105,7 @@ fun SummaryCardContent(
                 ) {
                     Text(
                         text = leftLabel,
-                        fontSize = 11.sp,
+                        fontSize = LedgerStyle.typography.caption.fontSize,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.70f),
                         style = TextStyle(
@@ -118,7 +119,7 @@ fun SummaryCardContent(
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = if (amountsHidden) "****" else leftAmount.toFormattedAmount(showSymbol = true, symbol = currencySymbol, useGrouping = true),
-                        fontSize = 16.sp,
+                        fontSize = LedgerStyle.typography.body.fontSize,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.error,
                         style = TextStyle(
@@ -137,7 +138,7 @@ fun SummaryCardContent(
                 ) {
                     Text(
                         text = rightLabel,
-                        fontSize = 11.sp,
+                        fontSize = LedgerStyle.typography.caption.fontSize,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.70f),
                         style = TextStyle(
@@ -151,7 +152,7 @@ fun SummaryCardContent(
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = if (amountsHidden) "****" else rightAmount.toFormattedAmount(showSymbol = true, symbol = currencySymbol, useGrouping = true),
-                        fontSize = 16.sp,
+                        fontSize = LedgerStyle.typography.body.fontSize,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.tertiary,
                         style = TextStyle(

@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.component
 
+import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -55,7 +56,7 @@ internal fun LedgerSegmentedControl(
             .height(height)
             .clip(shape)
             .background(containerColor)
-            .padding(2.dp),
+            .padding(LedgerStyle.spacing.tiny),
     ) {
         val segmentWidth = maxWidth / labels.size
         val offset by animateDpAsState(
@@ -96,7 +97,7 @@ internal fun LedgerSegmentedControl(
                         textAlign = TextAlign.Center,
                         style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false)),
                         fontWeight = fontWeight ?: if (selected && emphasizeSelection) FontWeight.Bold else FontWeight.Medium,
-                        color = if (selected || !emphasizeSelection) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }

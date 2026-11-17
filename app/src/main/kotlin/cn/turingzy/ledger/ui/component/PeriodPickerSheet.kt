@@ -1,6 +1,11 @@
 package cn.turingzy.ledger.ui.component
 
+import cn.turingzy.ledger.ui.components.base.BaseIconButtonContent
+import cn.turingzy.ledger.ui.components.base.BaseIconButton
+import cn.turingzy.ledger.ui.interaction.UiInteractionKind
+import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.model.DateFilterType
+import cn.turingzy.ledger.ui.interaction.rememberUiIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -10,7 +15,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.height
@@ -18,11 +22,9 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -44,7 +46,6 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import java.time.LocalDate
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -58,6 +59,7 @@ internal fun PeriodPickerSheet(
     onSelect: (DateFilterType, LocalDate) -> Unit,
     modifier: Modifier = Modifier,
     showViewSelector: Boolean = true,
+    header: (@Composable (onDismiss: () -> Unit, onReturn: () -> Unit) -> Unit)? = null,
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val views = listOf(DateFilterType.WEEK, DateFilterType.MONTH, DateFilterType.YEAR)
@@ -84,40 +86,36 @@ internal fun PeriodPickerSheet(
         if (view != type) onSelect(view, periodStart(view, today))
         onDismiss()
     }
-    ModalBottomSheet(
-        onDismissRequest = ::dismiss,
-        modifier = modifier,
-        sheetState = sheetState,
-        dragHandle = null,
-        containerColor = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        contentWindowInsets = { WindowInsets(0, 0, 0, 0) },
-    ) {
+    cn.turingzy.ledger.ui.components.base.BaseModalBottomSheet(::dismiss, sheetState, modifier) {
         Column(
             Modifier.height(height).fillMaxWidth().testTag("ledgerPeriodPicker")
-                .navigationBarsPadding().padding(horizontal = 12.dp),
+                .navigationBarsPadding().padding(horizontal = LedgerStyle.spacing.large),
         ) {
-            Box(Modifier.fillMaxWidth().height(48.dp), contentAlignment = Alignment.Center) {
-                LedgerIconButton(::dismiss, modifier = Modifier.align(Alignment.CenterStart), showPressFeedback = false) {
-                    Icon(MaterialSymbols.Close, textResources.getString(cn.turingzy.ledger.R.string.ui_close_date_picker))
-                }
-                if (showViewSelector) {
-                    LedgerSegmentedControl(
-                        labels = listOf(textResources.getString(cn.turingzy.ledger.R.string.ui_week), textResources.getString(cn.turingzy.ledger.R.string.ui_month), textResources.getString(cn.turingzy.ledger.R.string.ui_year)),
-                        selectedIndex = views.indexOf(view),
-                        onSelect = { view = views[it] },
-                        modifier = Modifier.width(168.dp).testTag("periodViewSelector"), height = 28.dp,
-                        fontSize = 13.sp, fontWeight = FontWeight.Normal,
-                    )
-                }
-                LedgerIconButton(
-                    { apply(view, today) }, modifier = Modifier.align(Alignment.CenterEnd),
-                    showPressFeedback = false,
-                ) {
-                    Icon(
-                        MaterialSymbols.Undo, view.returnLabel,
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
+            if (header != null) {
+                header(::dismiss) { apply(view, today) }
+            } else {
+                Box(Modifier.fillMaxWidth().height(48.dp), contentAlignment = Alignment.Center) {
+                    BaseIconButtonContent(::dismiss, modifier = Modifier.align(Alignment.CenterStart), showPressFeedback = false) {
+                        Icon(MaterialSymbols.Close, textResources.getString(cn.turingzy.ledger.R.string.ui_close_date_picker))
+                    }
+                    if (showViewSelector) {
+                        LedgerSegmentedControl(
+                            labels = listOf(textResources.getString(cn.turingzy.ledger.R.string.ui_week), textResources.getString(cn.turingzy.ledger.R.string.ui_month), textResources.getString(cn.turingzy.ledger.R.string.ui_year)),
+                            selectedIndex = views.indexOf(view),
+                            onSelect = { view = views[it] },
+                            modifier = Modifier.width(168.dp).testTag("periodViewSelector"), height = 28.dp,
+                            fontSize = LedgerStyle.typography.bodySmall.fontSize, fontWeight = FontWeight.Normal,
+                        )
+                    }
+                    BaseIconButtonContent(
+                        { apply(view, today) }, modifier = Modifier.align(Alignment.CenterEnd),
+                        showPressFeedback = false,
+                    ) {
+                        Icon(
+                            MaterialSymbols.Undo, view.returnLabel,
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
                 }
             }
             listStates.SaveableStateProvider(contentView) {
@@ -150,7 +148,7 @@ private fun PeriodList(
             Row(Modifier.fillMaxWidth().padding(vertical = 14.dp)) {
                 listOf(textResources.getString(cn.turingzy.ledger.R.string.ui_mon_2), textResources.getString(cn.turingzy.ledger.R.string.ui_tue_2), textResources.getString(cn.turingzy.ledger.R.string.ui_wed_2), textResources.getString(cn.turingzy.ledger.R.string.ui_thu), textResources.getString(cn.turingzy.ledger.R.string.ui_fri_2), textResources.getString(cn.turingzy.ledger.R.string.ui_sat_2), textResources.getString(cn.turingzy.ledger.R.string.ui_sun)).forEach { day ->
                     Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                        Text(day, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(day, fontSize = LedgerStyle.typography.bodySmall.fontSize, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -179,26 +177,26 @@ private fun LedgerWeekOption(date: LocalDate, chosen: Boolean, today: LocalDate,
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val label = weekLabel(date) + if (date == weekStart(today)) textResources.getString(cn.turingzy.ledger.R.string.ui_this_week) else ""
     Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
+        Modifier.fillMaxWidth().clip(LedgerStyle.shapes.card)
             .periodSelection(date, chosen, onSelect),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium),
     ) {
         Text(
-            label, modifier = Modifier.padding(horizontal = 2.dp), fontSize = 13.sp,
+            label, modifier = Modifier.padding(horizontal = LedgerStyle.spacing.tiny), fontSize = LedgerStyle.typography.bodySmall.fontSize,
             color = if (chosen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
         )
         Row(
-            Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
+            Modifier.fillMaxWidth().clip(LedgerStyle.shapes.card)
                 .background(if (chosen) MaterialTheme.colorScheme.primary.copy(alpha = 0.06f) else MaterialTheme.colorScheme.background)
-                .padding(8.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                .padding(LedgerStyle.spacing.medium),
+            horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.small),
         ) {
             repeat(7) { offset ->
                 Box(
                     Modifier.weight(1f).height(36.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(date.plusDays(offset.toLong()).dayOfMonth.toString(), fontSize = 15.sp,
+                    Text(date.plusDays(offset.toLong()).dayOfMonth.toString(), fontSize = LedgerStyle.typography.transactionTitle.fontSize,
                         color = MaterialTheme.colorScheme.onSurface)
                 }
             }
@@ -208,13 +206,13 @@ private fun LedgerWeekOption(date: LocalDate, chosen: Boolean, today: LocalDate,
 
 @Composable
 private fun LedgerMonthOptions(year: Int, chosen: LocalDate, onSelect: (LocalDate) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium)) {
         Text(
-            "${year}年", modifier = Modifier.padding(start = 4.dp, bottom = 6.dp), fontSize = 15.sp,
+            "${year}年", modifier = Modifier.padding(start = 4.dp, bottom = 6.dp), fontSize = LedgerStyle.typography.transactionTitle.fontSize,
             color = if (chosen.year == year) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
         )
         (1..12).chunked(5).forEach { months ->
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium)) {
                 months.forEach { month ->
                     val date = LocalDate.of(year, month, 1)
                     PeriodOption(date, "${month}月", chosen == date, onSelect, Modifier.weight(1f))
@@ -234,11 +232,11 @@ private fun PeriodOption(
     modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier.fillMaxWidth().height(44.dp).clip(RoundedCornerShape(14.dp))
+        modifier.fillMaxWidth().height(44.dp).clip(LedgerStyle.shapes.bankCard)
             .background(MaterialTheme.colorScheme.background).periodSelection(date, chosen, onSelect),
         contentAlignment = Alignment.Center,
     ) {
-        Text(label, fontSize = 15.sp, fontWeight = if (chosen) FontWeight.Medium else FontWeight.Normal,
+        Text(label, fontSize = LedgerStyle.typography.transactionTitle.fontSize, fontWeight = if (chosen) FontWeight.Medium else FontWeight.Normal,
             color = if (chosen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
     }
 }
@@ -247,4 +245,26 @@ private fun PeriodOption(
 private fun Modifier.periodSelection(date: LocalDate, chosen: Boolean, onSelect: (LocalDate) -> Unit): Modifier =
     testTag("ledgerPeriod-${date.toEpochDay()}")
         .semantics { selected = chosen; contentDescription = date.toString() }
-        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { onSelect(date) }
+        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = rememberUiIndication()) { onSelect(date) }
+
+@Composable
+internal fun PeriodPickerActions(
+    type: DateFilterType,
+    onDismiss: () -> Unit,
+    onReturn: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val closeDescription = androidx.compose.ui.res.stringResource(cn.turingzy.ledger.R.string.ui_close_date_picker)
+    Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        BaseIconButton(
+            MaterialSymbols.Close, closeDescription, onDismiss,
+            interaction = UiInteractionKind.Navigation,
+        )
+        Spacer(Modifier.weight(1f))
+        BaseIconButton(
+            MaterialSymbols.Undo, type.returnLabel, onReturn,
+            contentColor = LedgerStyle.colors.info,
+            interaction = UiInteractionKind.Navigation,
+        )
+    }
+}

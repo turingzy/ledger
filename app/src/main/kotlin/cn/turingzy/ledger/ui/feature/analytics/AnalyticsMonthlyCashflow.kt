@@ -1,8 +1,9 @@
 package cn.turingzy.ledger.ui.feature.analytics
 
+import cn.turingzy.ledger.ui.theme.LedgerStyle
+import cn.turingzy.ledger.ui.components.base.BaseSurface
 import cn.turingzy.ledger.ui.component.LocalLedgerCurrency
 import cn.turingzy.ledger.ui.component.currencySymbol
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -42,19 +43,14 @@ import kotlin.math.roundToInt
 internal fun MonthlyCashflowCard(days: Map<LocalDate, AnalyticsDay>, month: YearMonth, modifier: Modifier = Modifier, transactions: List<AnalyticsTransaction> = emptyList()) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val colors = MaterialTheme.colorScheme
-    Surface(
-        modifier.fillMaxWidth().padding(top = AnalyticsCardTopSpacing), shape = RoundedCornerShape(20.dp),
-        color = colors.surface, border = BorderStroke(0.5.dp, colors.outlineVariant),
-    ) {
-        Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                AnalyticsCardTitle(textResources.getString(cn.turingzy.ledger.R.string.ui_monthly_cash_flow), Modifier.weight(1f))
-                CashflowLegend(textResources.getString(cn.turingzy.ledger.R.string.ui_expense), colors.error)
-                CashflowLegend(textResources.getString(cn.turingzy.ledger.R.string.ui_income), colors.tertiary)
-                CashflowLegend(textResources.getString(cn.turingzy.ledger.R.string.ui_balance), colors.primary, line = true)
-            }
-            MonthlyCashflow(days, month, transactions)
+    DashboardCard(modifier) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium)) {
+            AnalyticsCardTitle(textResources.getString(cn.turingzy.ledger.R.string.ui_monthly_cash_flow), Modifier.weight(1f))
+            CashflowLegend(textResources.getString(cn.turingzy.ledger.R.string.ui_expense), colors.error)
+            CashflowLegend(textResources.getString(cn.turingzy.ledger.R.string.ui_income), colors.tertiary)
+            CashflowLegend(textResources.getString(cn.turingzy.ledger.R.string.ui_balance), colors.primary, line = true)
         }
+        MonthlyCashflow(days, month, transactions)
     }
 }
 
@@ -65,7 +61,7 @@ private fun CashflowLegend(label: String, color: Color, line: Boolean = false) {
             drawLine(color, Offset(0f, center.y), Offset(size.width, center.y), 1.5.dp.toPx(), cap = StrokeCap.Round)
             drawCircle(color, 3.dp.toPx(), center)
         } else Box(Modifier.size(9.dp).background(color, RoundedCornerShape(1.dp)))
-        Text(label, fontSize = 12.sp, lineHeight = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+        Text(label, fontSize = LedgerStyle.typography.label.fontSize, lineHeight = 14.sp, color = MaterialTheme.colorScheme.onSurface)
     }
 }
 
@@ -167,7 +163,7 @@ private fun MonthlyCashflow(days: Map<LocalDate, AnalyticsDay>, month: YearMonth
                         ) {
                             Text(
                                 if (index == 0 || item.month.monthValue == 1) "${item.month.year}.${item.month.monthValue}" else "${item.month.monthValue}月",
-                                fontSize = 10.sp, lineHeight = 12.sp, color = colors.onSurfaceVariant, maxLines = 1,
+                                fontSize = LedgerStyle.typography.chartLabel.fontSize, lineHeight = 12.sp, color = colors.onSurfaceVariant, maxLines = 1,
                             )
                         }
                     }
@@ -177,13 +173,13 @@ private fun MonthlyCashflow(days: Map<LocalDate, AnalyticsDay>, month: YearMonth
                 val summaryWidth = minOf(132.dp, viewportWidth)
                 val visibleX = slot * (months.indexOf(selected) + 0.5f) - with(LocalDensity.current) { scroll.value.toDp() }
                 val summaryX = (visibleX - summaryWidth / 2).coerceIn(0.dp, viewportWidth - summaryWidth)
-                Surface(onClick = { showDetails = true }, shape = RoundedCornerShape(10.dp),
+                BaseSurface(onClick = { showDetails = true }, shape = RoundedCornerShape(10.dp),
                     color = analyticsChartInfoColor(),
                     modifier = Modifier.offset(x = summaryX, y = 4.dp).width(summaryWidth)
                         .semantics { contentDescription = "${selected.month.year}年${selected.month.monthValue}月收支汇总" },
                 ) {
                     Column(Modifier.padding(horizontal = 7.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(0.dp)) {
-                        Text("${selected.month.year}年${selected.month.monthValue}月", fontSize = 12.sp, lineHeight = 14.sp, color = colors.onSurfaceVariant)
+                        Text("${selected.month.year}年${selected.month.monthValue}月", fontSize = LedgerStyle.typography.label.fontSize, lineHeight = 14.sp, color = colors.onSurfaceVariant)
                         Spacer(Modifier.height(3.dp))
                         CashflowSummary(textResources.getString(cn.turingzy.ledger.R.string.ui_income), selected.income.toFormattedAmount(true, symbol = currencySymbol))
                         CashflowSummary(textResources.getString(cn.turingzy.ledger.R.string.ui_expense), selected.expense.toFormattedAmount(true, symbol = currencySymbol))
@@ -205,8 +201,8 @@ internal fun monthlyCashflowFocusIndex(offset: Int, maximumOffset: Int, viewport
 
 @Composable
 private fun CashflowSummary(label: String, value: String, modifier: Modifier = Modifier) {
-    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(label, Modifier.weight(1f), fontSize = 12.sp, lineHeight = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(value, fontSize = 12.sp, lineHeight = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium)) {
+        Text(label, Modifier.weight(1f), fontSize = LedgerStyle.typography.label.fontSize, lineHeight = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value, fontSize = LedgerStyle.typography.label.fontSize, lineHeight = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

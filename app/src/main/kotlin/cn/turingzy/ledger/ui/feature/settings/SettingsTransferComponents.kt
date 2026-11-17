@@ -1,5 +1,9 @@
 package cn.turingzy.ledger.ui.feature.settings
 
+import cn.turingzy.ledger.ui.theme.LedgerStyle
+import cn.turingzy.ledger.ui.components.base.BaseSurface
+import cn.turingzy.ledger.ui.components.base.BaseButtonVariant
+import cn.turingzy.ledger.ui.components.base.BaseActionButton
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
@@ -17,9 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,9 +47,9 @@ internal fun SettingsTransferAction(
     Row(
         modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium),
     ) {
-        TextButton(
+        BaseActionButton(variant = BaseButtonVariant.Text, actionKey = running,
             onClick = onClick,
             enabled = enabled,
             modifier = Modifier.heightIn(min = SettingsItemHeight),
@@ -83,13 +85,13 @@ internal fun SettingsTransferFileRow(
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val colors = MaterialTheme.colorScheme
-    Surface(modifier, shape = RoundedCornerShape(16.dp), color = colors.surface) {
+    BaseSurface(modifier, shape = LedgerStyle.shapes.card, color = colors.surface) {
         Row(
             Modifier.fillMaxWidth().heightIn(min = SettingsItemHeight)
                 .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large),
         ) {
             Text(textResources.getString(cn.turingzy.ledger.R.string.ui_transaction_file), style = MaterialTheme.typography.bodyLarge)
             Text(

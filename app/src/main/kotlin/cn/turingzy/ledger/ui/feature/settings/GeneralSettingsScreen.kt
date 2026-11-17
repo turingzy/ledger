@@ -1,7 +1,15 @@
 package cn.turingzy.ledger.ui.feature.settings
 
+import cn.turingzy.ledger.ui.components.base.BaseButtonVariant
+import cn.turingzy.ledger.ui.components.base.BaseActionButton
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import cn.turingzy.ledger.model.AppPreferences
+import cn.turingzy.ledger.ui.component.MaterialSymbols
+import cn.turingzy.ledger.ui.components.base.BaseIconButton
+import cn.turingzy.ledger.ui.components.base.BaseCard
+import cn.turingzy.ledger.ui.components.base.BaseDivider
+import cn.turingzy.ledger.ui.interaction.rememberUiAction
+import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -22,7 +30,6 @@ import cn.turingzy.ledger.R
 import cn.turingzy.ledger.ui.AppSettingsViewModel
 import cn.turingzy.ledger.ui.component.GeneralPreferencesForm
 import cn.turingzy.ledger.ui.component.PreferenceChoice
-import cn.turingzy.ledger.ui.component.LedgerIconButton
 
 @Composable
 internal fun GeneralSettingsScreen(onBack: () -> Unit, viewModel: AppSettingsViewModel = hiltViewModel()) {
@@ -47,42 +54,62 @@ internal fun GeneralSettingsScreen(onBack: () -> Unit, viewModel: AppSettingsVie
         } catch (error: kotlinx.coroutines.CancellationException) { throw error }
         catch (error: Exception) { timber.log.Timber.w(error, "No saved rate for settings preview") }
     }
-    val colors = MaterialTheme.colorScheme
     val draft = initial.copy(language = language, theme = theme, primaryCurrency = primary)
     val validRate = rate.toBigDecimalOrNull()?.let { it.signum() > 0 && it.scale() in -18..18 && it.precision() <= 36 } == true
     val canSave = !busy && (draft != initial || edited) && (!edited || validRate)
-    SettingsPage(
-        title = stringResource(R.string.general_settings),
-        onDismissRequest = onBack,
-        avoidKeyboard = true,
-        action = {
-            LedgerIconButton(
-                onClick = {
-                    viewModel.save(draft, rateFrom = from.takeIf { edited }, rateValue = rate.takeIf { edited }, onSaved = { edited = false })
-                },
-                enabled = canSave, showPressFeedback = false,
-            ) {
-                Icon(cn.turingzy.ledger.ui.component.MaterialSymbols.Check, stringResource(R.string.save),
-                    tint = colors.tertiary.copy(alpha = if (canSave) 1f else 0.38f))
-            }
+    GeneralSettingsContent(
+        draft = draft, busy = busy, canSave = canSave,
+        from = from, rate = rate, rateDate = rateDate, message = message,
+        currencies = (accounts.map { it.account.currency } + listOf("USD", "CNY", "HKD", "EUR")).distinct().filter { it != primary }.map { it to it },
+        onPreferencesChange = { language = it.language; theme = it.theme; primary = it.primaryCurrency },
+        onFromChange = { from = it }, onRateChange = { rate = it; edited = true },
+        onSave = { viewModel.save(draft, rateFrom = from.takeIf { edited }, rateValue = rate.takeIf { edited }, onSaved = { edited = false }) },
+        onRefresh = viewModel::refreshRates, onBack = onBack,
+    )
+}
+
+@Composable
+internal fun GeneralSettingsContent(
+    draft: AppPreferences,
+    busy: Boolean,
+    canSave: Boolean,
+    from: String,
+    rate: String,
+    rateDate: String?,
+    message: String?,
+    currencies: List<Pair<String, String>>,
+    onPreferencesChange: (AppPreferences) -> Unit,
+    onFromChange: (String) -> Unit,
+    onRateChange: (String) -> Unit,
+    onSave: () -> Unit,
+    onRefresh: () -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = MaterialTheme.colorScheme
+    SettingsSubpageScaffold(
+        title = stringResource(R.string.general_settings), onBack = onBack, modifier = modifier,
+        actions = {
+            BaseIconButton(MaterialSymbols.Check, stringResource(R.string.save), onSave,
+                enabled = canSave, contentColor = colors.tertiary, showPressFeedback = false)
         },
     ) {
-        Column(Modifier.fillMaxWidth().settingsPageScroll(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(
+            Modifier.fillMaxWidth().settingsPageScroll(),
+            verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.sectionGap),
+        ) {
             Text(stringResource(R.string.basic_preferences), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-            GeneralPreferencesForm(draft, { language = it.language; theme = it.theme; primary = it.primaryCurrency }, !busy)
+            GeneralPreferencesForm(draft, onPreferencesChange, !busy)
             Text(stringResource(R.string.exchange_rates), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-            Surface(shape = RoundedCornerShape(16.dp), color = colors.surface) {
-                Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp)) {
-                    PreferenceChoice(stringResource(R.string.account_currency), from,
-                        (accounts.map { it.account.currency } + listOf("USD", "CNY", "HKD", "EUR")).distinct().filter { it != primary }.map { it to it }, !busy) { from = it }
-                    HorizontalDivider(thickness = 0.5.dp, color = colors.outlineVariant)
-                    ExchangeRateField(from, primary, rate, !busy) { rate = it; edited = true }
-                }
+            BaseCard(contentPadding = PaddingValues(LedgerStyle.spacing.none), contentSpacing = LedgerStyle.spacing.none) {
+                PreferenceChoice(stringResource(R.string.account_currency), from, currencies, !busy, onFromChange)
+                BaseDivider(Modifier.padding(horizontal = LedgerStyle.spacing.large))
+                ExchangeRateField(from, draft.primaryCurrency, rate, !busy, onRateChange)
             }
             rateDate?.let {
                 Text(stringResource(R.string.rate_as_of, it), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
             }
-            TextButton(onClick = viewModel::refreshRates, enabled = !busy, contentPadding = PaddingValues(vertical = 8.dp)) {
+            BaseActionButton(variant = BaseButtonVariant.Text, onClick = onRefresh, enabled = !busy, contentPadding = PaddingValues(vertical = LedgerStyle.spacing.medium)) {
                 Text(stringResource(R.string.refresh_rates))
             }
             message?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant) }
@@ -95,12 +122,12 @@ internal fun GeneralSettingsScreen(onBack: () -> Unit, viewModel: AppSettingsVie
 private fun ExchangeRateField(from: String, primary: String, value: String, enabled: Boolean, onChange: (String) -> Unit) {
     val colors = MaterialTheme.colorScheme
     val description = "1 $from, $primary"
-    Row(Modifier.fillMaxWidth().heightIn(min = SettingsItemHeight), verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(Modifier.fillMaxWidth().heightIn(min = SettingsItemHeight).padding(horizontal = LedgerStyle.spacing.large), verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.inlineGap)) {
         Text("1 $from", style = MaterialTheme.typography.bodyLarge, color = colors.onSurface)
         BasicTextField(
             value = value, onValueChange = onChange, enabled = enabled, singleLine = true,
-            textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.onSurfaceVariant.copy(alpha = if (enabled) 1f else 0.38f), textAlign = TextAlign.End),
+            textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.onSurfaceVariant.copy(alpha = if (enabled) 1f else LedgerStyle.opacity.disabled), textAlign = TextAlign.End),
             cursorBrush = SolidColor(colors.onSurface),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             modifier = Modifier.weight(1f).semantics { contentDescription = description },

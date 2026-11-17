@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="business_deleted">Deleted</string>
+    <string name="business_uncategorized">Uncategorized</string>
+    <string name="business_unavailable_account">Destination unavailable</string>
+    <string name="business_received_amount">Received %1$s</string>
+</resources>

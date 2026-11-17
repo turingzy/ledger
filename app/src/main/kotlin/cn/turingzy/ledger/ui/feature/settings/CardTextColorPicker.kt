@@ -1,5 +1,9 @@
 package cn.turingzy.ledger.ui.feature.settings
 
+import cn.turingzy.ledger.ui.components.base.BaseIconButtonContent
+import cn.turingzy.ledger.ui.theme.LedgerStyle
+import cn.turingzy.ledger.ui.components.base.BaseSurface
+import cn.turingzy.ledger.ui.components.base.BaseDialogWindow
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -16,14 +20,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -48,14 +49,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.ui.component.CompactSlider
-import cn.turingzy.ledger.ui.component.LedgerIconButton
 import cn.turingzy.ledger.ui.component.MaterialSymbols
-import cn.turingzy.ledger.ui.theme.IosOrange
-import cn.turingzy.ledger.ui.theme.IosPurple
-import cn.turingzy.ledger.ui.theme.IosYellow
-import cn.turingzy.ledger.ui.theme.IosTeal
-import cn.turingzy.ledger.ui.theme.IosLabel
-import cn.turingzy.ledger.ui.theme.SurfaceLight
 
 internal fun String.asCardTextColor(): Color? {
     val hex = removePrefix("#")
@@ -75,18 +69,18 @@ internal fun CardTextColorPicker(value: String, onChange: (String) -> Unit) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val colors = MaterialTheme.colorScheme
     val focusManager = LocalFocusManager.current
-    val presets = listOf(SurfaceLight, IosLabel, colors.primary, colors.tertiary, colors.error, IosOrange, IosPurple, IosYellow, IosTeal)
+    val presets = LedgerStyle.decorationColors.colorPickerPalette(colors)
     var showDialog by remember { mutableStateOf(false) }
-    val current = value.asCardTextColor() ?: SurfaceLight
+    val current = value.asCardTextColor() ?: LedgerStyle.decorationColors.colorPickerDefault
     Column {
         Row(Modifier.fillMaxWidth().height(SettingsItemHeight), verticalAlignment = Alignment.CenterVertically) {
             Text(textResources.getString(cn.turingzy.ledger.R.string.ui_text_color), Modifier.weight(1f).padding(start = 12.dp), style = MaterialTheme.typography.bodyLarge)
-            LedgerIconButton(onClick = { focusManager.clearFocus(); showDialog = true }) {
-                Icon(MaterialSymbols.Palette, textResources.getString(cn.turingzy.ledger.R.string.ui_more_colors), Modifier.size(24.dp))
+            BaseIconButtonContent(onClick = { focusManager.clearFocus(); showDialog = true }) {
+                Icon(MaterialSymbols.Palette, textResources.getString(cn.turingzy.ledger.R.string.ui_more_colors), Modifier.size(LedgerStyle.icons.default))
             }
         }
         Row(
-            Modifier.fillMaxWidth().height(SettingsItemHeight).padding(horizontal = 12.dp),
+            Modifier.fillMaxWidth().height(SettingsItemHeight).padding(horizontal = LedgerStyle.spacing.large),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -123,11 +117,11 @@ private fun CardTextColorDialog(initialColor: Color, onDismiss: () -> Unit, onCo
     val parsed = hex.asCardTextColor()
     val colors = MaterialTheme.colorScheme
     fun updateColor() { hex = Color.hsv(hue, saturation, brightness, alpha).asHex() }
-    BasicAlertDialog(onDismissRequest = onDismiss) {
-        Surface(modifier = Modifier.padding(vertical = 12.dp), shape = RoundedCornerShape(28.dp), color = colors.background) {
+    BaseDialogWindow(onDismissRequest = onDismiss) {
+        BaseSurface(modifier = Modifier.padding(vertical = LedgerStyle.spacing.large), shape = LedgerStyle.shapes.confirmationDialog, color = colors.background) {
             Column(
-                Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(LedgerStyle.spacing.extraLarge),
+                verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium),
             ) {
                 Text(textResources.getString(cn.turingzy.ledger.R.string.ui_custom_color), style = MaterialTheme.typography.titleLarge)
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -145,10 +139,10 @@ private fun CardTextColorDialog(initialColor: Color, onDismiss: () -> Unit, onCo
                         modifier = Modifier.weight(1f).padding(start = 12.dp).semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_brightness) },
                     )
                 }
-                Surface(shape = RoundedCornerShape(12.dp), color = colors.surface) {
+                BaseSurface(shape = LedgerStyle.shapes.field, color = colors.surface) {
                     Row(
                         Modifier.fillMaxWidth().padding(10.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         BasicTextField(
@@ -165,12 +159,12 @@ private fun CardTextColorDialog(initialColor: Color, onDismiss: () -> Unit, onCo
                             textStyle = MaterialTheme.typography.bodyLarge.copy(color = if (parsed == null) colors.error else colors.onSurface),
                             cursorBrush = SolidColor(colors.onSurface),
                         )
-                        Box(Modifier.size(24.dp).clip(CircleShape).background(parsed ?: initialColor).border(0.5.dp, colors.outlineVariant, CircleShape))
+                        Box(Modifier.size(LedgerStyle.icons.default).clip(CircleShape).background(parsed ?: initialColor).border(0.5.dp, colors.outlineVariant, CircleShape))
                     }
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    LedgerIconButton(onClick = onDismiss, modifier = Modifier.size(40.dp)) { Icon(MaterialSymbols.Close, textResources.getString(cn.turingzy.ledger.R.string.ui_cancel_color_selection)) }
-                    LedgerIconButton(modifier = Modifier.size(40.dp), enabled = parsed != null, onClick = { parsed?.let(onConfirm) }) {
+                    BaseIconButtonContent(onClick = onDismiss, modifier = Modifier.size(40.dp)) { Icon(MaterialSymbols.Close, textResources.getString(cn.turingzy.ledger.R.string.ui_cancel_color_selection)) }
+                    BaseIconButtonContent(modifier = Modifier.size(40.dp), enabled = parsed != null, onClick = { parsed?.let(onConfirm) }) {
                         Icon(MaterialSymbols.Check, textResources.getString(cn.turingzy.ledger.R.string.ui_apply_text_color), tint = colors.tertiary.copy(alpha = if (parsed == null) 0.38f else 1f))
                     }
                 }
@@ -185,7 +179,7 @@ private fun ColorSquare(hue: Float, saturation: Float, brightness: Float, onSele
     val update by rememberUpdatedState(onSelect)
     val hueColors = remember(brightness) { (0..6).map { Color.hsv((it % 6) * 60f, 1f, brightness) } }
     Canvas(
-        Modifier.fillMaxWidth().height(180.dp).clip(RoundedCornerShape(12.dp))
+        Modifier.fillMaxWidth().height(180.dp).clip(LedgerStyle.shapes.field)
             .semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_color_palette) }
             .pointerInput(Unit) {
                 detectTapGestures { point ->
@@ -205,7 +199,7 @@ private fun ColorSquare(hue: Float, saturation: Float, brightness: Float, onSele
             (hue / 360f * size.width).coerceIn(inset, size.width - inset),
             (saturation * size.height).coerceIn(inset, size.height - inset),
         )
-        drawCircle(IosLabel, 6.dp.toPx(), marker, style = Stroke(3.dp.toPx()))
-        drawCircle(SurfaceLight, 6.dp.toPx(), marker, style = Stroke(1.5.dp.toPx()))
+        drawCircle(LedgerStyle.decorationColors.colorPickerOutline, 6.dp.toPx(), marker, style = Stroke(3.dp.toPx()))
+        drawCircle(LedgerStyle.decorationColors.colorPickerDefault, 6.dp.toPx(), marker, style = Stroke(1.5.dp.toPx()))
     }
 }

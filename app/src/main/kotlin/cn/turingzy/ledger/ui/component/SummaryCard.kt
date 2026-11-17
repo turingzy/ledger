@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.component
 
+import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -63,7 +64,7 @@ fun SummaryCard(
     }
     val blurredBackdrop = rememberBlurredBackdrop(defaultBackgroundRes, background)
     val colors = MaterialTheme.colorScheme
-    val shape = RoundedCornerShape(20.dp)
+    val shape = LedgerStyle.shapes.summaryCard
 
     Box(
         modifier.fillMaxWidth().height(132.dp)
@@ -114,7 +115,7 @@ fun SummaryCard(
             contentDescription = if (settingsVisible) textResources.getString(cn.turingzy.ledger.R.string.ui_close_card_settings) else textResources.getString(cn.turingzy.ledger.R.string.ui_card_settings),
             onClick = { settingsVisible = !settingsVisible },
             showPressFeedback = !settingsVisible,
-            modifier = Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 12.dp).size(36.dp),
+            modifier = Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 12.dp).size(LedgerStyle.dimensions.compactIconButton),
         )
     }
 }

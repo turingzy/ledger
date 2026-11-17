@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.overscroll
 import androidx.compose.foundation.rememberOverscrollEffect
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -46,6 +45,8 @@ import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.ui.component.BankCardAspectRatio
 import cn.turingzy.ledger.ui.component.rememberCircularCardPagerState
 import cn.turingzy.ledger.ui.component.CardPageIndicator
+import cn.turingzy.ledger.ui.components.base.BaseEmptyState
+import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.model.Account
 import cn.turingzy.ledger.model.AccountWithTemplate
 import kotlinx.coroutines.launch
@@ -246,6 +247,11 @@ private fun BankCardDeck(
 private fun EmptyCardDeck(modifier: Modifier = Modifier) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     Box(modifier.fillMaxWidth().aspectRatio(BankCardAspectRatio), contentAlignment = Alignment.Center) {
-        Text(textResources.getString(cn.turingzy.ledger.R.string.ui_no_accounts), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        BaseEmptyState(
+            title = textResources.getString(cn.turingzy.ledger.R.string.ui_no_accounts),
+            contentPadding = PaddingValues(LedgerStyle.spacing.none),
+            titleStyle = MaterialTheme.typography.bodyLarge,
+            titleColor = LedgerStyle.colors.textSecondary,
+        )
     }
 }

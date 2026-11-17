@@ -6,6 +6,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.unit.sp
+import cn.turingzy.ledger.ui.components.business.BusinessTransactionRow
 import cn.turingzy.ledger.model.TransactionType
 import cn.turingzy.ledger.ui.theme.IosSecondary
 import cn.turingzy.ledger.ui.theme.LedgerTheme
@@ -45,7 +46,7 @@ class ForeignTransactionAmountTest {
         compose.setContent {
             LedgerTheme {
                 CompositionLocalProvider(LocalLedgerCurrency provides primary) {
-                    TransactionRow(
+                    BusinessTransactionRow(
                         categoryName = "餐饮",
                         supportingText = "外币账户",
                         timeText = "12:00",

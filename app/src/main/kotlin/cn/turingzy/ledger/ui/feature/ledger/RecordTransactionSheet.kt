@@ -1,5 +1,10 @@
 package cn.turingzy.ledger.ui.feature.ledger
 
+import cn.turingzy.ledger.ui.components.base.BaseIconButtonContent
+import cn.turingzy.ledger.ui.components.base.BaseDivider
+import cn.turingzy.ledger.ui.theme.LedgerStyle
+import cn.turingzy.ledger.ui.components.base.BaseSurface
+import cn.turingzy.ledger.ui.components.base.BaseModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
@@ -34,12 +39,8 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.HorizontalDivider
-import cn.turingzy.ledger.ui.component.LedgerIconButton as IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -81,7 +82,6 @@ import cn.turingzy.ledger.ui.component.LedgerSegmentedControl
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.SummaryCardIconButton
 import cn.turingzy.ledger.ui.component.categoryGlyph
-import cn.turingzy.ledger.ui.theme.IosYellow
 import cn.turingzy.ledger.util.AmountFormatter
 import cn.turingzy.ledger.util.toFormattedAmount
 import java.time.Instant
@@ -158,7 +158,7 @@ fun RecordTransactionSheet(
         panel = target
     }
 
-    ModalBottomSheet(
+    BaseModalBottomSheet(
         onDismissRequest = onDismissRequest, sheetState = sheetState,
         // Material's outer IME padding otherwise changes the drawer's expanded anchor.
         modifier = modifier.composed {
@@ -172,9 +172,9 @@ fun RecordTransactionSheet(
             }
         },
         containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        shape = LedgerStyle.shapes.bottomSheet,
         dragHandle = null,
-        contentWindowInsets = { WindowInsets(0, 0, 0, 0) },
+        contentHandlesInsets = true,
     ) {
         RecordTransactionContent(
             modifier = Modifier.height(fixedHeight).testTag("recordDrawer").padding(WindowInsets.navigationBars.asPaddingValues()),
@@ -286,15 +286,11 @@ internal fun RecordTransactionContent(
     }
     val keypadHeight = keyHeight * 4 + 24.dp
     val footerLift = (keyboardOverlap - keypadHeight - 8.dp).coerceAtLeast(0.dp)
-    val selectionColor = when (type) {
-        TransactionType.EXPENSE -> colors.error
-        TransactionType.INCOME -> colors.tertiary
-        TransactionType.TRANSFER -> IosYellow
-    }
+    val selectionColor = LedgerStyle.colors.transaction(type)
     val amountColor = selectionColor
     LaunchedEffect(expression) { expressionScroll.animateScrollTo(expressionScroll.maxValue) }
     Column(modifier.fillMaxSize()) {
-        Box(Modifier.fillMaxWidth().height(44.dp).padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
+        Box(Modifier.fillMaxWidth().height(44.dp).padding(horizontal = LedgerStyle.spacing.large), contentAlignment = Alignment.Center) {
             SummaryCardIconButton(
                 MaterialSymbols.Close, "关闭$title", onDismiss, showPressFeedback = false,
                 modifier = Modifier.align(Alignment.CenterStart), containerColor = colors.surface, contentColor = colors.onSurface,
@@ -302,7 +298,7 @@ internal fun RecordTransactionContent(
             LedgerSegmentedControl(
                 listOf(textResources.getString(cn.turingzy.ledger.R.string.ui_expense), textResources.getString(cn.turingzy.ledger.R.string.ui_income), textResources.getString(cn.turingzy.ledger.R.string.ui_transfer)), TransactionType.entries.indexOf(type),
                 { onTypeChange(TransactionType.entries[it]) },
-                modifier = Modifier.width(168.dp), height = 27.dp, fontSize = 12.sp,
+                modifier = Modifier.width(168.dp), height = 27.dp, fontSize = LedgerStyle.typography.label.fontSize,
                 containerColor = colors.surface, selectedContainerColor = colors.surfaceVariant,
             )
         }
@@ -310,44 +306,44 @@ internal fun RecordTransactionContent(
             if (type == TransactionType.TRANSFER) {
                 RecordTransferAccounts(
                     accountName, destinationName, onAccountClick, onDestinationClick, onSwapAccounts,
-                    Modifier.fillMaxSize().padding(bottom = footerHeight + footerLift).padding(horizontal = 12.dp).padding(top = 16.dp),
+                    Modifier.fillMaxSize().padding(bottom = footerHeight + footerLift).padding(horizontal = LedgerStyle.spacing.large).padding(top = 16.dp),
                 )
             } else key(type) {
                 RecordCategoryGrid(categories, selectedCategoryId, selectionColor, onCategorySelect, footerHeight + footerLift)
             }
-            Surface(
+            BaseSurface(
                 Modifier.align(Alignment.BottomCenter).offset(y = -footerLift).fillMaxWidth().onSizeChanged { footerHeight = with(density) { it.height.toDp() } },
                 shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp), color = colors.surfaceVariant,
             ) {
-                Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium)) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium), verticalAlignment = Alignment.CenterVertically) {
                         if (type != TransactionType.TRANSFER) RecordCompactSelector(
                             accountName ?: textResources.getString(cn.turingzy.ledger.R.string.ui_select_account), MaterialSymbols.AccountBalanceWallet, onAccountClick,
                             Modifier.weight(1f, fill = false), textResources.getString(cn.turingzy.ledger.R.string.ui_select_account),
                         )
                         RecordCompactSelector(timeLabel, MaterialSymbols.Schedule, onTimeClick, description = textResources.getString(cn.turingzy.ledger.R.string.ui_select_time))
                     }
-                    Surface(shape = RoundedCornerShape(20.dp), color = colors.surface) {
+                    BaseSurface(shape = LedgerStyle.shapes.summaryCard, color = colors.surface) {
                         Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp)) {
                             Row(Modifier.fillMaxWidth().height(48.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Text(cn.turingzy.ledger.ui.component.currencySymbol(currency).trim(), fontSize = 20.sp, color = amountColor)
                                 Text(
                                     expression.ifEmpty { "0.00" },
                                     modifier = Modifier.weight(1f).horizontalScroll(expressionScroll),
-                                    style = TextStyle(fontSize = 22.sp, lineHeight = 28.sp, fontFeatureSettings = "tnum", color = amountColor),
+                                    style = TextStyle(fontSize = LedgerStyle.typography.inputAmount.fontSize, lineHeight = 28.sp, fontFeatureSettings = "tnum", color = amountColor),
                                     maxLines = 1, softWrap = false,
                                 )
                             }
-                            HorizontalDivider(color = colors.outlineVariant)
+                            BaseDivider()
                             BasicTextField(
                                 value = note, onValueChange = onNoteChange, singleLine = true,
-                                textStyle = TextStyle(fontSize = 13.sp, lineHeight = 18.sp, color = colors.onSurfaceVariant),
+                                textStyle = TextStyle(fontSize = LedgerStyle.typography.bodySmall.fontSize, lineHeight = 18.sp, color = colors.onSurfaceVariant),
                                 cursorBrush = SolidColor(colors.onSurface),
                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done), keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                                 modifier = Modifier.fillMaxWidth().height(36.dp).semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_note) },
                                 decorationBox = { field ->
                                     Box(Modifier.fillMaxSize().padding(start = 6.dp), contentAlignment = Alignment.CenterStart) {
-                                        if (note.isEmpty()) Text(textResources.getString(cn.turingzy.ledger.R.string.ui_add_a_note), fontSize = 13.sp, lineHeight = 18.sp, color = colors.onSurfaceVariant.copy(alpha = 0.6f))
+                                        if (note.isEmpty()) Text(textResources.getString(cn.turingzy.ledger.R.string.ui_add_a_note), fontSize = LedgerStyle.typography.bodySmall.fontSize, lineHeight = 18.sp, color = colors.onSurfaceVariant.copy(alpha = 0.6f))
                                         field()
                                     }
                                 },
@@ -392,14 +388,14 @@ private fun RecordCompactSelector(
     description: String,
 ) {
     Row(
-        modifier.height(24.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surface)
+        modifier.height(24.dp).clip(LedgerStyle.shapes.field).background(MaterialTheme.colorScheme.surface)
             .semantics { contentDescription = description }
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = LocalIndication.current, onClick = onClick)
-            .padding(horizontal = 8.dp),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp),
+            .padding(horizontal = LedgerStyle.spacing.medium),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.extraSmall),
     ) {
         Icon(icon, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(label, Modifier.weight(1f, fill = false), fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(label, Modifier.weight(1f, fill = false), fontSize = LedgerStyle.typography.label.fontSize, maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -423,7 +419,7 @@ private fun RecordCategoryGrid(
     LazyVerticalGrid(
         GridCells.Fixed(5), Modifier.fillMaxSize().testTag("recordCategoryGrid"), state = gridState,
         contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 12.dp, bottom = bottomPadding + 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium), verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.extraLarge),
     ) {
         items(categories, key = { it.category.id }) { item ->
             val chosen = item.category.id == selectedId
@@ -434,10 +430,10 @@ private fun RecordCategoryGrid(
                 horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp),
             ) {
                 Box(
-                    Modifier.size(36.dp).clip(CircleShape).background(if (chosen) selectedColor else colors.surface.copy(alpha = 0.55f)),
+                    Modifier.size(LedgerStyle.dimensions.compactIconButton).clip(CircleShape).background(if (chosen) selectedColor else colors.surface.copy(alpha = 0.55f)),
                     contentAlignment = Alignment.Center,
                 ) { Icon(item.icon.categoryGlyph(), null, Modifier.size(22.dp), tint = if (chosen) colors.onPrimary else colors.onSurfaceVariant) }
-                Text(item.category.name, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 12.sp, color = colors.onSurface)
+                Text(item.category.name, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = LedgerStyle.typography.label.fontSize, color = colors.onSurface)
             }
         }
     }
@@ -450,13 +446,13 @@ private fun RecordTransferAccounts(
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     Box(modifier, contentAlignment = Alignment.TopCenter) {
-        Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface) {
+        BaseSurface(shape = LedgerStyle.shapes.summaryCard, color = MaterialTheme.colorScheme.surface) {
             Row(
-                Modifier.fillMaxWidth().padding(4.dp),
+                Modifier.fillMaxWidth().padding(LedgerStyle.spacing.extraSmall),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 TransferAccountSelector(textResources.getString(cn.turingzy.ledger.R.string.ui_from), source, onSource, Modifier.weight(1f))
-                IconButton(
+                BaseIconButtonContent(
                     onClick = onSwap,
                     enabled = source != null && destination != null,
                     modifier = Modifier.size(40.dp),
@@ -480,7 +476,7 @@ private fun TransferAccountSelector(
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val colors = MaterialTheme.colorScheme
     Column(
-        modifier.clip(RoundedCornerShape(16.dp))
+        modifier.clip(LedgerStyle.shapes.card)
             .semantics(mergeDescendants = true) { contentDescription = "选择${label}账户" }
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
@@ -488,7 +484,7 @@ private fun TransferAccountSelector(
                 onClick = onClick,
             )
             .padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.extraSmall),
         horizontalAlignment = alignment,
     ) {
         Text(label, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)

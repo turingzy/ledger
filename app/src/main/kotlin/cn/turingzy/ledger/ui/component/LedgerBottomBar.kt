@@ -1,5 +1,7 @@
 package cn.turingzy.ledger.ui.component
 
+import cn.turingzy.ledger.ui.theme.LedgerStyle
+import cn.turingzy.ledger.ui.components.base.BaseSurface
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -20,7 +22,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -44,7 +45,7 @@ internal fun LedgerBottomBar(
     backdrop: BackdropState? = null,
 ) {
     val colors = MaterialTheme.colorScheme
-    Surface(
+    BaseSurface(
         modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
@@ -112,7 +113,7 @@ internal fun LedgerBottomBar(
                     )
                     Text(
                         text = stringResource(destination.labelResource),
-                        fontSize = 11.sp,
+                        fontSize = LedgerStyle.typography.caption.fontSize,
                         lineHeight = 14.sp,
                         fontWeight = FontWeight.Medium,
                         color = iconTint,

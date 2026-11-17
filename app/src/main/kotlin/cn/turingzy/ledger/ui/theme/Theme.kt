@@ -9,7 +9,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LocalRippleConfiguration
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
-import cn.turingzy.ledger.ui.component.PressFeedback
+import cn.turingzy.ledger.ui.interaction.rememberUiIndication
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
@@ -63,7 +63,7 @@ fun LedgerTheme(
         colorScheme = colorScheme,
         typography = Typography,
     ) {
-        val feedback = remember(colorScheme.onSurface) { PressFeedback(colorScheme.onSurface.copy(alpha = 0.05f)) }
+        val feedback = rememberUiIndication()
         CompositionLocalProvider(LocalIndication provides feedback, LocalRippleConfiguration provides null, content = content)
     }
 }

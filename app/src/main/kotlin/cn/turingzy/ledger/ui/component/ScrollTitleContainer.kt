@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.component
 
+import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -48,7 +49,7 @@ internal fun ScrollTitleContainer(
                     .frostedBackdrop(backdrop, surface.copy(alpha = 0.55f), 3.dp, fadeBottom = 6.dp),
             )
             Row(
-                Modifier.fillMaxWidth().height(44.dp).padding(horizontal = 16.dp)
+                Modifier.fillMaxWidth().height(44.dp).padding(horizontal = LedgerStyle.spacing.extraLarge)
                     .graphicsLayer { alpha = progress },
                 verticalAlignment = Alignment.CenterVertically,
             ) {

@@ -3,7 +3,6 @@ package cn.turingzy.ledger.ui.feature.analytics
 import cn.turingzy.ledger.ui.component.LocalLedgerCurrency
 import cn.turingzy.ledger.ui.component.currencySymbol
 import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -14,7 +13,6 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -43,6 +41,7 @@ import androidx.compose.ui.unit.sp
 import cn.turingzy.ledger.model.CategoryType
 import cn.turingzy.ledger.ui.component.LedgerSegmentedControl
 import cn.turingzy.ledger.util.toFormattedAmount
+import cn.turingzy.ledger.ui.theme.LedgerStyle
 import java.math.BigDecimal
 import java.math.RoundingMode
 
@@ -61,68 +60,63 @@ internal fun AnalyticsCategoryShareCard(
     val periodTotal = if (income) state.totalIncome else state.totalExpense
     val palette = remember(rankings.size, colors.tertiary, colors.surface, colors.onSurfaceVariant) { categoryShareColors(rankings.size, colors.tertiary, colors.surface, colors.onSurfaceVariant) }
     var sheetId by remember(state.categoryType, state.periodStart, state.periodEnd, rankings) { mutableStateOf<Long?>(null) }
-    Surface(
-        modifier.fillMaxWidth().padding(top = AnalyticsCardTopSpacing), shape = RoundedCornerShape(20.dp),
-        color = colors.surface, border = BorderStroke(0.5.dp, colors.outlineVariant),
-    ) {
-        Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                AnalyticsCardTitle(textResources.getString(cn.turingzy.ledger.R.string.ui_category_breakdown), Modifier.weight(1f))
-                LedgerSegmentedControl(
-                    listOf(textResources.getString(cn.turingzy.ledger.R.string.ui_expense), textResources.getString(cn.turingzy.ledger.R.string.ui_income)), if (income) 1 else 0,
-                    { onCategoryTypeChange(if (it == 1) CategoryType.INCOME else CategoryType.EXPENSE) },
-                    Modifier.width(88.dp), height = 26.dp, fontSize = 12.sp, emphasizeSelection = false,
-                )
+    DashboardCard(modifier, contentSpacing = LedgerStyle.spacing.extraLarge) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium)) {
+            AnalyticsCardTitle(textResources.getString(cn.turingzy.ledger.R.string.ui_category_breakdown), Modifier.weight(1f))
+            LedgerSegmentedControl(
+                listOf(textResources.getString(cn.turingzy.ledger.R.string.ui_expense), textResources.getString(cn.turingzy.ledger.R.string.ui_income)), if (income) 1 else 0,
+                { onCategoryTypeChange(if (it == 1) CategoryType.INCOME else CategoryType.EXPENSE) },
+                Modifier.width(88.dp), height = 26.dp, fontSize = LedgerStyle.typography.label.fontSize, emphasizeSelection = false,
+            )
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.extraSmall)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(if (income) textResources.getString(cn.turingzy.ledger.R.string.ui_total_income) else textResources.getString(cn.turingzy.ledger.R.string.ui_total_expenses), Modifier.weight(1f),
+                    fontSize = LedgerStyle.typography.bodyMedium.fontSize, lineHeight = 18.sp, color = colors.onSurfaceVariant)
+                AnalyticsAmountText(periodTotal, textAlign = TextAlign.End)
             }
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(if (income) textResources.getString(cn.turingzy.ledger.R.string.ui_total_income) else textResources.getString(cn.turingzy.ledger.R.string.ui_total_expenses), Modifier.weight(1f),
-                        fontSize = 14.sp, lineHeight = 18.sp, color = colors.onSurfaceVariant)
-                    AnalyticsAmountText(periodTotal, textAlign = TextAlign.End)
+            Canvas(Modifier.fillMaxWidth().height(40.dp).semantics {
+                contentDescription = "${if (income) "收入" else "支出"}分类占比条，总额${periodTotal.toFormattedAmount(true, symbol = currencySymbol)}"
+            }) {
+                val barTop = 6.dp.toPx()
+                val barHeight = size.height - barTop * 2
+                val track = Rect(0f, barTop, size.width, barTop + barHeight)
+                val trackPath = Path().apply { addRoundRect(RoundRect(track, CornerRadius(5.dp.toPx()))) }
+                var accumulated = 0L
+                val segments = rankings.map { item ->
+                    val left = analyticsRatio(accumulated, total) * size.width
+                    accumulated += item.totalAmount
+                    left to analyticsRatio(accumulated, total) * size.width
                 }
-                Canvas(Modifier.fillMaxWidth().height(40.dp).semantics {
-                    contentDescription = "${if (income) "收入" else "支出"}分类占比条，总额${periodTotal.toFormattedAmount(true, symbol = currencySymbol)}"
-                }) {
-                    val barTop = 6.dp.toPx()
-                    val barHeight = size.height - barTop * 2
-                    val track = Rect(0f, barTop, size.width, barTop + barHeight)
-                    val trackPath = Path().apply { addRoundRect(RoundRect(track, CornerRadius(5.dp.toPx()))) }
-                    var accumulated = 0L
-                    val segments = rankings.map { item ->
-                        val left = analyticsRatio(accumulated, total) * size.width
-                        accumulated += item.totalAmount
-                        left to analyticsRatio(accumulated, total) * size.width
+                clipPath(trackPath) {
+                    drawRect(colors.surfaceVariant, track.topLeft, track.size)
+                    segments.forEachIndexed { index, (left, right) ->
+                        drawRect(palette[index], Offset(left, barTop), Size(right - left, barHeight))
                     }
-                    clipPath(trackPath) {
-                        drawRect(colors.surfaceVariant, track.topLeft, track.size)
-                        segments.forEachIndexed { index, (left, right) ->
-                            drawRect(palette[index], Offset(left, barTop), Size(right - left, barHeight))
-                        }
-                    }
+                }
 
-                }
             }
-            if (rankings.isEmpty()) {
-                Text(if (income) textResources.getString(cn.turingzy.ledger.R.string.ui_no_income) else textResources.getString(cn.turingzy.ledger.R.string.ui_no_expenses), Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
-            } else CategoryLegendLayout(Modifier.fillMaxWidth()) {
-                rankings.forEachIndexed { index, item ->
-                    key(item.categoryId) {
-                        Row(Modifier.semantics { selected = sheetId == item.categoryId }
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(if (sheetId == item.categoryId) colors.primary.copy(alpha = 0.08f) else Color.Transparent)
-                            .clickable { sheetId = item.categoryId }
-                            .padding(vertical = 3.dp),
-                            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp),
-                        ) {
-                            Box(Modifier.size(8.dp).background(palette[index], CircleShape))
-                            Text(buildAnnotatedString {
-                                withStyle(SpanStyle(fontWeight = FontWeight.Medium)) { append(item.categoryName) }
-                                append(" ")
-                                withStyle(SpanStyle(color = colors.onSurfaceVariant, fontSize = 12.sp)) {
-                                    append(categorySharePercentage(item.totalAmount, total))
-                                }
-                            }, fontSize = 13.sp, lineHeight = 18.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        }
+        }
+        if (rankings.isEmpty()) {
+            Text(if (income) textResources.getString(cn.turingzy.ledger.R.string.ui_no_income) else textResources.getString(cn.turingzy.ledger.R.string.ui_no_expenses), Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+        } else CategoryLegendLayout(Modifier.fillMaxWidth()) {
+            rankings.forEachIndexed { index, item ->
+                key(item.categoryId) {
+                    Row(Modifier.semantics { selected = sheetId == item.categoryId }
+                        .clip(LedgerStyle.shapes.bankCard)
+                        .background(if (sheetId == item.categoryId) colors.primary.copy(alpha = 0.08f) else Color.Transparent)
+                        .clickable { sheetId = item.categoryId }
+                        .padding(vertical = 3.dp),
+                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp),
+                    ) {
+                        Box(Modifier.size(8.dp).background(palette[index], CircleShape))
+                        Text(buildAnnotatedString {
+                            withStyle(SpanStyle(fontWeight = FontWeight.Medium)) { append(item.categoryName) }
+                            append(" ")
+                            withStyle(SpanStyle(color = colors.onSurfaceVariant, fontSize = LedgerStyle.typography.label.fontSize)) {
+                                append(categorySharePercentage(item.totalAmount, total))
+                            }
+                        }, fontSize = LedgerStyle.typography.bodySmall.fontSize, lineHeight = 18.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
             }

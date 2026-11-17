@@ -1,5 +1,8 @@
 package cn.turingzy.ledger.ui.feature.settings
 
+import cn.turingzy.ledger.ui.components.base.BaseButtonVariant
+import cn.turingzy.ledger.ui.components.base.BaseActionButton
+import cn.turingzy.ledger.ui.components.base.BaseDropdownIndicator
 import android.view.WindowManager
 import androidx.activity.compose.LocalActivity
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -9,10 +12,15 @@ import androidx.compose.ui.semantics.semantics
 import cn.turingzy.ledger.navigation.SettingsSubpageTransition
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.LedgerDropdown
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import cn.turingzy.ledger.ui.components.base.BaseCard
+import cn.turingzy.ledger.ui.components.base.BaseDivider
+import cn.turingzy.ledger.ui.components.base.BaseIconButton
+import cn.turingzy.ledger.ui.interaction.uiClickable
+import cn.turingzy.ledger.ui.interaction.rememberUiAction
+import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -23,16 +31,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import cn.turingzy.ledger.ui.component.LedgerIconButton as IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
@@ -68,9 +71,10 @@ internal fun ParseRulesScreen(
     onSaveRule: (ParseRulePreview) -> Unit,
     onDeleteRule: (Long) -> Unit,
     onDismissRequest: () -> Unit,
+    initialDraft: ParseRulePreview? = null,
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
-    var draft by remember { mutableStateOf<ParseRulePreview?>(null) }
+    var draft by remember { mutableStateOf(initialDraft) }
     var emptyDraft by remember { mutableStateOf(ParseRulePreview(id = 0L)) }
     val visibleDraft = draft ?: emptyDraft.takeIf { rules.isEmpty() }
     val focusManager = LocalFocusManager.current
@@ -89,19 +93,21 @@ internal fun ParseRulesScreen(
             else -> textResources.getString(cn.turingzy.ledger.R.string.ui_new_rule)
         }
 
-        SettingsPage(
+        SettingsSubpageScaffold(
             title = title,
-            onDismissRequest = onDismissRequest,
             modifier = Modifier.testTag("parseRulePage"),
-            avoidKeyboard = editing != null,
             onBack = if (editing != null) ({
                 focusManager.clearFocus()
                 if (rules.isEmpty()) onDismissRequest() else draft = null
-            }) else null,
-            action = {
-                IconButton(
+            }) else onDismissRequest,
+            actions = {
+                BaseIconButton(
+                    imageVector = if (editing == null) MaterialSymbols.Add else MaterialSymbols.Check,
+                    contentDescription = if (editing == null) textResources.getString(cn.turingzy.ledger.R.string.ui_new_import_rule)
+                        else textResources.getString(cn.turingzy.ledger.R.string.ui_save_rule),
                     showPressFeedback = false,
                     enabled = editing == null || editing.valid,
+                    contentColor = if (editing == null) colors.onSurfaceVariant else colors.tertiary,
                     onClick = {
                         focusManager.clearFocus()
                         if (editing == null) {
@@ -112,20 +118,14 @@ internal fun ParseRulesScreen(
                             draft = null
                         }
                     },
-                ) {
-                    Icon(
-                        if (editing == null) MaterialSymbols.Add else MaterialSymbols.Check,
-                        if (editing == null) textResources.getString(cn.turingzy.ledger.R.string.ui_new_import_rule) else textResources.getString(cn.turingzy.ledger.R.string.ui_save_rule),
-                        tint = if (editing == null) colors.onSurfaceVariant else colors.tertiary.copy(alpha = if (editing.valid) 1f else 0.38f),
-                    )
-                }
+                )
             },
         ) {
             if (editing == null) {
                 LazyColumn(
                     Modifier.fillMaxWidth(),
                     contentPadding = PaddingValues(top = SettingsPageContentTopPadding, bottom = SettingsPageBottomPadding),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.inlineGap),
                 ) {
                     items(rules, key = { it.id }) { rule ->
                         SettingsActionRow(
@@ -138,7 +138,7 @@ internal fun ParseRulesScreen(
             } else {
                 Column(
                     Modifier.fillMaxWidth().settingsPageScroll().testTag("parseRuleForm"),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.sectionGap),
                 ) {
                     Text(textResources.getString(cn.turingzy.ledger.R.string.ui_basic_information), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                     RuleFieldGroup {
@@ -180,7 +180,7 @@ internal fun ParseRulesScreen(
                         )
                     }
                     if (existing) {
-                        TextButton(
+                        BaseActionButton(variant = BaseButtonVariant.Text,
                             onClick = {
                                 focusManager.clearFocus()
                                 onDeleteRule(editing.id)
@@ -188,7 +188,7 @@ internal fun ParseRulesScreen(
                                 draft = null
                             },
                             modifier = Modifier.align(Alignment.End),
-                            contentPadding = PaddingValues(vertical = 8.dp),
+                            contentPadding = PaddingValues(vertical = LedgerStyle.spacing.medium),
                             colors = ButtonDefaults.textButtonColors(contentColor = colors.error),
                         ) {
                             Text(textResources.getString(cn.turingzy.ledger.R.string.ui_delete_rule), style = MaterialTheme.typography.bodyLarge)
@@ -216,14 +216,12 @@ private fun KeepRuleEditorWindowStationary(enabled: Boolean) {
 
 @Composable
 private fun RuleFieldGroup(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
-    Surface(modifier = modifier, shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surface) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp), content = content)
-    }
+    BaseCard(modifier, contentPadding = PaddingValues(LedgerStyle.spacing.none), contentSpacing = LedgerStyle.spacing.none, content = content)
 }
 
 @Composable
 private fun RuleDivider() {
-    HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+    BaseDivider(Modifier.padding(horizontal = LedgerStyle.spacing.large))
 }
 
 @Composable
@@ -235,8 +233,8 @@ private fun RuleTextField(
     keyboardType: KeyboardType = KeyboardType.Text,
 ) {
     val colors = MaterialTheme.colorScheme
-    Row(Modifier.fillMaxWidth().heightIn(min = SettingsItemHeight), verticalAlignment = Alignment.CenterVertically) {
-        Text(label, Modifier.width(96.dp), style = MaterialTheme.typography.bodyLarge)
+    Row(Modifier.fillMaxWidth().heightIn(min = SettingsItemHeight).padding(horizontal = LedgerStyle.spacing.large), verticalAlignment = Alignment.CenterVertically) {
+        Text(label, Modifier.width(LedgerStyle.dimensions.formLabelWidth), style = MaterialTheme.typography.bodyLarge)
         BasicTextField(
             value = value,
             onValueChange = onChange,
@@ -271,17 +269,20 @@ private fun RuleChoiceDropdown(
         isSelected = { it.id == selectedId },
         onSelect = onSelect,
         menuTestTag = menuTestTag,
-    ) { anchorModifier, _, onToggle ->
-        Row(
-            anchorModifier.fillMaxWidth().heightIn(min = SettingsItemHeight)
-                .semantics(mergeDescendants = true) { contentDescription = label }
-                .clickable(role = Role.Button, onClick = onToggle),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) { anchorModifier, expanded, onToggle ->
+        Box(
+            Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = label }
+                .uiClickable(onClick = onToggle).padding(horizontal = LedgerStyle.spacing.large),
         ) {
-            Text(label, Modifier.width(96.dp), style = MaterialTheme.typography.bodyLarge)
-            Text(value, Modifier.weight(1f), textAlign = TextAlign.End, color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Icon(MaterialSymbols.ChevronRight, null, Modifier.size(24.dp), tint = colors.onSurfaceVariant)
+            Row(
+                anchorModifier.fillMaxWidth().heightIn(min = SettingsItemHeight),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.inlineGap),
+            ) {
+                Text(label, Modifier.width(LedgerStyle.dimensions.formLabelWidth), style = MaterialTheme.typography.bodyLarge)
+                Text(value, Modifier.weight(1f), textAlign = TextAlign.End, color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                BaseDropdownIndicator(expanded)
+            }
         }
     }
 }

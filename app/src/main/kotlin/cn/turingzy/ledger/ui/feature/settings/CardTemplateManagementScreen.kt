@@ -1,5 +1,9 @@
 package cn.turingzy.ledger.ui.feature.settings
 
+import cn.turingzy.ledger.ui.components.base.BaseIconButtonContent
+import cn.turingzy.ledger.ui.interaction.uiClickable
+import cn.turingzy.ledger.ui.theme.LedgerStyle
+import cn.turingzy.ledger.ui.components.base.BaseSurface
 import cn.turingzy.ledger.ui.component.AccountCardBackground
 import cn.turingzy.ledger.model.Account
 import cn.turingzy.ledger.model.AccountType
@@ -7,7 +11,6 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,11 +24,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -52,13 +53,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.navigation.SettingsSubpageTransition
-import cn.turingzy.ledger.ui.theme.SurfaceLight
-import cn.turingzy.ledger.ui.theme.IosLabel
 import cn.turingzy.ledger.model.CardTemplate
 import cn.turingzy.ledger.ui.component.BankCardAspectRatio
 import cn.turingzy.ledger.ui.component.CardPageIndicator
 import cn.turingzy.ledger.ui.component.SummaryCardIconButton
-import cn.turingzy.ledger.ui.component.LedgerIconButton
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.rememberCircularCardPagerState
 
@@ -114,12 +112,11 @@ internal fun CardTemplateManagementScreen(
         if (adding) {
             val pending = newFace
             val canSave = !saving && pending.name.isNotBlank() && pending.coverUri.isNotBlank()
-            SettingsPage(
+            SettingsSubpageScaffold(
                 title = textResources.getString(cn.turingzy.ledger.R.string.ui_new_card_design),
-                onDismissRequest = { if (drafts.isEmpty()) onDismissRequest() else creating = false },
-                avoidKeyboard = true,
-                action = {
-                    LedgerIconButton(enabled = canSave, onClick = {
+                onBack = { if (drafts.isEmpty()) onDismissRequest() else creating = false },
+                actions = {
+                    BaseIconButtonContent(enabled = canSave, onClick = {
                         saving = true
                         scope.launch {
                             try {
@@ -130,13 +127,13 @@ internal fun CardTemplateManagementScreen(
                             } finally { saving = false }
                         }
                     }) {
-                        Icon(MaterialSymbols.Check, textResources.getString(cn.turingzy.ledger.R.string.ui_add_card_design), tint = MaterialTheme.colorScheme.tertiary.copy(alpha = if (canSave) 1f else 0.38f))
+                        Icon(MaterialSymbols.Check, textResources.getString(cn.turingzy.ledger.R.string.ui_add_card_design), tint = MaterialTheme.colorScheme.tertiary.copy(alpha = if (canSave) 1f else LedgerStyle.opacity.disabled))
                     }
                 },
             ) {
                 Column(
                     Modifier.fillMaxWidth().settingsPageScroll(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large),
                 ) {
                     TemplateCoverPreview(pending, onChooseImage = { replaceImage(pending) })
                     CardFaceProperties(
@@ -146,12 +143,11 @@ internal fun CardTemplateManagementScreen(
                 }
             }
         } else {
-            SettingsPage(
+            SettingsSubpageScaffold(
                 title = textResources.getString(cn.turingzy.ledger.R.string.ui_card_designs),
-                onDismissRequest = onDismissRequest,
-                avoidKeyboard = true,
-                action = {
-                    LedgerIconButton(onClick = {
+                onBack = onDismissRequest,
+                actions = {
+                    BaseIconButtonContent(onClick = {
                         newFace = CardTemplate(id = minOf(drafts.minOfOrNull { it.id } ?: 0L, 0L) - 1L, name = "", coverUri = "")
                         creating = true
                     }) { Icon(MaterialSymbols.Add, textResources.getString(cn.turingzy.ledger.R.string.ui_new_card_design)) }
@@ -159,7 +155,7 @@ internal fun CardTemplateManagementScreen(
             ) {
                 Column(
                     Modifier.fillMaxWidth().settingsPageScroll(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large),
                 ) {
                     if (selected != null) {
                         HorizontalPager(state = pagerState, key = { it }, pageSpacing = 12.dp) { pageIndex ->
@@ -207,13 +203,13 @@ private fun CardFaceProperties(
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val colors = MaterialTheme.colorScheme
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Surface(shape = RoundedCornerShape(16.dp), color = colors.surface) {
+    Column(verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large)) {
+        BaseSurface(shape = LedgerStyle.shapes.card, color = colors.surface) {
             Row(
-                Modifier.fillMaxWidth().heightIn(min = SettingsItemHeight).padding(horizontal = 12.dp),
+                Modifier.fillMaxWidth().heightIn(min = SettingsItemHeight).padding(horizontal = LedgerStyle.spacing.large),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(textResources.getString(cn.turingzy.ledger.R.string.ui_design_name), Modifier.width(96.dp), style = MaterialTheme.typography.bodyLarge)
+                Text(textResources.getString(cn.turingzy.ledger.R.string.ui_design_name), Modifier.width(LedgerStyle.dimensions.formLabelWidth), style = MaterialTheme.typography.bodyLarge)
                 BasicTextField(
                     value = template.name,
                     onValueChange = { onChange(template.copy(name = it)) },
@@ -230,7 +226,7 @@ private fun CardFaceProperties(
                 )
             }
         }
-        Surface(shape = RoundedCornerShape(16.dp), color = colors.surface) {
+        BaseSurface(shape = LedgerStyle.shapes.card, color = colors.surface) {
             CardTextColorPicker(template.textColor, onChange = { onChange(template.copy(textColor = it)) })
         }
     }
@@ -244,18 +240,18 @@ private fun TemplateCoverPreview(
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val placeholder = onChooseImage != null && template.coverUri.isBlank()
-    val borderColor = IosLabel.copy(alpha = 0.4f)
+    val borderColor = LedgerStyle.colors.textPrimary.copy(alpha = 0.4f)
     Box(
-        Modifier.fillMaxWidth().aspectRatio(BankCardAspectRatio).clip(RoundedCornerShape(24.dp))
-            .background(if (placeholder) SurfaceLight else MaterialTheme.colorScheme.surfaceVariant)
-            .then(if (placeholder) Modifier.clickable(onClick = onChooseImage) else Modifier)
+        Modifier.fillMaxWidth().aspectRatio(BankCardAspectRatio).clip(LedgerStyle.shapes.dialog)
+            .background(if (placeholder) LedgerStyle.colors.surface else LedgerStyle.colors.fieldBackground)
+            .then(if (placeholder) Modifier.uiClickable(onClick = onChooseImage) else Modifier)
             .then(if (placeholder) Modifier.drawWithCache {
                 val stroke = Stroke(width = 1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(8.dp.toPx(), 6.dp.toPx())))
                 onDrawBehind { drawRoundRect(borderColor, cornerRadius = CornerRadius(24.dp.toPx()), style = stroke) }
             } else Modifier),
         contentAlignment = Alignment.Center,
     ) {
-        if (placeholder) Icon(MaterialSymbols.AddPhotoAlternate, textResources.getString(cn.turingzy.ledger.R.string.ui_choose_card_image), Modifier.size(40.dp), tint = IosLabel)
+        if (placeholder) Icon(MaterialSymbols.AddPhotoAlternate, textResources.getString(cn.turingzy.ledger.R.string.ui_choose_card_image), Modifier.size(40.dp), tint = LedgerStyle.colors.textPrimary)
         if (!placeholder) AccountCardBackground(
             account = Account(name = "", type = AccountType.DEBIT, templateId = template.id),
             template = template,
@@ -263,8 +259,8 @@ private fun TemplateCoverPreview(
         )
         if (template.name.isNotBlank()) Text(
             template.name,
-            modifier = Modifier.align(Alignment.TopStart).padding(16.dp),
-            color = template.textColor.asCardTextColor() ?: SurfaceLight,
+            modifier = Modifier.align(Alignment.TopStart).padding(LedgerStyle.spacing.extraLarge),
+            color = template.textColor.asCardTextColor() ?: LedgerStyle.decorationColors.onBrand,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             maxLines = 1,
@@ -273,12 +269,12 @@ private fun TemplateCoverPreview(
         if (!placeholder) {
             if (onDelete != null) SummaryCardIconButton(
                 MaterialSymbols.Delete, textResources.getString(cn.turingzy.ledger.R.string.ui_delete_card_design), onDelete,
-                modifier = Modifier.align(Alignment.BottomStart).padding(12.dp),
+                modifier = Modifier.align(Alignment.BottomStart).padding(LedgerStyle.spacing.large),
                 contentColor = MaterialTheme.colorScheme.error,
             )
             if (onChooseImage != null) SummaryCardIconButton(
                 MaterialSymbols.AddPhotoAlternate, textResources.getString(cn.turingzy.ledger.R.string.ui_change_card_design), onChooseImage,
-                modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp),
+                modifier = Modifier.align(Alignment.BottomEnd).padding(LedgerStyle.spacing.large),
             )
         }
     }

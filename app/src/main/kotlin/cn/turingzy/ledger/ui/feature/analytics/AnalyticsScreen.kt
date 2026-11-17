@@ -4,7 +4,6 @@ import cn.turingzy.ledger.ui.component.ScrollTitleContainer
 import cn.turingzy.ledger.ui.component.LocalLedgerCurrency
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -17,12 +16,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
+import cn.turingzy.ledger.ui.components.base.BasePageFrame
 import androidx.compose.material3.Text
 import cn.turingzy.ledger.ui.component.LocalBottomBarContentPadding
 import androidx.compose.runtime.Composable
@@ -49,6 +47,11 @@ import cn.turingzy.ledger.ui.component.LedgerSegmentedControl
 import cn.turingzy.ledger.ui.component.TopBarIconButton
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.PeriodPickerSheet
+import cn.turingzy.ledger.ui.interaction.UiInteractionKind
+import cn.turingzy.ledger.ui.interaction.rememberUiAction
+import cn.turingzy.ledger.ui.interaction.uiClickable
+import cn.turingzy.ledger.ui.component.PeriodPickerActions
+import cn.turingzy.ledger.ui.theme.LedgerStyle
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -93,13 +96,10 @@ fun AnalyticsContent(
     var dateEndpoint by rememberSaveable { mutableStateOf<AnalyticsDateEndpoint?>(null) }
     androidx.compose.runtime.CompositionLocalProvider(LocalLedgerCurrency provides ((uiState as? AnalyticsUiState.Success)?.currency ?: "CNY")) {
         AnalyticsChartInteractionHost {
-            Scaffold(
-                containerColor = MaterialTheme.colorScheme.background,
-                modifier = modifier.fillMaxSize().statusBarsPadding(),
-            ) { innerPadding ->
+            BasePageFrame(modifier) {
                 when (uiState) {
                     AnalyticsUiState.Loading -> Box(
-                        Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center,
+                        Modifier.fillMaxSize(), contentAlignment = Alignment.Center,
                     ) {
                         CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                     }
@@ -111,24 +111,24 @@ fun AnalyticsContent(
                             onScrollToTop = { scrollState.animateScrollTo(0) },
                         ) { scrollModifier ->
                             Column(
-                                scrollModifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding()).verticalScroll(scrollState)
-                                    .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp + innerPadding.calculateBottomPadding() + LocalBottomBarContentPadding.current),
+                                scrollModifier.fillMaxSize().verticalScroll(scrollState)
+                                    .padding(start = LedgerStyle.spacing.extraLarge, end = LedgerStyle.spacing.extraLarge, top = LedgerStyle.spacing.extraSmall, bottom = LedgerStyle.spacing.block + LocalBottomBarContentPadding.current),
                                 verticalArrangement = Arrangement.spacedBy(5.dp),
                             ) {
                                 Box(Modifier.fillMaxWidth().height(44.dp), contentAlignment = Alignment.CenterStart) {
                                     Text(
-                                        textResources.getString(cn.turingzy.ledger.R.string.ui_analytics), fontSize = 28.sp, fontWeight = FontWeight.Bold,
+                                        textResources.getString(cn.turingzy.ledger.R.string.ui_analytics), fontSize = LedgerStyle.typography.screenTitle.fontSize, fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onSurface, letterSpacing = (-0.6).sp,
                                     )
                                     Row(Modifier.align(Alignment.CenterEnd), verticalAlignment = Alignment.CenterVertically) {
                                         TopBarIconButton(MaterialSymbols.CalendarMonth, textResources.getString(cn.turingzy.ledger.R.string.ui_spending_calendar_2),
-                                            { onOpenCalendar(minOf(uiState.periodEnd, LocalDate.now())) },
+                                            rememberUiAction({ onOpenCalendar(minOf(uiState.periodEnd, LocalDate.now())) }, UiInteractionKind.Navigation),
                                             Modifier)
                                     }
                                 }
                                 AnalyticsTimeScopeSelector(uiState.timeScope, onTimeScopeChange)
                                 Row(
-                                    Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                    Modifier.fillMaxWidth().padding(vertical = LedgerStyle.spacing.extraSmall),
                                     horizontalArrangement = Arrangement.spacedBy(
                                         if (uiState.timeScope == AnalyticsTimeScope.ALL) 16.dp else 0.dp,
                                         Alignment.CenterHorizontally,
@@ -139,7 +139,7 @@ fun AnalyticsContent(
                                         AnalyticsRangeDate(
                                             uiState.periodStart, textResources.getString(cn.turingzy.ledger.R.string.ui_select_analytics_start_date), { dateEndpoint = AnalyticsDateEndpoint.START },
                                         )
-                                        Text("～", fontSize = 17.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text("～", fontSize = LedgerStyle.typography.sectionTitle.fontSize, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         AnalyticsRangeDate(
                                             uiState.periodEnd, textResources.getString(cn.turingzy.ledger.R.string.ui_select_analytics_end_date), { dateEndpoint = AnalyticsDateEndpoint.END },
                                         )
@@ -151,8 +151,9 @@ fun AnalyticsContent(
                                                 .clickable(
                                                     interactionSource = remember { MutableInteractionSource() },
                                                     indication = null,
-                                                ) { showPeriodPicker = true }.padding(horizontal = 6.dp, vertical = 2.dp),
-                                            fontSize = 17.sp, fontWeight = FontWeight.Normal,
+                                                    onClick = rememberUiAction({ showPeriodPicker = true }, UiInteractionKind.Navigation)
+                                                ).padding(horizontal = 6.dp, vertical = 2.dp),
+                                            fontSize = LedgerStyle.typography.sectionTitle.fontSize, fontWeight = FontWeight.Normal,
                                             color = MaterialTheme.colorScheme.onSurface, maxLines = 1,
                                             overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,
                                         )
@@ -182,6 +183,7 @@ fun AnalyticsContent(
                 type = pickerType, initialDate = periodState.periodStart,
                 onDismiss = { showPeriodPicker = false }, onSelect = { _, date -> onSelectPeriod(date) },
                 showViewSelector = false,
+                header = { dismiss, returnToCurrent -> PeriodPickerActions(pickerType, dismiss, returnToCurrent) },
             )
         }
         val endpoint = dateEndpoint
@@ -197,6 +199,7 @@ fun AnalyticsContent(
                     }
                     dateEndpoint = null
                 },
+
             )
         }
     }
@@ -214,9 +217,9 @@ private fun AnalyticsRangeDate(
         date.format(formatter),
         modifier.semantics { contentDescription = description }.clickable(
             interactionSource = remember { MutableInteractionSource() },
-            indication = null, onClick = onClick,
-        ).padding(vertical = 4.dp),
-        fontSize = 17.sp, color = MaterialTheme.colorScheme.onSurface,
+            indication = null, onClick = rememberUiAction(onClick, UiInteractionKind.Navigation),
+        ).padding(vertical = LedgerStyle.spacing.extraSmall),
+        fontSize = LedgerStyle.typography.sectionTitle.fontSize, color = MaterialTheme.colorScheme.onSurface,
         maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,
     )
 }
@@ -248,16 +251,13 @@ private fun PeriodNavigationArrow(
     Box(
         modifier.size(28.dp).clip(CircleShape)
             .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = LocalIndication.current, onClick = onClick,
-            ),
+            .uiClickable(kind = UiInteractionKind.Navigation, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
             if (forward) MaterialSymbols.ChevronRight else MaterialSymbols.ChevronLeft,
             if (forward) textResources.getString(cn.turingzy.ledger.R.string.ui_next_period) else textResources.getString(cn.turingzy.ledger.R.string.ui_previous_period),
-            Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary,
+            Modifier.size(LedgerStyle.icons.default), tint = MaterialTheme.colorScheme.primary,
         )
     }
 }

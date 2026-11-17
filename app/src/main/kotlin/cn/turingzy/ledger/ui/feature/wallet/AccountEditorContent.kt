@@ -1,12 +1,13 @@
 package cn.turingzy.ledger.ui.feature.wallet
 
+import cn.turingzy.ledger.ui.components.base.BaseButtonVariant
+import cn.turingzy.ledger.ui.components.base.BaseActionButton
+import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.ui.component.LedgerFormDropdown as AccountFormDropdown
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ButtonDefaults
-import cn.turingzy.ledger.ui.component.LedgerOutlinedButton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -100,7 +101,7 @@ internal fun AccountEditorContent(
             label = textResources.getString(cn.turingzy.ledger.R.string.ui_account_type), value = type.displayName(textResources), options = AccountType.entries,
             optionLabel = { it.displayName(textResources) }, onSelect = { type = it },
         )
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large)) {
             AccountFormTextField(
                 label = if (type == AccountType.CREDIT) textResources.getString(cn.turingzy.ledger.R.string.ui_opening_debt) else textResources.getString(cn.turingzy.ledger.R.string.ui_opening_balance),
                 value = balance, onValueChange = { balance = it }, placeholder = "0.00",
@@ -139,10 +140,10 @@ internal fun AccountEditorContent(
         )
 
         if (account != null && onDelete != null) {
-            LedgerOutlinedButton(
+            BaseActionButton(variant = BaseButtonVariant.Outlined,
                 onClick = { focusManager.clearFocus(); onDelete() },
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp).height(44.dp),
-                shape = RoundedCornerShape(12.dp),
+                shape = LedgerStyle.shapes.field,
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.error),
                 border = BorderStroke(1.dp, colors.error.copy(alpha = 0.3f)),
             ) {

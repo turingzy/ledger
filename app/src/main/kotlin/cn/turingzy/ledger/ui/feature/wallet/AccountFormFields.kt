@@ -1,5 +1,8 @@
 package cn.turingzy.ledger.ui.feature.wallet
 
+import cn.turingzy.ledger.ui.components.base.BaseFormFieldFrame
+import cn.turingzy.ledger.ui.components.base.BaseIconButtonContent
+import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,7 +17,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
@@ -40,9 +42,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import cn.turingzy.ledger.ui.component.LedgerIconButton as IconButton
 import cn.turingzy.ledger.ui.component.MaterialSymbols
-import cn.turingzy.ledger.ui.component.LedgerFormFieldFrame as AccountFieldFrame
 
 @Composable
 internal fun AccountSaveButton(
@@ -52,11 +52,11 @@ internal fun AccountSaveButton(
     contentDescription: String = androidx.compose.ui.res.stringResource(cn.turingzy.ledger.R.string.ui_save_account),
 ) {
     val color = MaterialTheme.colorScheme.tertiary
-    IconButton(showPressFeedback = false, onClick = onClick, enabled = enabled, modifier = modifier) {
+    BaseIconButtonContent(showPressFeedback = false, onClick = onClick, enabled = enabled, modifier = modifier) {
         Icon(
             MaterialSymbols.Check,
             contentDescription = contentDescription,
-            modifier = Modifier.size(24.dp),
+            modifier = Modifier.size(LedgerStyle.icons.default),
             tint = if (enabled) color else color.copy(alpha = 0.38f),
         )
     }
@@ -81,7 +81,7 @@ internal fun AccountFormTextField(
     val source = remember { MutableInteractionSource() }
     val focused by source.collectIsFocusedAsState()
     val textColor = if (readOnly) colors.onSurface.copy(alpha = 0.38f) else colors.onSurface
-    AccountFieldFrame(
+    BaseFormFieldFrame(
         label, modifier, focused = focused, readOnly = readOnly, error = error,
         onClick = if (readOnly) null else ({ focusRequester.requestFocus() }),
     ) {
@@ -119,9 +119,9 @@ internal fun AccountCardFaceField(
     val colors = MaterialTheme.colorScheme
     val contentColor = if (enabled) colors.onSurface else colors.onSurface.copy(alpha = 0.38f)
     Column(modifier.fillMaxWidth().semantics { if (!enabled) disabled() }) {
-        AccountFieldFrame(textResources.getString(cn.turingzy.ledger.R.string.ui_card_design), readOnly = !enabled, onClick = if (enabled) onClick else null) {
+        BaseFormFieldFrame(textResources.getString(cn.turingzy.ledger.R.string.ui_card_design), readOnly = !enabled, onClick = if (enabled) onClick else null) {
             Text(value, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = contentColor, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Icon(MaterialSymbols.ChevronRight, null, Modifier.size(24.dp), tint = contentColor)
+            Icon(MaterialSymbols.ChevronRight, null, Modifier.size(LedgerStyle.icons.default), tint = contentColor)
         }
         if (!enabled) {
             Text(
@@ -142,7 +142,7 @@ internal fun AccountTailNumberField(value: String, onValueChange: (String) -> Un
     val colors = MaterialTheme.colorScheme
     val focusManager = LocalFocusManager.current
     val keyboard = LocalSoftwareKeyboardController.current
-    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.small)) {
         Text(textResources.getString(cn.turingzy.ledger.R.string.ui_last_digits), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
         BasicTextField(
             value = value,
@@ -163,11 +163,11 @@ internal fun AccountTailNumberField(value: String, onValueChange: (String) -> Un
                     },
                 ) {
                     Box(Modifier.alpha(0f)) { inner() }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium)) {
                         repeat(4) { index ->
                             val borderColor = if (focused && index == value.length.coerceAtMost(3)) colors.primary else colors.outlineVariant
                             Box(
-                                Modifier.size(44.dp).border(1.dp, borderColor, RoundedCornerShape(8.dp)),
+                                Modifier.size(44.dp).border(1.dp, borderColor, LedgerStyle.shapes.control),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Text(value.getOrNull(index)?.toString().orEmpty(), style = MaterialTheme.typography.bodyLarge, color = colors.onSurface)

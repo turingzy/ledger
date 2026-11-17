@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.component
 
+import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -49,15 +50,15 @@ fun LedgerFloatingActionButton(
                 .height(40.dp)
                 .shadow(
                     elevation = 10.dp,
-                    shape = RoundedCornerShape(20.dp),
+                    shape = LedgerStyle.shapes.summaryCard,
                     spotColor = Color.Black.copy(alpha = 0.10f),
                 )
-                .clip(RoundedCornerShape(20.dp))
+                .clip(LedgerStyle.shapes.summaryCard)
                 .background(MaterialTheme.colorScheme.tertiary)
                 .border(
                     width = 0.5.dp,
                     color = MaterialTheme.colorScheme.onTertiary.copy(alpha = 0.16f),
-                    shape = RoundedCornerShape(20.dp),
+                    shape = LedgerStyle.shapes.summaryCard,
                 )
                 .clickable(
                     interactionSource = interactionSource,
@@ -65,13 +66,13 @@ fun LedgerFloatingActionButton(
                 ) {
                     onClick()
                 }
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = LedgerStyle.spacing.extraLarge),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(7.dp),
         ) {
             Text(
                 text = textResources.getString(cn.turingzy.ledger.R.string.ui_new_transaction),
-                fontSize = 15.sp,
+                fontSize = LedgerStyle.typography.transactionTitle.fontSize,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onTertiary,
             )
@@ -79,7 +80,7 @@ fun LedgerFloatingActionButton(
                 imageVector = MaterialSymbols.EditSquare,
                 contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_new_transaction),
                 tint = MaterialTheme.colorScheme.onTertiary,
-                modifier = Modifier.size(16.dp),
+                modifier = Modifier.size(LedgerStyle.icons.small),
             )
         }
     }

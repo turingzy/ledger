@@ -1,18 +1,16 @@
 package cn.turingzy.ledger.ui.feature.analytics
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import cn.turingzy.ledger.ui.components.base.BaseCard
+import cn.turingzy.ledger.ui.theme.LedgerStyle
 import java.time.LocalDate
 import java.time.YearMonth
 
@@ -41,24 +39,36 @@ internal fun AnalyticsDashboardCards(state: AnalyticsUiState.Success, dashboard:
 
 @Composable
 internal fun DashboardCard(title: String, content: @Composable ColumnScope.() -> Unit) {
-    Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface, border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant), modifier = Modifier.fillMaxWidth().padding(top = AnalyticsCardTopSpacing)) {
-        Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            AnalyticsCardTitle(title)
-            content()
-        }
+    DashboardCard {
+        AnalyticsCardTitle(title)
+        content()
     }
+}
+
+@Composable
+internal fun DashboardCard(
+    modifier: Modifier = Modifier,
+    contentSpacing: androidx.compose.ui.unit.Dp = LedgerStyle.spacing.sectionGap,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    BaseCard(
+        modifier.padding(top = AnalyticsCardTopSpacing),
+        shape = LedgerStyle.shapes.summaryCard,
+        outlined = true,
+        contentPadding = PaddingValues(horizontal = LedgerStyle.spacing.cardPadding, vertical = LedgerStyle.spacing.medium),
+        contentSpacing = contentSpacing,
+        content = content,
+    )
 }
 
 @Composable
 internal fun AnalyticsCardTitle(title: String, modifier: Modifier = Modifier) {
     Text(title, modifier, style = MaterialTheme.typography.titleMedium.copy(
-        fontSize = 16.sp, lineHeight = 20.sp, fontWeight = FontWeight.Normal,
+        fontSize = LedgerStyle.typography.body.fontSize, lineHeight = 20.sp, fontWeight = FontWeight.Normal,
     ), maxLines = 1, overflow = TextOverflow.Ellipsis)
 }
 
 @Composable
 internal fun analyticsChartInfoColor(): Color {
-    val colors = MaterialTheme.colorScheme
-    return if (colors.surface.luminance() > 0.5f) lerp(colors.surface, colors.surfaceVariant, 0.48f)
-    else colors.surfaceVariant
+    return LedgerStyle.colors.chartInfoBackground
 }

@@ -66,7 +66,7 @@ class SettingsInteractionTest {
         var actionCount = 0
         compose.setContent {
             LedgerTheme {
-                SettingsPage(title = "子页标题", onDismissRequest = {}, action = {
+                SettingsSubpageScaffold(title = "子页标题", onBack = {}, actions = {
                     cn.turingzy.ledger.ui.component.TopBarIconButton(
                         MaterialSymbols.Check, "保存子页", { actionCount++ },
                     )
@@ -90,7 +90,7 @@ class SettingsInteractionTest {
         var backCount = 0
         compose.setContent {
             LedgerTheme {
-                SettingsPage(title = "设置子页", onDismissRequest = { backCount++ }) {}
+                SettingsSubpageScaffold(title = "设置子页", onBack = { backCount++ }) {}
             }
         }
         val title = compose.onNodeWithText("设置子页").fetchSemanticsNode().boundsInRoot
