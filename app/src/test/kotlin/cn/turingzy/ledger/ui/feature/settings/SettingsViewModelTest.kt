@@ -1,14 +1,14 @@
 package cn.turingzy.ledger.ui.feature.settings
 
 import app.cash.turbine.test
-import cn.turingzy.ledger.data.repository.AccountRepository
-import cn.turingzy.ledger.data.repository.CardTemplateRepository
-import cn.turingzy.ledger.model.CardTemplate
-import cn.turingzy.ledger.data.repository.CategoryRepository
-import cn.turingzy.ledger.model.Category
-import cn.turingzy.ledger.model.CategoryType
-import cn.turingzy.ledger.model.CategoryWithIcon
-import cn.turingzy.ledger.model.Icon
+import cn.turingzy.ledger.data.repository.account.AccountRepository
+import cn.turingzy.ledger.data.repository.account.CardTemplateRepository
+import cn.turingzy.ledger.model.account.CardTemplate
+import cn.turingzy.ledger.data.repository.category.CategoryRepository
+import cn.turingzy.ledger.model.category.Category
+import cn.turingzy.ledger.model.category.CategoryType
+import cn.turingzy.ledger.model.category.CategoryWithIcon
+import cn.turingzy.ledger.model.category.Icon
 import io.mockk.coVerify
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -33,9 +33,9 @@ class SettingsViewModelTest {
     private val categoryRepository: CategoryRepository = mockk(relaxed = true)
     private val accountRepository: AccountRepository = mockk()
     private val cardTemplateRepository: CardTemplateRepository = mockk()
-    private val rules: cn.turingzy.ledger.data.repository.ParseRuleRepository = mockk()
-    private val data: cn.turingzy.ledger.data.repository.SettingsDataRepository = mockk(relaxed = true)
-    private val updates: cn.turingzy.ledger.data.repository.AppUpdateRepository = mockk()
+    private val rules: cn.turingzy.ledger.data.repository.settings.ParseRuleRepository = mockk()
+    private val data: cn.turingzy.ledger.data.repository.settings.SettingsDataRepository = mockk(relaxed = true)
+    private val updates: cn.turingzy.ledger.data.repository.settings.AppUpdateRepository = mockk()
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var viewModel: SettingsViewModel
 
@@ -81,8 +81,8 @@ class SettingsViewModelTest {
 
     @Test
     fun rulesAreLoadedFromRepositoryAndNewRulesUseGeneratedIds() = runTest {
-        val rule = cn.turingzy.ledger.model.BillParseRule.defaults().first().copy(id = 7)
-        val stored = cn.turingzy.ledger.model.ParseRule(id = 7, name = rule.name, startRow = 2, mappingConfig = Json.encodeToString(rule))
+        val rule = cn.turingzy.ledger.model.transfer.BillParseRule.defaults().first().copy(id = 7)
+        val stored = cn.turingzy.ledger.model.transfer.ParseRule(id = 7, name = rule.name, startRow = 2, mappingConfig = Json.encodeToString(rule))
         coEvery { categoryRepository.getCategoriesStream() } returns flowOf(emptyList())
         coEvery { rules.getRulesStream() } returns flowOf(listOf(stored))
         coEvery { rules.createRule(any()) } returns 8L

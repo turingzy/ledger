@@ -1,21 +1,21 @@
 package cn.turingzy.ledger.di
 
-import cn.turingzy.ledger.data.repository.AccountRepository
-import cn.turingzy.ledger.data.repository.BackupConfigRepository
-import cn.turingzy.ledger.data.repository.CardTemplateRepository
-import cn.turingzy.ledger.data.repository.CategoryRepository
-import cn.turingzy.ledger.data.repository.DefaultAccountRepository
-import cn.turingzy.ledger.data.repository.DefaultBackupConfigRepository
-import cn.turingzy.ledger.data.repository.DefaultCardTemplateRepository
-import cn.turingzy.ledger.data.repository.DefaultCategoryRepository
-import cn.turingzy.ledger.data.repository.DefaultIconRepository
-import cn.turingzy.ledger.data.repository.DefaultParseRuleRepository
-import cn.turingzy.ledger.data.repository.DefaultTransactionRepository
-import cn.turingzy.ledger.data.repository.IconRepository
-import cn.turingzy.ledger.data.repository.ParseRuleRepository
-import cn.turingzy.ledger.data.repository.TransactionRepository
-import cn.turingzy.ledger.data.repository.DefaultLedgerCardAppearanceRepository
-import cn.turingzy.ledger.data.repository.LedgerCardAppearanceRepository
+import cn.turingzy.ledger.data.repository.account.AccountRepository
+import cn.turingzy.ledger.data.repository.backup.BackupConfigRepository
+import cn.turingzy.ledger.data.repository.account.CardTemplateRepository
+import cn.turingzy.ledger.data.repository.category.CategoryRepository
+import cn.turingzy.ledger.data.repository.account.DefaultAccountRepository
+import cn.turingzy.ledger.data.repository.backup.DefaultBackupConfigRepository
+import cn.turingzy.ledger.data.repository.account.DefaultCardTemplateRepository
+import cn.turingzy.ledger.data.repository.category.DefaultCategoryRepository
+import cn.turingzy.ledger.data.repository.category.DefaultIconRepository
+import cn.turingzy.ledger.data.repository.settings.DefaultParseRuleRepository
+import cn.turingzy.ledger.data.repository.transaction.DefaultTransactionRepository
+import cn.turingzy.ledger.data.repository.category.IconRepository
+import cn.turingzy.ledger.data.repository.settings.ParseRuleRepository
+import cn.turingzy.ledger.data.repository.transaction.TransactionRepository
+import cn.turingzy.ledger.data.repository.settings.DefaultLedgerCardAppearanceRepository
+import cn.turingzy.ledger.data.repository.settings.LedgerCardAppearanceRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -27,19 +27,19 @@ import javax.inject.Singleton
 interface DataModule {
     @Binds
     @Singleton
-    fun bindsExchangeRateSource(impl: cn.turingzy.ledger.data.repository.FrankfurterExchangeRateSource): cn.turingzy.ledger.data.repository.ExchangeRateSource
+    fun bindsExchangeRateSource(impl: cn.turingzy.ledger.data.repository.currency.FrankfurterExchangeRateSource): cn.turingzy.ledger.data.repository.currency.ExchangeRateSource
 
     @Binds
     @Singleton
     fun bindsAppUpdateRepository(
-        impl: cn.turingzy.ledger.data.repository.DefaultAppUpdateRepository,
-    ): cn.turingzy.ledger.data.repository.AppUpdateRepository
+        impl: cn.turingzy.ledger.data.repository.settings.DefaultAppUpdateRepository,
+    ): cn.turingzy.ledger.data.repository.settings.AppUpdateRepository
 
     @Binds
     @Singleton
     fun bindsSettingsDataRepository(
-        impl: cn.turingzy.ledger.data.repository.DefaultSettingsDataRepository,
-    ): cn.turingzy.ledger.data.repository.SettingsDataRepository
+        impl: cn.turingzy.ledger.data.repository.settings.DefaultSettingsDataRepository,
+    ): cn.turingzy.ledger.data.repository.settings.SettingsDataRepository
 
 
     @Binds

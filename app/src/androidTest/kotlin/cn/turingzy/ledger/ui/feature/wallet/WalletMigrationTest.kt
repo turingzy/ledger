@@ -3,9 +3,9 @@ package cn.turingzy.ledger.ui.feature.wallet
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
-import cn.turingzy.ledger.model.Account
-import cn.turingzy.ledger.model.AccountType
-import cn.turingzy.ledger.model.AccountWithTemplate
+import cn.turingzy.ledger.model.account.Account
+import cn.turingzy.ledger.model.account.AccountType
+import cn.turingzy.ledger.model.account.AccountWithTemplate
 import cn.turingzy.ledger.ui.interaction.LocalUiInteractionClock
 import cn.turingzy.ledger.ui.theme.LedgerTheme
 import org.junit.Assert.assertEquals

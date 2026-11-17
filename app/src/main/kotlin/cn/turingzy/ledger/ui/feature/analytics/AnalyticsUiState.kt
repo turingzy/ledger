@@ -1,6 +1,6 @@
 package cn.turingzy.ledger.ui.feature.analytics
 
-import cn.turingzy.ledger.model.CategoryType
+import cn.turingzy.ledger.model.category.CategoryType
 import java.time.LocalDate
 
 enum class AnalyticsTimeScope {
@@ -25,8 +25,8 @@ data class AnalyticsTransaction(
     val note: String,
     val accountName: String,
     val amount: Long,
-    val type: cn.turingzy.ledger.model.TransactionType = cn.turingzy.ledger.model.TransactionType.EXPENSE,
-    val category: cn.turingzy.ledger.model.CategoryWithIcon? = null,
+    val type: cn.turingzy.ledger.model.transaction.TransactionType = cn.turingzy.ledger.model.transaction.TransactionType.EXPENSE,
+    val category: cn.turingzy.ledger.model.category.CategoryWithIcon? = null,
     val time: java.time.LocalTime? = null,
     val currency: String = "CNY",
     val primaryAmount: Long = amount,

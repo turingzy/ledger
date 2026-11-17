@@ -5,8 +5,8 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
-import cn.turingzy.ledger.model.AccountType
-import cn.turingzy.ledger.model.TransactionType
+import cn.turingzy.ledger.model.account.AccountType
+import cn.turingzy.ledger.model.transaction.TransactionType
 
 @Immutable
 data class LedgerSemanticColors(

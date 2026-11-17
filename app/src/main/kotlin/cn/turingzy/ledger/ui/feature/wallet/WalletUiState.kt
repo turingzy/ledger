@@ -1,7 +1,7 @@
 package cn.turingzy.ledger.ui.feature.wallet
 
-import cn.turingzy.ledger.model.CardTemplate
-import cn.turingzy.ledger.model.AccountWithTemplate
+import cn.turingzy.ledger.model.account.CardTemplate
+import cn.turingzy.ledger.model.account.AccountWithTemplate
 
 sealed interface WalletUiState {
     data object Loading : WalletUiState

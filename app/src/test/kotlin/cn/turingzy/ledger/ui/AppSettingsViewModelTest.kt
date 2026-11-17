@@ -1,7 +1,12 @@
 package cn.turingzy.ledger.ui
 
-import cn.turingzy.ledger.data.repository.*
-import cn.turingzy.ledger.model.*
+import cn.turingzy.ledger.data.repository.account.AccountRepository
+import cn.turingzy.ledger.data.repository.settings.AppPreferencesRepository
+import cn.turingzy.ledger.data.repository.currency.ExchangeRateRepository
+import cn.turingzy.ledger.model.account.Account
+import cn.turingzy.ledger.model.account.AccountType
+import cn.turingzy.ledger.model.account.AccountWithTemplate
+import cn.turingzy.ledger.model.settings.AppPreferences
 import io.mockk.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.flowOf

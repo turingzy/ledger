@@ -1,11 +1,11 @@
 package cn.turingzy.ledger.ui.feature.wallet
 
-import cn.turingzy.ledger.model.primaryAmount
-import cn.turingzy.ledger.model.primaryBalance
-import cn.turingzy.ledger.model.AccountType
-import cn.turingzy.ledger.model.AccountWithTemplate
-import cn.turingzy.ledger.model.TransactionDetail
-import cn.turingzy.ledger.model.TransactionType
+import cn.turingzy.ledger.model.currency.primaryAmount
+import cn.turingzy.ledger.model.currency.primaryBalance
+import cn.turingzy.ledger.model.account.AccountType
+import cn.turingzy.ledger.model.account.AccountWithTemplate
+import cn.turingzy.ledger.model.transaction.TransactionDetail
+import cn.turingzy.ledger.model.transaction.TransactionType
 
 data class WalletCurrencyTotals(
     val currency: String,

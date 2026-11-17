@@ -1,14 +1,18 @@
 package cn.turingzy.ledger.ui.feature.wallet
 
-import cn.turingzy.ledger.ui.component.ScrollTitleContainer
+import cn.turingzy.ledger.ui.feature.wallet.component.SwipeableBankCardDeck
+import cn.turingzy.ledger.ui.feature.wallet.component.VerticalBankCardDeck
+import cn.turingzy.ledger.ui.feature.wallet.sheet.AccountDetailsSheet
+import cn.turingzy.ledger.ui.feature.wallet.sheet.AddAccountSheet
+import cn.turingzy.ledger.ui.feature.wallet.sheet.cardFaceTextColor
+import cn.turingzy.ledger.ui.component.base.ScrollTitleContainer
 import androidx.compose.foundation.lazy.rememberLazyListState
-import cn.turingzy.ledger.ui.component.accountCardColors
-import cn.turingzy.ledger.ui.component.AccountCardBackground
-
+import cn.turingzy.ledger.ui.component.card.bank.accountCardColors
+import cn.turingzy.ledger.ui.component.card.bank.AccountCardBackground
 import cn.turingzy.ledger.ui.interaction.rememberUiIndication
-import cn.turingzy.ledger.ui.component.TopBarIconButton
+import cn.turingzy.ledger.ui.component.card.summary.TopBarIconButton
 import cn.turingzy.ledger.ui.component.MaterialSymbols
-import cn.turingzy.ledger.ui.components.base.BasePageFrame
+import cn.turingzy.ledger.ui.component.base.BasePageFrame
 import cn.turingzy.ledger.ui.interaction.rememberUiEvent
 import cn.turingzy.ledger.ui.interaction.rememberUiAction
 import cn.turingzy.ledger.ui.interaction.UiInteractionKind
@@ -42,13 +46,13 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
-import cn.turingzy.ledger.model.LedgerCardAppearance
-import cn.turingzy.ledger.ui.component.CardBackgroundDialog
+import cn.turingzy.ledger.model.settings.LedgerCardAppearance
+import cn.turingzy.ledger.ui.component.card.summary.CardBackgroundDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.Stable
-import cn.turingzy.ledger.ui.component.LocalBottomBarContentPadding
+import cn.turingzy.ledger.ui.component.navigation.LocalBottomBarContentPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -65,12 +69,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import cn.turingzy.ledger.ui.component.SummaryCard
-import cn.turingzy.ledger.ui.component.SummaryCardContent
+import cn.turingzy.ledger.ui.component.card.summary.SummaryCard
+import cn.turingzy.ledger.ui.component.card.summary.SummaryCardContent
 import cn.turingzy.ledger.R
-import cn.turingzy.ledger.model.Account
-import cn.turingzy.ledger.model.AccountType
-import cn.turingzy.ledger.model.CardTemplate
+import cn.turingzy.ledger.model.account.Account
+import cn.turingzy.ledger.model.account.AccountType
+import cn.turingzy.ledger.model.account.CardTemplate
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)

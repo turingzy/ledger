@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 sealed interface Route {
     @Serializable
-    data object Ledger : Route
+    data object Bill : Route
 
     @Serializable
     data object Analytics : Route
@@ -30,11 +30,11 @@ enum class TopLevelDestination(
     @StringRes val labelResource: Int,
     val route: Route,
 ) {
-    LEDGER(
+    BILL(
         icon = MaterialSymbols.Home,
         selectedIcon = MaterialSymbols.HomeFilled,
-        labelResource = R.string.ui_ledger,
-        route = Route.Ledger,
+        labelResource = R.string.ui_bill,
+        route = Route.Bill,
     ),
     ANALYTICS(
         icon = MaterialSymbols.Leaderboard,

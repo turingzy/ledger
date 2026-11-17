@@ -3,10 +3,10 @@ package cn.turingzy.ledger.data.debug
 import cn.turingzy.ledger.data.transfer.BillFileCodec
 import cn.turingzy.ledger.data.transfer.BillImportPlanner
 import cn.turingzy.ledger.data.transfer.planBillImport
-import cn.turingzy.ledger.model.BillParseRule
-import cn.turingzy.ledger.model.Category
-import cn.turingzy.ledger.model.CategoryType
-import cn.turingzy.ledger.model.TransactionType
+import cn.turingzy.ledger.model.transfer.BillParseRule
+import cn.turingzy.ledger.model.category.Category
+import cn.turingzy.ledger.model.category.CategoryType
+import cn.turingzy.ledger.model.transaction.TransactionType
 import java.io.File
 import java.time.Instant
 import java.time.YearMonth
@@ -22,7 +22,7 @@ class DebugScenarioDataTest {
         Category(8, "工资", CategoryType.INCOME, 1), Category(11, "转账", CategoryType.TRANSFER, 1),
     )
     private fun generate() = debugScenarioData(now, zone, listOf(1L, 2L), listOf(8L), 11L)
-    private fun fixture(name: String): List<cn.turingzy.ledger.model.Transaction> {
+    private fun fixture(name: String): List<cn.turingzy.ledger.model.transaction.Transaction> {
         val file = listOf(File("../test-data/import/$name"), File("test-data/import/$name")).first { it.exists() }
         return BillImportPlanner.plan(BillFileCodec.read(file.readBytes()), BillParseRule.defaults().first(), null,
             generate().accounts.filterNot { it.isDeleted }, categories)
@@ -39,7 +39,7 @@ class DebugScenarioDataTest {
         assertTrue(data.accounts.any { !it.includeInTotal && it.currentBalance > 0L })
         assertTrue(data.accounts.any { it.isDeleted })
         assertTrue(data.accounts.any { it.currency == "EUR" && data.transactions.none { entry -> entry.accountId == it.id } })
-        assertTrue(data.accounts.any { it.type == cn.turingzy.ledger.model.AccountType.CREDIT && it.currentBalance < 0L })
+        assertTrue(data.accounts.any { it.type == cn.turingzy.ledger.model.account.AccountType.CREDIT && it.currentBalance < 0L })
         assertEquals(generate(), data)
         val months = data.transactions.map { YearMonth.from(Instant.ofEpochMilli(it.transactionTime).atZone(zone)) }.toSet()
         assertTrue(months.size >= 24)

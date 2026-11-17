@@ -1,12 +1,12 @@
 package cn.turingzy.ledger.ui.feature.wallet
 
 import app.cash.turbine.test
-import cn.turingzy.ledger.data.repository.CardTemplateRepository
-import cn.turingzy.ledger.model.CardTemplate
-import cn.turingzy.ledger.data.repository.AccountRepository
-import cn.turingzy.ledger.model.Account
-import cn.turingzy.ledger.model.AccountType
-import cn.turingzy.ledger.model.AccountWithTemplate
+import cn.turingzy.ledger.data.repository.account.CardTemplateRepository
+import cn.turingzy.ledger.model.account.CardTemplate
+import cn.turingzy.ledger.data.repository.account.AccountRepository
+import cn.turingzy.ledger.model.account.Account
+import cn.turingzy.ledger.model.account.AccountType
+import cn.turingzy.ledger.model.account.AccountWithTemplate
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -28,9 +28,9 @@ class WalletViewModelTest {
 
     private val templateRepository: CardTemplateRepository = mockk()
     private val accountRepository: AccountRepository = mockk(relaxed = true)
-    private val transactionRepository: cn.turingzy.ledger.data.repository.TransactionRepository = mockk()
-    private val currencies = mockk<cn.turingzy.ledger.data.repository.CurrencyRepository> {
-        coEvery { selection } returns flowOf(cn.turingzy.ledger.data.repository.CurrencySelection())
+    private val transactionRepository: cn.turingzy.ledger.data.repository.transaction.TransactionRepository = mockk()
+    private val currencies = mockk<cn.turingzy.ledger.data.repository.currency.CurrencyRepository> {
+        coEvery { selection } returns flowOf(cn.turingzy.ledger.data.repository.currency.CurrencySelection())
     }
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var viewModel: WalletViewModel

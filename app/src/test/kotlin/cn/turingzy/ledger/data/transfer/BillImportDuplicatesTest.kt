@@ -1,7 +1,7 @@
 package cn.turingzy.ledger.data.transfer
 
-import cn.turingzy.ledger.model.Transaction
-import cn.turingzy.ledger.model.TransactionType
+import cn.turingzy.ledger.model.transaction.Transaction
+import cn.turingzy.ledger.model.transaction.TransactionType
 import org.junit.Assert.*
 import org.junit.Test
 

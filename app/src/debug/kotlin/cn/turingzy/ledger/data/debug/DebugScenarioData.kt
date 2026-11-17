@@ -1,9 +1,9 @@
 package cn.turingzy.ledger.data.debug
 
-import cn.turingzy.ledger.model.Account
-import cn.turingzy.ledger.model.AccountType
-import cn.turingzy.ledger.model.Transaction
-import cn.turingzy.ledger.model.TransactionType
+import cn.turingzy.ledger.model.account.Account
+import cn.turingzy.ledger.model.account.AccountType
+import cn.turingzy.ledger.model.transaction.Transaction
+import cn.turingzy.ledger.model.transaction.TransactionType
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth

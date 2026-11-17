@@ -16,7 +16,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
-import cn.turingzy.ledger.ui.components.base.BaseButton
+import cn.turingzy.ledger.ui.component.base.BaseButton
 import cn.turingzy.ledger.ui.theme.LedgerTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals

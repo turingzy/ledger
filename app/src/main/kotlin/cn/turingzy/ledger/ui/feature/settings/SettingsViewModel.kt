@@ -2,9 +2,9 @@ package cn.turingzy.ledger.ui.feature.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import cn.turingzy.ledger.data.repository.AccountRepository
-import cn.turingzy.ledger.data.repository.CardTemplateRepository
-import cn.turingzy.ledger.data.repository.CategoryRepository
+import cn.turingzy.ledger.data.repository.account.AccountRepository
+import cn.turingzy.ledger.data.repository.account.CardTemplateRepository
+import cn.turingzy.ledger.data.repository.category.CategoryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -13,11 +13,11 @@ import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 import android.net.Uri
 import cn.turingzy.ledger.BuildConfig
-import cn.turingzy.ledger.data.repository.ParseRuleRepository
-import cn.turingzy.ledger.data.repository.SettingsDataRepository
-import cn.turingzy.ledger.model.BillParseRule
-import cn.turingzy.ledger.model.ParseRule
-import cn.turingzy.ledger.model.CardTemplate
+import cn.turingzy.ledger.data.repository.settings.ParseRuleRepository
+import cn.turingzy.ledger.data.repository.settings.SettingsDataRepository
+import cn.turingzy.ledger.model.transfer.BillParseRule
+import cn.turingzy.ledger.model.transfer.ParseRule
+import cn.turingzy.ledger.model.account.CardTemplate
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -36,7 +36,7 @@ class SettingsViewModel @Inject constructor(
     private val accountRepository: AccountRepository,
     private val ruleRepository: ParseRuleRepository,
     private val dataRepository: SettingsDataRepository,
-    private val updates: cn.turingzy.ledger.data.repository.AppUpdateRepository,
+    private val updates: cn.turingzy.ledger.data.repository.settings.AppUpdateRepository,
 ) : ViewModel() {
 
     private val message = MutableStateFlow<String?>(null)

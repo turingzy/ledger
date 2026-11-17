@@ -1,15 +1,15 @@
 package cn.turingzy.ledger.ui.feature.wallet
 
-import cn.turingzy.ledger.model.Account
-import cn.turingzy.ledger.model.AccountType
-import cn.turingzy.ledger.model.AccountWithTemplate
-import cn.turingzy.ledger.model.Category
-import cn.turingzy.ledger.model.CategoryType
-import cn.turingzy.ledger.model.CategoryWithIcon
-import cn.turingzy.ledger.model.Icon
-import cn.turingzy.ledger.model.Transaction
-import cn.turingzy.ledger.model.TransactionDetail
-import cn.turingzy.ledger.model.TransactionType
+import cn.turingzy.ledger.model.account.Account
+import cn.turingzy.ledger.model.account.AccountType
+import cn.turingzy.ledger.model.account.AccountWithTemplate
+import cn.turingzy.ledger.model.category.Category
+import cn.turingzy.ledger.model.category.CategoryType
+import cn.turingzy.ledger.model.category.CategoryWithIcon
+import cn.turingzy.ledger.model.category.Icon
+import cn.turingzy.ledger.model.transaction.Transaction
+import cn.turingzy.ledger.model.transaction.TransactionDetail
+import cn.turingzy.ledger.model.transaction.TransactionType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Test

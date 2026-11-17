@@ -1,5 +1,14 @@
 package cn.turingzy.ledger.ui.feature.settings
 
+import cn.turingzy.ledger.ui.feature.settings.component.SettingsPageBottomPadding
+import cn.turingzy.ledger.ui.feature.settings.component.SettingsSubpageScaffold
+import cn.turingzy.ledger.ui.feature.settings.component.settingsPageScroll
+import cn.turingzy.ledger.ui.feature.settings.screen.AboutScreen
+import cn.turingzy.ledger.ui.feature.settings.screen.CardTemplateManagementScreen
+import cn.turingzy.ledger.ui.feature.settings.screen.OpenSourceLibrariesScreen
+import cn.turingzy.ledger.ui.feature.settings.screen.ParseRulePreview
+import cn.turingzy.ledger.ui.feature.settings.screen.ParseRulesScreen
+import cn.turingzy.ledger.ui.feature.settings.screen.defaultParseRulePreviews
 import android.view.Window
 import android.view.WindowManager
 import androidx.activity.compose.LocalActivity
@@ -41,14 +50,14 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.performSemanticsAction
 import org.junit.Assert.assertTrue
 import androidx.test.espresso.Espresso.pressBack
-import cn.turingzy.ledger.model.CardTemplate
-import cn.turingzy.ledger.model.Account
-import cn.turingzy.ledger.model.AccountType
-import cn.turingzy.ledger.model.AccountWithTemplate
-import cn.turingzy.ledger.model.Category
-import cn.turingzy.ledger.model.CategoryType
-import cn.turingzy.ledger.model.CategoryWithIcon
-import cn.turingzy.ledger.model.Icon as ModelIcon
+import cn.turingzy.ledger.model.account.CardTemplate
+import cn.turingzy.ledger.model.account.Account
+import cn.turingzy.ledger.model.account.AccountType
+import cn.turingzy.ledger.model.account.AccountWithTemplate
+import cn.turingzy.ledger.model.category.Category
+import cn.turingzy.ledger.model.category.CategoryType
+import cn.turingzy.ledger.model.category.CategoryWithIcon
+import cn.turingzy.ledger.model.category.Icon as ModelIcon
 import cn.turingzy.ledger.navigation.SettingsDestination
 import cn.turingzy.ledger.navigation.SettingsNavigation
 import cn.turingzy.ledger.ui.component.MaterialSymbols
@@ -67,7 +76,7 @@ class SettingsInteractionTest {
         compose.setContent {
             LedgerTheme {
                 SettingsSubpageScaffold(title = "子页标题", onBack = {}, actions = {
-                    cn.turingzy.ledger.ui.component.TopBarIconButton(
+                    cn.turingzy.ledger.ui.component.card.summary.TopBarIconButton(
                         MaterialSymbols.Check, "保存子页", { actionCount++ },
                     )
                 }) {

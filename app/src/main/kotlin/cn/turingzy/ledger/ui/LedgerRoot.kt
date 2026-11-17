@@ -16,11 +16,12 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
-import cn.turingzy.ledger.model.AppPreferences
-import cn.turingzy.ledger.ui.component.LocalLedgerCurrency
+import cn.turingzy.ledger.model.settings.AppPreferences
+import cn.turingzy.ledger.ui.component.biz.LocalLedgerCurrency
 import cn.turingzy.ledger.ui.theme.LedgerTheme
 import java.util.Locale
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 internal fun LedgerRoot(viewModel: AppSettingsViewModel = hiltViewModel()) {
@@ -41,7 +42,7 @@ internal fun LedgerRoot(viewModel: AppSettingsViewModel = hiltViewModel()) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             while (true) {
                 viewModel.refreshRates()
-                delay(60 * 60 * 1000L)
+                delay((60 * 60 * 1000L).milliseconds)
             }
         }
     }

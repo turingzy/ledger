@@ -7,7 +7,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import cn.turingzy.ledger.model.CategoryType
+import cn.turingzy.ledger.model.category.CategoryType
 import cn.turingzy.ledger.ui.interaction.LocalUiInteractionClock
 import cn.turingzy.ledger.ui.theme.LedgerTheme
 import java.time.LocalDate

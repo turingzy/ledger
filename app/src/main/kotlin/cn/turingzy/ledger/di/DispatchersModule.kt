@@ -1,7 +1,5 @@
 package cn.turingzy.ledger.di
 
-import cn.turingzy.ledger.util.Dispatcher
-import cn.turingzy.ledger.util.LedgerDispatchers
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

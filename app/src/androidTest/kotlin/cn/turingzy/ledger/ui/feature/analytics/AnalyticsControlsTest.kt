@@ -11,7 +11,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import cn.turingzy.ledger.model.CategoryType
+import cn.turingzy.ledger.model.category.CategoryType
 import java.time.LocalDate
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertEquals

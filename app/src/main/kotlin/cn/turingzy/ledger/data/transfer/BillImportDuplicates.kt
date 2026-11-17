@@ -1,6 +1,6 @@
 package cn.turingzy.ledger.data.transfer
 
-import cn.turingzy.ledger.model.Transaction
+import cn.turingzy.ledger.model.transaction.Transaction
 
 internal data class BillImportPlan(
     val transactions: List<Transaction>,
@@ -10,7 +10,7 @@ internal data class BillImportPlan(
 
 private data class TransactionFingerprint(
     val accountId: Long, val toAccountId: Long?, val time: Long, val amount: Long,
-    val type: cn.turingzy.ledger.model.TransactionType, val note: String,
+    val type: cn.turingzy.ledger.model.transaction.TransactionType, val note: String,
 )
 
 private fun Transaction.fingerprint() = TransactionFingerprint(accountId, toAccountId, transactionTime, amount, type, note.orEmpty().trim())

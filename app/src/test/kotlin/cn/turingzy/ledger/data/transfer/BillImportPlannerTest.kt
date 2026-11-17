@@ -1,6 +1,10 @@
 package cn.turingzy.ledger.data.transfer
 
-import cn.turingzy.ledger.model.*
+import cn.turingzy.ledger.model.account.Account
+import cn.turingzy.ledger.model.account.AccountType
+import cn.turingzy.ledger.model.transfer.BillParseRule
+import cn.turingzy.ledger.model.category.Category
+import cn.turingzy.ledger.model.category.CategoryType
 import org.junit.Assert.*
 import org.junit.Test
 

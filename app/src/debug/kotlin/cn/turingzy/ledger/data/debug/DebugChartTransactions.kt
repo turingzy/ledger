@@ -1,7 +1,7 @@
 package cn.turingzy.ledger.data.debug
 
-import cn.turingzy.ledger.model.Transaction
-import cn.turingzy.ledger.model.TransactionType
+import cn.turingzy.ledger.model.transaction.Transaction
+import cn.turingzy.ledger.model.transaction.TransactionType
 import java.time.Instant
 import java.time.YearMonth
 import java.time.ZoneId

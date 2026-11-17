@@ -1,17 +1,18 @@
 package cn.turingzy.ledger.ui.feature.wallet
 
+import cn.turingzy.ledger.ui.feature.wallet.sheet.accountCurrencyCodes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import cn.turingzy.ledger.data.repository.CardTemplateRepository
-import cn.turingzy.ledger.data.repository.TransactionRepository
-import cn.turingzy.ledger.data.repository.AccountRepository
-import cn.turingzy.ledger.model.Account
-import cn.turingzy.ledger.model.primaryAmount
-import cn.turingzy.ledger.model.primaryBalance
-import cn.turingzy.ledger.util.Dispatcher
-import cn.turingzy.ledger.util.LedgerDispatchers
+import cn.turingzy.ledger.data.repository.account.CardTemplateRepository
+import cn.turingzy.ledger.data.repository.transaction.TransactionRepository
+import cn.turingzy.ledger.data.repository.account.AccountRepository
+import cn.turingzy.ledger.model.account.Account
+import cn.turingzy.ledger.model.currency.primaryAmount
+import cn.turingzy.ledger.model.currency.primaryBalance
+import cn.turingzy.ledger.di.Dispatcher
+import cn.turingzy.ledger.di.LedgerDispatchers
 import kotlinx.coroutines.CoroutineDispatcher
-import cn.turingzy.ledger.model.AccountType
+import cn.turingzy.ledger.model.account.AccountType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -27,7 +28,7 @@ class WalletViewModel @Inject constructor(
     private val cardTemplateRepository: CardTemplateRepository,
     @Dispatcher(LedgerDispatchers.Default) private val defaultDispatcher: CoroutineDispatcher,
     private val transactionRepository: TransactionRepository,
-    private val currencies: cn.turingzy.ledger.data.repository.CurrencyRepository,
+    private val currencies: cn.turingzy.ledger.data.repository.currency.CurrencyRepository,
 ) : ViewModel() {
 
     init {
@@ -47,7 +48,7 @@ class WalletViewModel @Inject constructor(
 
         WalletUiState.Success(
             totalAsset = primary.assets,
-            amountsAvailable = accounts.filter { it.account.includeInTotal }.all { it.account.primaryBalance(selection.currency) != null } && transactions.filter { it.transaction.type != cn.turingzy.ledger.model.TransactionType.TRANSFER }.all { it.primaryAmount(selection.currency) != null },
+            amountsAvailable = accounts.filter { it.account.includeInTotal }.all { it.account.primaryBalance(selection.currency) != null } && transactions.filter { it.transaction.type != cn.turingzy.ledger.model.transaction.TransactionType.TRANSFER }.all { it.primaryAmount(selection.currency) != null },
             totalDebt = primary.creditBalance,
             currencyTotals = totals,
             accounts = accounts,

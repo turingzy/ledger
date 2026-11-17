@@ -1,6 +1,6 @@
 package cn.turingzy.ledger.data.debug
 
-import cn.turingzy.ledger.model.TransactionType
+import cn.turingzy.ledger.model.transaction.TransactionType
 import java.time.Instant
 import java.time.ZoneId
 import org.junit.Assert.*

@@ -30,7 +30,7 @@ class RetainedDestinationHostTest {
 
     @Test
     fun switchingTabsRetainsCompositionAndStateWithoutLayingOutHiddenPages() {
-        var selected by mutableStateOf(TopLevelDestination.LEDGER)
+        var selected by mutableStateOf(TopLevelDestination.BILL)
         val created = mutableListOf<TopLevelDestination>()
         val disposed = mutableListOf<TopLevelDestination>()
         val measurements = mutableMapOf<TopLevelDestination, Int>()
@@ -53,21 +53,21 @@ class RetainedDestinationHostTest {
                 }
             }
         }
-        compose.onNodeWithText("increment LEDGER").performClick()
-        compose.onNodeWithText("LEDGER:1").assertIsDisplayed()
+        compose.onNodeWithText("increment BILL").performClick()
+        compose.onNodeWithText("BILL:1").assertIsDisplayed()
         var ledgerMeasurements = 0
-        compose.runOnIdle { ledgerMeasurements = measurements.getValue(TopLevelDestination.LEDGER) }
+        compose.runOnIdle { ledgerMeasurements = measurements.getValue(TopLevelDestination.BILL) }
 
         listOf(TopLevelDestination.WALLET, TopLevelDestination.ANALYTICS, TopLevelDestination.SETTINGS).forEach { destination ->
             compose.runOnIdle { selected = destination }
             compose.onNodeWithText("${destination.name}:0").assertIsDisplayed()
-            compose.onNodeWithText("LEDGER:1").assertIsNotDisplayed()
+            compose.onNodeWithText("BILL:1").assertIsNotDisplayed()
         }
         compose.runOnIdle {
-            assertEquals(ledgerMeasurements, measurements.getValue(TopLevelDestination.LEDGER))
-            selected = TopLevelDestination.LEDGER
+            assertEquals(ledgerMeasurements, measurements.getValue(TopLevelDestination.BILL))
+            selected = TopLevelDestination.BILL
         }
-        compose.onNodeWithText("LEDGER:1").assertIsDisplayed()
+        compose.onNodeWithText("BILL:1").assertIsDisplayed()
         compose.runOnIdle {
             assertEquals(4, created.size)
             assertTrue(disposed.isEmpty())
@@ -76,7 +76,7 @@ class RetainedDestinationHostTest {
 
     @Test
     fun hiddenTabStopsAtStartedAndKeepsTheSameLifecycleWhenRevisited() {
-        var selected by mutableStateOf(TopLevelDestination.LEDGER)
+        var selected by mutableStateOf(TopLevelDestination.BILL)
         val owners = mutableMapOf<TopLevelDestination, LifecycleOwner>()
         compose.setContent {
             RetainedDestinationHost(selected, Modifier.fillMaxSize()) { destination ->
@@ -92,14 +92,14 @@ class RetainedDestinationHostTest {
         compose.onNodeWithText("WALLET").assertIsDisplayed()
         lateinit var ledgerOwner: LifecycleOwner
         compose.runOnIdle {
-            ledgerOwner = owners.getValue(TopLevelDestination.LEDGER)
+            ledgerOwner = owners.getValue(TopLevelDestination.BILL)
             assertEquals(Lifecycle.State.STARTED, ledgerOwner.lifecycle.currentState)
             assertEquals(Lifecycle.State.RESUMED, owners.getValue(TopLevelDestination.WALLET).lifecycle.currentState)
-            selected = TopLevelDestination.LEDGER
+            selected = TopLevelDestination.BILL
         }
-        compose.onNodeWithText("LEDGER").assertIsDisplayed()
+        compose.onNodeWithText("BILL").assertIsDisplayed()
         compose.runOnIdle {
-            assertTrue(ledgerOwner === owners.getValue(TopLevelDestination.LEDGER))
+            assertTrue(ledgerOwner === owners.getValue(TopLevelDestination.BILL))
             assertEquals(Lifecycle.State.RESUMED, ledgerOwner.lifecycle.currentState)
             assertEquals(Lifecycle.State.STARTED, owners.getValue(TopLevelDestination.WALLET).lifecycle.currentState)
         }

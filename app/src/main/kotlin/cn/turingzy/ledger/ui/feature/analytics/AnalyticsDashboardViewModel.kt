@@ -1,14 +1,17 @@
 package cn.turingzy.ledger.ui.feature.analytics
 
+import cn.turingzy.ledger.ui.feature.analytics.calculation.AnalyticsDay
+import cn.turingzy.ledger.ui.feature.analytics.calculation.analyticsDays
+import cn.turingzy.ledger.ui.feature.analytics.calculation.analyticsTransactions
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import cn.turingzy.ledger.model.primaryAmount
-import cn.turingzy.ledger.data.repository.TransactionRepository
-import cn.turingzy.ledger.data.repository.CurrencyRepository
+import cn.turingzy.ledger.model.currency.primaryAmount
+import cn.turingzy.ledger.data.repository.transaction.TransactionRepository
+import cn.turingzy.ledger.data.repository.currency.CurrencyRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flatMapLatest
-import cn.turingzy.ledger.util.Dispatcher
-import cn.turingzy.ledger.util.LedgerDispatchers
+import cn.turingzy.ledger.di.Dispatcher
+import cn.turingzy.ledger.di.LedgerDispatchers
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.LocalDate
 import java.time.ZoneId
@@ -38,7 +41,7 @@ class AnalyticsDashboardViewModel @Inject constructor(
         transactions.getTransactionsBetween(Long.MIN_VALUE, Long.MAX_VALUE, currency.currency).map { entries ->
                 val zone = ZoneId.systemDefault()
                 AnalyticsDashboardState(currency = currency.currency, days = analyticsDays(entries, zone), loading = false,
-                    transactions = analyticsTransactions(entries, zone), amountsAvailable = entries.filter { it.transaction.type != cn.turingzy.ledger.model.TransactionType.TRANSFER }.all { it.primaryAmount(currency.currency) != null })
+                    transactions = analyticsTransactions(entries, zone), amountsAvailable = entries.filter { it.transaction.type != cn.turingzy.ledger.model.transaction.TransactionType.TRANSFER }.all { it.primaryAmount(currency.currency) != null })
             }
         }
         .flowOn(dispatcher)

@@ -1,10 +1,12 @@
 package cn.turingzy.ledger.ui.feature.settings
 
+import cn.turingzy.ledger.ui.feature.settings.component.SettingsTransferAction
+import cn.turingzy.ledger.ui.feature.settings.screen.ParseRulesScreen
 import androidx.compose.runtime.*
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
-import cn.turingzy.ledger.model.AppPreferences
-import cn.turingzy.ledger.ui.component.GeneralPreferencesForm
+import cn.turingzy.ledger.model.settings.AppPreferences
+import cn.turingzy.ledger.ui.component.input.GeneralPreferencesForm
 import cn.turingzy.ledger.ui.interaction.LocalUiInteractionClock
 import cn.turingzy.ledger.ui.theme.LedgerTheme
 import org.junit.Assert.assertEquals

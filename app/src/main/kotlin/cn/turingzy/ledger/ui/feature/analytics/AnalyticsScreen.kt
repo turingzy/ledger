@@ -1,7 +1,9 @@
 package cn.turingzy.ledger.ui.feature.analytics
 
-import cn.turingzy.ledger.ui.component.ScrollTitleContainer
-import cn.turingzy.ledger.ui.component.LocalLedgerCurrency
+import cn.turingzy.ledger.ui.feature.analytics.component.AnalyticsChartInteractionHost
+import cn.turingzy.ledger.ui.feature.analytics.component.AnalyticsDashboardCards
+import cn.turingzy.ledger.ui.component.base.ScrollTitleContainer
+import cn.turingzy.ledger.ui.component.biz.LocalLedgerCurrency
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.background
@@ -20,9 +22,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import cn.turingzy.ledger.ui.components.base.BasePageFrame
+import cn.turingzy.ledger.ui.component.base.BasePageFrame
 import androidx.compose.material3.Text
-import cn.turingzy.ledger.ui.component.LocalBottomBarContentPadding
+import cn.turingzy.ledger.ui.component.navigation.LocalBottomBarContentPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,16 +43,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import cn.turingzy.ledger.model.DateFilterType
-import cn.turingzy.ledger.ui.component.LedgerDatePickerDialog
-import cn.turingzy.ledger.ui.component.LedgerSegmentedControl
-import cn.turingzy.ledger.ui.component.TopBarIconButton
+import cn.turingzy.ledger.model.transaction.DateFilterType
+import cn.turingzy.ledger.ui.component.picker.LedgerDatePickerDialog
+import cn.turingzy.ledger.ui.component.input.LedgerSegmentedControl
+import cn.turingzy.ledger.ui.component.card.summary.TopBarIconButton
 import cn.turingzy.ledger.ui.component.MaterialSymbols
-import cn.turingzy.ledger.ui.component.PeriodPickerSheet
+import cn.turingzy.ledger.ui.component.picker.PeriodPickerSheet
 import cn.turingzy.ledger.ui.interaction.UiInteractionKind
 import cn.turingzy.ledger.ui.interaction.rememberUiAction
 import cn.turingzy.ledger.ui.interaction.uiClickable
-import cn.turingzy.ledger.ui.component.PeriodPickerActions
+import cn.turingzy.ledger.ui.component.picker.PeriodPickerActions
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -88,7 +90,7 @@ fun AnalyticsContent(
     onSelectPeriod: (LocalDate) -> Unit = {},
     onSelectRange: (LocalDate, LocalDate) -> Unit = { _, _ -> },
     dashboard: AnalyticsDashboardState = AnalyticsDashboardState(),
-    onCategoryTypeChange: (cn.turingzy.ledger.model.CategoryType) -> Unit = {},
+    onCategoryTypeChange: (cn.turingzy.ledger.model.category.CategoryType) -> Unit = {},
     onOpenCalendar: (LocalDate) -> Unit = {},
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources

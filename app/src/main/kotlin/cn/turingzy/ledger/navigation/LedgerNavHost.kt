@@ -9,13 +9,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.toRoute
 import androidx.navigation.compose.currentBackStackEntryAsState
-import cn.turingzy.ledger.ui.feature.analytics.ConsumptionCalendarScreen
+import cn.turingzy.ledger.ui.feature.analytics.calendar.ConsumptionCalendarScreen
 import java.time.YearMonth
 import java.time.LocalDate
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
-import cn.turingzy.ledger.ui.feature.ledger.CreateTransactionSheet
+import cn.turingzy.ledger.ui.feature.bill.sheet.CreateTransactionSheet
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.runtime.Composable
@@ -24,7 +24,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import cn.turingzy.ledger.ui.feature.analytics.AnalyticsScreen
-import cn.turingzy.ledger.ui.feature.ledger.LedgerScreen
+import cn.turingzy.ledger.ui.feature.bill.BillScreen
 import cn.turingzy.ledger.ui.feature.settings.SettingsScreen
 import cn.turingzy.ledger.ui.feature.wallet.WalletScreen
 
@@ -55,8 +55,8 @@ fun LedgerNavHost(
             popExitTransition = { ExitTransition.None },
         ) {
             when (destination) {
-                TopLevelDestination.LEDGER -> composable<Route.Ledger> {
-                    LedgerScreen(
+                TopLevelDestination.BILL -> composable<Route.Bill> {
+                    BillScreen(
                         showRecordSheet = showRecordSheet,
                         onRecordSheetDismiss = onRecordSheetDismiss,
                         onNavigateToRecord = onNavigateToRecord,

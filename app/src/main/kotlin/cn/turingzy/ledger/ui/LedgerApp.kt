@@ -8,8 +8,8 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.CompositionLocalProvider
-import cn.turingzy.ledger.ui.component.BottomBarContentPadding
-import cn.turingzy.ledger.ui.component.LocalBottomBarContentPadding
+import cn.turingzy.ledger.ui.component.navigation.BottomBarContentPadding
+import cn.turingzy.ledger.ui.component.navigation.LocalBottomBarContentPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -21,17 +21,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.navigation.LedgerNavHost
 import cn.turingzy.ledger.navigation.TopLevelDestination
-import cn.turingzy.ledger.ui.component.rememberBackdropState
-import cn.turingzy.ledger.ui.component.recordBackdrop
-import cn.turingzy.ledger.ui.component.LedgerBottomBar
-import cn.turingzy.ledger.ui.component.LedgerFloatingActionButton
+import cn.turingzy.ledger.ui.component.base.rememberBackdropState
+import cn.turingzy.ledger.ui.component.base.recordBackdrop
+import cn.turingzy.ledger.ui.component.navigation.LedgerBottomBar
+import cn.turingzy.ledger.ui.component.navigation.LedgerFloatingActionButton
 
 @Composable
 fun LedgerApp(
     modifier: Modifier = Modifier,
 ) {
     val navigationBackdrop = rememberBackdropState()
-    var currentTopLevelDestination by rememberSaveable { mutableStateOf(TopLevelDestination.LEDGER) }
+    var currentTopLevelDestination by rememberSaveable { mutableStateOf(TopLevelDestination.BILL) }
 
     var settingsDetailVisible by remember { mutableStateOf(false) }
     var analyticsDetailVisible by remember { mutableStateOf(false) }
@@ -40,11 +40,11 @@ fun LedgerApp(
         TopLevelDestination.ANALYTICS -> !analyticsDetailVisible
         else -> true
     }
-    val isLedgerTab = currentTopLevelDestination == TopLevelDestination.LEDGER
+    val isBillTab = currentTopLevelDestination == TopLevelDestination.BILL
     var showGlobalRecordSheet by remember { mutableStateOf(false) }
 
-    BackHandler(enabled = !isLedgerTab) {
-        currentTopLevelDestination = TopLevelDestination.LEDGER
+    BackHandler(enabled = !isBillTab) {
+        currentTopLevelDestination = TopLevelDestination.BILL
     }
 
     Box(modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -62,7 +62,7 @@ fun LedgerApp(
         }
 
         LedgerFloatingActionButton(
-            visible = isLedgerTab,
+            visible = isBillTab,
             onClick = { showGlobalRecordSheet = true },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
