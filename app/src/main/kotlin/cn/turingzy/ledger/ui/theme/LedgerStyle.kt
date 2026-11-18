@@ -115,8 +115,9 @@ object LedgerShapes {
     val chartTooltip = RoundedCornerShape(5.dp)
     val control = RoundedCornerShape(8.dp)
     val field = RoundedCornerShape(12.dp)
-    val bankCard = RoundedCornerShape(14.dp)
     val card = RoundedCornerShape(16.dp)
+    val bankCardRadius = 18.dp
+    val bankCard = RoundedCornerShape(bankCardRadius)
     val summaryCard = RoundedCornerShape(20.dp)
     val dialog = RoundedCornerShape(24.dp)
     val confirmationDialog = RoundedCornerShape(28.dp)

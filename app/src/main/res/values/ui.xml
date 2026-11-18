@@ -226,7 +226,11 @@
   <string name="ui_hide_amounts">隐藏卡片金额</string>
   <string name="ui_hide_transactions">隐藏当日交易</string>
   <string name="ui_default_category">默认分类</string>
-  <string name="ui_default_card_design">默认卡面</string>
+  <string name="ui_card_iridescent">流光钛金</string>
+  <string name="ui_card_iridescent_dark">暮光钛金</string>
+  <string name="ui_card_pearl_light">静谧珠光</string>
+  <string name="ui_card_pearl_dark">深海珠光</string>
+  <string name="ui_card_text_color_auto">自动</string>
   <string name="ui_defaults">默认归属</string>
   <string name="ui_default_account">默认账户</string>
   <string name="ui_this_week">（本周）</string>

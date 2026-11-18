@@ -6,11 +6,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import cn.turingzy.ledger.model.account.AccountType
 import cn.turingzy.ledger.model.account.CardTemplate
 import cn.turingzy.ledger.ui.theme.LedgerTheme
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,13 +31,28 @@ fun AddAccountSheet(
     sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
     templates: List<CardTemplate> = emptyList(),
 ) {
+    val scope = rememberCoroutineScope()
+    fun dismiss() {
+        scope.launch {
+            sheetState.hide()
+            if (!sheetState.isVisible) onDismissRequest()
+        }
+    }
+
     BaseModalBottomSheet(
         contentHandlesInsets = true,
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
         modifier = modifier.keepSheetAnchorDuringIme(),
     ) {
-        AddAccountSheetContent(onConfirm, templates = templates, onDismiss = onDismissRequest)
+        AddAccountSheetContent(
+            onConfirm = { name, type, balance, cardNumber, includeInTotal, currency, templateId ->
+                onConfirm(name, type, balance, cardNumber, includeInTotal, currency, templateId)
+                dismiss()
+            },
+            templates = templates,
+            onDismiss = ::dismiss,
+        )
     }
 }
 

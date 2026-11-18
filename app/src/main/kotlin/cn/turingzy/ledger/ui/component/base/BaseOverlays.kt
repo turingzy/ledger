@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,6 +26,7 @@ import cn.turingzy.ledger.R
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.SheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -66,6 +68,8 @@ fun BaseModalBottomSheet(
     contentHandlesInsets: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    // The status bar is drawn over the host page, and its icons stay in place as the sheet closes.
+    val lightBars = MaterialTheme.colorScheme.background.luminance() > 0.5f
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
@@ -74,6 +78,10 @@ fun BaseModalBottomSheet(
         contentColor = contentColor,
         shape = shape,
         dragHandle = dragHandle,
+        properties = ModalBottomSheetProperties(
+            isAppearanceLightStatusBars = lightBars,
+            isAppearanceLightNavigationBars = lightBars,
+        ),
         contentWindowInsets = { if (contentHandlesInsets) WindowInsets(0, 0, 0, 0) else WindowInsets.safeDrawing },
         content = content,
     )

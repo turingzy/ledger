@@ -30,6 +30,7 @@ android {
 dependencies {
     // AndroidX Core, Lifecycle & Navigation
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.palette)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)

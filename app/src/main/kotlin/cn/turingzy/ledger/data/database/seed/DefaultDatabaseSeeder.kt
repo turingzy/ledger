@@ -2,7 +2,9 @@ package cn.turingzy.ledger.data.database.seed
 
 import cn.turingzy.ledger.data.database.LedgerDatabase
 import cn.turingzy.ledger.data.database.entity.AccountEntity
-import cn.turingzy.ledger.data.database.entity.CardTemplateEntity
+import cn.turingzy.ledger.data.database.dao.CardTemplateDao
+import cn.turingzy.ledger.data.database.mapper.asEntity
+import cn.turingzy.ledger.model.account.BuiltInCardFace
 import cn.turingzy.ledger.data.database.entity.CategoryEntity
 import cn.turingzy.ledger.data.database.entity.IconEntity
 import cn.turingzy.ledger.model.account.AccountType
@@ -28,12 +30,7 @@ object DefaultDatabaseSeeder {
             )
             database.iconDao().insertIcons(defaultIcons)
 
-            val defaultTemplates = listOf(
-                CardTemplateEntity(templateId = 1, name = "经典深蓝", coverUri = "res://drawable/card_classic_blue", textColor = "#FFFFFF", isSystem = true),
-                CardTemplateEntity(templateId = 2, name = "商务黑金", coverUri = "res://drawable/card_black_gold", textColor = "#D4AF37", isSystem = true),
-                CardTemplateEntity(templateId = 3, name = "活力薄荷", coverUri = "res://drawable/card_mint_green", textColor = "#FFFFFF", isSystem = true),
-            )
-            database.cardTemplateDao().insertTemplates(defaultTemplates)
+            database.cardTemplateDao().ensureBuiltInCardFaces()
 
             val defaultCategories = listOf(
                 CategoryEntity(categoryId = 1, name = "餐饮", type = CategoryType.EXPENSE, iconId = 1, sortOrder = 1, isSystem = true),
@@ -58,3 +55,6 @@ object DefaultDatabaseSeeder {
     }
 }
 
+internal suspend fun CardTemplateDao.ensureBuiltInCardFaces() {
+    insertTemplates(BuiltInCardFace.entries.map { it.asTemplate().asEntity() })
+}

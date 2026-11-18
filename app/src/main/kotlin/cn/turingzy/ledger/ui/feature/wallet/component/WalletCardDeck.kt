@@ -1,6 +1,5 @@
 package cn.turingzy.ledger.ui.feature.wallet.component
 
-import cn.turingzy.ledger.ui.feature.wallet.BankCardItem
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -26,6 +25,8 @@ import cn.turingzy.ledger.ui.component.base.BaseEmptyState
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.model.account.Account
 import cn.turingzy.ledger.model.account.AccountWithTemplate
+import cn.turingzy.ledger.model.account.CardTemplate
+import cn.turingzy.ledger.model.account.resolveBuiltInAppearance
 
 @Composable
 fun SwipeableBankCardDeck(
@@ -34,6 +35,7 @@ fun SwipeableBankCardDeck(
     modifier: Modifier = Modifier,
     selectedAccountId: Long? = null,
     onSelectedAccountChange: (Long) -> Unit = {},
+    templates: List<CardTemplate> = emptyList(),
 ) {
     if (accounts.isEmpty()) {
         EmptyCardDeck(modifier)
@@ -49,6 +51,7 @@ fun SwipeableBankCardDeck(
         }
     }
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        val settledPage = pagerState.settledPage
         HorizontalPager(
             state = pagerState,
             key = { it },
@@ -58,9 +61,10 @@ fun SwipeableBankCardDeck(
             val item = accounts[Math.floorMod(page, accounts.size)]
             BankCardItem(
                 account = item.account,
-                template = item.template,
+                template = item.template.resolveBuiltInAppearance(templates),
                 onAdjustClick = { onAdjustClick(item.account) },
-                modifier = Modifier.fillMaxWidth().aspectRatio(BankCardAspectRatio)
+                motionEnabled = page == settledPage,
+                modifier = Modifier.fillMaxWidth()
                     .semantics { contentDescription = item.account.name },
             )
         }

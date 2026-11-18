@@ -50,14 +50,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.ui.component.input.CompactSlider
 import cn.turingzy.ledger.ui.component.MaterialSymbols
-
-internal fun String.asCardTextColor(): Color? {
-    val hex = removePrefix("#")
-    if (hex.length != 6 && hex.length != 8) return null
-    if (hex.any { it.digitToIntOrNull(16) == null }) return null
-    val value = hex.toLongOrNull(16) ?: return null
-    return Color((if (hex.length == 6) value or 0xFF000000L else value).toInt())
-}
+import cn.turingzy.ledger.ui.component.card.bank.asCardTextColor
+import androidx.compose.material3.TextButton
 
 private fun Color.asHex(): String {
     val hex = toArgb().toUInt().toString(16).uppercase().padStart(8, '0')
@@ -65,8 +59,13 @@ private fun Color.asHex(): String {
 }
 
 @Composable
-internal fun CardTextColorPicker(value: String, onChange: (String) -> Unit) {
-    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
+internal fun CardTextColorPicker(
+    value: String,
+    onChange: (String) -> Unit,
+    automatic: Boolean = false,
+    onSelectAutomatic: (() -> Unit)? = null,
+) {
+    val textResources = androidx.compose.ui.platform.LocalResources.current
     val colors = MaterialTheme.colorScheme
     val focusManager = LocalFocusManager.current
     val presets = LedgerStyle.decorationColors.colorPickerPalette(colors)
@@ -75,6 +74,11 @@ internal fun CardTextColorPicker(value: String, onChange: (String) -> Unit) {
     Column {
         Row(Modifier.fillMaxWidth().height(SettingsItemHeight), verticalAlignment = Alignment.CenterVertically) {
             Text(textResources.getString(cn.turingzy.ledger.R.string.ui_text_color), Modifier.weight(1f).padding(start = 12.dp), style = MaterialTheme.typography.bodyLarge)
+            if (onSelectAutomatic != null) {
+                TextButton(onClick = onSelectAutomatic, enabled = !automatic) {
+                    Text(textResources.getString(cn.turingzy.ledger.R.string.ui_card_text_color_auto))
+                }
+            }
             BaseIconButtonContent(onClick = { focusManager.clearFocus(); showDialog = true }) {
                 Icon(MaterialSymbols.Palette, textResources.getString(cn.turingzy.ledger.R.string.ui_more_colors), Modifier.size(LedgerStyle.icons.default))
             }
@@ -85,7 +89,7 @@ internal fun CardTextColorPicker(value: String, onChange: (String) -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             presets.forEach { preset ->
-                val isSelected = preset.toArgb() == current.toArgb()
+                val isSelected = !automatic && preset.toArgb() == current.toArgb()
                 Box(
                     Modifier.size(28.dp).border(if (isSelected) 2.dp else 0.5.dp, if (isSelected) colors.primary else colors.outlineVariant, CircleShape)
                         .padding(3.dp).clip(CircleShape).background(preset)
@@ -105,7 +109,7 @@ internal fun CardTextColorPicker(value: String, onChange: (String) -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CardTextColorDialog(initialColor: Color, onDismiss: () -> Unit, onConfirm: (Color) -> Unit) {
-    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
+    val textResources = androidx.compose.ui.platform.LocalResources.current
     val initialHsv = remember(initialColor) {
         FloatArray(3).also { android.graphics.Color.colorToHSV(initialColor.toArgb(), it) }
     }
@@ -175,7 +179,7 @@ private fun CardTextColorDialog(initialColor: Color, onDismiss: () -> Unit, onCo
 
 @Composable
 private fun ColorSquare(hue: Float, saturation: Float, brightness: Float, onSelect: (Float, Float) -> Unit) {
-    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
+    val textResources = androidx.compose.ui.platform.LocalResources.current
     val update by rememberUpdatedState(onSelect)
     val hueColors = remember(brightness) { (0..6).map { Color.hsv((it % 6) * 60f, 1f, brightness) } }
     Canvas(

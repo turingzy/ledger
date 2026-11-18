@@ -3,16 +3,12 @@ package cn.turingzy.ledger.ui.feature.settings.screen
 import cn.turingzy.ledger.ui.feature.settings.component.CardTextColorPicker
 import cn.turingzy.ledger.ui.feature.settings.component.SettingsItemHeight
 import cn.turingzy.ledger.ui.feature.settings.component.SettingsSubpageScaffold
-import cn.turingzy.ledger.ui.feature.settings.component.asCardTextColor
 import cn.turingzy.ledger.ui.feature.settings.component.settingsPageScroll
 import cn.turingzy.ledger.ui.component.base.BaseIconButtonContent
 import cn.turingzy.ledger.ui.interaction.uiClickable
 import cn.turingzy.ledger.ui.feature.settings.component.SettingsDeleteAction
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.ui.component.base.BaseSurface
-import cn.turingzy.ledger.ui.component.card.bank.AccountCardBackground
-import cn.turingzy.ledger.model.account.Account
-import cn.turingzy.ledger.model.account.AccountType
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -23,7 +19,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -54,14 +49,24 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.navigation.SettingsSubpageTransition
 import cn.turingzy.ledger.model.account.CardTemplate
+import cn.turingzy.ledger.model.account.BuiltInCardFace
+import cn.turingzy.ledger.model.account.selectableCardTemplates
 import cn.turingzy.ledger.ui.component.card.bank.BankCardAspectRatio
 import cn.turingzy.ledger.ui.component.card.bank.CardPageIndicator
+import cn.turingzy.ledger.ui.component.card.bank.AutomaticCardTextColor
+import cn.turingzy.ledger.ui.component.card.bank.TitaniumCardSurface
+import cn.turingzy.ledger.ui.component.card.bank.TitaniumDrag
+import cn.turingzy.ledger.ui.component.card.bank.titaniumImageUri
+import cn.turingzy.ledger.ui.component.card.bank.titaniumInkOverride
+import cn.turingzy.ledger.ui.component.card.bank.titaniumPreset
+import cn.turingzy.ledger.ui.component.card.bank.titaniumTitle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import cn.turingzy.ledger.ui.component.card.summary.SummaryCardIconButton
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.card.bank.rememberCircularCardPagerState
@@ -75,10 +80,10 @@ internal fun CardTemplateManagementScreen(
     onDelete: (Long) -> Unit,
     onCopyImage: suspend (Uri) -> String?,
 ) {
-    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
+    val textResources = androidx.compose.ui.platform.LocalResources.current
     val scope = rememberCoroutineScope()
     var saving by remember { mutableStateOf(false) }
-    val drafts = remember { mutableStateListOf<CardTemplate>().apply { addAll(templates) } }
+    val drafts = remember { mutableStateListOf<CardTemplate>().apply { addAll(templates.selectableCardTemplates()) } }
     var selectedId by remember { mutableStateOf(drafts.firstOrNull()?.id) }
     val pagerState = rememberCircularCardPagerState(drafts.map { it.id }, selectedId)
     val selectedIndex = if (drafts.isEmpty()) -1 else Math.floorMod(pagerState.currentPage, drafts.size)
@@ -98,7 +103,11 @@ internal fun CardTemplateManagementScreen(
             val index = drafts.indexOfFirst { it.id == target }
             if ((creating || drafts.isEmpty()) && newFace.id == target) newFace = newFace.copy(coverUri = image)
             else if (index >= 0) {
-                val updated = drafts[index].copy(coverUri = image)
+                val current = drafts[index]
+                val updated = current.copy(
+                    coverUri = image,
+                    textColor = if (current.titaniumInkOverride() == null) AutomaticCardTextColor else current.textColor,
+                )
                 drafts[index] = updated
                 onUpdate(updated)
             }
@@ -167,10 +176,12 @@ internal fun CardTemplateManagementScreen(
                         HorizontalPager(state = pagerState, key = { it }, pageSpacing = 12.dp) { pageIndex ->
                             drafts.getOrNull(if (drafts.isEmpty()) -1 else Math.floorMod(pageIndex, drafts.size))?.let {
                                 val face = it
+                                val customCover = BuiltInCardFace.byId(face.id) == null
                                 TemplateCoverPreview(
                                     template = face,
-                                    onChooseImage = { replaceImage(face) },
-                                    onDelete = {
+                                    motionEnabled = pageIndex == pagerState.settledPage,
+                                    onChooseImage = if (customCover) ({ replaceImage(face) }) else null,
+                                    onDelete = if (customCover) ({
                                         val index = drafts.indexOfFirst { draft -> draft.id == face.id }
                                         if (index >= 0) {
                                             onDelete(face.id)
@@ -178,7 +189,7 @@ internal fun CardTemplateManagementScreen(
                                             if (drafts.isEmpty()) newFace = CardTemplate(id = -1L, name = "", coverUri = "")
                                             selectedId = drafts.getOrNull(index.coerceAtMost(drafts.lastIndex))?.id
                                         }
-                                    },
+                                    }) else null,
                                 )
                             }
                         }
@@ -192,7 +203,6 @@ internal fun CardTemplateManagementScreen(
                                     if (updated.name.isNotBlank()) onUpdate(updated)
                                 }
                             },
-
                         )
                     }
 
@@ -207,7 +217,7 @@ private fun CardFaceProperties(
     template: CardTemplate,
     onChange: (CardTemplate) -> Unit,
 ) {
-    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
+    val textResources = androidx.compose.ui.platform.LocalResources.current
     val colors = MaterialTheme.colorScheme
     Column(verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large)) {
         BaseSurface(shape = LedgerStyle.shapes.card, color = colors.surface) {
@@ -217,7 +227,7 @@ private fun CardFaceProperties(
             ) {
                 Text(textResources.getString(cn.turingzy.ledger.R.string.ui_design_name), Modifier.width(LedgerStyle.dimensions.formLabelWidth), style = MaterialTheme.typography.bodyLarge)
                 BasicTextField(
-                    value = template.name,
+                    value = template.titaniumTitle(),
                     onValueChange = { onChange(template.copy(name = it)) },
                     modifier = Modifier.weight(1f).semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_design_name) },
                     singleLine = true,
@@ -233,7 +243,15 @@ private fun CardFaceProperties(
             }
         }
         BaseSurface(shape = LedgerStyle.shapes.card, color = colors.surface) {
-            CardTextColorPicker(template.textColor, onChange = { onChange(template.copy(textColor = it)) })
+            CardTextColorPicker(
+                value = template.textColor,
+                automatic = template.titaniumInkOverride() == null,
+                onChange = { hex ->
+                    val explicitColor = if (hex.length == 7) "#FF" + hex.drop(1) else hex
+                    onChange(template.copy(textColor = explicitColor))
+                },
+                onSelectAutomatic = { onChange(template.copy(textColor = AutomaticCardTextColor)) },
+            )
         }
     }
 }
@@ -243,45 +261,50 @@ private fun TemplateCoverPreview(
     template: CardTemplate,
     onChooseImage: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null,
+    motionEnabled: Boolean = true,
 ) {
-    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
-    val placeholder = onChooseImage != null && template.coverUri.isBlank()
-    val borderColor = LedgerStyle.colors.textPrimary.copy(alpha = 0.4f)
-    Box(
-        Modifier.fillMaxWidth().aspectRatio(BankCardAspectRatio).clip(LedgerStyle.shapes.dialog)
-            .background(if (placeholder) LedgerStyle.colors.surface else LedgerStyle.colors.fieldBackground)
-            .then(if (placeholder) Modifier.uiClickable(onClick = onChooseImage) else Modifier)
-            .then(if (placeholder) Modifier.drawWithCache {
-                val stroke = Stroke(width = 1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(8.dp.toPx(), 6.dp.toPx())))
-                onDrawBehind { drawRoundRect(borderColor, cornerRadius = CornerRadius(24.dp.toPx()), style = stroke) }
-            } else Modifier),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (placeholder) Icon(MaterialSymbols.AddPhotoAlternate, textResources.getString(cn.turingzy.ledger.R.string.ui_choose_card_image), Modifier.size(40.dp), tint = LedgerStyle.colors.textPrimary)
-        if (!placeholder) AccountCardBackground(
-            account = Account(name = "", type = AccountType.DEBIT, templateId = template.id),
-            template = template,
-            modifier = Modifier.fillMaxSize(),
-        )
+    val textResources = androidx.compose.ui.platform.LocalResources.current
+    if (onChooseImage != null && template.coverUri.isBlank()) {
+        val borderColor = LedgerStyle.colors.textPrimary.copy(alpha = 0.4f)
+        Box(
+            Modifier.fillMaxWidth().aspectRatio(BankCardAspectRatio).clip(LedgerStyle.shapes.dialog)
+                .background(LedgerStyle.colors.surface)
+                .uiClickable(onClick = onChooseImage)
+                .drawWithCache {
+                    val stroke = Stroke(width = 1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(8.dp.toPx(), 6.dp.toPx())))
+                    onDrawBehind { drawRoundRect(borderColor, cornerRadius = CornerRadius(24.dp.toPx()), style = stroke) }
+                },
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(MaterialSymbols.AddPhotoAlternate, textResources.getString(cn.turingzy.ledger.R.string.ui_choose_card_image), Modifier.size(40.dp), tint = LedgerStyle.colors.textPrimary)
+        }
+        return
+    }
+
+    TitaniumCardSurface(
+        preset = template.titaniumPreset(),
+        imageUri = template.titaniumImageUri(),
+        modifier = Modifier.fillMaxWidth(),
+        textColor = template.titaniumInkOverride(),
+        motionEnabled = motionEnabled,
+        drag = TitaniumDrag.AfterLongPress,
+    ) { ink ->
         if (template.name.isNotBlank()) Text(
-            template.name,
-            modifier = Modifier.align(Alignment.TopStart).padding(LedgerStyle.spacing.extraLarge),
-            color = template.textColor.asCardTextColor() ?: LedgerStyle.decorationColors.onBrand,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
+            template.titaniumTitle(),
+            modifier = Modifier.align(Alignment.TopStart).padding(start = 20.dp, top = 17.dp, end = 46.dp),
+            color = ink,
+            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 17.sp, fontWeight = FontWeight.Normal),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
-        if (!placeholder) {
-            if (onDelete != null) SettingsDeleteAction(
-                template.id, textResources.getString(cn.turingzy.ledger.R.string.ui_delete_card_design), onDelete,
-                modifier = Modifier.align(Alignment.BottomStart).padding(LedgerStyle.spacing.large),
-                compact = true,
-            )
-            if (onChooseImage != null) SummaryCardIconButton(
-                MaterialSymbols.AddPhotoAlternate, textResources.getString(cn.turingzy.ledger.R.string.ui_change_card_design), onChooseImage,
-                modifier = Modifier.align(Alignment.BottomEnd).padding(LedgerStyle.spacing.large),
-            )
-        }
+        if (onDelete != null) SettingsDeleteAction(
+            template.id, textResources.getString(cn.turingzy.ledger.R.string.ui_delete_card_design), onDelete,
+            modifier = Modifier.align(Alignment.BottomStart).padding(LedgerStyle.spacing.large),
+            compact = true,
+        )
+        if (onChooseImage != null) SummaryCardIconButton(
+            MaterialSymbols.AddPhotoAlternate, textResources.getString(cn.turingzy.ledger.R.string.ui_change_card_design), onChooseImage,
+            modifier = Modifier.align(Alignment.BottomEnd).padding(LedgerStyle.spacing.large),
+        )
     }
 }

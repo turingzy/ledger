@@ -1,5 +1,7 @@
 package cn.turingzy.ledger.data.repository.settings
 
+import cn.turingzy.ledger.data.database.seed.ensureBuiltInCardFaces
+import cn.turingzy.ledger.model.account.BuiltInCardFace
 import cn.turingzy.ledger.data.repository.currency.ExchangeRateRepository
 import cn.turingzy.ledger.data.repository.currency.MoneyValuation
 import cn.turingzy.ledger.model.backup.BackupAppearance
@@ -69,7 +71,8 @@ class DefaultSettingsDataRepository @Inject constructor(
 
     override suspend fun saveTemplate(template: CardTemplate): Long = withContext(ioDispatcher) {
         require(template.name.isNotBlank() && template.coverUri.isNotBlank()) { "请填写卡面名称并选择图片" }
-        val stable = template.copy(id = template.id.coerceAtLeast(0), coverUri = storeImage(template.coverUri))
+        val stable = BuiltInCardFace.byId(template.id)?.asTemplate(template)
+            ?: template.copy(id = template.id.coerceAtLeast(0), coverUri = storeImage(template.coverUri))
         if (stable.id == 0L) database.cardTemplateDao().insertTemplate(stable.asEntity())
         else { database.cardTemplateDao().updateTemplate(stable.asEntity()); stable.id }
     }
@@ -204,7 +207,9 @@ class DefaultSettingsDataRepository @Inject constructor(
         val backup = json.decodeFromString<LedgerBackup>(read(uri, MAX_BACKUP_BYTES).toString(Charsets.UTF_8))
         LedgerBackupValidator.validate(backup)
         val unpackedImages = mutableMapOf<String, String>()
-        fun unpack(template: CardTemplate) = template.copy(coverUri = unpackedImages.getOrPut(template.coverUri) { unpackImage(template.coverUri) })
+        fun unpack(template: CardTemplate): CardTemplate =
+            BuiltInCardFace.byId(template.id)?.asTemplate(template)
+                ?: template.copy(coverUri = unpackedImages.getOrPut(template.coverUri) { unpackImage(template.coverUri) })
         val bills = backup.bills?.let { it.copy(templates = it.templates.map(::unpack)) }
         val settings = backup.settings?.let { it.copy(templates = it.templates.map(::unpack)) }
         // Keep rollback copies because applying a background removes its previous image.
@@ -240,6 +245,7 @@ class DefaultSettingsDataRepository @Inject constructor(
                     database.cardTemplateDao().clearRows()
                     bills.icons.forEach { database.iconDao().insertIcon(it.asEntity()) }
                     bills.templates.forEach { database.cardTemplateDao().insertTemplate(it.asEntity()) }
+                    database.cardTemplateDao().ensureBuiltInCardFaces()
                     bills.categories.forEach { database.categoryDao().insertCategory(it.asEntity()) }
                     bills.accounts.forEach { database.accountDao().insertAccount(it.asEntity()) }
                     bills.transactions.forEach { database.transactionDao().insertTransaction(it.asEntity()) }
@@ -250,11 +256,13 @@ class DefaultSettingsDataRepository @Inject constructor(
                     if (bills == null) {
                         val existing = database.cardTemplateDao().backupRows().map { it.templateId }.toSet()
                         val restoredIds = settings.templates.map { it.id }.toSet()
-                        (existing - restoredIds).forEach { database.cardTemplateDao().softDeleteTemplate(it) }
+                        (existing - restoredIds).filter { BuiltInCardFace.byId(it) == null }
+                            .forEach { database.cardTemplateDao().softDeleteTemplate(it) }
                         settings.templates.forEach { template ->
                             if (template.id in existing) database.cardTemplateDao().updateTemplate(template.asEntity())
                             else database.cardTemplateDao().insertTemplate(template.asEntity())
                         }
+                        database.cardTemplateDao().ensureBuiltInCardFaces()
                     }
                     settings.rules.forEach { rule ->
                         val restored = if (bills == null) rule.copy(defaultAccountId = null, defaultCategoryId = null) else rule

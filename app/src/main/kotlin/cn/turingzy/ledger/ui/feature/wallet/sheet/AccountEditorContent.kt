@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.wallet.sheet
 
+import cn.turingzy.ledger.ui.component.card.bank.titaniumTitle
 import cn.turingzy.ledger.ui.feature.wallet.component.displayName
 import cn.turingzy.ledger.ui.component.base.BaseButtonVariant
 import cn.turingzy.ledger.ui.component.base.BaseActionButton
@@ -36,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.model.account.Account
 import cn.turingzy.ledger.model.account.AccountType
 import cn.turingzy.ledger.model.account.CardTemplate
+import cn.turingzy.ledger.model.account.resolveBuiltInAppearance
 import cn.turingzy.ledger.util.toFormattedAmount
 
 @Composable
@@ -48,7 +50,7 @@ internal fun AccountEditorContent(
     onDismiss: () -> Unit,
     assignedTemplate: CardTemplate? = null,
 ) {
-    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
+    val textResources = androidx.compose.ui.platform.LocalResources.current
     var name by rememberSaveable(account?.id) { mutableStateOf(account?.name.orEmpty()) }
     var type by rememberSaveable(account?.id) { mutableStateOf(account?.type ?: AccountType.DEBIT) }
     var balance by rememberSaveable(account?.id) { mutableStateOf(account?.initialBalance?.toFormattedAmount().orEmpty()) }
@@ -56,18 +58,16 @@ internal fun AccountEditorContent(
     val primaryCurrency = cn.turingzy.ledger.ui.component.biz.LocalLedgerCurrency.current
     var currency by rememberSaveable(account?.id) { mutableStateOf(account?.currency ?: primaryCurrency) }
     var templateId by rememberSaveable(account?.id) { mutableStateOf(account?.templateId) }
-    var defaultCardFaceSelected by rememberSaveable(account?.id) { mutableStateOf(false) }
     var includeInTotal by rememberSaveable(account?.id) { mutableStateOf(account?.includeInTotal ?: true) }
     var showCardFaceDialog by rememberSaveable(account?.id) { mutableStateOf(false) }
     val input = AccountFormInput(name, type, balance, cardNumber, currency, templateId, includeInTotal)
     val result = if (account == null) input.toAccountOrNull(templates) else input.toUpdatedAccountOrNull(account, templates)
     val activeTemplates = remember(templates) { templates.filterNot { it.isDeleted } }
-    val cardFaceName = activeTemplates.firstOrNull { it.id == templateId }?.name
-        ?: assignedTemplate?.takeIf { it.id == templateId }?.name
-        ?: textResources.getString(
-            if (account == null && !defaultCardFaceSelected) cn.turingzy.ledger.R.string.ui_choose_card_design
-            else cn.turingzy.ledger.R.string.ui_default_card_design,
-        )
+    val selectedTemplate = activeTemplates.firstOrNull { it.id == templateId }
+        ?: assignedTemplate?.takeIf { it.id == templateId }
+    val cardFaceName = if (account == null && templateId == null) {
+        textResources.getString(cn.turingzy.ledger.R.string.ui_choose_card_design)
+    } else selectedTemplate.resolveBuiltInAppearance(activeTemplates).titaniumTitle()
     val currencies = accountCurrencyOptions
     val focusManager = LocalFocusManager.current
     val colors = MaterialTheme.colorScheme
@@ -167,7 +167,6 @@ internal fun AccountEditorContent(
             onDismiss = { showCardFaceDialog = false },
             onConfirm = {
                 templateId = it
-                defaultCardFaceSelected = it == null
                 showCardFaceDialog = false
             },
         )

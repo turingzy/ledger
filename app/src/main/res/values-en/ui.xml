@@ -226,7 +226,11 @@
   <string name="ui_hide_amounts">Hide amounts</string>
   <string name="ui_hide_transactions">Hide transactions</string>
   <string name="ui_default_category">Default category</string>
-  <string name="ui_default_card_design">Default card design</string>
+  <string name="ui_card_iridescent">Iridescent Titanium</string>
+  <string name="ui_card_iridescent_dark">Twilight Titanium</string>
+  <string name="ui_card_pearl_light">Quiet Pearl</string>
+  <string name="ui_card_pearl_dark">Deep Sea Pearl</string>
+  <string name="ui_card_text_color_auto">Auto</string>
   <string name="ui_defaults">Defaults</string>
   <string name="ui_default_account">Default account</string>
   <string name="ui_this_week">(this week)</string>

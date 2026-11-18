@@ -2,6 +2,7 @@ package cn.turingzy.ledger.ui
 
 import android.content.res.Configuration
 import android.os.LocaleList
+import android.view.Window
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.view.WindowCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -24,7 +26,7 @@ import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
-internal fun LedgerRoot(viewModel: AppSettingsViewModel = hiltViewModel()) {
+internal fun LedgerRoot(window: Window, viewModel: AppSettingsViewModel = hiltViewModel()) {
     val preferences by viewModel.preferences.collectAsStateWithLifecycle()
     val settings = preferences ?: AppPreferences()
     val context = LocalContext.current
@@ -36,6 +38,11 @@ internal fun LedgerRoot(viewModel: AppSettingsViewModel = hiltViewModel()) {
     }
     val localizedContext = remember(context, configuration) { localizedActivityContext(context, configuration) }
     val dark = when (settings.theme) { "dark" -> true; "light" -> false; else -> isSystemInDarkTheme() }
+    val systemBars = remember(window) { WindowCompat.getInsetsController(window, window.decorView) }
+    SideEffect {
+        systemBars.isAppearanceLightStatusBars = !dark
+        systemBars.isAppearanceLightNavigationBars = !dark
+    }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(lifecycle, preferences?.primaryCurrency) {
         if (preferences == null) return@LaunchedEffect

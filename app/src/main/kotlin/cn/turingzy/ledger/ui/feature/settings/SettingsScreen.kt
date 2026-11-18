@@ -91,14 +91,16 @@ fun SettingsScreen(
                 onDismissRequest = back,
             )
             SettingsDestination.BACKUP -> BackupAndRestoreScreen(onDismissRequest = back, onBackup = viewModel::backup, onRestore = viewModel::restore)
-            SettingsDestination.CARDS -> CardTemplateManagementScreen(
-                templates = (uiState as? SettingsUiState.Success)?.cardTemplates.orEmpty(),
-                onCreate = viewModel::createTemplate,
-                onUpdate = viewModel::updateTemplate,
-                onDelete = viewModel::deleteTemplate,
-                onCopyImage = viewModel::copyImage,
-                onDismissRequest = back,
-            )
+            SettingsDestination.CARDS -> (uiState as? SettingsUiState.Success)?.let { settings ->
+                CardTemplateManagementScreen(
+                    templates = settings.cardTemplates,
+                    onCreate = viewModel::createTemplate,
+                    onUpdate = viewModel::updateTemplate,
+                    onDelete = viewModel::deleteTemplate,
+                    onCopyImage = viewModel::copyImage,
+                    onDismissRequest = back,
+                )
+            }
             SettingsDestination.BILL_TRANSFER -> BillTransferScreen(rules = parseRulePreviews, onDismissRequest = back,
                 accounts = (uiState as? SettingsUiState.Success)?.accounts.orEmpty(),
                 onPreviewImport = viewModel::previewImport, onImport = viewModel::importBills, onExport = viewModel::exportBills)
