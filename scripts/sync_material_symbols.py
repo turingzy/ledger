@@ -7,23 +7,23 @@ import urllib.request
 import xml.etree.ElementTree as ET
 
 symbols = {
-'Add':'add', 'AddCard':'add_card', 'AddPhotoAlternate':'add_photo_alternate', 'ArrowBack':'arrow_back', 'ArrowForward':'arrow_forward', 'ArrowUpward':'arrow_upward',
+'Add':'add', 'AddCard':'add_card', 'AddPhotoAlternate':'add_photo_alternate', 'ArrowUpward':'arrow_upward',
 'RadioButtonChecked':'radio_button_checked', 'RadioButtonUnchecked':'radio_button_unchecked',
 'Backspace':'backspace', 'Check':'check', 'ChevronLeft':'chevron_left', 'ChevronRight':'chevron_right',
-'CheckBox':'check_box', 'CheckBoxOutlineBlank':'check_box_outline_blank', 'CloudDownload':'cloud_download',
+'CheckBox':'check_box', 'CheckBoxOutlineBlank':'check_box_outline_blank',
 'Close':'close', 'Code':'code', 'CloudUpload':'cloud_upload', 'DashboardCustomize':'dashboard_customize',
-'Delete':'delete', 'DirectionsBus':'directions_bus', 'Edit':'edit', 'EditSquare':'edit_square', 'FileCopy':'file_copy',
-'ArrowDropDown':'arrow_drop_down', 'ArrowDropUp':'arrow_drop_up', 'ExpandMore':'expand_more', 'Home':'home', 'Image':'image', 'ImportExport':'swap_vert', 'Info':'info',
+'Delete':'delete', 'DirectionsBus':'directions_bus', 'EditSquare':'edit_square', 'FileCopy':'file_copy',
+'ArrowDropDown':'arrow_drop_down', 'ArrowDropUp':'arrow_drop_up', 'ExpandMore':'expand_more', 'Home':'home', 'ImportExport':'swap_vert', 'Info':'info',
 'LocalHospital':'local_hospital', 'MoreHoriz':'more_horiz', 'NorthEast':'north_east', 'Palette':'palette', 'Payments':'payments',
 'Schedule':'schedule', 'Restaurant':'restaurant', 'Search':'search', 'ShoppingBag':'shopping_bag', 'SportsEsports':'sports_esports',
-'SwapHoriz':'swap_horiz', 'AccountBalance':'account_balance', 'Upload':'upload',
-'Undo':'undo', 'Menu':'menu', 'DragIndicator':'drag_indicator', 'ViewCarousel':'view_carousel', 'ViewAgenda':'view_agenda',
+'SwapHoriz':'swap_horiz', 'AccountBalance':'account_balance',
+'Undo':'undo', 'ViewCarousel':'view_carousel', 'ViewAgenda':'view_agenda',
 'Memory':'memory', 'Contactless':'contactless', 'ShieldPerson':'shield_person',
 'Visibility':'visibility', 'VisibilityOff':'visibility_off',
 'TrendingUp':'trending_up', 'TrendingDown':'trending_down',
-'Leaderboard':'leaderboard', 'LeaderboardFilled':'leaderboard', 'ChartData':'chart_data', 'ChartDataFilled':'chart_data', 'HomeFilled':'home', 'CreditCard':'credit_card', 'CreditCardFilled':'credit_card', 'DateRange':'date_range', 'CalendarMonth':'calendar_month', 'Tune':'tune',
-'Book':'book', 'Paid':'paid', 'Receipt':'receipt', 'BarChart':'bar_chart', 'Wallet':'wallet', 'AccountBalanceWallet':'account_balance_wallet', 'Settings':'settings',
-'ReceiptFilled':'receipt', 'Analytics':'analytics', 'AnalyticsFilled':'analytics', 'BookFilled':'book', 'BarChartFilled':'bar_chart', 'AccountBalanceWalletFilled':'account_balance_wallet', 'SettingsFilled':'settings',
+'Leaderboard':'leaderboard', 'LeaderboardFilled':'leaderboard', 'HomeFilled':'home', 'CreditCard':'credit_card', 'CreditCardFilled':'credit_card', 'DateRange':'date_range', 'CalendarMonth':'calendar_month', 'Tune':'tune',
+'AccountBalanceWallet':'account_balance_wallet', 'Settings':'settings',
+'SettingsFilled':'settings',
 }
 ROOT = Path(__file__).resolve().parents[1]
 cache = Path(tempfile.gettempdir()) / 'ledger-material-symbols'

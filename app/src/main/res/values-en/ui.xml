@@ -27,14 +27,11 @@
   <string name="ui_all_transactions">All transactions</string>
   <string name="ui_sat">Sat</string>
   <string name="ui_about">About</string>
-  <string name="ui_close_transaction_details">Close transaction details</string>
   <string name="ui_close_card_settings">Close card settings</string>
   <string name="ui_close_card_design_picker">Close card design picker</string>
   <string name="ui_close_search">Close search</string>
   <string name="ui_close_date_picker">Close date picker</string>
-  <string name="ui_close_date_picker_2">Close date picker</string>
   <string name="ui_close_background_settings">Close background settings</string>
-  <string name="ui_close_account_details">Close account details</string>
   <string name="ui_close_account_picker">Close account picker</string>
   <string name="ui_net_balance">Net balance</string>
   <string name="ui_analytics">Analytics</string>
@@ -54,7 +51,6 @@
   <string name="ui_card_design">Card design</string>
   <string name="ui_design_name">Design name</string>
   <string name="ui_card_designs">Card designs</string>
-  <string name="ui_spread_two_fingers_for_years_pinch_for_dates">Spread two fingers for years; pinch for dates</string>
   <string name="ui_possible_duplicate_transactions">Possible duplicate transactions</string>
   <string name="ui_cancel">Cancel</string>
   <string name="ui_cancel_account_deletion">Cancel account deletion</string>
@@ -62,7 +58,6 @@
   <string name="ui_cancel_import">Cancel import</string>
   <string name="ui_cancel_export">Cancel export</string>
   <string name="ui_cancel_restore">Cancel restore</string>
-  <string name="ui_cancel_new_account">Cancel new account</string>
   <string name="ui_cancel_color_selection">Cancel color selection</string>
   <string name="ui_add_a_rule_in_import_rules">Add a rule in Import rules.</string>
   <string name="ui_week">Week</string>
@@ -99,9 +94,7 @@
   <string name="ui_decimal_point">Decimal point</string>
   <string name="ui_hour">Hour</string>
   <string name="ui_less">Less</string>
-  <string name="ui_future_date">Future date</string>
   <string name="ui_last_digits">Last digits</string>
-  <string name="ui_expand">Expand</string>
   <string name="ui_salary_account">Salary account</string>
   <string name="ui_import_cancelled">Import cancelled</string>
   <string name="ui_export_cancelled">Export cancelled</string>
@@ -140,7 +133,6 @@
   <string name="ui_monthly_cash_flow">Monthly cash flow</string>
   <string name="ui_transaction_type">Transaction type</string>
   <string name="ui_income_and_expenses">Income and expenses</string>
-  <string name="ui_collapse">Collapse</string>
   <string name="ui_text_color">Text color</string>
   <string name="ui_new_card_design">New card design</string>
   <string name="ui_new_rule">New rule</string>
@@ -174,7 +166,6 @@
   <string name="ui_spending_calendar">Spending calendar</string>
   <string name="ui_spending_calendar_2">Spending calendar</string>
   <string name="ui_add_account">Add account</string>
-  <string name="ui_drag_either_end_to_select_years_pinch_to">Drag either end to select years; pinch to return to months</string>
   <string name="ui_decrease">Decrease</string>
   <string name="ui_increase">Increase</string>
   <string name="ui_ok">OK</string>
@@ -233,7 +224,6 @@
   <string name="ui_select_destination_account">Select destination account</string>
   <string name="ui_select_source_account">Select source account</string>
   <string name="ui_transparency">Transparency</string>
-  <string name="ui_reset">Reset</string>
   <string name="ui_amount">Amount</string>
   <string name="ui_wallet">Wallet</string>
   <string name="ui_hide_amounts">Hide amounts</string>

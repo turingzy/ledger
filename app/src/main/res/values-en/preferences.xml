@@ -11,7 +11,6 @@
   <string name="save">Save</string>
   <string name="exchange_rates">Exchange rates</string>
   <string name="refresh_rates">Refresh rates</string>
-  <string name="save_rate">Save manual rate</string>
   <string name="imported_count">Imported %1$d transactions</string>
   <string name="exported_count">Exported %1$d transactions</string>
   <string name="skipped_count">, skipped %1$d duplicates</string>

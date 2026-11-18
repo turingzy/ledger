@@ -179,10 +179,6 @@ class BillViewModel @Inject constructor(
         dateFilter.value = BillDateFilter.Year(year)
     }
 
-    fun setRange(startDate: LocalDate, endDate: LocalDate) {
-        dateFilter.value = BillDateFilter.Range(startDate, endDate)
-    }
-
     fun selectPeriod(type: DateFilterType, date: LocalDate) {
         when (type) {
             DateFilterType.WEEK -> setWeek(date)

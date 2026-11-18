@@ -8,7 +8,6 @@ import androidx.room.Transaction
 import androidx.room.Update
 import cn.turingzy.ledger.data.database.entity.PopulatedTransaction
 import cn.turingzy.ledger.data.database.entity.TransactionEntity
-import cn.turingzy.ledger.model.transaction.TransactionType
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -65,11 +64,5 @@ interface TransactionDao {
 
     @Query("SELECT * FROM tb_transaction WHERE transaction_id = :id AND is_deleted = 0")
     suspend fun getTransactionByIdOnce(id: Long): TransactionEntity?
-
-    @Query("SELECT COALESCE(SUM(amount), 0) FROM tb_transaction WHERE type = :type AND transaction_time BETWEEN :startTime AND :endTime AND is_deleted = 0")
-    fun getAmountSumByTypeAndDateRange(type: TransactionType, startTime: Long, endTime: Long): Flow<Long>
-
-    @Query("SELECT COALESCE(SUM(amount), 0) FROM tb_transaction WHERE category_id = :categoryId AND transaction_time BETWEEN :startTime AND :endTime AND is_deleted = 0")
-    fun getAmountSumByCategoryAndDateRange(categoryId: Long, startTime: Long, endTime: Long): Flow<Long>
 }
 

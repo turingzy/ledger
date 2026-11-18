@@ -11,7 +11,6 @@
   <string name="save">保存</string>
   <string name="exchange_rates">汇率</string>
   <string name="refresh_rates">刷新汇率</string>
-  <string name="save_rate">保存手动汇率</string>
   <string name="imported_count">已导入 %1$d 笔账单</string>
   <string name="exported_count">已导出 %1$d 笔账单</string>
   <string name="skipped_count">，跳过重复 %1$d 笔</string>

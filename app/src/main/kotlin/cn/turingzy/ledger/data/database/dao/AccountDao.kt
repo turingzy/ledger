@@ -61,10 +61,6 @@ interface AccountDao {
     @Query("SELECT * FROM tb_account WHERE is_deleted = 0 ORDER BY account_id ASC")
     fun getPopulatedAccounts(): Flow<List<PopulatedAccount>>
 
-    @Transaction
-    @Query("SELECT * FROM tb_account WHERE account_id = :id AND is_deleted = 0")
-    fun getPopulatedAccountById(id: Long): Flow<PopulatedAccount?>
-
     @Query("SELECT * FROM tb_account WHERE account_id = :id AND is_deleted = 0")
     suspend fun getAccountByIdOnce(id: Long): AccountEntity?
 

@@ -1,6 +1,5 @@
 package cn.turingzy.ledger.ui.component.card.summary
 
-import cn.turingzy.ledger.ui.component.MaterialSymbols
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.LocalIndication
@@ -89,21 +88,6 @@ internal fun TopBarIconButton(
     ) {
         Icon(imageVector, contentDescription, Modifier.size(iconSize), tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
-}
-
-@Composable
-internal fun TopBarBackButton(
-    onClick: () -> Unit,
-    contentDescription: String,
-    modifier: Modifier = Modifier,
-) {
-    TopBarIconButton(
-        imageVector = MaterialSymbols.ChevronLeft,
-        contentDescription = contentDescription,
-        onClick = onClick,
-        modifier = modifier.size(LedgerStyle.dimensions.backButton),
-        iconSize = LedgerStyle.icons.back,
-    )
 }
 
 @Composable
