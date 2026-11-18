@@ -12,15 +12,15 @@ class ParseRulesMigrationTest {
     @get:Rule val compose = createComposeRule()
     private val rule = defaultParseRulePreviews().first()
 
-    @Test fun saveKeepsAllMappingsAndOnlyTrimsTheRuleName() {
-        val edited = rule.copy(name = "  更新规则  ", accountId = 7L, categoryId = 9L)
+    @Test fun editingSavesImmediatelyAndPreservesOtherMappings() {
+        val initial = rule.copy(accountId = 7L, categoryId = 9L)
         var saved: ParseRulePreview? = null
         compose.setContent { LedgerTheme {
-            ParseRulesScreen(emptyList(), emptyList(), listOf(rule), { saved = it }, {}, {}, initialDraft = edited)
+            ParseRulesScreen(emptyList(), emptyList(), listOf(rule), { saved = it }, {}, {}, initialDraft = initial)
         } }
-        compose.onNodeWithContentDescription("保存规则").assertIsEnabled().performClick()
-        compose.runOnIdle { assertEquals(edited.copy(name = "更新规则"), saved) }
-        compose.onNodeWithText("账单解析规则").assertIsDisplayed()
+        compose.onNodeWithContentDescription("规则名称").performTextReplacement("  更新规则  ")
+        compose.runOnIdle { assertEquals(initial.copy(name = "更新规则"), saved) }
+        compose.onNodeWithText("规则详情").assertIsDisplayed()
     }
 
     @Test fun invalidDraftCannotSaveAndBackDoesNotDiscardTheList() {
@@ -30,7 +30,7 @@ class ParseRulesMigrationTest {
             ParseRulesScreen(emptyList(), emptyList(), listOf(rule), { saved = it }, {}, { dismissed = true },
                 initialDraft = rule.copy(name = ""))
         } }
-        compose.onNodeWithContentDescription("保存规则").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("规则名称").performTextReplacement(" ")
         compose.onNodeWithContentDescription("返回").performClick()
         compose.onNodeWithText(rule.name).assertIsDisplayed()
         compose.runOnIdle { assertNull(saved); assertEquals(false, dismissed) }
@@ -41,7 +41,9 @@ class ParseRulesMigrationTest {
         compose.setContent { LedgerTheme {
             ParseRulesScreen(emptyList(), emptyList(), listOf(rule), {}, { deleted = it }, {}, initialDraft = rule)
         } }
-        compose.onNodeWithText("删除规则").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("删除规则").performClick()
+        compose.runOnIdle { assertNull(deleted) }
+        compose.onNodeWithContentDescription("确认").performClick()
         compose.runOnIdle { assertEquals(rule.id, deleted) }
         compose.onNodeWithText("账单解析规则").assertIsDisplayed()
     }

@@ -49,7 +49,11 @@ class ExchangeRateRepository @Inject constructor(private val database: LedgerDat
                 _changes.value++
             }
         } catch (error: CancellationException) { throw error }
-        catch (error: Exception) { lastFailureAt = System.currentTimeMillis(); Timber.w(error, "Unable to refresh exchange rates; using cached values") }
+        catch (error: Exception) {
+            lastFailureAt = System.currentTimeMillis()
+            if (refresh) throw error
+            Timber.w(error, "Unable to refresh exchange rates; using cached values")
+        }
     }
 
     suspend fun quote(from: String, to: String, date: LocalDate): ExchangeQuote {

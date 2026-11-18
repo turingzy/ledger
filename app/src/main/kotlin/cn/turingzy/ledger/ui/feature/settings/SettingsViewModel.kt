@@ -24,6 +24,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -83,19 +85,25 @@ class SettingsViewModel @Inject constructor(
         null
     }
 
+    private val ruleWrites = Mutex()
+
     fun saveRule(rule: BillParseRule) {
         viewModelScope.launch {
-            attempt {
-                require(rule.valid)
-                val model = ParseRule(id = rule.id, name = rule.name, startRow = rule.startRow.toInt(),
-                    mappingConfig = Json.encodeToString(rule), defaultAccountId = rule.accountId, defaultCategoryId = rule.categoryId)
-                val existing = (uiState.value as? SettingsUiState.Success)?.rules.orEmpty().any { it.id == rule.id }
-                if (existing) ruleRepository.updateRule(model) else ruleRepository.createRule(model.copy(id = 0))
+            ruleWrites.withLock {
+                attempt {
+                    require(rule.valid)
+                    val model = ParseRule(id = rule.id, name = rule.name, startRow = rule.startRow.toInt(),
+                        mappingConfig = Json.encodeToString(rule), defaultAccountId = rule.accountId, defaultCategoryId = rule.categoryId)
+                    val existing = (uiState.value as? SettingsUiState.Success)?.rules.orEmpty().any { it.id == rule.id }
+                    if (existing) ruleRepository.updateRule(model) else ruleRepository.createRule(model.copy(id = 0))
+                }
             }
         }
     }
 
-    fun deleteRule(id: Long) { viewModelScope.launch { attempt { ruleRepository.deleteRule(id) } } }
+    fun deleteRule(id: Long) {
+        viewModelScope.launch { ruleWrites.withLock { attempt { ruleRepository.deleteRule(id) } } }
+    }
     fun deleteTemplate(id: Long) {
         templateJobs.remove(id)?.cancel()
         viewModelScope.launch { attempt { cardTemplateRepository.deleteTemplate(id) } }

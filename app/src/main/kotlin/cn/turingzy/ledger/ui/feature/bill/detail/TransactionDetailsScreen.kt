@@ -2,16 +2,8 @@ package cn.turingzy.ledger.ui.feature.bill.detail
 
 import cn.turingzy.ledger.ui.feature.bill.sheet.RecordTransactionSheet
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.res.stringResource
 import cn.turingzy.ledger.R
-import cn.turingzy.ledger.ui.component.base.BaseAlertDialog
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -37,7 +29,6 @@ internal fun TransactionDetailsScreen(
     val selectedId by viewModel.selectedTransactionId.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val saveState by viewModel.saveState.collectAsStateWithLifecycle()
-    val deleteFailure = stringResource(R.string.ui_transaction_delete_failed)
     LaunchedEffect(selectedId, uiState, saveState.saving, saveState.saved) {
         if (selectedId == null || saveState.saving) return@LaunchedEffect
         if (saveState.saved) {
@@ -61,7 +52,6 @@ internal fun TransactionDetailsScreen(
         TransactionDetailsContent(
             state, { viewModel.selectTransaction(null) }, modifier, saveState, viewModel::save, sheetHeight,
             onLoadExchangeRate = viewModel::exchangeRate,
-            onDelete = { viewModel.delete(deleteFailure) },
         )
     }
 }
@@ -76,14 +66,12 @@ internal fun TransactionDetailsContent(
     onSave: (Transaction, CurrencyAmountOverride?) -> Unit = { _, _ -> },
     sheetHeight: Dp = 520.dp,
     onLoadExchangeRate: suspend (String, String, Long) -> String? = { _, _, _ -> null },
-    onDelete: (() -> Unit)? = null,
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val sheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true,
         confirmValueChange = { !saveState.saving || it != SheetValue.Hidden },
     )
-    var confirmDelete by rememberSaveable { mutableStateOf(false) }
     RecordTransactionSheet(
         sheetState = sheetState,
         sheetHeight = sheetHeight,
@@ -103,23 +91,5 @@ internal fun TransactionDetailsContent(
         title = textResources.getString(cn.turingzy.ledger.R.string.ui_transaction_details),
         saving = saveState.saving,
         error = saveState.error,
-        onDelete = onDelete?.let { { confirmDelete = true } },
     )
-    if (confirmDelete && onDelete != null) {
-        val dismiss = { confirmDelete = false }
-        BaseAlertDialog(
-            onDismissRequest = dismiss,
-            title = { Text(stringResource(R.string.ui_delete_transaction_title)) },
-            text = { Text(stringResource(R.string.ui_delete_transaction_message)) },
-            dismissButton = { TextButton(onClick = dismiss) { Text(stringResource(R.string.ui_cancel)) } },
-            confirmButton = {
-                TextButton(onClick = {
-                    dismiss()
-                    onDelete()
-                }) {
-                    Text(stringResource(R.string.ui_delete_transaction), color = MaterialTheme.colorScheme.error)
-                }
-            },
-        )
-    }
 }

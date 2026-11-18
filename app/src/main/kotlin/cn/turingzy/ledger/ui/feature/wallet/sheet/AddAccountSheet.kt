@@ -1,6 +1,7 @@
 package cn.turingzy.ledger.ui.feature.wallet.sheet
 
 import cn.turingzy.ledger.ui.component.base.BaseModalBottomSheet
+import cn.turingzy.ledger.ui.component.base.keepSheetAnchorDuringIme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -32,9 +33,9 @@ fun AddAccountSheet(
         contentHandlesInsets = true,
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
-        modifier = modifier,
+        modifier = modifier.keepSheetAnchorDuringIme(),
     ) {
-        AddAccountSheetContent(onConfirm, templates = templates)
+        AddAccountSheetContent(onConfirm, templates = templates, onDismiss = onDismissRequest)
     }
 }
 
@@ -52,9 +53,11 @@ fun AddAccountSheetContent(
     ) -> Unit,
     modifier: Modifier = Modifier,
     templates: List<CardTemplate> = emptyList(),
+    onDismiss: () -> Unit = {},
 ) {
     AccountEditorContent(
         account = null,
+        onDismiss = onDismiss,
         templates = templates,
         onSave = { value ->
             onConfirm(

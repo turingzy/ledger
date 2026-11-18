@@ -5,8 +5,6 @@ import cn.turingzy.ledger.ui.feature.settings.component.SettingsSubpageScaffold
 import cn.turingzy.ledger.ui.feature.settings.component.settingsPageScroll
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.ui.component.base.BaseSurface
-import cn.turingzy.ledger.ui.component.base.BaseButtonVariant
-import cn.turingzy.ledger.ui.component.base.BaseActionButton
 import cn.turingzy.ledger.ui.component.base.BaseAlertDialog
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.BorderStroke
@@ -82,21 +80,14 @@ fun AboutScreen(
 
     if (updateMessage != null) BaseAlertDialog(
         onDismissRequest = { updateMessage = null }, text = { Text(updateMessage.orEmpty()) },
-        containerColor = MaterialTheme.colorScheme.surface,
-        textContentColor = MaterialTheme.colorScheme.onSurface,
-        tonalElevation = 0.dp,
-        confirmButton = {
-            BaseActionButton(variant = BaseButtonVariant.Text,
-                onClick = { updateMessage = null },
-                colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.tertiary),
-            ) { Text(textResources.getString(cn.turingzy.ledger.R.string.ui_ok)) }
-        },
+        onConfirm = { updateMessage = null },
+        showCancel = false,
+        confirmDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_ok),
     )
     SettingsSubpageScaffold(
         title = textResources.getString(cn.turingzy.ledger.R.string.ui_about),
         onBack = onDismissRequest,
         modifier = modifier,
-        titleStyle = MaterialTheme.typography.headlineMedium,
     ) {
         AboutContent(
             versionName = versionName,

@@ -73,7 +73,8 @@ fun LedgerApp(
                 .padding(end = 16.dp, bottom = BottomBarContentPadding),
         )
 
-        if (showBottomBar) LedgerBottomBar(
+        LedgerBottomBar(
+            visible = showBottomBar,
             destinations = TopLevelDestination.entries,
             currentDestination = currentTopLevelDestination,
             onNavigateToDestination = { targetDestination ->

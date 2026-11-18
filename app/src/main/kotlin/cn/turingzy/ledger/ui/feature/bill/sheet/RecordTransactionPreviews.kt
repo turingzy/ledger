@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.bill.sheet
 
+import cn.turingzy.ledger.ui.component.picker.LedgerDateTimeDialog
 import android.content.res.Configuration
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -50,7 +51,7 @@ private fun RecordTransactionPreview(@PreviewParameter(RecordTransactionPreviewP
                 }, initialTransactionTime = time,
             )
             RecordTransactionPreviewCase.AccountPicker -> RecordAccountSheet("选择账户", accounts, 1L, TransactionType.EXPENSE, LedgerStyle.dimensions.dialogMaxHeight, {}, {})
-            RecordTransactionPreviewCase.RecordDateTime -> RecordDateTimeDialog(time, {}, {})
+            RecordTransactionPreviewCase.RecordDateTime -> LedgerDateTimeDialog(time, {}, {})
         }
     }
 }

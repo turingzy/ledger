@@ -7,9 +7,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
+import cn.turingzy.ledger.R
+import cn.turingzy.ledger.ui.component.MaterialSymbols
+import cn.turingzy.ledger.ui.component.base.BaseIconButton
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -26,21 +31,30 @@ internal fun AccountSheetContent(
     title: String,
     saveEnabled: Boolean,
     onSave: () -> Unit,
+    onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     contentSpacing: Dp = 8.dp,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
-    Column(modifier.fillMaxWidth().heightIn(max = LedgerStyle.dimensions.sheetMaxHeight).imePadding().navigationBarsPadding()) {
+    val density = LocalDensity.current
+    val keyboardHeight = WindowInsets.ime.getBottom(density)
+    val bottomInset = maxOf(keyboardHeight, WindowInsets.navigationBars.getBottom(density))
+    Column(
+        modifier.fillMaxWidth().height(LedgerStyle.dimensions.sheetMaxHeight)
+            .padding(bottom = with(density) { bottomInset.toDp() }),
+    ) {
         Box(
             Modifier.fillMaxWidth().height(44.dp).padding(horizontal = LedgerStyle.spacing.large),
             contentAlignment = Alignment.Center,
         ) {
             Text(title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+            BaseIconButton(MaterialSymbols.Close, stringResource(R.string.ui_cancel), onDismiss,
+                modifier = Modifier.align(Alignment.CenterStart), showPressFeedback = false)
             AccountSaveButton(saveEnabled, onSave, Modifier.align(Alignment.CenterEnd))
         }
         Column(
-            Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())
+            Modifier.weight(1f).verticalScroll(rememberScrollState())
                 .padding(horizontal = LedgerStyle.spacing.section).padding(top = 8.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(contentSpacing),
             content = content,

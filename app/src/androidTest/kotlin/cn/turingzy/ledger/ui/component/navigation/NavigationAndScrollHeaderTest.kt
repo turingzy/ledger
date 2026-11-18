@@ -2,15 +2,20 @@ package cn.turingzy.ledger.ui.component.navigation
 
 import cn.turingzy.ledger.ui.component.base.ScrollTitleContainer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
@@ -19,6 +24,8 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.navigation.TopLevelDestination
@@ -29,6 +36,24 @@ import org.junit.Test
 
 class NavigationAndScrollHeaderTest {
     @get:Rule val compose = createComposeRule()
+
+    @Test
+    fun hiddenBottomBarLetsTouchesReachTheBillActionUnderneath() {
+        var actionCount = 0
+        compose.setContent {
+            LedgerTheme {
+                Box(Modifier.fillMaxSize()) {
+                    TextButton(onClick = { actionCount++ }, modifier = Modifier.align(Alignment.BottomCenter)
+                        .navigationBarsPadding().padding(bottom = BottomBarVerticalPadding)
+                        .height(BottomBarHeight).testTag("billAction")) { Text("编辑") }
+                    LedgerBottomBar(TopLevelDestination.entries, TopLevelDestination.BILL, {},
+                        modifier = Modifier.align(Alignment.BottomCenter), visible = false)
+                }
+            }
+        }
+        compose.onNodeWithTag("billAction").performTouchInput { click() }
+        compose.runOnIdle { assertEquals(1, actionCount) }
+    }
 
     @Test
     fun navigationLabelsRemainVisibleAndSelectionMovesAfterTapping() {

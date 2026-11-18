@@ -17,7 +17,7 @@ symbols = {
 'LocalHospital':'local_hospital', 'MoreHoriz':'more_horiz', 'NorthEast':'north_east', 'Palette':'palette', 'Payments':'payments',
 'Schedule':'schedule', 'Restaurant':'restaurant', 'Search':'search', 'ShoppingBag':'shopping_bag', 'SportsEsports':'sports_esports',
 'SwapHoriz':'swap_horiz', 'AccountBalance':'account_balance',
-'Undo':'undo', 'ViewCarousel':'view_carousel', 'ViewAgenda':'view_agenda',
+'Undo':'undo',
 'Memory':'memory', 'Contactless':'contactless', 'ShieldPerson':'shield_person',
 'Visibility':'visibility', 'VisibilityOff':'visibility_off',
 'TrendingUp':'trending_up', 'TrendingDown':'trending_down',

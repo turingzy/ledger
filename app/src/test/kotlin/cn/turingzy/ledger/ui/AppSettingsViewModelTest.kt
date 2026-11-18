@@ -27,6 +27,33 @@ class AppSettingsViewModelTest {
     @Before fun setup() { Dispatchers.setMain(dispatcher) }
     @After fun cleanup() { Dispatchers.resetMain() }
 
+    @Test fun refreshShowsSuccessForFiveSecondsAndIncludesTheSelectedCurrency() = runTest {
+        val model = AppSettingsViewModel(preferences, accounts, rates)
+        coEvery { rates.prepare(any(), any(), refresh = true) } coAnswers { delay(100) }
+        val scheduler = dispatcher.scheduler
+        model.refreshRates("USD")
+        scheduler.runCurrent()
+        assertEquals(RateRefreshStatus.REFRESHING, model.rateRefreshStatus.value)
+        scheduler.advanceTimeBy(100)
+        scheduler.runCurrent()
+        assertEquals(RateRefreshStatus.SUCCESS, model.rateRefreshStatus.value)
+        coVerify { rates.prepare(any(), setOf("USD", "CNY"), refresh = true) }
+        scheduler.advanceTimeBy(4_999)
+        assertEquals(RateRefreshStatus.SUCCESS, model.rateRefreshStatus.value)
+        scheduler.advanceTimeBy(1)
+        scheduler.runCurrent()
+        assertEquals(RateRefreshStatus.IDLE, model.rateRefreshStatus.value)
+    }
+
+    @Test fun failedRefreshDoesNotShowSuccess() = runTest {
+        val model = AppSettingsViewModel(preferences, accounts, rates)
+        coEvery { rates.prepare(any(), any(), refresh = true) } throws java.io.IOException("offline")
+        model.refreshRates("USD")
+        dispatcher.scheduler.advanceUntilIdle()
+        assertEquals(RateRefreshStatus.IDLE, model.rateRefreshStatus.value)
+        assertEquals("offline", model.message.value)
+    }
+
     @Test fun generalSettingsCanBeSavedWithoutCreatingAnAccount() = runTest {
         val model = AppSettingsViewModel(preferences, accounts, rates)
         val settings = AppPreferences(language = "en", theme = "dark", primaryCurrency = "EUR")
@@ -64,29 +91,25 @@ class AppSettingsViewModelTest {
         coVerify(exactly = 2) { preferences.save(settings) }
         assertNull(model.message.value)
     }
-    @Test fun checkActionSavesEditedRateAndGeneralSettingsTogether() = runTest {
+    @Test fun manualRateEditingSavesOnlyTheLatestValidValueForThePair() = runTest {
         val model = AppSettingsViewModel(preferences, accounts, rates)
-        val settings = AppPreferences(theme = "dark", primaryCurrency = "CNY")
         var saved = false
-        model.save(settings, rateFrom = "USD", rateValue = "7.2", onSaved = { saved = true })
+        model.editManualRate("USD", "CNY", "7") { fail("Superseded value was saved") }
+        model.editManualRate("USD", "CNY", "7.25") { saved = true }
         dispatcher.scheduler.advanceUntilIdle()
-        coVerifyOrder {
-            rates.setManualRate("USD", "CNY", "7.2", any())
-            preferences.save(settings)
-        }
+        coVerify(exactly = 1) { rates.setManualRate("USD", "CNY", "7.25", any()) }
+        coVerify(exactly = 0) { rates.setManualRate("USD", "CNY", "7", any()) }
+        coVerify(exactly = 0) { preferences.save(any()) }
         assertTrue(saved)
         assertFalse(model.busy.value)
     }
 
-    @Test fun rateFailureKeepsTheDraftUnsavedAndDoesNotApplyGeneralSettings() = runTest {
+    @Test fun invalidManualRateDoesNotWriteOrCommitAPendingValue() = runTest {
         val model = AppSettingsViewModel(preferences, accounts, rates)
-        val settings = AppPreferences(primaryCurrency = "EUR")
-        coEvery { rates.setManualRate(any(), any(), any(), any()) } throws IllegalArgumentException("invalid rate")
-        var saved = false
-        model.save(settings, rateFrom = "USD", rateValue = "0", onSaved = { saved = true })
+        model.editManualRate("USD", "EUR", "7") { fail("Superseded value was saved") }
+        model.editManualRate("USD", "EUR", "0") { fail("Invalid value was saved") }
         dispatcher.scheduler.advanceUntilIdle()
-        assertFalse(saved)
-        assertEquals("invalid rate", model.message.value)
+        coVerify(exactly = 0) { rates.setManualRate(any(), any(), any(), any()) }
         coVerify(exactly = 0) { preferences.save(any()) }
     }
 

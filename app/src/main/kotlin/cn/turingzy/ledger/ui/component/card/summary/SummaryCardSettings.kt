@@ -49,6 +49,7 @@ internal fun SummaryCardSettings(
                         enabled = sliderEnabled,
                         valueRange = 0f..100f,
                         color = colors.tertiary,
+                        thumbDiameter = 14.dp,
                         modifier = Modifier.fillMaxWidth().semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_transparency) },
                     )
                     Text(

@@ -1,7 +1,6 @@
 package cn.turingzy.ledger.ui.feature.wallet
 
 import cn.turingzy.ledger.ui.feature.wallet.component.SwipeableBankCardDeck
-import cn.turingzy.ledger.ui.feature.wallet.component.VerticalBankCardDeck
 import cn.turingzy.ledger.ui.feature.wallet.sheet.AccountDetailsSheet
 import cn.turingzy.ledger.ui.feature.wallet.sheet.AddAccountSheet
 import cn.turingzy.ledger.ui.feature.wallet.sheet.cardFaceTextColor
@@ -215,9 +214,10 @@ private fun WalletAccountSheets(
     }
 
     controller.selected?.let { selected ->
-        val account = success?.accounts?.firstOrNull { it.account.id == selected.id }?.account ?: selected
+        val current = success?.accounts?.firstOrNull { it.account.id == selected.id }
         AccountDetailsSheet(
-            account = account,
+            account = current?.account ?: selected,
+            assignedTemplate = current?.template,
             templates = success?.templates.orEmpty(),
             onDismissRequest = controller::dismissDetails,
             onSave = onSave,
@@ -258,7 +258,6 @@ fun WalletContent(
                 val accounts = uiState.accounts
                 val currencyTotals = uiState.currencyTotals.ifEmpty { listOf(WalletCurrencyTotals("CNY", assets = uiState.totalAsset)) }
                 val totals = currencyTotals.first()
-                var isListView by rememberSaveable { mutableStateOf(false) }
                 var selectedAccountId by rememberSaveable { mutableStateOf<Long?>(null) }
 
                 val listState = rememberLazyListState()
@@ -333,8 +332,8 @@ fun WalletContent(
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
+                                        .height(LedgerStyle.dimensions.compactIconButton)
                                         .padding(start = 4.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     Text(
@@ -343,29 +342,14 @@ fun WalletContent(
                                         fontWeight = FontWeight.SemiBold,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
-
-                                    TopBarIconButton(
-                                        imageVector = if (isListView) MaterialSymbols.ViewCarousel else MaterialSymbols.ViewAgenda,
-                                        contentDescription = if (isListView) textResources.getString(cn.turingzy.ledger.R.string.ui_switch_to_horizontal_cards) else textResources.getString(cn.turingzy.ledger.R.string.ui_switch_to_vertical_cards),
-                                        onClick = { isListView = !isListView },
-                                    )
                                 }
 
-                                if (isListView) {
-                                    VerticalBankCardDeck(
-                                        accounts = accounts,
-                                        onAdjustClick = openAccount,
-                                        selectedAccountId = selectedAccountId,
-                                        onSelectedAccountChange = { selectedAccountId = it },
-                                    )
-                                } else {
-                                    SwipeableBankCardDeck(
-                                        accounts = accounts,
-                                        onAdjustClick = openAccount,
-                                        selectedAccountId = selectedAccountId,
-                                        onSelectedAccountChange = { selectedAccountId = it },
-                                    )
-                                }
+                                SwipeableBankCardDeck(
+                                    accounts = accounts,
+                                    onAdjustClick = openAccount,
+                                    selectedAccountId = selectedAccountId,
+                                    onSelectedAccountChange = { selectedAccountId = it },
+                                )
                             }
                         }
                     }
@@ -424,8 +408,6 @@ fun BankCardItem(
     template: CardTemplate?,
     onAdjustClick: () -> Unit,
     modifier: Modifier = Modifier,
-    showDetails: Boolean = true,
-    showBackPlaceholder: Boolean = false,
 ) {
     val pressColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = LedgerStyle.opacity.pressed)
     val isCenturion = account.templateId == 2L || account.name.contains("百夫长") || account.name.contains("运通")
@@ -457,10 +439,6 @@ fun BankCardItem(
                 .background(Brush.linearGradient(cardGradients)),
         ) {
             AccountCardBackground(account, template, Modifier.fillMaxSize())
-            if (!showDetails) {
-                if (showBackPlaceholder) Box(Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) { BankCardBackPlaceholder() }
-                return@Box
-            }
 
             Column(
                 modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 16.dp),
@@ -544,21 +522,6 @@ fun BankCardItem(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun BankCardBackPlaceholder() {
-    val white = MaterialTheme.colorScheme.onPrimary
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-            Box(Modifier.size(width = 50.dp, height = 11.dp).clip(CircleShape).background(white.copy(alpha = 0.60f)))
-            Box(Modifier.size(width = 34.dp, height = 5.dp).clip(CircleShape).background(white.copy(alpha = 0.35f)))
-        }
-        Box(Modifier.size(width = 52.dp, height = 10.dp).clip(CircleShape).background(white.copy(alpha = 0.45f)))
     }
 }
 

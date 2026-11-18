@@ -6,8 +6,6 @@ import cn.turingzy.ledger.ui.feature.settings.component.SettingsPageBottomPaddin
 import cn.turingzy.ledger.ui.feature.settings.component.SettingsPageContentTopPadding
 import cn.turingzy.ledger.ui.feature.settings.component.SettingsSubpageScaffold
 import cn.turingzy.ledger.ui.feature.settings.component.settingsPageScroll
-import cn.turingzy.ledger.ui.component.base.BaseButtonVariant
-import cn.turingzy.ledger.ui.component.base.BaseActionButton
 import cn.turingzy.ledger.ui.component.base.BaseDropdownIndicator
 import android.view.WindowManager
 import androidx.activity.compose.LocalActivity
@@ -23,6 +21,7 @@ import cn.turingzy.ledger.ui.component.base.BaseCard
 import cn.turingzy.ledger.ui.component.base.BaseDivider
 import cn.turingzy.ledger.ui.component.base.BaseIconButton
 import cn.turingzy.ledger.ui.interaction.uiClickable
+import cn.turingzy.ledger.ui.feature.settings.component.SettingsDeleteAction
 import cn.turingzy.ledger.ui.interaction.rememberUiAction
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.foundation.layout.size
@@ -42,7 +41,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -107,7 +105,14 @@ internal fun ParseRulesScreen(
                 if (rules.isEmpty()) onDismissRequest() else draft = null
             }) else onDismissRequest,
             actions = {
-                BaseIconButton(
+                if (existing) {
+                    SettingsDeleteAction(editing.id, textResources.getString(cn.turingzy.ledger.R.string.ui_delete_rule), onDelete = {
+                        focusManager.clearFocus()
+                        onDeleteRule(editing.id)
+                        emptyDraft = ParseRulePreview(id = 0L)
+                        draft = null
+                    })
+                } else BaseIconButton(
                     imageVector = if (editing == null) MaterialSymbols.Add else MaterialSymbols.Check,
                     contentDescription = if (editing == null) textResources.getString(cn.turingzy.ledger.R.string.ui_new_import_rule)
                         else textResources.getString(cn.turingzy.ledger.R.string.ui_save_rule),
@@ -136,33 +141,38 @@ internal fun ParseRulesScreen(
                     items(rules, key = { it.id }) { rule ->
                         SettingsActionRow(
                             title = rule.name,
-                            subtitle = "从第 ${rule.startRow} 行读取",
+                            subtitle = textResources.getString(cn.turingzy.ledger.R.string.rule_start_row_summary, rule.startRow),
                             onClick = { draft = rule },
                         )
                     }
                 }
             } else {
+                fun updateRule(value: ParseRulePreview) {
+                    if (value == editing) return
+                    draft = value
+                    if (existing && value.valid) onSaveRule(value.copy(name = value.name.trim()))
+                }
                 Column(
                     Modifier.fillMaxWidth().settingsPageScroll().testTag("parseRuleForm"),
                     verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.sectionGap),
                 ) {
                     Text(textResources.getString(cn.turingzy.ledger.R.string.ui_basic_information), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                     RuleFieldGroup {
-                        RuleTextField(textResources.getString(cn.turingzy.ledger.R.string.ui_rule_name), editing.name, textResources.getString(cn.turingzy.ledger.R.string.ui_enter_a_name), { draft = editing.copy(name = it) })
+                        RuleTextField(textResources.getString(cn.turingzy.ledger.R.string.ui_rule_name), editing.name, textResources.getString(cn.turingzy.ledger.R.string.ui_enter_a_name), { updateRule(editing.copy(name = it)) })
                         RuleDivider()
-                        RuleTextField(textResources.getString(cn.turingzy.ledger.R.string.ui_starting_row), editing.startRow, textResources.getString(cn.turingzy.ledger.R.string.ui_first_data_row), { draft = editing.copy(startRow = it) }, KeyboardType.Number)
+                        RuleTextField(textResources.getString(cn.turingzy.ledger.R.string.ui_starting_row), editing.startRow, textResources.getString(cn.turingzy.ledger.R.string.ui_first_data_row), { updateRule(editing.copy(startRow = it)) }, KeyboardType.Number)
                     }
                     Text(textResources.getString(cn.turingzy.ledger.R.string.ui_column_mapping), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                     RuleFieldGroup {
-                        RuleTextField(textResources.getString(cn.turingzy.ledger.R.string.ui_transaction_date), editing.dateColumn, textResources.getString(cn.turingzy.ledger.R.string.ui_e_g_transaction_date), { draft = editing.copy(dateColumn = it) })
+                        RuleTextField(textResources.getString(cn.turingzy.ledger.R.string.ui_transaction_date), editing.dateColumn, textResources.getString(cn.turingzy.ledger.R.string.ui_e_g_transaction_date), { updateRule(editing.copy(dateColumn = it)) })
                         RuleDivider()
-                        RuleTextField(textResources.getString(cn.turingzy.ledger.R.string.ui_amount), editing.amountColumn, textResources.getString(cn.turingzy.ledger.R.string.ui_e_g_amount), { draft = editing.copy(amountColumn = it) })
+                        RuleTextField(textResources.getString(cn.turingzy.ledger.R.string.ui_amount), editing.amountColumn, textResources.getString(cn.turingzy.ledger.R.string.ui_e_g_amount), { updateRule(editing.copy(amountColumn = it)) })
                         RuleDivider()
-                        RuleTextField(textResources.getString(cn.turingzy.ledger.R.string.ui_transaction_type), editing.typeColumn, textResources.getString(cn.turingzy.ledger.R.string.ui_e_g_transaction_type), { draft = editing.copy(typeColumn = it) })
+                        RuleTextField(textResources.getString(cn.turingzy.ledger.R.string.ui_transaction_type), editing.typeColumn, textResources.getString(cn.turingzy.ledger.R.string.ui_e_g_transaction_type), { updateRule(editing.copy(typeColumn = it)) })
                         RuleDivider()
-                        RuleTextField(textResources.getString(cn.turingzy.ledger.R.string.ui_category), editing.categoryColumn, textResources.getString(cn.turingzy.ledger.R.string.ui_optional), { draft = editing.copy(categoryColumn = it) })
+                        RuleTextField(textResources.getString(cn.turingzy.ledger.R.string.ui_category), editing.categoryColumn, textResources.getString(cn.turingzy.ledger.R.string.ui_optional), { updateRule(editing.copy(categoryColumn = it)) })
                         RuleDivider()
-                        RuleTextField(textResources.getString(cn.turingzy.ledger.R.string.ui_note), editing.noteColumn, textResources.getString(cn.turingzy.ledger.R.string.ui_optional), { draft = editing.copy(noteColumn = it) })
+                        RuleTextField(textResources.getString(cn.turingzy.ledger.R.string.ui_note), editing.noteColumn, textResources.getString(cn.turingzy.ledger.R.string.ui_optional), { updateRule(editing.copy(noteColumn = it)) })
                     }
                     Text(textResources.getString(cn.turingzy.ledger.R.string.ui_enter_column_names_from_your_file_date_and), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                     Text(textResources.getString(cn.turingzy.ledger.R.string.ui_defaults), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
@@ -172,7 +182,7 @@ internal fun ParseRulesScreen(
                             value = accounts.firstOrNull { it.account.id == editing.accountId }?.account?.name ?: textResources.getString(cn.turingzy.ledger.R.string.ui_choose_on_import),
                             options = listOf(RuleOption(null, textResources.getString(cn.turingzy.ledger.R.string.ui_choose_on_import))) + accounts.map { RuleOption(it.account.id, it.account.name) },
                             selectedId = editing.accountId,
-                            onSelect = { draft = editing.copy(accountId = it.id) },
+                            onSelect = { updateRule(editing.copy(accountId = it.id)) },
                             menuTestTag = "ruleAccountOptions",
                         )
                         RuleDivider()
@@ -181,24 +191,9 @@ internal fun ParseRulesScreen(
                             value = categories.firstOrNull { it.category.id == editing.categoryId }?.category?.name ?: textResources.getString(cn.turingzy.ledger.R.string.ui_no_default_category),
                             options = listOf(RuleOption(null, textResources.getString(cn.turingzy.ledger.R.string.ui_no_default_category))) + categories.map { RuleOption(it.category.id, it.category.name) },
                             selectedId = editing.categoryId,
-                            onSelect = { draft = editing.copy(categoryId = it.id) },
+                            onSelect = { updateRule(editing.copy(categoryId = it.id)) },
                             menuTestTag = "ruleCategoryOptions",
                         )
-                    }
-                    if (existing) {
-                        BaseActionButton(variant = BaseButtonVariant.Text,
-                            onClick = {
-                                focusManager.clearFocus()
-                                onDeleteRule(editing.id)
-                                emptyDraft = ParseRulePreview(id = 0L)
-                                draft = null
-                            },
-                            modifier = Modifier.align(Alignment.End),
-                            contentPadding = PaddingValues(vertical = LedgerStyle.spacing.medium),
-                            colors = ButtonDefaults.textButtonColors(contentColor = colors.error),
-                        ) {
-                            Text(textResources.getString(cn.turingzy.ledger.R.string.ui_delete_rule), style = MaterialTheme.typography.bodyLarge)
-                        }
                     }
                 }
             }
@@ -278,7 +273,7 @@ private fun RuleChoiceDropdown(
     ) { anchorModifier, expanded, onToggle ->
         Box(
             Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = label }
-                .uiClickable(onClick = onToggle).padding(horizontal = LedgerStyle.spacing.large),
+                .uiClickable(showPressFeedback = false, onClick = onToggle).padding(horizontal = LedgerStyle.spacing.large),
         ) {
             Row(
                 anchorModifier.fillMaxWidth().heightIn(min = SettingsItemHeight),

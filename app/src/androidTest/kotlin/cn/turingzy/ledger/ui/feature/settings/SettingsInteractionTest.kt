@@ -1,6 +1,5 @@
 package cn.turingzy.ledger.ui.feature.settings
 
-import cn.turingzy.ledger.ui.feature.settings.component.SettingsPageBottomPadding
 import cn.turingzy.ledger.ui.feature.settings.component.SettingsSubpageScaffold
 import cn.turingzy.ledger.ui.feature.settings.component.settingsPageScroll
 import cn.turingzy.ledger.ui.feature.settings.screen.AboutScreen
@@ -45,9 +44,6 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.semantics.SemanticsActions
-import androidx.compose.ui.test.performSemanticsAction
 import org.junit.Assert.assertTrue
 import androidx.test.espresso.Espresso.pressBack
 import cn.turingzy.ledger.model.account.CardTemplate
@@ -209,7 +205,7 @@ class SettingsInteractionTest {
         compose.onNodeWithText("餐饮").performClick()
         compose.onNodeWithTag("ruleCategoryOptions").assertDoesNotExist()
         assertEquals(titleBounds, compose.onNodeWithText("规则详情").fetchSemanticsNode().boundsInRoot)
-        compose.onNodeWithContentDescription("保存规则").performClick()
+        compose.onNodeWithContentDescription("保存规则").assertDoesNotExist()
         compose.runOnIdle {
             assertEquals(7L, checkNotNull(saved).accountId)
             assertEquals(9L, checkNotNull(saved).categoryId)
@@ -217,29 +213,25 @@ class SettingsInteractionTest {
     }
 
     @Test
-    fun ruleFormReachesPageBottomAndScrollsDeleteAboveFooterClearance() {
-        var bottomClearance = 0f
+    fun existingRuleRequiresInlineDeleteConfirmation() {
+        var deleted: Long? = null
+        val rules = defaultParseRulePreviews()
         compose.setContent {
-            val density = LocalDensity.current
-            SideEffect { bottomClearance = with(density) { SettingsPageBottomPadding.toPx() } }
             LedgerTheme {
                 ParseRulesScreen(
-                    accounts = emptyList(), categories = emptyList(), rules = defaultParseRulePreviews(),
-                    onSaveRule = {}, onDeleteRule = {}, onDismissRequest = {},
+                    accounts = emptyList(), categories = emptyList(), rules = rules,
+                    onSaveRule = {}, onDeleteRule = { deleted = it }, onDismissRequest = {},
                 )
             }
         }
-        compose.onNodeWithText("通用账单").performClick()
-        val page = compose.onNodeWithTag("parseRulePage").fetchSemanticsNode().boundsInRoot
-        val viewport = compose.onNodeWithTag("settingsPageContent").fetchSemanticsNode().boundsInRoot
-        assertEquals(page.bottom, viewport.bottom, 0.5f)
-        compose.onNodeWithTag("parseRuleForm").performSemanticsAction(SemanticsActions.ScrollBy) { scroll ->
-            scroll(0f, Float.MAX_VALUE)
-        }
-        compose.onNodeWithText("删除规则").assertIsDisplayed()
-        val delete = compose.onNodeWithText("删除规则").fetchSemanticsNode().boundsInRoot
-        assertTrue(delete.bottom <= viewport.bottom - bottomClearance + 0.5f)
-        assertTrue(delete.top >= viewport.top)
+        compose.onNodeWithText(rules.first().name).performClick()
+        compose.onNodeWithContentDescription("删除规则").performClick()
+        compose.runOnIdle { assertEquals(null, deleted) }
+        compose.onNodeWithContentDescription("取消").performClick()
+        compose.onNodeWithContentDescription("确认").assertDoesNotExist()
+        compose.onNodeWithContentDescription("删除规则").performClick()
+        compose.onNodeWithContentDescription("确认").performClick()
+        compose.runOnIdle { assertEquals(rules.first().id, deleted) }
     }
 
     @Test
@@ -323,7 +315,9 @@ class SettingsInteractionTest {
         compose.onNodeWithContentDescription("更换卡面").assertIsDisplayed()
         compose.onAllNodesWithText("新卡面").assertCountEquals(0)
         compose.onNodeWithContentDescription("删除卡面").performClick()
-        compose.onNodeWithText("暂无卡面").assertIsDisplayed()
+        compose.onNodeWithContentDescription("卡面名称").assertTextEquals("原有卡面")
+        compose.onNodeWithContentDescription("确认").performClick()
+        compose.onNodeWithText("新增").assertIsDisplayed()
     }
 
     @Test

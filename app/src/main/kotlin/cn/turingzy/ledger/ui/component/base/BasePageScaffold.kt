@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -41,7 +40,6 @@ fun BasePageScaffold(
     modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
     backDescription: String = stringResource(R.string.ui_back),
-    loading: Boolean = false,
     scrolled: Boolean = false,
     windowInsets: WindowInsets = WindowInsets.safeDrawing,
     titleStyle: TextStyle = LedgerStyle.typography.sectionTitle,
@@ -84,10 +82,6 @@ fun BasePageScaffold(
                 )
                 actions()
             }
-            if (loading) LinearProgressIndicator(
-                Modifier.align(Alignment.BottomCenter).fillMaxWidth(),
-                color = colors.info, trackColor = colors.fieldBackground,
-            )
         }
     }
 }

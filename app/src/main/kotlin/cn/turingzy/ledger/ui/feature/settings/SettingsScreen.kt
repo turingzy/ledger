@@ -7,8 +7,6 @@ import cn.turingzy.ledger.ui.feature.settings.screen.CardTemplateManagementScree
 import cn.turingzy.ledger.ui.feature.settings.screen.GeneralSettingsScreen
 import cn.turingzy.ledger.ui.feature.settings.screen.OpenSourceLibrariesScreen
 import cn.turingzy.ledger.ui.feature.settings.screen.ParseRulesScreen
-import cn.turingzy.ledger.ui.component.base.BaseButtonVariant
-import cn.turingzy.ledger.ui.component.base.BaseActionButton
 import cn.turingzy.ledger.ui.component.base.BaseAlertDialog
 import cn.turingzy.ledger.ui.component.base.ScrollTitleContainer
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -47,6 +45,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import cn.turingzy.ledger.ui.AppSettingsViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
@@ -57,13 +56,16 @@ fun SettingsScreen(
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val appSettingsViewModel: AppSettingsViewModel = hiltViewModel()
 
     val parseRulePreviews = (uiState as? SettingsUiState.Success)?.rules.orEmpty()
     val message = (uiState as? SettingsUiState.Success)?.message
     if (message != null) BaseAlertDialog(
         onDismissRequest = viewModel::dismissMessage,
         text = { Text(message.orEmpty()) },
-        confirmButton = { BaseActionButton(variant = BaseButtonVariant.Text, onClick = viewModel::dismissMessage) { Text(textResources.getString(cn.turingzy.ledger.R.string.ui_ok)) } },
+        onConfirm = viewModel::dismissMessage,
+        showCancel = false,
+        confirmDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_ok),
     )
     SettingsNavigation(
         onDetailVisibleChange = onDetailVisibleChange,
@@ -79,7 +81,7 @@ fun SettingsScreen(
                 onBackupClick = { navigate(SettingsDestination.BACKUP) },
                 onAboutClick = { navigate(SettingsDestination.ABOUT) },
             )
-            SettingsDestination.GENERAL -> GeneralSettingsScreen(onBack = back)
+            SettingsDestination.GENERAL -> GeneralSettingsScreen(onBack = back, viewModel = appSettingsViewModel)
             SettingsDestination.PARSE_RULES -> ParseRulesScreen(
                 accounts = (uiState as? SettingsUiState.Success)?.accounts.orEmpty(),
                 categories = (uiState as? SettingsUiState.Success)?.categories.orEmpty(),
@@ -269,7 +271,7 @@ fun SettingsRowItem(
         },
         trailing = {
             Icon(MaterialSymbols.ChevronRight, null, Modifier.size(LedgerStyle.icons.default),
-                tint = LedgerStyle.colors.textSecondary.copy(alpha = LedgerStyle.opacity.subduedChevron))
+                tint = MaterialTheme.colorScheme.onSurfaceVariant)
         },
         onClick = onClick,
     )

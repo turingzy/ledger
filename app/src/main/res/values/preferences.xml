@@ -11,12 +11,14 @@
   <string name="save">保存</string>
   <string name="exchange_rates">汇率</string>
   <string name="refresh_rates">刷新汇率</string>
+  <string name="rates_refreshed">汇率刷新成功</string>
   <string name="imported_count">已导入 %1$d 笔账单</string>
   <string name="exported_count">已导出 %1$d 笔账单</string>
   <string name="skipped_count">，跳过重复 %1$d 笔</string>
   <string name="duplicate_prompt">%1$d 笔交易与已有账单的账户、时间、金额和备注相同。是否跳过？</string>
   <string name="calendar_day_count">%1$s 共%2$d笔消费</string>
   <string name="calendar_month_expense">%1$d月总支出 </string>
+  <string name="reference_rate">参考汇率</string>
   <string name="rate_as_of">参考汇率 · %1$s</string>
   <string name="destination_amount">转入 %1$s</string>
 </resources>

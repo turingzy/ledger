@@ -6,9 +6,7 @@
   <string name="ui_mon">一</string>
   <string name="ui_wed">三</string>
   <string name="ui_previous_period">上一周期</string>
-  <string name="ui_previous_card">上一张卡片</string>
   <string name="ui_next_period">下一周期</string>
-  <string name="ui_next_card">下一张卡片</string>
   <string name="ui_no_default_category">不指定分类</string>
   <string name="ui_tue">二</string>
   <string name="ui_fri">五</string>
@@ -17,7 +15,8 @@
   <string name="ui_transaction_date">交易时间</string>
   <string name="ui_transaction_details">交易详情</string>
   <string name="ui_import_anyway">仍然导入</string>
-  <string name="ui_first_data_row">从第几行读取</string>
+  <string name="rule_start_row_summary">从第 %1$s 行开始</string>
+  <string name="ui_first_data_row">从第几行开始</string>
   <string name="ui_use_accounts_from_the_file">使用文件中的账户</string>
   <string name="ui_save_rule">保存规则</string>
   <string name="ui_save_account">保存账户</string>
@@ -38,8 +37,6 @@
   <string name="ui_category">分类</string>
   <string name="ui_category_breakdown">分类占比</string>
   <string name="ui_minute">分钟</string>
-  <string name="ui_switch_to_horizontal_cards">切换为卡片堆叠视图</string>
-  <string name="ui_switch_to_vertical_cards">切换为纵向层叠视图</string>
   <string name="ui_opening_balance">初始余额</string>
   <string name="ui_opening_debt">初始欠款</string>
   <string name="ui_delete_card_design">删除卡面</string>
@@ -94,7 +91,7 @@
   <string name="ui_decimal_point">小数点</string>
   <string name="ui_hour">小时</string>
   <string name="ui_less">少</string>
-  <string name="ui_last_digits">尾号</string>
+  <string name="ui_last_digits">四位尾号</string>
   <string name="ui_salary_account">工资卡</string>
   <string name="ui_import_cancelled">已取消导入</string>
   <string name="ui_export_cancelled">已取消导出</string>
@@ -127,7 +124,7 @@
   <string name="ui_search_notes_categories_accounts">搜索账单备注、分类、账户</string>
   <string name="ui_operation_failed_please_try_again">操作失败，请重试</string>
   <string name="ui_expense">支出</string>
-  <string name="ui_supports_excel_xlsx_and_csv">支持 Excel(XLSX)、CSV 账单</string>
+  <string name="ui_supports_excel_xlsx_and_csv">支持 Excel、CSV 账单</string>
   <string name="ui_income">收入</string>
   <string name="ui_monthly_income_expenses_and_balance">收入支出双柱与结余折线组合图</string>
   <string name="ui_monthly_cash_flow">收支与结余</string>
@@ -191,7 +188,6 @@
   <string name="ui_enter_a_name">请输入名称</string>
   <string name="ui_enter_a_valid_amount">请输入有效金额</string>
   <string name="ui_select">请选择</string>
-  <string name="ui_select_a_card_design_again">请重新选择卡面</string>
   <string name="ui_import_and_export">账单导入与导出</string>
   <string name="ui_transactions_and_accounts">账单数据</string>
   <string name="ui_transaction_file">账单文件</string>
@@ -214,6 +210,7 @@
   <string name="ui_select_analytics_period">选择分析日期</string>
   <string name="ui_select_analytics_end_date">选择分析结束日期</string>
   <string name="ui_select_card_design">选择卡面</string>
+  <string name="ui_choose_card_design">请选择卡面</string>
   <string name="ui_choose_card_image">选择卡面图片</string>
   <string name="ui_select_year">选择年份</string>
   <string name="ui_choose_file">选择文件</string>
@@ -241,11 +238,8 @@
   <string name="ui_yearly_average">年均支出</string>
   <string name="ui_daily_average">日均支出</string>
   <string name="ui_delete_transaction">删除交易</string>
-  <string name="ui_delete_transaction_title">删除这笔交易？</string>
   <string name="ui_delete_transaction_message">删除后，相关账户余额将随之更新。</string>
-  <string name="ui_transaction_delete_failed">删除失败，请重试</string>
   <string name="ui_close_record_sheet">关闭%1$s</string>
-  <string name="ui_transaction_actions">交易操作</string>
   <string name="ui_edit_primary_amount">修改折算金额</string>
   <string name="ui_primary_amount_in_currency">折算金额（%1$s）</string>
   <string name="bill_select_all">全选</string>

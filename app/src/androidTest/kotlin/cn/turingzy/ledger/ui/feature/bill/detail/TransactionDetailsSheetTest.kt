@@ -57,15 +57,11 @@ class TransactionDetailsSheetTest {
                     ),
                     onBack = { closed = true },
                     onSave = { transaction, _ -> saved = transaction },
-                    onDelete = {},
                 )
             }
         }
         compose.onNodeWithContentDescription("关闭交易详情").assertIsDisplayed()
-        compose.onNodeWithContentDescription("交易操作").performClick()
-        compose.onNodeWithText("删除交易").performClick()
-        compose.onNodeWithText("删除这笔交易？").assertIsDisplayed()
-        compose.onNodeWithText("取消").performClick()
+        compose.onNodeWithContentDescription("交易操作").assertDoesNotExist()
         compose.onNodeWithText("123.45").assertIsDisplayed()
         compose.onNodeWithText("转账").assertIsSelected().assertIsEnabled()
         compose.onNodeWithText("账户互转").assertDoesNotExist()

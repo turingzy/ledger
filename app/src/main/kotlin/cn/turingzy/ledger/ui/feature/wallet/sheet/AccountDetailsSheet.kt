@@ -1,6 +1,7 @@
 package cn.turingzy.ledger.ui.feature.wallet.sheet
 
 import cn.turingzy.ledger.ui.component.base.BaseModalBottomSheet
+import cn.turingzy.ledger.ui.component.base.keepSheetAnchorDuringIme
 import cn.turingzy.ledger.ui.component.base.BaseIconButtonContent
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.ui.component.base.BaseSurface
@@ -45,6 +46,7 @@ fun AccountDetailsSheet(
     modifier: Modifier = Modifier,
     templates: List<CardTemplate> = emptyList(),
     sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    assignedTemplate: CardTemplate? = null,
 ) {
     val scope = rememberCoroutineScope()
     fun dismiss() {
@@ -58,12 +60,14 @@ fun AccountDetailsSheet(
         contentHandlesInsets = true,
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
-        modifier = modifier,
+        modifier = modifier.keepSheetAnchorDuringIme(),
     ) {
         AccountDetailsContent(
             account = account,
             templates = templates,
+            assignedTemplate = assignedTemplate,
             onDelete = { onDelete(account.id); dismiss() },
+            onDismiss = ::dismiss,
             onSave = {
                 onSave(it)
                 dismiss()
@@ -80,12 +84,16 @@ fun AccountDetailsContent(
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
     templates: List<CardTemplate> = emptyList(),
+    onDismiss: () -> Unit = {},
+    assignedTemplate: CardTemplate? = null,
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     var confirmDelete by rememberSaveable(account.id) { mutableStateOf(false) }
     AccountEditorContent(
         account = account,
+        onDismiss = onDismiss,
         templates = templates,
+        assignedTemplate = assignedTemplate,
         onSave = onSave,
         modifier = modifier,
         onDelete = { confirmDelete = true },

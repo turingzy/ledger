@@ -45,6 +45,8 @@ internal fun AccountEditorContent(
     onSave: (Account) -> Unit,
     modifier: Modifier = Modifier,
     onDelete: (() -> Unit)? = null,
+    onDismiss: () -> Unit,
+    assignedTemplate: CardTemplate? = null,
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     var name by rememberSaveable(account?.id) { mutableStateOf(account?.name.orEmpty()) }
@@ -54,11 +56,18 @@ internal fun AccountEditorContent(
     val primaryCurrency = cn.turingzy.ledger.ui.component.biz.LocalLedgerCurrency.current
     var currency by rememberSaveable(account?.id) { mutableStateOf(account?.currency ?: primaryCurrency) }
     var templateId by rememberSaveable(account?.id) { mutableStateOf(account?.templateId) }
+    var defaultCardFaceSelected by rememberSaveable(account?.id) { mutableStateOf(false) }
     var includeInTotal by rememberSaveable(account?.id) { mutableStateOf(account?.includeInTotal ?: true) }
     var showCardFaceDialog by rememberSaveable(account?.id) { mutableStateOf(false) }
     val input = AccountFormInput(name, type, balance, cardNumber, currency, templateId, includeInTotal)
     val result = if (account == null) input.toAccountOrNull(templates) else input.toUpdatedAccountOrNull(account, templates)
     val activeTemplates = remember(templates) { templates.filterNot { it.isDeleted } }
+    val cardFaceName = activeTemplates.firstOrNull { it.id == templateId }?.name
+        ?: assignedTemplate?.takeIf { it.id == templateId }?.name
+        ?: textResources.getString(
+            if (account == null && !defaultCardFaceSelected) cn.turingzy.ledger.R.string.ui_choose_card_design
+            else cn.turingzy.ledger.R.string.ui_default_card_design,
+        )
     val currencies = accountCurrencyOptions
     val focusManager = LocalFocusManager.current
     val colors = MaterialTheme.colorScheme
@@ -66,6 +75,7 @@ internal fun AccountEditorContent(
     AccountSheetContent(
         title = if (account == null) textResources.getString(cn.turingzy.ledger.R.string.ui_add_account) else textResources.getString(cn.turingzy.ledger.R.string.ui_account_details),
         saveEnabled = result != null,
+        onDismiss = { focusManager.clearFocus(); onDismiss() },
         onSave = {
             val value = result ?: return@AccountSheetContent
             focusManager.clearFocus()
@@ -131,7 +141,7 @@ internal fun AccountEditorContent(
             AccountTailNumberField(value = cardNumber.takeLast(4), onValueChange = { cardNumber = it })
         }
         AccountCardFaceField(
-            value = if (templateId == null) textResources.getString(cn.turingzy.ledger.R.string.ui_default_card_design) else activeTemplates.firstOrNull { it.id == templateId }?.name ?: textResources.getString(cn.turingzy.ledger.R.string.ui_select_a_card_design_again),
+            value = cardFaceName,
             onClick = { focusManager.clearFocus(); showCardFaceDialog = true },
             enabled = input.canSelectCardFace,
             disabledHint = if (input.requiresCardTail) textResources.getString(cn.turingzy.ledger.R.string.ui_enter_an_account_name_and_last_four_digits) else textResources.getString(cn.turingzy.ledger.R.string.ui_enter_an_account_name_first),
@@ -155,7 +165,11 @@ internal fun AccountEditorContent(
             templates = activeTemplates, selectedId = templateId, accountName = name,
             accountType = type, tailNumber = cardNumber,
             onDismiss = { showCardFaceDialog = false },
-            onConfirm = { templateId = it; showCardFaceDialog = false },
+            onConfirm = {
+                templateId = it
+                defaultCardFaceSelected = it == null
+                showCardFaceDialog = false
+            },
         )
     }
 }

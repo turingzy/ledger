@@ -6,9 +6,7 @@
   <string name="ui_mon">Mon</string>
   <string name="ui_wed">Wed</string>
   <string name="ui_previous_period">Previous period</string>
-  <string name="ui_previous_card">Previous card</string>
   <string name="ui_next_period">Next period</string>
-  <string name="ui_next_card">Next card</string>
   <string name="ui_no_default_category">No default category</string>
   <string name="ui_tue">Tue</string>
   <string name="ui_fri">Fri</string>
@@ -17,6 +15,7 @@
   <string name="ui_transaction_date">Transaction date</string>
   <string name="ui_transaction_details">Transaction details</string>
   <string name="ui_import_anyway">Import anyway</string>
+  <string name="rule_start_row_summary">Start from row %1$s</string>
   <string name="ui_first_data_row">First data row</string>
   <string name="ui_use_accounts_from_the_file">Use accounts from the file</string>
   <string name="ui_save_rule">Save rule</string>
@@ -38,8 +37,6 @@
   <string name="ui_category">Category</string>
   <string name="ui_category_breakdown">Category breakdown</string>
   <string name="ui_minute">Minute</string>
-  <string name="ui_switch_to_horizontal_cards">Switch to horizontal cards</string>
-  <string name="ui_switch_to_vertical_cards">Switch to vertical cards</string>
   <string name="ui_opening_balance">Opening balance</string>
   <string name="ui_opening_debt">Opening debt</string>
   <string name="ui_delete_card_design">Delete card design</string>
@@ -94,7 +91,7 @@
   <string name="ui_decimal_point">Decimal point</string>
   <string name="ui_hour">Hour</string>
   <string name="ui_less">Less</string>
-  <string name="ui_last_digits">Last digits</string>
+  <string name="ui_last_digits">Last four digits</string>
   <string name="ui_salary_account">Salary account</string>
   <string name="ui_import_cancelled">Import cancelled</string>
   <string name="ui_export_cancelled">Export cancelled</string>
@@ -127,7 +124,7 @@
   <string name="ui_search_notes_categories_accounts">Search notes, categories, accounts</string>
   <string name="ui_operation_failed_please_try_again">Operation failed. Please try again.</string>
   <string name="ui_expense">Expense</string>
-  <string name="ui_supports_excel_xlsx_and_csv">Supports Excel (XLSX) and CSV</string>
+  <string name="ui_supports_excel_xlsx_and_csv">Supports Excel and CSV</string>
   <string name="ui_income">Income</string>
   <string name="ui_monthly_income_expenses_and_balance">Monthly income, expenses and balance</string>
   <string name="ui_monthly_cash_flow">Monthly cash flow</string>
@@ -191,7 +188,6 @@
   <string name="ui_enter_a_name">Enter a name</string>
   <string name="ui_enter_a_valid_amount">Enter a valid amount</string>
   <string name="ui_select">Select</string>
-  <string name="ui_select_a_card_design_again">Select a card design again</string>
   <string name="ui_import_and_export">Import and export</string>
   <string name="ui_transactions_and_accounts">Transactions and accounts</string>
   <string name="ui_transaction_file">Transaction file</string>
@@ -214,6 +210,7 @@
   <string name="ui_select_analytics_period">Select analytics period</string>
   <string name="ui_select_analytics_end_date">Select analytics end date</string>
   <string name="ui_select_card_design">Select card design</string>
+  <string name="ui_choose_card_design">Choose a card design</string>
   <string name="ui_choose_card_image">Choose card image</string>
   <string name="ui_select_year">Select year</string>
   <string name="ui_choose_file">Choose file</string>
@@ -241,11 +238,8 @@
   <string name="ui_yearly_average">Yearly average</string>
   <string name="ui_daily_average">Daily average</string>
   <string name="ui_delete_transaction">Delete transaction</string>
-  <string name="ui_delete_transaction_title">Delete this transaction?</string>
   <string name="ui_delete_transaction_message">Balances for affected accounts will be updated.</string>
-  <string name="ui_transaction_delete_failed">Could not delete the transaction. Try again.</string>
   <string name="ui_close_record_sheet">Close %1$s</string>
-  <string name="ui_transaction_actions">Transaction actions</string>
   <string name="ui_edit_primary_amount">Edit converted amount</string>
   <string name="ui_primary_amount_in_currency">Converted amount (%1$s)</string>
   <string name="bill_select_all">Select all</string>

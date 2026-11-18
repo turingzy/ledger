@@ -6,14 +6,13 @@ import cn.turingzy.ledger.ui.feature.settings.component.SettingsTransferAction
 import cn.turingzy.ledger.ui.feature.settings.component.SettingsTransferFileRow
 import cn.turingzy.ledger.ui.feature.settings.component.selectedTransferFileName
 import cn.turingzy.ledger.ui.feature.settings.component.settingsPageScroll
-import cn.turingzy.ledger.ui.component.base.BaseIconButtonContent
+import cn.turingzy.ledger.ui.component.base.BaseIconButton
+import cn.turingzy.ledger.ui.component.input.PreferenceChoice
+import cn.turingzy.ledger.ui.component.picker.LedgerDateTimeDialog
 import cn.turingzy.ledger.ui.interaction.uiClickable
 import cn.turingzy.ledger.ui.component.base.BaseDivider
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.ui.component.base.BaseSurface
-import cn.turingzy.ledger.ui.component.base.BaseButtonVariant
-import cn.turingzy.ledger.ui.component.base.BaseActionButton
-import cn.turingzy.ledger.ui.component.base.BaseDialogWindow
 import cn.turingzy.ledger.ui.component.base.BaseAlertDialog
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -21,19 +20,13 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -50,15 +43,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.ui.component.input.LedgerSegmentedControl
 import cn.turingzy.ledger.ui.component.MaterialSymbols
-import cn.turingzy.ledger.ui.component.picker.LedgerDateTimePicker
 import cn.turingzy.ledger.ui.theme.LedgerTheme
+import java.time.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.Job
@@ -71,7 +63,7 @@ import java.time.ZoneId
 import kotlinx.coroutines.launch
 
 private enum class ExportFormat(val label: String) { EXCEL("Excel"), CSV("CSV") }
-private enum class BillTransferPicker { RULE, ACCOUNT, START, END }
+private enum class BillTransferPicker { START, END }
 private enum class BillTransferStatus { IDLE, RUNNING, COMPLETED, CANCELLED }
 
 @Composable
@@ -173,17 +165,13 @@ internal fun BillTransferScreen(
             onDismissRequest = { duplicateConfirmation = null },
             title = { Text(textResources.getString(cn.turingzy.ledger.R.string.ui_possible_duplicate_transactions)) },
             text = { Text(textResources.getString(cn.turingzy.ledger.R.string.duplicate_prompt, preview.possibleDuplicates)) },
-            confirmButton = {
-                BaseActionButton(variant = BaseButtonVariant.Text, onClick = {
-                    duplicateConfirmation = null
-                    runTransfer(preview = false)
-                }) { Text(textResources.getString(cn.turingzy.ledger.R.string.ui_skip_duplicates)) }
-            },
-            dismissButton = {
-                BaseActionButton(variant = BaseButtonVariant.Text, onClick = {
-                    duplicateConfirmation = null
-                    runTransfer(preview = false, includePossibleDuplicates = true)
-                }) { Text(textResources.getString(cn.turingzy.ledger.R.string.ui_import_anyway)) }
+            confirmDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_skip_duplicates),
+            onConfirm = { duplicateConfirmation = null; runTransfer(preview = false) },
+            secondaryAction = {
+                BaseIconButton(
+                    MaterialSymbols.FileCopy, textResources.getString(cn.turingzy.ledger.R.string.ui_import_anyway),
+                    { duplicateConfirmation = null; runTransfer(preview = false, includePossibleDuplicates = true) },
+                )
             },
         )
     }
@@ -211,16 +199,27 @@ internal fun BillTransferScreen(
                     ))
                 }
                 BillTransferCard {
-                    BillImportRow(textResources.getString(cn.turingzy.ledger.R.string.ui_import_rule), selectedRule?.name ?: textResources.getString(cn.turingzy.ledger.R.string.ui_select), enabled = !running) {
-                        picker = BillTransferPicker.RULE
-                    }
+                    PreferenceChoice(
+                        title = textResources.getString(cn.turingzy.ledger.R.string.ui_import_rule),
+                        selected = selectedRule?.id?.toString() ?: textResources.getString(cn.turingzy.ledger.R.string.ui_select),
+                        options = rules.map { it.id.toString() to it.name },
+                        enabled = !running && rules.isNotEmpty(),
+                        onSelect = { selectedRuleId = it.toLong(); resetResult() },
+                    )
                     if (selectedRule?.accountId == null) {
                         BillTransferDivider()
-                        BillImportRow(textResources.getString(cn.turingzy.ledger.R.string.ui_import_account), accounts.firstOrNull { it.account.id == accountId }?.account?.name ?: textResources.getString(cn.turingzy.ledger.R.string.ui_use_accounts_from_the_file), enabled = !running) {
-                            picker = BillTransferPicker.ACCOUNT
-                        }
+                        PreferenceChoice(
+                            title = textResources.getString(cn.turingzy.ledger.R.string.ui_import_account),
+                            selected = accountId?.toString().orEmpty(),
+                            options = listOf("" to textResources.getString(cn.turingzy.ledger.R.string.ui_use_accounts_from_the_file)) +
+                                accounts.map { it.account.id.toString() to it.account.name },
+                            enabled = !running,
+                            onSelect = { accountId = it.toLongOrNull(); resetResult() },
+                        )
                     }
                 }
+                if (rules.isEmpty()) Text(textResources.getString(cn.turingzy.ledger.R.string.ui_add_a_rule_in_import_rules),
+                    style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
             } else {
                 Text(textResources.getString(cn.turingzy.ledger.R.string.ui_export_range), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                 Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large)) {
@@ -273,66 +272,25 @@ internal fun BillTransferScreen(
         }
     }
 
-    when (picker) {
-        BillTransferPicker.ACCOUNT -> BillTransferDialog(
-            title = textResources.getString(cn.turingzy.ledger.R.string.ui_import_account), onDismiss = { picker = null }, onConfirm = { picker = null },
-        ) {
-            ImportRuleChoice(textResources.getString(cn.turingzy.ledger.R.string.ui_use_accounts_from_the_file), accountId == null) { accountId = null }
-            accounts.forEach { item ->
-                ImportRuleChoice(item.account.name, accountId == item.account.id) { accountId = item.account.id }
-            }
-        }
-        BillTransferPicker.RULE -> {
-            var pendingRuleId by remember { mutableStateOf(selectedRule?.id) }
-            BillTransferDialog(
-                title = textResources.getString(cn.turingzy.ledger.R.string.ui_import_rule),
-                onDismiss = { picker = null },
-                onConfirm = { selectedRuleId = pendingRuleId; picker = null; resetResult() },
-                confirmEnabled = pendingRuleId != null,
-            ) {
-                Column(Modifier.selectableGroup()) {
-                    rules.forEachIndexed { index, rule ->
-                        if (index > 0) BillTransferDivider()
-                        ImportRuleChoice(rule.name, pendingRuleId == rule.id) { pendingRuleId = rule.id }
-                    }
-                }
-                if (rules.isEmpty()) {
-                    Text(
-                        textResources.getString(cn.turingzy.ledger.R.string.ui_add_a_rule_in_import_rules),
-                        Modifier.padding(vertical = LedgerStyle.spacing.medium),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = colors.onSurfaceVariant,
-                    )
-                }
-            }
-        }
-        BillTransferPicker.START, BillTransferPicker.END -> {
-            val editingStart = picker == BillTransferPicker.START
-            val initial = if (editingStart) rangeStart else rangeEnd
-            var date by remember(picker) { mutableStateOf(initial.toLocalDate()) }
-            var hour by remember(picker) { mutableStateOf(initial.hour.toString().padStart(2, '0')) }
-            var minute by remember(picker) { mutableStateOf(initial.minute.toString().padStart(2, '0')) }
-            val pending = date.atTime(hour.toInt(), minute.toInt())
-            val validRange = if (editingStart) pending <= rangeEnd else pending >= rangeStart
-            BillTransferDialog(
-                title = if (editingStart) textResources.getString(cn.turingzy.ledger.R.string.ui_start_date) else textResources.getString(cn.turingzy.ledger.R.string.ui_end_date),
-                onDismiss = { picker = null },
-                onConfirm = {
-                    if (editingStart) rangeStart = pending else rangeEnd = pending
-                    picker = null
-                    resetResult()
-                },
-                confirmEnabled = validRange,
-            ) {
-                LedgerDateTimePicker(date, hour, minute, { date = it }, { hour = it }, { minute = it })
-                if (!validRange) Text(
-                    textResources.getString(cn.turingzy.ledger.R.string.ui_end_time_must_not_precede_start_time),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = colors.error,
-                )
-            }
-        }
-        null -> Unit
+    picker?.let { target ->
+        val editingStart = target == BillTransferPicker.START
+        val initial = if (editingStart) rangeStart else rangeEnd
+        val zone = ZoneId.systemDefault()
+        LedgerDateTimeDialog(
+            initialTime = initial.atZone(zone).toInstant().toEpochMilli(),
+            onDismiss = { picker = null },
+            onConfirm = { time ->
+                val pending = Instant.ofEpochMilli(time).atZone(zone).toLocalDateTime()
+                if (editingStart) rangeStart = pending else rangeEnd = pending
+                picker = null
+                resetResult()
+            },
+            isTimeAllowed = { time ->
+                val pending = Instant.ofEpochMilli(time).atZone(zone).toLocalDateTime()
+                if (editingStart) pending <= rangeEnd else pending >= rangeStart
+            },
+            invalidTimeMessage = textResources.getString(cn.turingzy.ledger.R.string.ui_end_time_must_not_precede_start_time),
+        )
     }
 }
 
@@ -393,52 +351,6 @@ private fun BillImportRow(
             style = MaterialTheme.typography.bodyMedium,
         )
         Icon(MaterialSymbols.ChevronRight, null, Modifier.size(LedgerStyle.icons.inline), tint = colors.onSurfaceVariant)
-    }
-}
-
-@Composable
-private fun ImportRuleChoice(title: String, selected: Boolean, onClick: () -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(LedgerStyle.shapes.control)
-            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick).padding(vertical = LedgerStyle.spacing.medium),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large),
-    ) {
-        Icon(
-            if (selected) MaterialSymbols.RadioButtonChecked else MaterialSymbols.RadioButtonUnchecked,
-            null, Modifier.size(LedgerStyle.icons.inline),
-            tint = if (selected) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(title, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun BillTransferDialog(
-    title: String,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit,
-    confirmEnabled: Boolean = true,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
-    BaseDialogWindow(onDismissRequest = onDismiss) {
-        BoxWithConstraints(Modifier.widthIn(max = LedgerStyle.dimensions.wideDialogMaxWidth).fillMaxWidth()) {
-            BaseSurface(shape = LedgerStyle.shapes.dialog, color = MaterialTheme.colorScheme.surface) {
-                Column(Modifier.fillMaxWidth().heightIn(max = maxHeight).padding(LedgerStyle.spacing.extraLarge)) {
-                    Text(title, Modifier.padding(bottom = 12.dp), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()), content = content)
-                    Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        BaseIconButtonContent(onClick = onDismiss) { Icon(MaterialSymbols.Close, textResources.getString(cn.turingzy.ledger.R.string.ui_cancel)) }
-                        Spacer(Modifier.weight(1f))
-                        BaseIconButtonContent(onClick = onConfirm, enabled = confirmEnabled) {
-                            Icon(MaterialSymbols.Check, textResources.getString(cn.turingzy.ledger.R.string.ui_confirm), tint = MaterialTheme.colorScheme.tertiary.copy(alpha = if (confirmEnabled) 1f else LedgerStyle.opacity.disabled))
-                        }
-                    }
-                }
-            }
-        }
     }
 }
 

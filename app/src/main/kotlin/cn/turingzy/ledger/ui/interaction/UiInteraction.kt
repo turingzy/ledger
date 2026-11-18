@@ -81,12 +81,13 @@ fun Modifier.uiSelectable(
 fun Modifier.uiClickable(
     enabled: Boolean = true,
     kind: UiInteractionKind = UiInteractionKind.Action,
+    showPressFeedback: Boolean = true,
     onClick: () -> Unit,
 ): Modifier = clickable(
     enabled = enabled,
     role = Role.Button,
     interactionSource = remember { MutableInteractionSource() },
-    indication = rememberUiIndication(),
+    indication = if (showPressFeedback) rememberUiIndication() else null,
     onClick = rememberUiAction(onClick, kind),
 )
 

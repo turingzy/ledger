@@ -9,8 +9,6 @@ import cn.turingzy.ledger.ui.feature.settings.component.settingsPageScroll
 import cn.turingzy.ledger.ui.component.base.BaseDivider
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.ui.component.base.BaseSurface
-import cn.turingzy.ledger.ui.component.base.BaseButtonVariant
-import cn.turingzy.ledger.ui.component.base.BaseActionButton
 import cn.turingzy.ledger.ui.component.base.BaseAlertDialog
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -113,8 +111,8 @@ internal fun BackupAndRestoreScreen(
         onDismissRequest = { confirmRestore = false },
         title = { Text(textResources.getString(cn.turingzy.ledger.R.string.ui_restore_backup_2)) },
         text = { Text(textResources.getString(cn.turingzy.ledger.R.string.ui_bill_backups_replace_local_accounts_transactions_and_categories)) },
-        confirmButton = { BaseActionButton(variant = BaseButtonVariant.Text, onClick = { confirmRestore = false; runTransfer() }) { Text(textResources.getString(cn.turingzy.ledger.R.string.ui_restore)) } },
-        dismissButton = { BaseActionButton(variant = BaseButtonVariant.Text, onClick = { confirmRestore = false }) { Text(textResources.getString(cn.turingzy.ledger.R.string.ui_cancel)) } },
+        onConfirm = { confirmRestore = false; runTransfer() },
+        confirmDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_restore),
     )
 
     SettingsSubpageScaffold(title = textResources.getString(cn.turingzy.ledger.R.string.ui_backup_and_restore), onBack = onDismissRequest) {

@@ -8,9 +8,17 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.res.stringResource
+import cn.turingzy.ledger.R
+import cn.turingzy.ledger.ui.component.base.BaseIconButton
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.PaddingValues
@@ -18,6 +26,7 @@ import cn.turingzy.ledger.ui.component.base.BaseCard
 import cn.turingzy.ledger.ui.component.base.BaseListRow
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.ui.component.MaterialSymbols
+import cn.turingzy.ledger.ui.component.card.summary.SummaryCardIconButton
 
 internal val SettingsItemHeight = LedgerStyle.dimensions.rowMinHeight
 
@@ -53,5 +62,35 @@ internal fun SettingsActionRow(
             }),
             onClick = if (enabled) onClick else null,
         )
+    }
+}
+
+@Composable
+internal fun SettingsDeleteAction(
+    itemId: Long,
+    description: String,
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier,
+    compact: Boolean = false,
+) {
+    var confirming by remember(itemId) { mutableStateOf(false) }
+    val colors = MaterialTheme.colorScheme
+    val action: @Composable (ImageVector, String, Color, () -> Unit) -> Unit = { icon, label, tint, onClick ->
+        if (compact) SummaryCardIconButton(icon, label, onClick, contentColor = tint)
+        else BaseIconButton(icon, label, onClick, contentColor = tint)
+    }
+    Row(modifier, horizontalArrangement = Arrangement.spacedBy(if (compact) LedgerStyle.spacing.small else LedgerStyle.spacing.none),
+        verticalAlignment = Alignment.CenterVertically) {
+        if (confirming) {
+            action(MaterialSymbols.Close, stringResource(R.string.ui_cancel), if (compact) colors.onPrimary else colors.onSurfaceVariant) {
+                confirming = false
+            }
+            action(MaterialSymbols.Check, stringResource(R.string.ui_confirm), colors.tertiary) {
+                confirming = false
+                onDelete()
+            }
+        } else {
+            action(MaterialSymbols.Delete, description, colors.error) { confirming = true }
+        }
     }
 }

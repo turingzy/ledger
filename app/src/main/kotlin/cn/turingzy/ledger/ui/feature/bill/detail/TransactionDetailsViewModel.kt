@@ -106,13 +106,6 @@ class TransactionDetailsViewModel @Inject constructor(
         }
     }
 
-    internal fun delete(failureMessage: String) {
-        val transactionId = selectedTransactionId.value ?: return
-        val state = uiState.value as? TransactionDetailsUiState.Success ?: return
-        if (state.detail.transaction.id != transactionId) return
-        persist(failureMessage) { repository.deleteTransaction(transactionId) }
-    }
-
     private fun persist(failureMessage: String, action: suspend () -> Unit) {
         if (_saveState.value.saving || _saveState.value.saved) return
         _saveState.value = TransactionSaveState(saving = true)

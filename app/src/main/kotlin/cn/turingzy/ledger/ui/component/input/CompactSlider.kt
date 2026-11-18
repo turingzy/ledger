@@ -14,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 
@@ -27,6 +28,7 @@ internal fun CompactSlider(
     valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
     onValueChangeFinished: () -> Unit = {},
     color: Color = MaterialTheme.colorScheme.primary,
+    thumbDiameter: Dp = 16.dp,
 ) {
     val interactions = remember { MutableInteractionSource() }
     val colors = SliderDefaults.colors(
@@ -43,8 +45,8 @@ internal fun CompactSlider(
         interactionSource = interactions, colors = colors,
         thumb = {
             SliderDefaults.Thumb(
-                interactionSource = interactions, modifier = Modifier.requiredSize(16.dp).clip(CircleShape),
-                colors = colors, enabled = enabled, thumbSize = DpSize(16.dp, 16.dp),
+                interactionSource = interactions, modifier = Modifier.requiredSize(thumbDiameter).clip(CircleShape),
+                colors = colors, enabled = enabled, thumbSize = DpSize(thumbDiameter, thumbDiameter),
             )
         },
         track = { state ->

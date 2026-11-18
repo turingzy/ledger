@@ -162,9 +162,7 @@ fun AnalyticsContent(
                                         PeriodNavigationArrow(true, { onNavigatePeriod(1) })
                                     }
                                 }
-                                if (dashboard.loading) {
-                                    androidx.compose.material3.LinearProgressIndicator(Modifier.fillMaxWidth())
-                                } else {
+                                if (!dashboard.loading) {
                                     AnalyticsDashboardCards(uiState, dashboard, onCategoryTypeChange)
                                 }
                             }

@@ -7,6 +7,7 @@ import cn.turingzy.ledger.ui.feature.settings.component.asCardTextColor
 import cn.turingzy.ledger.ui.feature.settings.component.settingsPageScroll
 import cn.turingzy.ledger.ui.component.base.BaseIconButtonContent
 import cn.turingzy.ledger.ui.interaction.uiClickable
+import cn.turingzy.ledger.ui.feature.settings.component.SettingsDeleteAction
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.ui.component.base.BaseSurface
 import cn.turingzy.ledger.ui.component.card.bank.AccountCardBackground
@@ -272,10 +273,10 @@ private fun TemplateCoverPreview(
             overflow = TextOverflow.Ellipsis,
         )
         if (!placeholder) {
-            if (onDelete != null) SummaryCardIconButton(
-                MaterialSymbols.Delete, textResources.getString(cn.turingzy.ledger.R.string.ui_delete_card_design), onDelete,
+            if (onDelete != null) SettingsDeleteAction(
+                template.id, textResources.getString(cn.turingzy.ledger.R.string.ui_delete_card_design), onDelete,
                 modifier = Modifier.align(Alignment.BottomStart).padding(LedgerStyle.spacing.large),
-                contentColor = MaterialTheme.colorScheme.error,
+                compact = true,
             )
             if (onChooseImage != null) SummaryCardIconButton(
                 MaterialSymbols.AddPhotoAlternate, textResources.getString(cn.turingzy.ledger.R.string.ui_change_card_design), onChooseImage,

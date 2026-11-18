@@ -8,14 +8,14 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import cn.turingzy.ledger.model.settings.AppPreferences
 import cn.turingzy.ledger.ui.theme.LedgerTheme
 
-internal data class GeneralSettingsPreviewCase(val busy: Boolean, val canSave: Boolean, val rate: String, val message: String? = null)
+internal data class GeneralSettingsPreviewCase(val busy: Boolean, val rate: String, val message: String? = null)
 
 internal class GeneralSettingsPreviewProvider : PreviewParameterProvider<GeneralSettingsPreviewCase> {
     override val values: Sequence<GeneralSettingsPreviewCase> = sequenceOf(
-        GeneralSettingsPreviewCase(false, false, "7.20"),
-        GeneralSettingsPreviewCase(false, true, "7.25"),
-        GeneralSettingsPreviewCase(false, false, "无效输入"),
-        GeneralSettingsPreviewCase(true, false, "7.20", "正在刷新汇率"),
+        GeneralSettingsPreviewCase(false, "7.20"),
+        GeneralSettingsPreviewCase(false, "7.25"),
+        GeneralSettingsPreviewCase(false, "无效输入"),
+        GeneralSettingsPreviewCase(true, "7.20", "正在刷新汇率"),
     )
 }
 
@@ -25,10 +25,10 @@ internal class GeneralSettingsPreviewProvider : PreviewParameterProvider<General
 private fun GeneralSettingsPreview(@PreviewParameter(GeneralSettingsPreviewProvider::class) case: GeneralSettingsPreviewCase) {
     LedgerTheme {
         GeneralSettingsContent(
-            draft = AppPreferences(primaryCurrency = "CNY"), busy = case.busy, canSave = case.canSave,
+            draft = AppPreferences(primaryCurrency = "CNY"), busy = case.busy,
             from = "USD", rate = case.rate, rateDate = "2026-11-17", message = case.message,
             currencies = listOf("USD" to "USD", "HKD" to "HKD", "EUR" to "EUR"),
-            onPreferencesChange = {}, onFromChange = {}, onRateChange = {}, onSave = {}, onRefresh = {}, onBack = {},
+            onPreferencesChange = {}, onFromChange = {}, onRateChange = {}, onRefresh = {}, onBack = {},
         )
     }
 }

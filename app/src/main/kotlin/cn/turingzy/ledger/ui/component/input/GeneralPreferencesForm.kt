@@ -52,7 +52,7 @@ internal fun PreferenceChoice(title: String, selected: String, options: List<Pai
         Box(
             Modifier.fillMaxWidth()
                 .semantics(mergeDescendants = true) { contentDescription = title }
-                .uiClickable(enabled = enabled, onClick = onToggle)
+                .uiClickable(enabled = enabled, showPressFeedback = false, onClick = onToggle)
                 .padding(horizontal = LedgerStyle.spacing.large),
         ) {
             Row(

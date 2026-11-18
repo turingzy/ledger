@@ -64,7 +64,7 @@ internal fun CardBackgroundDialog(
     val canConfirm = !busy && (restoreDefault || preparedFilename != null)
 
     BaseDialogWindow(onDismissRequest = { if (!busy) onDismiss() }) {
-        BaseSurface(shape = LedgerStyle.shapes.confirmationDialog, color = colors.background) {
+        BaseSurface(shape = LedgerStyle.shapes.confirmationDialog, color = colors.surface) {
             Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(LedgerStyle.spacing.block)) {
                 Text(textResources.getString(cn.turingzy.ledger.R.string.ui_change_card_background), style = MaterialTheme.typography.titleLarge)
                 Spacer(Modifier.height(20.dp))

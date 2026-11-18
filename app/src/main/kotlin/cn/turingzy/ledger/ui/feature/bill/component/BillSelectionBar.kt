@@ -22,7 +22,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -271,11 +270,8 @@ internal fun BillDeleteDialog(count: Int, onDismiss: () -> Unit, onConfirm: () -
         onDismissRequest = onDismiss,
         title = { Text(pluralStringResource(R.plurals.bill_delete_title, count, count)) },
         text = { Text(stringResource(R.string.ui_delete_transaction_message)) },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.ui_cancel)) } },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text(stringResource(R.string.bill_delete_action), color = LedgerStyle.colors.expense)
-            }
-        },
+        onConfirm = onConfirm,
+        destructive = true,
+        confirmDescription = stringResource(R.string.bill_delete_action),
     )
 }

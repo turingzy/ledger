@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.settings.screen
 
+import androidx.compose.animation.Crossfade
 import cn.turingzy.ledger.ui.feature.settings.component.SettingsItemHeight
 import cn.turingzy.ledger.ui.feature.settings.component.SettingsSubpageScaffold
 import cn.turingzy.ledger.ui.feature.settings.component.settingsPageScroll
@@ -7,11 +8,8 @@ import cn.turingzy.ledger.ui.component.base.BaseButtonVariant
 import cn.turingzy.ledger.ui.component.base.BaseActionButton
 import androidx.compose.foundation.layout.*
 import cn.turingzy.ledger.model.settings.AppPreferences
-import cn.turingzy.ledger.ui.component.MaterialSymbols
-import cn.turingzy.ledger.ui.component.base.BaseIconButton
 import cn.turingzy.ledger.ui.component.base.BaseCard
 import cn.turingzy.ledger.ui.component.base.BaseDivider
-import cn.turingzy.ledger.ui.interaction.rememberUiAction
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -27,23 +25,23 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cn.turingzy.ledger.R
 import cn.turingzy.ledger.ui.AppSettingsViewModel
+import cn.turingzy.ledger.ui.RateRefreshStatus
+import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.input.GeneralPreferencesForm
 import cn.turingzy.ledger.ui.component.input.PreferenceChoice
 
 @Composable
-internal fun GeneralSettingsScreen(onBack: () -> Unit, viewModel: AppSettingsViewModel = hiltViewModel()) {
+internal fun GeneralSettingsScreen(onBack: () -> Unit, viewModel: AppSettingsViewModel) {
     val settings by viewModel.preferences.collectAsStateWithLifecycle()
     val accounts by viewModel.accounts.collectAsStateWithLifecycle()
     val busy by viewModel.busy.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
+    val refreshStatus by viewModel.rateRefreshStatus.collectAsStateWithLifecycle()
     val initial = settings ?: return
-    var language by rememberSaveable(initial.language) { mutableStateOf(initial.language) }
-    var theme by rememberSaveable(initial.theme) { mutableStateOf(initial.theme) }
-    var primary by rememberSaveable(initial.primaryCurrency) { mutableStateOf(initial.primaryCurrency) }
+    val primary = initial.primaryCurrency
     var from by rememberSaveable(primary) { mutableStateOf(if (primary == "USD") "CNY" else "USD") }
     var rate by rememberSaveable(from, primary) { mutableStateOf("") }
     var edited by rememberSaveable(from, primary) { mutableStateOf(false) }
@@ -57,17 +55,23 @@ internal fun GeneralSettingsScreen(onBack: () -> Unit, viewModel: AppSettingsVie
         } catch (error: kotlinx.coroutines.CancellationException) { throw error }
         catch (error: Exception) { timber.log.Timber.w(error, "No saved rate for settings preview") }
     }
-    val draft = initial.copy(language = language, theme = theme, primaryCurrency = primary)
-    val validRate = rate.toBigDecimalOrNull()?.let { it.signum() > 0 && it.scale() in -18..18 && it.precision() <= 36 } == true
-    val canSave = !busy && (draft != initial || edited) && (!edited || validRate)
     GeneralSettingsContent(
-        draft = draft, busy = busy, canSave = canSave,
+        draft = initial, busy = busy,
         from = from, rate = rate, rateDate = rateDate, message = message,
         currencies = (accounts.map { it.account.currency } + listOf("USD", "CNY", "HKD", "EUR")).distinct().filter { it != primary }.map { it to it },
-        onPreferencesChange = { language = it.language; theme = it.theme; primary = it.primaryCurrency },
-        onFromChange = { from = it }, onRateChange = { rate = it; edited = true },
-        onSave = { viewModel.save(draft, rateFrom = from.takeIf { edited }, rateValue = rate.takeIf { edited }, onSaved = { edited = false }) },
-        onRefresh = viewModel::refreshRates, onBack = onBack,
+        onPreferencesChange = { if (it != initial) viewModel.save(it) },
+        onFromChange = { from = it },
+        onRateChange = {
+            rate = it
+            edited = true
+            viewModel.editManualRate(from, primary, it) {
+                if (rate == it) {
+                    edited = false
+                    rateDate = java.time.LocalDate.now().toString()
+                }
+            }
+        },
+        onRefresh = { viewModel.refreshRates(from) }, onBack = onBack, refreshStatus = refreshStatus,
     )
 }
 
@@ -75,7 +79,6 @@ internal fun GeneralSettingsScreen(onBack: () -> Unit, viewModel: AppSettingsVie
 internal fun GeneralSettingsContent(
     draft: AppPreferences,
     busy: Boolean,
-    canSave: Boolean,
     from: String,
     rate: String,
     rateDate: String?,
@@ -84,18 +87,14 @@ internal fun GeneralSettingsContent(
     onPreferencesChange: (AppPreferences) -> Unit,
     onFromChange: (String) -> Unit,
     onRateChange: (String) -> Unit,
-    onSave: () -> Unit,
     onRefresh: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    refreshStatus: RateRefreshStatus = RateRefreshStatus.IDLE,
 ) {
     val colors = MaterialTheme.colorScheme
     SettingsSubpageScaffold(
         title = stringResource(R.string.general_settings), onBack = onBack, modifier = modifier,
-        actions = {
-            BaseIconButton(MaterialSymbols.Check, stringResource(R.string.save), onSave,
-                enabled = canSave, contentColor = colors.tertiary, showPressFeedback = false)
-        },
     ) {
         Column(
             Modifier.fillMaxWidth().settingsPageScroll(),
@@ -109,14 +108,29 @@ internal fun GeneralSettingsContent(
                 BaseDivider(Modifier.padding(horizontal = LedgerStyle.spacing.large))
                 ExchangeRateField(from, draft.primaryCurrency, rate, !busy, onRateChange)
             }
-            rateDate?.let {
-                Text(stringResource(R.string.rate_as_of, it), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
-            }
-            BaseActionButton(variant = BaseButtonVariant.Text, onClick = onRefresh, enabled = !busy, contentPadding = PaddingValues(vertical = LedgerStyle.spacing.medium)) {
-                Text(stringResource(R.string.refresh_rates))
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.small),
+                ) {
+                    Text(rateDate?.let { stringResource(R.string.rate_as_of, it) } ?: stringResource(R.string.reference_rate),
+                        Modifier.weight(1f, fill = false), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                    Crossfade(refreshStatus, label = "RateRefreshStatus") { status ->
+                        when (status) {
+                            RateRefreshStatus.IDLE -> Unit
+                            RateRefreshStatus.REFRESHING -> CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                            RateRefreshStatus.SUCCESS -> Icon(MaterialSymbols.Check, stringResource(R.string.rates_refreshed),
+                                Modifier.size(16.dp), tint = colors.tertiary)
+                        }
+                    }
+                }
+                BaseActionButton(variant = BaseButtonVariant.Text, onClick = onRefresh, enabled = !busy,
+                    showPressFeedback = false,
+                    contentPadding = PaddingValues(vertical = LedgerStyle.spacing.medium)) {
+                    Text(stringResource(R.string.refresh_rates), style = MaterialTheme.typography.bodyMedium)
+                }
             }
             message?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant) }
-            if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         }
     }
 }

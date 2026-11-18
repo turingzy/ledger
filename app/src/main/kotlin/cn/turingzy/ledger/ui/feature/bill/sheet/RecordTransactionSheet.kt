@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.bill.sheet
 
+import cn.turingzy.ledger.ui.component.picker.LedgerDateTimeDialog
 import cn.turingzy.ledger.ui.component.base.BaseIconButtonContent
 import cn.turingzy.ledger.ui.component.base.BaseDivider
 import cn.turingzy.ledger.ui.theme.LedgerStyle
@@ -54,12 +55,10 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
@@ -84,10 +83,7 @@ import cn.turingzy.ledger.ui.component.card.summary.SummaryCardIconButton
 import cn.turingzy.ledger.model.currency.convertCents
 import cn.turingzy.ledger.model.currency.CurrencyAmountOverride
 import cn.turingzy.ledger.ui.component.base.BaseAlertDialog
-import cn.turingzy.ledger.ui.component.base.BaseDropdownMenu
-import cn.turingzy.ledger.ui.component.input.DropdownDirection
-import cn.turingzy.ledger.ui.component.input.FormMenuPositionProvider
-import androidx.compose.material3.TextButton
+import cn.turingzy.ledger.ui.component.base.keepSheetAnchorDuringIme
 import androidx.compose.ui.text.input.KeyboardType
 import cn.turingzy.ledger.ui.component.biz.LocalLedgerCurrency
 import cn.turingzy.ledger.ui.component.biz.businessAmountText
@@ -123,7 +119,6 @@ fun RecordTransactionSheet(
     error: String? = null,
     sheetHeight: Dp = 520.dp,
     onLoadExchangeRate: suspend (String, String, Long) -> String? = { _, _, _ -> null },
-    onDelete: (() -> Unit)? = null,
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val fixedHeight = remember { sheetHeight }
@@ -203,17 +198,7 @@ fun RecordTransactionSheet(
 
     BaseModalBottomSheet(
         onDismissRequest = onDismissRequest, sheetState = sheetState,
-        // Material's outer IME padding otherwise changes the drawer's expanded anchor.
-        modifier = modifier.composed {
-            val imeInsets = WindowInsets.ime
-            Modifier.layout { measurable, constraints ->
-                val keyboardHeight = imeInsets.getBottom(this)
-                val placeable = measurable.measure(constraints.copy(maxHeight = constraints.maxHeight + keyboardHeight))
-                layout(placeable.width, constraints.constrainHeight(placeable.height)) {
-                    placeable.place(0, 0)
-                }
-            }
-        },
+        modifier = modifier.keepSheetAnchorDuringIme(),
         containerColor = MaterialTheme.colorScheme.surfaceVariant,
         shape = LedgerStyle.shapes.bottomSheet,
         dragHandle = null,
@@ -240,7 +225,6 @@ fun RecordTransactionSheet(
             onEditPrimaryAmount = { if (!saving) showAmountEditor = true },
             onDismiss = onDismissRequest,
             closeDescription = stringResource(R.string.ui_close_record_sheet, title),
-            onDelete = onDelete,
             actionsEnabled = !saving,
             transferRate = transferRate.takeIf { crossCurrency },
             transferLabel = "1 ${sourceCurrency.orEmpty()} = … ${targetCurrency.orEmpty()}",
@@ -304,7 +288,7 @@ fun RecordTransactionSheet(
         )
     }
     if (panel == RecordPanel.DATE_TIME) {
-        RecordDateTimeDialog(
+        LedgerDateTimeDialog(
             transactionTime, onDismiss = { panel = RecordPanel.ENTRY },
             onConfirm = { transactionTime = it; panel = RecordPanel.ENTRY },
         )
@@ -344,7 +328,6 @@ internal fun RecordTransactionContent(
     onEditPrimaryAmount: () -> Unit = {},
     onDismiss: () -> Unit,
     closeDescription: String,
-    onDelete: (() -> Unit)? = null,
     actionsEnabled: Boolean = true,
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
@@ -368,25 +351,6 @@ internal fun RecordTransactionContent(
                 modifier = Modifier.align(Alignment.CenterStart), enabled = actionsEnabled,
                 containerColor = colors.surface, contentColor = colors.onSurface, showPressFeedback = false,
             )
-            if (onDelete != null) Box(Modifier.align(Alignment.CenterEnd)) {
-                var showActions by remember { mutableStateOf(false) }
-                SummaryCardIconButton(
-                    MaterialSymbols.MoreHoriz, stringResource(R.string.ui_transaction_actions), { showActions = true },
-                    enabled = actionsEnabled, containerColor = colors.surface, contentColor = colors.onSurface,
-                )
-                if (showActions) BaseDropdownMenu(
-                    options = listOf(stringResource(R.string.ui_delete_transaction)),
-                    optionLabel = { it },
-                    isSelected = { false },
-                    onSelect = {
-                        showActions = false
-                        onDelete()
-                    },
-                    onDismissRequest = { showActions = false },
-                    positionProvider = remember { FormMenuPositionProvider(alignToStart = false, direction = DropdownDirection.DOWN) },
-                    optionTextColor = colors.error,
-                )
-            }
             LedgerSegmentedControl(
                 listOf(textResources.getString(cn.turingzy.ledger.R.string.ui_expense), textResources.getString(cn.turingzy.ledger.R.string.ui_income), textResources.getString(cn.turingzy.ledger.R.string.ui_transfer)), TransactionType.entries.indexOf(type),
                 { onTypeChange(TransactionType.entries[it]) },
@@ -503,12 +467,8 @@ private fun PrimaryAmountEditor(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             )
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.ui_cancel)) } },
-        confirmButton = {
-            TextButton(enabled = validAmount != null, onClick = { validAmount?.let(onConfirm) }) {
-                Text(stringResource(R.string.ui_confirm))
-            }
-        },
+        onConfirm = { validAmount?.let(onConfirm) },
+        confirmEnabled = validAmount != null,
     )
 }
 

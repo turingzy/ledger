@@ -91,6 +91,17 @@ class AccountFormInputTest {
         val template = CardTemplate(id = 42L, name = "旧卡面", coverUri = "", isDeleted = true)
         assertNull(AccountFormInput(name = "账户", templateId = template.id).toAccountOrNull(listOf(template)))
     }
+
+    @Test
+    fun editingCanKeepAnAssignedTemplateThatIsNoLongerSelectable() {
+        val original = Account(id = 17L, name = "账户", type = AccountType.DEBIT, templateId = 42L)
+        val input = AccountFormInput(name = "新名称", templateId = original.templateId)
+        val edited = checkNotNull(input.toUpdatedAccountOrNull(original, emptyList()))
+        assertEquals("新名称", edited.name)
+        assertEquals(original.templateId, edited.templateId)
+        assertNull(input.copy(templateId = 43L).toUpdatedAccountOrNull(original, emptyList()))
+    }
+
     @Test
     fun editingChangesMetadataButPreservesIdentityCurrencyAndBalances() {
         val original = Account(

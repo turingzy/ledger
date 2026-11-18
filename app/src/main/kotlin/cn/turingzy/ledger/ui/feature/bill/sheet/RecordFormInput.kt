@@ -6,8 +6,6 @@ import cn.turingzy.ledger.model.category.CategoryWithIcon
 import cn.turingzy.ledger.model.transaction.Transaction
 import cn.turingzy.ledger.model.transaction.TransactionType
 import cn.turingzy.ledger.util.AmountFormatter
-import java.time.LocalDate
-import java.time.ZoneId
 
 internal data class RecordFormInput(
     val type: TransactionType,
@@ -61,9 +59,3 @@ internal fun selectableRecordCategories(categories: List<CategoryWithIcon>, type
     }.sortedBy { it.category.sortOrder }
 
 private val OtherRecordCategoryNames = setOf("其他", "其他分类", "其他支出", "其他收入")
-
-internal fun recordTimeMillis(date: LocalDate, hour: String, minute: String, zone: ZoneId): Long? {
-    val validHour = hour.toIntOrNull()?.takeIf { it in 0..23 } ?: return null
-    val validMinute = minute.toIntOrNull()?.takeIf { it in 0..59 } ?: return null
-    return date.atTime(validHour, validMinute).atZone(zone).toInstant().toEpochMilli()
-}

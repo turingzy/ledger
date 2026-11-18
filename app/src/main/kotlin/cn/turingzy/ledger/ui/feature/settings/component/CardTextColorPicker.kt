@@ -118,7 +118,7 @@ private fun CardTextColorDialog(initialColor: Color, onDismiss: () -> Unit, onCo
     val colors = MaterialTheme.colorScheme
     fun updateColor() { hex = Color.hsv(hue, saturation, brightness, alpha).asHex() }
     BaseDialogWindow(onDismissRequest = onDismiss) {
-        BaseSurface(modifier = Modifier.padding(vertical = LedgerStyle.spacing.large), shape = LedgerStyle.shapes.confirmationDialog, color = colors.background) {
+        BaseSurface(modifier = Modifier.padding(vertical = LedgerStyle.spacing.large), shape = LedgerStyle.shapes.confirmationDialog, color = colors.surface) {
             Column(
                 Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(LedgerStyle.spacing.extraLarge),
                 verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium),

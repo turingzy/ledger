@@ -7,8 +7,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import cn.turingzy.ledger.model.account.Account
 import cn.turingzy.ledger.model.account.AccountType
 import cn.turingzy.ledger.model.account.AccountWithTemplate
@@ -22,18 +20,13 @@ private fun previewAccounts(): List<AccountWithTemplate> = listOf(
     Account(4L, "现金", AccountType.CASH, currentBalance = 50000L),
 ).map { AccountWithTemplate(it, null) }
 
-internal class WalletDeckPreviewProvider : PreviewParameterProvider<Boolean> {
-    override val values: Sequence<Boolean> = sequenceOf(false, true)
-}
-
 @Preview(name = "Wallet Deck Light", showBackground = true, widthDp = 420, uiMode = Configuration.UI_MODE_NIGHT_NO)
 @Preview(name = "Wallet Deck Dark", showBackground = true, widthDp = 420, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun WalletDeckPreview(@PreviewParameter(WalletDeckPreviewProvider::class) vertical: Boolean) {
+private fun WalletDeckPreview() {
     LedgerTheme {
         Box(Modifier.fillMaxWidth().padding(LedgerStyle.spacing.extraLarge)) {
-            if (vertical) VerticalBankCardDeck(previewAccounts(), {})
-            else SwipeableBankCardDeck(previewAccounts(), {})
+            SwipeableBankCardDeck(previewAccounts(), {})
         }
     }
 }

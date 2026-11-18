@@ -3,11 +3,16 @@ package cn.turingzy.ledger.ui.component.navigation
 import cn.turingzy.ledger.ui.component.base.BackdropState
 import cn.turingzy.ledger.ui.component.base.frostedBackdrop
 import cn.turingzy.ledger.ui.theme.LedgerStyle
-import cn.turingzy.ledger.ui.component.base.BaseSurface
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.hideFromAccessibility
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -48,21 +53,20 @@ internal fun LedgerBottomBar(
     onNavigateToDestination: (TopLevelDestination) -> Unit,
     modifier: Modifier = Modifier,
     backdrop: BackdropState? = null,
+    visible: Boolean = true,
 ) {
     val colors = MaterialTheme.colorScheme
     val view = LocalView.current
-    BaseSurface(
+    val visibility = animateFloatAsState(if (visible) 1f else 0f, tween(160), label = "BottomBarVisibility")
+    Box(
         modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 16.dp, vertical = BottomBarVerticalPadding),
-        shape = CircleShape,
-        color = Color.Transparent,
-        shadowElevation = 2.dp,
-        border = BorderStroke(
-            width = 0.5.dp,
-            color = colors.outlineVariant.copy(alpha = colors.outlineVariant.alpha * 0.5f),
-        ),
+            .padding(horizontal = 16.dp, vertical = BottomBarVerticalPadding)
+            .graphicsLayer { alpha = visibility.value }
+            .then(if (visible) Modifier else Modifier.clearAndSetSemantics { hideFromAccessibility() })
+            .shadow(2.dp, CircleShape)
+            .border(0.5.dp, colors.outlineVariant.copy(alpha = colors.outlineVariant.alpha * 0.5f), CircleShape),
     ) {
         Row(
             modifier = Modifier
@@ -100,7 +104,7 @@ internal fun LedgerBottomBar(
                         .clip(CircleShape)
                         .background(selectionColor)
                         .navigationPressFeedback(interactionSource)
-                        .selectable(
+                        .then(if (!visible) Modifier else Modifier.selectable(
                             selected = selected,
                             role = Role.Tab,
                             interactionSource = interactionSource,
@@ -111,7 +115,7 @@ internal fun LedgerBottomBar(
                                 view.playSoundEffect(SoundEffectConstants.CLICK)
                                 onNavigateToDestination(destination)
                             }
-                        },
+                        }),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(1.dp, Alignment.CenterVertically),
                 ) {

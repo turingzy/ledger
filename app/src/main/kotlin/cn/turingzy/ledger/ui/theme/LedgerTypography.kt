@@ -9,6 +9,7 @@ import androidx.compose.ui.unit.sp
 
 object LedgerTypography {
     val screenTitle = textStyle(28.sp, 34.sp, FontWeight.Bold)
+    val detailPageTitle = textStyle(18.sp, 24.sp, FontWeight.Bold)
     val sectionTitle = textStyle(17.sp, 22.sp, FontWeight.SemiBold)
     val cardTitle = textStyle(16.sp, 20.sp)
     val body = textStyle(16.sp, 24.sp).copy(letterSpacing = 0.5.sp)

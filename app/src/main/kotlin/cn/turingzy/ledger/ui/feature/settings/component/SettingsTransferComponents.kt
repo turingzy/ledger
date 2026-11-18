@@ -10,6 +10,7 @@ import android.provider.OpenableColumns
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -49,15 +50,6 @@ internal fun SettingsTransferAction(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium),
     ) {
-        BaseActionButton(variant = BaseButtonVariant.Text, actionKey = running,
-            onClick = onClick,
-            enabled = enabled,
-            modifier = Modifier.heightIn(min = SettingsItemHeight),
-            contentPadding = PaddingValues(vertical = 8.dp),
-            colors = ButtonDefaults.textButtonColors(contentColor = if (running) colors.error else colors.primary),
-        ) {
-            Text(title, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Start)
-        }
         if (running && progress == null) {
             LinearProgressIndicator(modifier = Modifier.weight(1f).height(8.dp).clip(CircleShape), color = colors.tertiary)
         }
@@ -72,6 +64,17 @@ internal fun SettingsTransferAction(
                 drawStopIndicator = {},
             )
             Text("$progress%", textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+        }
+        if (!running && progress == null) Spacer(Modifier.weight(1f))
+        BaseActionButton(variant = BaseButtonVariant.Text, actionKey = running,
+            onClick = onClick,
+            enabled = enabled,
+            modifier = Modifier.heightIn(min = SettingsItemHeight),
+            contentPadding = PaddingValues(vertical = 8.dp),
+            showPressFeedback = false,
+            colors = ButtonDefaults.textButtonColors(contentColor = if (running) colors.error else colors.primary),
+        ) {
+            Text(title, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Start)
         }
     }
 }

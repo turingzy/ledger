@@ -12,7 +12,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -37,7 +38,7 @@ import cn.turingzy.ledger.ui.component.card.bank.BankCardAspectRatio
 import cn.turingzy.ledger.ui.component.card.bank.rememberCircularCardPagerState
 import cn.turingzy.ledger.ui.component.card.bank.CardPageIndicator
 import cn.turingzy.ledger.ui.component.MaterialSymbols
-import cn.turingzy.ledger.ui.component.card.summary.SummaryCardIconButton
+import cn.turingzy.ledger.ui.component.base.BaseIconButton
 
 @Composable
 internal fun AccountCardFaceDialog(
@@ -56,19 +57,7 @@ internal fun AccountCardFaceDialog(
     BaseDialogWindow(onDismissRequest = onDismiss) {
         BaseSurface(shape = LedgerStyle.shapes.dialog, color = colors.surface) {
             Column(Modifier.padding(LedgerStyle.spacing.extraLarge), verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large)) {
-                Box(Modifier.fillMaxWidth().height(40.dp), contentAlignment = Alignment.Center) {
-                    SummaryCardIconButton(
-                        MaterialSymbols.Close, textResources.getString(cn.turingzy.ledger.R.string.ui_close_card_design_picker), onDismiss,
-                        Modifier.align(Alignment.CenterStart), containerColor = colors.surface, contentColor = colors.onSurface,
-                    )
-                    Text(textResources.getString(cn.turingzy.ledger.R.string.ui_select_card_design), style = MaterialTheme.typography.titleMedium)
-                    AccountSaveButton(
-                        enabled = !pager.isScrollInProgress,
-                        onClick = { onConfirm(faces[Math.floorMod(pager.settledPage, faces.size)]?.id) },
-                        modifier = Modifier.align(Alignment.CenterEnd),
-                        contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_apply_card_design),
-                    )
-                }
+                Text(textResources.getString(cn.turingzy.ledger.R.string.ui_select_card_design), style = MaterialTheme.typography.titleMedium)
                 HorizontalPager(state = pager, key = { it }, pageSpacing = 12.dp) { page ->
                     val face = faces[Math.floorMod(page, faces.size)]
                     val account = Account(name = accountName, type = accountType, templateId = face?.id)
@@ -102,6 +91,16 @@ internal fun AccountCardFaceDialog(
                     style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
                     maxLines = 1, overflow = TextOverflow.Ellipsis,
                 )
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    BaseIconButton(MaterialSymbols.Close, textResources.getString(cn.turingzy.ledger.R.string.ui_close_card_design_picker),
+                        onDismiss, showPressFeedback = false)
+                    Spacer(Modifier.weight(1f))
+                    BaseIconButton(
+                        MaterialSymbols.Check, textResources.getString(cn.turingzy.ledger.R.string.ui_apply_card_design),
+                        { onConfirm(faces[Math.floorMod(pager.settledPage, faces.size)]?.id) },
+                        enabled = !pager.isScrollInProgress, contentColor = colors.tertiary, showPressFeedback = false,
+                    )
+                }
             }
         }
     }

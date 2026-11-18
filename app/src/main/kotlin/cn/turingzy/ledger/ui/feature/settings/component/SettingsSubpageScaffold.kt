@@ -12,7 +12,6 @@ import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -24,8 +23,6 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 internal val SettingsPageHeaderHeight = 56.dp
@@ -42,7 +39,6 @@ internal fun SettingsSubpageScaffold(
     title: String,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
-    titleStyle: TextStyle = MaterialTheme.typography.titleLarge,
     actions: @Composable RowScope.() -> Unit = { Box(Modifier.size(LedgerStyle.dimensions.touchTarget)) },
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -62,7 +58,7 @@ internal fun SettingsSubpageScaffold(
     )
     BasePageScaffold(
         title, modifier, onBack = onBack,
-        titleStyle = titleStyle.copy(fontWeight = FontWeight.Bold),
+        titleStyle = LedgerStyle.typography.detailPageTitle,
         titlePadding = LedgerStyle.spacing.none,
         backButtonSize = LedgerStyle.dimensions.backButton,
         headerOpacity = opacity,

@@ -59,11 +59,13 @@ internal data class AccountFormInput(
     }
 
     fun toUpdatedAccountOrNull(original: Account, templates: List<CardTemplate>): Account? {
-        val edited = copy(currency = original.currency, balance = "").toAccountOrNull(templates) ?: return null
+        val newTemplateId = templateId.takeUnless { it == original.templateId }
+        val edited = copy(currency = original.currency, balance = "", templateId = newTemplateId)
+            .toAccountOrNull(templates) ?: return null
         return original.copy(
             name = edited.name,
             type = edited.type,
-            templateId = edited.templateId,
+            templateId = templateId,
             cardNumber = edited.cardNumber,
             includeInTotal = edited.includeInTotal,
         )
