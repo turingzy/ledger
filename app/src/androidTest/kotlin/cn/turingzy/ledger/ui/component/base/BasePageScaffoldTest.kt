@@ -7,6 +7,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.click
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
@@ -64,6 +68,28 @@ class BasePageScaffoldTest {
         assertTrue(compose.onNodeWithTag("item-0").fetchSemanticsNode().boundsInRoot.top < bar.bottom)
         assertEquals(bar, compose.onNodeWithTag("basePageTopBar").fetchSemanticsNode().boundsInRoot)
         assertNotEquals(before[before.width / 2, sampleY], after[after.width / 2, sampleY])
+    }
+
+    @Test
+    fun coveredContentReceivesTapsOnlyBelowTheTopBar() {
+        var clicks = 0
+        compose.setContent {
+            LedgerTheme {
+                BasePageScaffold("标题", Modifier.testTag("page"), scrolled = true,
+                    windowInsets = WindowInsets(0, 0, 0, 0)) { _ ->
+                    Box(Modifier.fillMaxWidth().height(160.dp).clickable { clicks++ })
+                }
+            }
+        }
+        val topBar = compose.onNodeWithTag("basePageTopBar").fetchSemanticsNode().boundsInRoot
+        compose.onNodeWithTag("page").performTouchInput {
+            click(Offset(center.x, topBar.center.y))
+        }
+        compose.runOnIdle { assertEquals(0, clicks) }
+        compose.onNodeWithTag("page").performTouchInput {
+            click(Offset(center.x, topBar.bottom + 24.dp.toPx()))
+        }
+        compose.runOnIdle { assertEquals(1, clicks) }
     }
 
     private fun verifyInsets(parentConsumesInsets: Boolean) {

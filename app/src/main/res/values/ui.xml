@@ -250,4 +250,28 @@
   <string name="ui_monthly_average">月均支出</string>
   <string name="ui_yearly_average">年均支出</string>
   <string name="ui_daily_average">日均支出</string>
+  <string name="ui_delete_transaction">删除交易</string>
+  <string name="ui_delete_transaction_title">删除这笔交易？</string>
+  <string name="ui_delete_transaction_message">删除后，相关账户余额将随之更新。</string>
+  <string name="ui_transaction_delete_failed">删除失败，请重试</string>
+  <string name="ui_close_record_sheet">关闭%1$s</string>
+  <string name="ui_transaction_actions">交易操作</string>
+  <string name="ui_edit_primary_amount">修改折算金额</string>
+  <string name="ui_primary_amount_in_currency">折算金额（%1$s）</string>
+  <string name="bill_select_all">全选</string>
+  <string name="bill_action_failed">交易操作失败，请重试。</string>
+  <string name="bill_copy_transaction">复制交易</string>
+  <string name="bill_edit_transaction">编辑交易</string>
+  <string name="bill_select_transaction">选择交易</string>
+  <string name="bill_delete_action">删除</string>
+  <string name="bill_no_compatible_accounts">没有适用于所选交易的同币种账户。</string>
+  <string name="bill_no_compatible_categories">当前所选交易没有可用分类。</string>
+  <plurals name="bill_delete_title">
+    <item quantity="one">删除这笔交易？</item>
+    <item quantity="other">删除 %1$d 笔交易？</item>
+  </plurals>
+  <string name="bill_copy_action">复制</string>
+  <string name="bill_edit_action">编辑</string>
+  <string name="bill_partial_batch_hint">%1$d / %2$d 笔</string>
+  <string name="bill_close_category_picker">关闭分类选择</string>
 </resources>

@@ -1,6 +1,5 @@
 package cn.turingzy.ledger.ui.component.picker
 
-import cn.turingzy.ledger.ui.component.base.BaseDropdownIndicator
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
@@ -178,7 +177,12 @@ private fun RecordCalendarHeading(text: String, description: String, expanded: B
         horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.tiny),
     ) {
         Text(text, style = MaterialTheme.typography.bodyLarge)
-        BaseDropdownIndicator(expanded)
+        Icon(
+            if (expanded) MaterialSymbols.ArrowDropUp else MaterialSymbols.ArrowDropDown,
+            contentDescription = null,
+            modifier = Modifier.size(LedgerStyle.icons.default),
+            tint = LedgerStyle.colors.textSecondary,
+        )
     }
 }
 

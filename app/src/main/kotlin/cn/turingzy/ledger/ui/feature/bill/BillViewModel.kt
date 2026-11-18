@@ -3,6 +3,7 @@ package cn.turingzy.ledger.ui.feature.bill
 import cn.turingzy.ledger.ui.feature.bill.detail.TransactionSaveState
 import cn.turingzy.ledger.ui.component.picker.weekLabel
 import cn.turingzy.ledger.model.currency.primaryAmount
+import cn.turingzy.ledger.model.currency.CurrencyAmountOverride
 import kotlinx.coroutines.flow.map
 import cn.turingzy.ledger.model.transaction.DateFilterType
 import androidx.lifecycle.ViewModel
@@ -14,6 +15,7 @@ import cn.turingzy.ledger.model.account.AccountWithTemplate
 import cn.turingzy.ledger.model.category.CategoryWithIcon
 import cn.turingzy.ledger.model.transaction.Transaction
 import cn.turingzy.ledger.model.transaction.TransactionDetail
+import cn.turingzy.ledger.model.transaction.TransactionBatchChange
 import cn.turingzy.ledger.model.transaction.TransactionType
 import cn.turingzy.ledger.di.Dispatcher
 import cn.turingzy.ledger.di.LedgerDispatchers
@@ -199,6 +201,7 @@ class BillViewModel @Inject constructor(
         note: String? = null,
         transactionTime: Long = System.currentTimeMillis(),
         toAmount: Long? = null,
+        amountOverride: CurrencyAmountOverride? = null,
     ) {
         if (_saveState.value.saving || _saveState.value.saved) return
         _saveState.value = TransactionSaveState(saving = true)
@@ -214,7 +217,7 @@ class BillViewModel @Inject constructor(
                 toAmount = toAmount,
             )
             try {
-                transactionRepository.createTransaction(transaction)
+                transactionRepository.createTransaction(transaction, amountOverride)
                 _saveState.value = TransactionSaveState(saved = true)
             } catch (error: CancellationException) {
                 _saveState.value = TransactionSaveState()
@@ -225,6 +228,9 @@ class BillViewModel @Inject constructor(
             }
         }
     }
+
+    internal suspend fun applyBatch(ids: Set<Long>, change: TransactionBatchChange) =
+        transactionRepository.applyBatch(ids, change)
 
     fun deleteTransaction(id: Long) {
         viewModelScope.launch {

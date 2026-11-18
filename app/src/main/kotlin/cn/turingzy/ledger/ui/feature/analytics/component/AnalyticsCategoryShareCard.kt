@@ -6,9 +6,16 @@ import cn.turingzy.ledger.ui.feature.analytics.sheet.AnalyticsTransactionSheet
 import cn.turingzy.ledger.ui.component.biz.LocalLedgerCurrency
 import cn.turingzy.ledger.ui.component.biz.currencySymbol
 import androidx.compose.ui.draw.clip
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import cn.turingzy.ledger.ui.component.picker.CalendarSelection
+import cn.turingzy.ledger.ui.interaction.uiClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.graphics.Color
@@ -63,6 +70,28 @@ internal fun AnalyticsCategoryShareCard(
     val periodTotal = if (income) state.totalIncome else state.totalExpense
     val palette = remember(rankings.size, colors.tertiary, colors.surface, colors.onSurfaceVariant) { categoryShareColors(rankings.size, colors.tertiary, colors.surface, colors.onSurfaceVariant) }
     var sheetId by remember(state.categoryType, state.periodStart, state.periodEnd, rankings) { mutableStateOf<Long?>(null) }
+    var selectedBarId by remember(state.categoryType, state.periodStart, state.periodEnd, rankings) { mutableStateOf<Long?>(null) }
+    val selectedBarCategory = rankings.firstOrNull { it.categoryId == selectedBarId }
+    val segmentAlphas = rankings.map { category ->
+        animateFloatAsState(
+            when (selectedBarId) {
+                null -> 1f
+                category.categoryId -> 0.88f
+                else -> 0.38f
+            },
+            animationSpec = tween(180), label = "Category segment emphasis",
+        )
+    }
+    val segmentEnds = remember(rankings, total) {
+        var accumulated = 0L
+        rankings.map { item ->
+            accumulated += item.totalAmount
+            analyticsRatio(accumulated, total)
+        }
+    }
+    fun selectBarCategory(id: Long) {
+        selectedBarId = id.takeUnless { it == selectedBarId }
+    }
     DashboardCard(modifier, contentSpacing = LedgerStyle.spacing.extraLarge) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium)) {
             AnalyticsCardTitle(textResources.getString(cn.turingzy.ledger.R.string.ui_category_breakdown), Modifier.weight(1f))
@@ -74,27 +103,41 @@ internal fun AnalyticsCategoryShareCard(
         }
         Column(verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.extraSmall)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(if (income) textResources.getString(cn.turingzy.ledger.R.string.ui_total_income) else textResources.getString(cn.turingzy.ledger.R.string.ui_total_expenses), Modifier.weight(1f),
-                    fontSize = LedgerStyle.typography.bodyMedium.fontSize, lineHeight = 18.sp, color = colors.onSurfaceVariant)
-                AnalyticsAmountText(periodTotal, textAlign = TextAlign.End)
+                val totalLabel = if (income) cn.turingzy.ledger.R.string.ui_total_income else cn.turingzy.ledger.R.string.ui_total_expenses
+                Text(selectedBarCategory?.categoryName ?: textResources.getString(totalLabel), Modifier.weight(1f),
+                    fontSize = LedgerStyle.typography.bodyMedium.fontSize, lineHeight = 18.sp,
+                    color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                AnalyticsAmountText(selectedBarCategory?.totalAmount ?: periodTotal, textAlign = TextAlign.End)
             }
-            Canvas(Modifier.fillMaxWidth().height(40.dp).semantics {
-                contentDescription = "${if (income) "收入" else "支出"}分类占比条，总额${periodTotal.toFormattedAmount(true, symbol = currencySymbol)}"
-            }) {
+            Canvas(Modifier.fillMaxWidth().height(40.dp)
+                .pointerInput(rankings, segmentEnds) {
+                    val barInset = 6.dp.toPx()
+                    detectTapGestures { position ->
+                        if (size.width == 0 || position.y !in barInset..(size.height - barInset)) return@detectTapGestures
+                        val fraction = position.x / size.width
+                        rankings.getOrNull(segmentEnds.indexOfFirst { fraction < it })?.let { selectBarCategory(it.categoryId) }
+                    }
+                }
+                .semantics {
+                    contentDescription = "${if (income) "收入" else "支出"}分类占比条，总额${periodTotal.toFormattedAmount(true, symbol = currencySymbol)}"
+                    customActions = rankings.map { category ->
+                        CustomAccessibilityAction(category.categoryName) {
+                            selectBarCategory(category.categoryId)
+                            true
+                        }
+                    }
+                }) {
                 val barTop = 6.dp.toPx()
                 val barHeight = size.height - barTop * 2
                 val track = Rect(0f, barTop, size.width, barTop + barHeight)
                 val trackPath = Path().apply { addRoundRect(RoundRect(track, CornerRadius(5.dp.toPx()))) }
-                var accumulated = 0L
-                val segments = rankings.map { item ->
-                    val left = analyticsRatio(accumulated, total) * size.width
-                    accumulated += item.totalAmount
-                    left to analyticsRatio(accumulated, total) * size.width
-                }
                 clipPath(trackPath) {
                     drawRect(colors.surfaceVariant, track.topLeft, track.size)
-                    segments.forEachIndexed { index, (left, right) ->
-                        drawRect(palette[index], Offset(left, barTop), Size(right - left, barHeight))
+                    var left = 0f
+                    segmentEnds.forEachIndexed { index, end ->
+                        val right = end * size.width
+                        drawRect(palette[index], Offset(left, barTop), Size(right - left, barHeight), alpha = segmentAlphas[index].value)
+                        left = right
                     }
                 }
 
@@ -105,10 +148,10 @@ internal fun AnalyticsCategoryShareCard(
         } else CategoryLegendLayout(Modifier.fillMaxWidth()) {
             rankings.forEachIndexed { index, item ->
                 key(item.categoryId) {
-                    Row(Modifier.semantics { selected = sheetId == item.categoryId }
+                    Row(Modifier.semantics { selected = sheetId == item.categoryId || selectedBarId == item.categoryId }
                         .clip(LedgerStyle.shapes.bankCard)
-                        .background(if (sheetId == item.categoryId) colors.primary.copy(alpha = 0.08f) else Color.Transparent)
-                        .clickable { sheetId = item.categoryId }
+                        .background(if (sheetId == item.categoryId || selectedBarId == item.categoryId) analyticsChartInfoColor() else Color.Transparent)
+                        .uiClickable { sheetId = item.categoryId }
                         .padding(vertical = 3.dp),
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp),
                     ) {
@@ -126,7 +169,7 @@ internal fun AnalyticsCategoryShareCard(
         }
     }
     rankings.firstOrNull { it.categoryId == sheetId }?.let { category ->
-        AnalyticsTransactionSheet(category.categoryName, "${state.periodStart} 至 ${state.periodEnd}",
+        AnalyticsTransactionSheet(category.categoryName, CalendarSelection(state.periodStart, state.periodEnd).displayRange(),
             category.transactions, { sheetId = null }, groupByDate = false,
             summaryType = if (income) cn.turingzy.ledger.model.transaction.TransactionType.INCOME else cn.turingzy.ledger.model.transaction.TransactionType.EXPENSE)
     }

@@ -45,6 +45,7 @@ internal fun ScrollTitleContainer(
         if (progress > 0f) {
             Box(
                 Modifier.fillMaxWidth().height(44.dp).clipToBounds()
+                    .blockTouchesBehind()
                     .graphicsLayer {
                         alpha = progress
                     }

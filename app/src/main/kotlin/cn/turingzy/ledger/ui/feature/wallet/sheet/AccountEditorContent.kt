@@ -42,7 +42,6 @@ import cn.turingzy.ledger.util.toFormattedAmount
 internal fun AccountEditorContent(
     account: Account?,
     templates: List<CardTemplate>,
-    onClose: () -> Unit,
     onSave: (Account) -> Unit,
     modifier: Modifier = Modifier,
     onDelete: (() -> Unit)? = null,
@@ -66,8 +65,6 @@ internal fun AccountEditorContent(
 
     AccountSheetContent(
         title = if (account == null) textResources.getString(cn.turingzy.ledger.R.string.ui_add_account) else textResources.getString(cn.turingzy.ledger.R.string.ui_account_details),
-        closeDescription = if (account == null) textResources.getString(cn.turingzy.ledger.R.string.ui_cancel_new_account) else textResources.getString(cn.turingzy.ledger.R.string.ui_close_account_details),
-        onClose = onClose,
         saveEnabled = result != null,
         onSave = {
             val value = result ?: return@AccountSheetContent

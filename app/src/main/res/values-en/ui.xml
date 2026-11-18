@@ -250,4 +250,28 @@
   <string name="ui_monthly_average">Monthly average</string>
   <string name="ui_yearly_average">Yearly average</string>
   <string name="ui_daily_average">Daily average</string>
+  <string name="ui_delete_transaction">Delete transaction</string>
+  <string name="ui_delete_transaction_title">Delete this transaction?</string>
+  <string name="ui_delete_transaction_message">Balances for affected accounts will be updated.</string>
+  <string name="ui_transaction_delete_failed">Could not delete the transaction. Try again.</string>
+  <string name="ui_close_record_sheet">Close %1$s</string>
+  <string name="ui_transaction_actions">Transaction actions</string>
+  <string name="ui_edit_primary_amount">Edit converted amount</string>
+  <string name="ui_primary_amount_in_currency">Converted amount (%1$s)</string>
+  <string name="bill_select_all">Select all</string>
+  <string name="bill_action_failed">Could not update transactions. Try again.</string>
+  <string name="bill_copy_transaction">Copy transaction</string>
+  <string name="bill_edit_transaction">Edit transaction</string>
+  <string name="bill_select_transaction">Select transaction</string>
+  <string name="bill_delete_action">Delete</string>
+  <string name="bill_no_compatible_accounts">No compatible accounts share the selected transactions’ currency.</string>
+  <string name="bill_no_compatible_categories">No compatible categories for the selected transactions.</string>
+  <plurals name="bill_delete_title">
+    <item quantity="one">Delete this transaction?</item>
+    <item quantity="other">Delete %1$d transactions?</item>
+  </plurals>
+  <string name="bill_copy_action">Copy</string>
+  <string name="bill_edit_action">Edit</string>
+  <string name="bill_partial_batch_hint">%1$d / %2$d transactions</string>
+  <string name="bill_close_category_picker">Close category picker</string>
 </resources>

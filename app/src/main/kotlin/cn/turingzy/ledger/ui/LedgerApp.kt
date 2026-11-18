@@ -35,9 +35,11 @@ fun LedgerApp(
 
     var settingsDetailVisible by remember { mutableStateOf(false) }
     var analyticsDetailVisible by remember { mutableStateOf(false) }
+    var billSelectionVisible by remember { mutableStateOf(false) }
     val showBottomBar = when (currentTopLevelDestination) {
         TopLevelDestination.SETTINGS -> !settingsDetailVisible
         TopLevelDestination.ANALYTICS -> !analyticsDetailVisible
+        TopLevelDestination.BILL -> !billSelectionVisible
         else -> true
     }
     val isBillTab = currentTopLevelDestination == TopLevelDestination.BILL
@@ -56,13 +58,14 @@ fun LedgerApp(
                 onNavigateToRecord = { showGlobalRecordSheet = true },
                 onSettingsDetailVisibleChange = { settingsDetailVisible = it },
                 onAnalyticsDetailVisibleChange = { analyticsDetailVisible = it },
+                onBillSelectionVisibleChange = { billSelectionVisible = it },
                 modifier = Modifier.fillMaxSize().recordBackdrop(navigationBackdrop)
                     .then(if (showBottomBar) Modifier else Modifier.navigationBarsPadding()),
             )
         }
 
         LedgerFloatingActionButton(
-            visible = isBillTab,
+            visible = isBillTab && !billSelectionVisible,
             onClick = { showGlobalRecordSheet = true },
             modifier = Modifier
                 .align(Alignment.BottomEnd)

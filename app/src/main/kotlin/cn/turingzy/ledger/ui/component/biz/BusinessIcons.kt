@@ -56,18 +56,19 @@ internal fun BusinessTypeIcon(
     type: TransactionType,
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
+    highlighted: Boolean = true,
 ) {
     val colors = LedgerStyle.colors
     Box(
         modifier.size(LedgerStyle.dimensions.compactIconButton).clip(LedgerStyle.shapes.pill)
-            .background(colors.transaction(type)),
+            .background(if (highlighted) colors.transaction(type) else colors.fieldBackground),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
             imageVector,
             contentDescription = contentDescription,
             modifier = Modifier.size(LedgerStyle.icons.inline),
-            tint = colors.onTransaction(type),
+            tint = if (highlighted) colors.onTransaction(type) else colors.textSecondary,
         )
     }
 }

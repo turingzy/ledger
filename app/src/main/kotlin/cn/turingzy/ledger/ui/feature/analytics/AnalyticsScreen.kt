@@ -185,7 +185,7 @@ fun AnalyticsContent(
                 type = pickerType, initialDate = periodState.periodStart,
                 onDismiss = { showPeriodPicker = false }, onSelect = { _, date -> onSelectPeriod(date) },
                 showViewSelector = false,
-                header = { dismiss, returnToCurrent -> PeriodPickerActions(pickerType, dismiss, returnToCurrent) },
+                header = { returnToCurrent -> PeriodPickerActions(pickerType, returnToCurrent) },
             )
         }
         val endpoint = dateEndpoint

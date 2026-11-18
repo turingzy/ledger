@@ -23,19 +23,20 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cn.turingzy.ledger.model.transaction.TransactionType
-import cn.turingzy.ledger.ui.component.base.BaseIconButton
 import cn.turingzy.ledger.ui.component.base.BaseDivider
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.biz.categoryGlyph
 import cn.turingzy.ledger.util.toFormattedAmount
 import java.time.format.DateTimeFormatter
-import java.util.Locale
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import cn.turingzy.ledger.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun AnalyticsTransactionSheet(
     title: String,
-    subtitle: String,
+    subtitle: String?,
     transactions: List<AnalyticsTransaction>,
     onDismiss: () -> Unit,
     groupByDate: Boolean = true,
@@ -48,7 +49,8 @@ internal fun AnalyticsTransactionSheet(
         if (groupByDate) transactions.groupBy { it.date }.toSortedMap(reverseOrder()).entries.map { it.key to it.value }
         else listOf(null to transactions.sortedByDescending { it.amount })
     }
-    val dateFormatter = remember { DateTimeFormatter.ofPattern("MM/dd E", Locale.CHINESE) }
+    val locale = LocalConfiguration.current.locales[0]
+    val dateFormatter = remember(locale) { DateTimeFormatter.ofPattern("MM.dd E", locale) }
     val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
     val shortDateFormatter = remember { DateTimeFormatter.ofPattern("MM.dd") }
     BaseModalBottomSheet(
@@ -56,26 +58,25 @@ internal fun AnalyticsTransactionSheet(
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
     ) {
         Column(Modifier.fillMaxWidth().height(height).testTag("analyticsTransactionDrawer")) {
-            Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().heightIn(min = LedgerStyle.dimensions.touchTarget).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(title, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
-                BaseIconButton(MaterialSymbols.Close, textResources.getString(cn.turingzy.ledger.R.string.ui_close_transaction_details),
-                    onDismiss, showPressFeedback = false)
             }
             BaseDivider()
             Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large)) {
-                Text(subtitle, Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
-                AnalyticsTransactionTotals(transactions, summaryType)
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.small)) {
+                if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                AnalyticsTransactionTotals(transactions, summaryType, Modifier.weight(1f), showTotalLabel = true)
             }
             if (transactions.isEmpty()) Text(textResources.getString(cn.turingzy.ledger.R.string.ui_no_transactions), Modifier.padding(LedgerStyle.spacing.extraLarge), color = colors.onSurfaceVariant)
             else LazyColumn(Modifier.fillMaxWidth().weight(1f), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 12.dp)) {
                 groups.forEach { (date, entries) ->
                     if (date != null) item(key = "date:$date") {
                         Row(Modifier.fillMaxWidth().padding(start = 4.dp, top = 8.dp, bottom = 7.dp),
-                            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large)) {
-                            Text(date.format(dateFormatter), Modifier.weight(1f), fontSize = LedgerStyle.typography.bodySmall.fontSize, lineHeight = 18.sp, color = colors.onSurfaceVariant)
-                            AnalyticsTransactionTotals(entries, summaryType)
+                            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.small)) {
+                            Text(date.format(dateFormatter), fontSize = LedgerStyle.typography.bodySmall.fontSize,
+                                lineHeight = 18.sp, color = colors.onSurfaceVariant, maxLines = 1)
+                            AnalyticsTransactionTotals(entries, summaryType, Modifier.weight(1f))
                         }
                     }
                     itemsIndexed(entries, key = { _, entry -> entry.id }) { index, entry ->
@@ -106,16 +107,24 @@ internal fun AnalyticsTransactionSheet(
 }
 
 @Composable
-private fun AnalyticsTransactionTotals(transactions: List<AnalyticsTransaction>, summaryType: TransactionType?) {
+private fun AnalyticsTransactionTotals(
+    transactions: List<AnalyticsTransaction>,
+    summaryType: TransactionType?,
+    modifier: Modifier,
+    showTotalLabel: Boolean = false,
+) {
     val currencySymbol = currencySymbol(LocalLedgerCurrency.current)
     val expense = remember(transactions) { transactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.primaryAmount } }
     val income = remember(transactions) { transactions.filter { it.type == TransactionType.INCOME }.sumOf { it.primaryAmount } }
     val showExpense = summaryType == TransactionType.EXPENSE || (summaryType == null && (expense > 0L || income == 0L))
     val showIncome = summaryType == TransactionType.INCOME || (summaryType == null && income > 0L)
-    Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.tiny)) {
-        if (showExpense) Text("总支出 ${expense.toFormattedAmount(true, symbol = currencySymbol)}", fontSize = LedgerStyle.typography.label.fontSize, lineHeight = 16.sp,
-            color = MaterialTheme.colorScheme.onSurface)
-        if (showIncome) Text("总收入 ${income.toFormattedAmount(true, symbol = currencySymbol)}", fontSize = LedgerStyle.typography.label.fontSize, lineHeight = 16.sp,
-            color = MaterialTheme.colorScheme.onSurface)
-    }
+    val expenseLabel = stringResource(if (showTotalLabel) R.string.ui_total_expenses else R.string.ui_expense)
+    val incomeLabel = stringResource(if (showTotalLabel) R.string.ui_total_income else R.string.ui_income)
+    val summary = buildList {
+        if (showExpense) add("$expenseLabel ${expense.toFormattedAmount(true, symbol = currencySymbol)}")
+        if (showIncome) add("$incomeLabel ${income.toFormattedAmount(true, symbol = currencySymbol)}")
+    }.joinToString("  ")
+    Text(summary, modifier, fontSize = LedgerStyle.typography.bodySmall.fontSize, lineHeight = 18.sp,
+        color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.End,
+        maxLines = 1, overflow = TextOverflow.Ellipsis)
 }

@@ -26,6 +26,7 @@ import cn.turingzy.ledger.model.category.Category
 import cn.turingzy.ledger.model.category.CategoryType
 import cn.turingzy.ledger.model.category.CategoryWithIcon
 import cn.turingzy.ledger.model.category.Icon
+import cn.turingzy.ledger.model.currency.CurrencyAmountOverride
 import cn.turingzy.ledger.model.transaction.Transaction
 import cn.turingzy.ledger.model.transaction.TransactionType
 import org.junit.Assert.assertEquals
@@ -75,6 +76,51 @@ class RecordTransactionSheetTest {
     }
 
     @Test
+    fun foreignAmountUsesTheTransactionDateAndRefreshesWhenTheAmountChanges() {
+        val time = 1_763_200_000_000L
+        val dollarAccount = AccountWithTemplate(Account(
+            id = 3L, name = "美元账户", type = AccountType.DEBIT, currency = "USD",
+        ))
+        val original = Transaction(
+            id = 9L, type = TransactionType.EXPENSE, amount = 100L, accountId = 3L,
+            categoryId = 1L, transactionTime = time, baseCurrency = "CNY", baseAmount = 680L,
+        )
+        var requestedRate: Triple<String, String, Long>? = null
+        var savedOverride: CurrencyAmountOverride? = null
+        compose.setContent {
+            MaterialTheme {
+                RecordTransactionSheet(
+                    sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+                    categories = categories, accounts = listOf(dollarAccount),
+                    onDismissRequest = {},
+                    onConfirm = { _, _, _, _, _, _, _, _, amountOverride -> savedOverride = amountOverride },
+                    initialTransaction = original,
+                    onLoadExchangeRate = { from, to, timestamp ->
+                        requestedRate = Triple(from, to, timestamp)
+                        "7.20"
+                    },
+                )
+            }
+        }
+        compose.onNodeWithText("≈ ¥6.80").assertIsDisplayed()
+        val timeChip = compose.onNodeWithContentDescription("选择时间").getUnclippedBoundsInRoot()
+        val convertedAmountChip = compose.onNodeWithContentDescription("修改折算金额").getUnclippedBoundsInRoot()
+        assertEquals(timeChip.top, convertedAmountChip.top)
+        assertTrue(convertedAmountChip.left >= timeChip.right)
+        compose.runOnIdle { assertEquals(null, requestedRate) }
+        repeat(2) { compose.onNodeWithTag("keypad_backspace").performClick() }
+        compose.onNodeWithTag("keypad_2").performClick()
+        compose.onNodeWithText("≈ ¥8.64").assertIsDisplayed()
+        compose.runOnIdle { assertEquals(Triple("USD", "CNY", time), requestedRate) }
+        compose.onNodeWithText("≈ ¥8.64").performClick()
+        compose.onNodeWithTag("primaryAmountInput").performTextReplacement("9.00")
+        compose.onNodeWithText("确认").performClick()
+        compose.onNodeWithText("¥9.00").assertIsDisplayed()
+        compose.onNodeWithTag("keypad_action").performClick()
+        compose.runOnIdle { assertEquals(CurrencyAmountOverride("CNY", 900L), savedOverride) }
+    }
+
+    @Test
     fun categoryGridScrollsWhileAmountAndKeypadRemainAvailable() {
         showSheet {}
         compose.onNodeWithTag("recordCategoryGrid").performScrollToNode(hasText("分类39"))
@@ -116,7 +162,7 @@ class RecordTransactionSheetTest {
         compose.onNodeWithContentDescription("选择账户").performClick()
         val picker = compose.onNodeWithTag("recordAccountDrawer").getUnclippedBoundsInRoot()
         assertEquals((before.bottom - before.top).value * 0.65f, (picker.bottom - picker.top).value, 0.5f)
-        compose.onNodeWithContentDescription("关闭账户选择").assertIsDisplayed()
+        compose.onNodeWithContentDescription("关闭账户选择").assertDoesNotExist()
         compose.onNodeWithText("测试账户").performClick()
         assertEquals(before, compose.onNodeWithTag("recordDrawer").getUnclippedBoundsInRoot())
         compose.onNodeWithText("测试账户").assertIsDisplayed()
@@ -269,7 +315,7 @@ class RecordTransactionSheetTest {
                     sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
                     sheetHeight = sheetHeight, initialTransaction = initialTransaction, initialTransactionTime = initialTransactionTime,
                     categories = categories, accounts = accounts, onDismissRequest = {},
-                    onConfirm = { type, amount, accountId, destinationId, categoryId, note, time, toAmount ->
+                    onConfirm = { type, amount, accountId, destinationId, categoryId, note, time, toAmount, _ ->
                         onSave(Transaction(
                             type = type, amount = amount, accountId = accountId, toAccountId = destinationId,
                             categoryId = categoryId, note = note, transactionTime = time, toAmount = toAmount,

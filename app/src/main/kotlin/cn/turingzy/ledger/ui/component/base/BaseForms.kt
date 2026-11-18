@@ -89,6 +89,7 @@ fun <T> BaseDropdownMenu(
     positionProvider: PopupPositionProvider,
     modifier: Modifier = Modifier,
     maxHeight: Dp = LedgerStyle.dimensions.dropdownMaxHeight,
+    optionTextColor: Color = LedgerStyle.colors.textPrimary,
 ) {
     val dimensions = LedgerStyle.dimensions
     val colors = LedgerStyle.colors
@@ -115,7 +116,7 @@ fun <T> BaseDropdownMenu(
                         contentPadding = PaddingValues(horizontal = LedgerStyle.spacing.large),
                         text = {
                             Text(optionLabel(option), style = MaterialTheme.typography.bodyMedium,
-                                color = colors.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                color = optionTextColor, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         },
                         trailingIcon = if (isSelected(option)) ({
                             Icon(MaterialSymbols.Check, null, Modifier.size(LedgerStyle.icons.dropdownCheck), tint = colors.success)

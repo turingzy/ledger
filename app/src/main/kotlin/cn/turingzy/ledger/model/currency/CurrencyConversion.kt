@@ -11,6 +11,16 @@ fun convertCents(amount: Long, rate: String): Long {
     return BigDecimal.valueOf(amount).multiply(multiplier).setScale(0, RoundingMode.HALF_UP).longValueExact()
 }
 
+data class CurrencyAmountOverride(val currency: String, val amount: Long) {
+    fun rateFor(originalAmount: Long): String {
+        require(originalAmount > 0L && amount > 0L)
+        val rate = BigDecimal.valueOf(amount).divide(BigDecimal.valueOf(originalAmount), 18, RoundingMode.HALF_UP)
+            .stripTrailingZeros().toPlainString()
+        require(convertCents(originalAmount, rate) == amount)
+        return rate
+    }
+}
+
 fun TransactionDetail.primaryAmount(currency: String): Long? = when {
     account.currency == currency -> transaction.amount
     transaction.baseCurrency == currency -> transaction.baseAmount

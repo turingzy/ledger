@@ -81,6 +81,19 @@ import cn.turingzy.ledger.model.transaction.TransactionType
 import cn.turingzy.ledger.ui.component.input.LedgerSegmentedControl
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.card.summary.SummaryCardIconButton
+import cn.turingzy.ledger.model.currency.convertCents
+import cn.turingzy.ledger.model.currency.CurrencyAmountOverride
+import cn.turingzy.ledger.ui.component.base.BaseAlertDialog
+import cn.turingzy.ledger.ui.component.base.BaseDropdownMenu
+import cn.turingzy.ledger.ui.component.input.DropdownDirection
+import cn.turingzy.ledger.ui.component.input.FormMenuPositionProvider
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.text.input.KeyboardType
+import cn.turingzy.ledger.ui.component.biz.LocalLedgerCurrency
+import cn.turingzy.ledger.ui.component.biz.businessAmountText
+import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.res.stringResource
+import cn.turingzy.ledger.R
 import cn.turingzy.ledger.ui.component.biz.categoryGlyph
 import cn.turingzy.ledger.util.AmountFormatter
 import cn.turingzy.ledger.util.toFormattedAmount
@@ -100,7 +113,7 @@ fun RecordTransactionSheet(
     onDismissRequest: () -> Unit,
     onConfirm: (
         type: TransactionType, amount: Long, accountId: Long, toAccountId: Long?,
-        categoryId: Long, note: String?, transactionTime: Long, toAmount: Long?,
+        categoryId: Long, note: String?, transactionTime: Long, toAmount: Long?, amountOverride: CurrencyAmountOverride?,
     ) -> Unit,
     modifier: Modifier = Modifier,
     initialTransaction: Transaction? = null,
@@ -109,7 +122,8 @@ fun RecordTransactionSheet(
     saving: Boolean = false,
     error: String? = null,
     sheetHeight: Dp = 520.dp,
-    onLoadTransferRate: suspend (String, String, Long) -> String? = { _, _, _ -> null },
+    onLoadExchangeRate: suspend (String, String, Long) -> String? = { _, _, _ -> null },
+    onDelete: (() -> Unit)? = null,
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val fixedHeight = remember { sheetHeight }
@@ -132,7 +146,9 @@ fun RecordTransactionSheet(
         }
     }
     val hasCalculation = expression.drop(1).any { it in "+-×÷" }
-    val canEvaluate = !saving && hasCalculation && AmountFormatter.parseToCents(evaluateMathExpression(expression)) != null
+    val evaluatedExpression = if (hasCalculation) evaluateMathExpression(expression) else expression
+    val enteredAmount = AmountFormatter.parseToCents(evaluatedExpression)
+    val canEvaluate = !saving && hasCalculation && enteredAmount != null
     val sourceCurrency = accounts.firstOrNull { it.account.id == accountId }?.account?.currency
     val targetCurrency = accounts.firstOrNull { it.account.id == destinationId }?.account?.currency
     val crossCurrency = type == TransactionType.TRANSFER && sourceCurrency != null && targetCurrency != null && sourceCurrency != targetCurrency
@@ -144,13 +160,40 @@ fun RecordTransactionSheet(
     LaunchedEffect(sourceCurrency, targetCurrency, transactionTime, crossCurrency) {
         if (!crossCurrency || transferRate.isNotBlank()) return@LaunchedEffect
         try {
-            val quote = onLoadTransferRate(checkNotNull(sourceCurrency), checkNotNull(targetCurrency), transactionTime)
+            val quote = onLoadExchangeRate(checkNotNull(sourceCurrency), checkNotNull(targetCurrency), transactionTime)
             if (!rateEdited) transferRate = quote.orEmpty()
         } catch (error: kotlinx.coroutines.CancellationException) { throw error }
         catch (error: Exception) { timber.log.Timber.w(error, "Unable to load transfer rate"); rateError = textResources.getString(cn.turingzy.ledger.R.string.ui_enter_an_exchange_rate) }
     }
     val transaction = RecordFormInput(type, expression, accountId, destinationId, categoryId, transactionTime, note, transferRate.takeIf { crossCurrency })
         .toTransactionOrNull(accounts, categories)
+
+    val primaryCurrency = LocalLedgerCurrency.current
+    val needsConversion = sourceCurrency != null && sourceCurrency != primaryCurrency
+    val historicalAmount = initialTransaction?.takeIf {
+        needsConversion && it.accountId == accountId && it.transactionTime == transactionTime && it.amount == enteredAmount
+    }?.let { original ->
+        original.currencySnapshots.firstOrNull { it.currency == primaryCurrency }?.amount
+            ?: original.baseAmount.takeIf { original.baseCurrency == primaryCurrency }
+    }
+    var primaryRate by remember(sourceCurrency, primaryCurrency, transactionTime) { mutableStateOf<String?>(null) }
+    LaunchedEffect(sourceCurrency, primaryCurrency, transactionTime, historicalAmount != null) {
+        if (sourceCurrency == null || !needsConversion || historicalAmount != null || primaryRate != null) return@LaunchedEffect
+        try {
+            primaryRate = onLoadExchangeRate(sourceCurrency, primaryCurrency, transactionTime)
+        } catch (error: kotlinx.coroutines.CancellationException) {
+            throw error
+        } catch (error: Exception) {
+            timber.log.Timber.w(error, "Unable to load the primary currency rate")
+        }
+    }
+    val canEditPrimaryAmount = needsConversion && enteredAmount != null && enteredAmount > 0L
+    var manualAmount by rememberSaveable(accountId, primaryCurrency, transactionTime, enteredAmount) { mutableStateOf<Long?>(null) }
+    var showAmountEditor by rememberSaveable(accountId, primaryCurrency, transactionTime, enteredAmount) { mutableStateOf(false) }
+    val amountOverride = manualAmount?.takeIf { canEditPrimaryAmount }?.let { CurrencyAmountOverride(primaryCurrency, it) }
+    val primaryAmount = amountOverride?.amount ?: historicalAmount ?: enteredAmount?.takeIf { it > 0L }?.let { amount ->
+        primaryRate?.let { rate -> runCatching { convertCents(amount, rate) }.getOrNull() }
+    }
 
     fun openPanel(target: RecordPanel) {
         if (saving) return
@@ -177,21 +220,34 @@ fun RecordTransactionSheet(
         contentHandlesInsets = true,
     ) {
         RecordTransactionContent(
-            modifier = Modifier.height(fixedHeight).testTag("recordDrawer").padding(WindowInsets.navigationBars.asPaddingValues()),
+            modifier = Modifier.height(fixedHeight).testTag("recordDrawer")
+                .semantics { paneTitle = title }.padding(WindowInsets.navigationBars.asPaddingValues()),
             expression = expression, note = note, type = type, categories = matchingCategories,
             selectedCategoryId = categoryId,
-            currency = accounts.firstOrNull { it.account.id == accountId }?.account?.currency ?: "CNY",
+            currency = sourceCurrency ?: primaryCurrency,
             accountName = accounts.firstOrNull { it.account.id == accountId }?.account?.name,
             destinationName = accounts.firstOrNull { it.account.id == destinationId }?.account?.name,
             timeLabel = recordTimeLabel(transactionTime, zone),
-            title = title, error = error ?: rateError,
+            error = error ?: rateError,
+            primaryAmountLabel = if (canEditPrimaryAmount) {
+                val amountText = businessAmountText(primaryAmount, primaryCurrency, primaryCurrency, useGrouping = true)
+                when {
+                    primaryAmount == null -> "$amountText $primaryCurrency"
+                    amountOverride == null -> "≈ $amountText"
+                    else -> amountText
+                }
+            } else null,
+            onEditPrimaryAmount = { if (!saving) showAmountEditor = true },
+            onDismiss = onDismissRequest,
+            closeDescription = stringResource(R.string.ui_close_record_sheet, title),
+            onDelete = onDelete,
+            actionsEnabled = !saving,
             transferRate = transferRate.takeIf { crossCurrency },
             transferLabel = "1 ${sourceCurrency.orEmpty()} = … ${targetCurrency.orEmpty()}",
             transferredAmount = transaction?.toAmount?.toFormattedAmount()?.let { "$it ${targetCurrency.orEmpty()}" },
             onTransferRateChange = { rateEdited = true; transferRate = it; rateError = null },
             hasCalculation = hasCalculation,
             actionEnabled = if (hasCalculation) canEvaluate else !saving && transaction != null,
-            onDismiss = onDismissRequest,
             onTypeChange = { selected ->
                 if (!saving && selected != type) {
                     type = selected
@@ -207,9 +263,9 @@ fun RecordTransactionSheet(
             onSwapAccounts = { if (!saving) { val previous = accountId; accountId = destinationId; destinationId = previous } },
             onConfirm = {
                 if (!saving) {
-                    if (hasCalculation) expression = evaluateMathExpression(expression)
+                    if (hasCalculation) expression = evaluatedExpression
                     else transaction?.let { value ->
-                        onConfirm(value.type, value.amount, value.accountId, value.toAccountId, value.categoryId, value.note, value.transactionTime, value.toAmount)
+                        onConfirm(value.type, value.amount, value.accountId, value.toAccountId, value.categoryId, value.note, value.transactionTime, value.toAmount, amountOverride)
                     }
                 }
             },
@@ -235,6 +291,18 @@ fun RecordTransactionSheet(
             },
         )
     }
+    if (showAmountEditor && canEditPrimaryAmount) {
+        PrimaryAmountEditor(
+            currency = primaryCurrency,
+            originalAmount = enteredAmount,
+            initialAmount = primaryAmount,
+            onDismiss = { showAmountEditor = false },
+            onConfirm = {
+                manualAmount = it
+                showAmountEditor = false
+            },
+        )
+    }
     if (panel == RecordPanel.DATE_TIME) {
         RecordDateTimeDialog(
             transactionTime, onDismiss = { panel = RecordPanel.ENTRY },
@@ -253,10 +321,8 @@ internal fun RecordTransactionContent(
     accountName: String?,
     destinationName: String?,
     timeLabel: String,
-    title: String,
     hasCalculation: Boolean,
     actionEnabled: Boolean,
-    onDismiss: () -> Unit,
     onTypeChange: (TransactionType) -> Unit,
     onCategorySelect: (Long) -> Unit,
     onExpressionChange: (String) -> Unit,
@@ -274,6 +340,12 @@ internal fun RecordTransactionContent(
     transferLabel: String = "",
     transferredAmount: String? = null,
     onTransferRateChange: (String) -> Unit = {},
+    primaryAmountLabel: String? = null,
+    onEditPrimaryAmount: () -> Unit = {},
+    onDismiss: () -> Unit,
+    closeDescription: String,
+    onDelete: (() -> Unit)? = null,
+    actionsEnabled: Boolean = true,
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val colors = MaterialTheme.colorScheme
@@ -292,9 +364,29 @@ internal fun RecordTransactionContent(
     Column(modifier.fillMaxSize()) {
         Box(Modifier.fillMaxWidth().height(44.dp).padding(horizontal = LedgerStyle.spacing.large), contentAlignment = Alignment.Center) {
             SummaryCardIconButton(
-                MaterialSymbols.Close, "关闭$title", onDismiss, showPressFeedback = false,
-                modifier = Modifier.align(Alignment.CenterStart), containerColor = colors.surface, contentColor = colors.onSurface,
+                MaterialSymbols.Close, closeDescription, onDismiss,
+                modifier = Modifier.align(Alignment.CenterStart), enabled = actionsEnabled,
+                containerColor = colors.surface, contentColor = colors.onSurface, showPressFeedback = false,
             )
+            if (onDelete != null) Box(Modifier.align(Alignment.CenterEnd)) {
+                var showActions by remember { mutableStateOf(false) }
+                SummaryCardIconButton(
+                    MaterialSymbols.MoreHoriz, stringResource(R.string.ui_transaction_actions), { showActions = true },
+                    enabled = actionsEnabled, containerColor = colors.surface, contentColor = colors.onSurface,
+                )
+                if (showActions) BaseDropdownMenu(
+                    options = listOf(stringResource(R.string.ui_delete_transaction)),
+                    optionLabel = { it },
+                    isSelected = { false },
+                    onSelect = {
+                        showActions = false
+                        onDelete()
+                    },
+                    onDismissRequest = { showActions = false },
+                    positionProvider = remember { FormMenuPositionProvider(alignToStart = false, direction = DropdownDirection.DOWN) },
+                    optionTextColor = colors.error,
+                )
+            }
             LedgerSegmentedControl(
                 listOf(textResources.getString(cn.turingzy.ledger.R.string.ui_expense), textResources.getString(cn.turingzy.ledger.R.string.ui_income), textResources.getString(cn.turingzy.ledger.R.string.ui_transfer)), TransactionType.entries.indexOf(type),
                 { onTypeChange(TransactionType.entries[it]) },
@@ -321,7 +413,15 @@ internal fun RecordTransactionContent(
                             accountName ?: textResources.getString(cn.turingzy.ledger.R.string.ui_select_account), MaterialSymbols.AccountBalanceWallet, onAccountClick,
                             Modifier.weight(1f, fill = false), textResources.getString(cn.turingzy.ledger.R.string.ui_select_account),
                         )
-                        RecordCompactSelector(timeLabel, MaterialSymbols.Schedule, onTimeClick, description = textResources.getString(cn.turingzy.ledger.R.string.ui_select_time))
+                        RecordCompactSelector(timeLabel, MaterialSymbols.Schedule, onTimeClick, description = textResources.getString(R.string.ui_select_time))
+                        if (primaryAmountLabel != null) RecordCompactSelector(
+                            label = primaryAmountLabel,
+                            icon = null,
+                            onClick = onEditPrimaryAmount,
+                            modifier = Modifier.weight(1f, fill = false),
+                            description = stringResource(R.string.ui_edit_primary_amount),
+                            enabled = actionsEnabled,
+                        )
                     }
                     BaseSurface(shape = LedgerStyle.shapes.summaryCard, color = colors.surface) {
                         Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp)) {
@@ -380,21 +480,55 @@ internal fun RecordTransactionContent(
 }
 
 @Composable
+private fun PrimaryAmountEditor(
+    currency: String,
+    originalAmount: Long,
+    initialAmount: Long?,
+    onDismiss: () -> Unit,
+    onConfirm: (Long) -> Unit,
+) {
+    var amountText by rememberSaveable { mutableStateOf(initialAmount?.toFormattedAmount().orEmpty()) }
+    val amountOverride = AmountFormatter.parseToCents(amountText)?.let { CurrencyAmountOverride(currency, it) }
+    val validAmount = amountOverride?.takeIf { runCatching { it.rateFor(originalAmount) }.isSuccess }?.amount
+    BaseAlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.ui_edit_primary_amount)) },
+        text = {
+            OutlinedTextField(
+                value = amountText,
+                onValueChange = { amountText = it },
+                label = { Text(stringResource(R.string.ui_primary_amount_in_currency, currency)) },
+                modifier = Modifier.testTag("primaryAmountInput"),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            )
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.ui_cancel)) } },
+        confirmButton = {
+            TextButton(enabled = validAmount != null, onClick = { validAmount?.let(onConfirm) }) {
+                Text(stringResource(R.string.ui_confirm))
+            }
+        },
+    )
+}
+
+@Composable
 private fun RecordCompactSelector(
     label: String,
-    icon: ImageVector,
+    icon: ImageVector?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     description: String,
+    enabled: Boolean = true,
 ) {
     Row(
         modifier.height(24.dp).clip(LedgerStyle.shapes.field).background(MaterialTheme.colorScheme.surface)
             .semantics { contentDescription = description }
-            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = LocalIndication.current, onClick = onClick)
+            .clickable(enabled = enabled, interactionSource = remember { MutableInteractionSource() }, indication = LocalIndication.current, onClick = onClick)
             .padding(horizontal = LedgerStyle.spacing.medium),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.extraSmall),
     ) {
-        Icon(icon, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (icon != null) Icon(icon, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(label, Modifier.weight(1f, fill = false), fontSize = LedgerStyle.typography.label.fontSize, maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
@@ -425,7 +559,7 @@ private fun RecordCategoryGrid(
             val chosen = item.category.id == selectedId
             Column(
                 Modifier.semantics { selected = chosen }.clickable(
-                    interactionSource = remember { MutableInteractionSource() }, indication = LocalIndication.current,
+                    interactionSource = null, indication = null,
                 ) { onSelect(item.category.id) },
                 horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp),
             ) {

@@ -60,18 +60,19 @@ internal fun ExpensePace(days: Map<LocalDate, AnalyticsDay>, scope: AnalyticsTim
             measurer.measure(expenseAxisLabel(amount, currencySymbol), labelStyle)
         }
         val tickIndices = expensePaceTickIndices(data.dates.size, scope)
-        val initialTicks = tickIndices.associateWith { index -> measurer.measure(expensePaceDateLabel(scope, data.dates[index]), labelStyle) }
-        val initialLabelWidth = initialTicks.values.maxOfOrNull { it.size.width }?.toFloat() ?: 0f
-        val gridLeft = labels.maxOf { it.size.width }.toFloat() + with(density) { 8.dp.toPx() }
-        val yearLabelScale = if (scope == AnalyticsTimeScope.YEAR && tickIndices.size > 1 && initialLabelWidth > 0f) {
-            ((canvasWidth - gridLeft - initialLabelWidth - with(density) { 4.dp.toPx() }) / (tickIndices.size - 1) / initialLabelWidth).coerceIn(0.75f, 1f)
-        } else 1f
-        val tickLabels = if (yearLabelScale == 1f) initialTicks else tickIndices.associateWith { index ->
-            measurer.measure(expensePaceDateLabel(scope, data.dates[index]), labelStyle.copy(fontSize = LedgerStyle.typography.chartLabel.fontSize * yearLabelScale))
+        val showAllMonths = scope == AnalyticsTimeScope.YEAR
+        val axisGap = with(density) { if (showAllMonths) 3.dp.toPx() else 8.dp.toPx() }
+        val left = labels.maxOf { it.size.width }.toFloat() + axisGap
+        val right = canvasWidth
+        val monthSlot = (right - left).coerceAtLeast(1f) / tickIndices.size.coerceAtLeast(1)
+        val tickLabels = tickIndices.associateWith { index ->
+            val text = expensePaceDateLabel(scope, data.dates[index])
+            val label = measurer.measure(text, labelStyle)
+            if (showAllMonths && label.size.width > monthSlot - 1f) {
+                val scale = ((monthSlot - 1f) / label.size.width).coerceIn(0.1f, 1f)
+                measurer.measure(text, labelStyle.copy(fontSize = labelStyle.fontSize * scale))
+            } else label
         }
-        val gridRight = canvasWidth
-        val left = gridLeft
-        val right = gridRight
         fun select(x: Float) {
             if (data.current.isEmpty() || right <= left) return
             selectedIndex = (((x - left) / (right - left)) * (data.dates.size - 1))
@@ -80,8 +81,8 @@ internal fun ExpensePace(days: Map<LocalDate, AnalyticsDay>, scope: AnalyticsTim
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(0.dp)) {
             val readoutIndex = selectedIndex ?: data.current.lastIndex.takeIf { it >= 0 }
             if (readoutIndex != null) {
-                ExpensePaceReadout(data.dates[readoutIndex], data.current[readoutIndex], data.previous[readoutIndex],
-                    Modifier.fillMaxWidth().padding(start = with(density) { left.toDp() }, end = with(density) { (canvasWidth - right).toDp() }))
+                ExpensePaceReadout(expensePaceReadoutDate(scope, data.dates[readoutIndex]), data.current[readoutIndex], data.previous[readoutIndex],
+                    Modifier.fillMaxWidth().padding(start = with(density) { left.toDp() }))
             } else {
                 Spacer(Modifier.height(18.dp))
             }
@@ -101,7 +102,7 @@ internal fun ExpensePace(days: Map<LocalDate, AnalyticsDay>, scope: AnalyticsTim
                 )
                 for (tick in 0..AnalyticsChartGridIntervals) {
                     val y = bottom - (bottom - top) * tick / AnalyticsChartGridIntervals
-                    drawLine(colors.onSurfaceVariant.copy(alpha = 0.35f), Offset(gridLeft, y), Offset(gridRight, y), 0.7.dp.toPx())
+                    drawLine(colors.onSurfaceVariant.copy(alpha = 0.35f), Offset(left, y), Offset(right, y), 0.7.dp.toPx())
                     if (tick % 2 == 0) drawText(labels[tick / 2], topLeft = Offset(0f, y - labels[tick / 2].size.height / 2))
                 }
                 val previous = data.previous.mapIndexed { index, value -> point(index, value) }
@@ -128,10 +129,19 @@ internal fun ExpensePace(days: Map<LocalDate, AnalyticsDay>, scope: AnalyticsTim
                     drawCircle(colors.error, AnalyticsChartNodeRadius.toPx(), currentPoint)
                     drawCircle(comparisonColor, AnalyticsChartNodeRadius.toPx(), point(index, data.previous[index]))
                 }
-                tickLabels.forEach { (index, label) ->
-                    val x = (point(index, 0L).x - label.size.width / 2f)
-                        .coerceIn(gridLeft, (gridRight - label.size.width).coerceAtLeast(gridLeft))
-                    drawText(label, topLeft = Offset(x, bottom + 5.dp.toPx()))
+                // Keep the last tick visible and omit labels that collide at this width or font scale.
+                val gap = 4.dp.toPx()
+                var nextLabelLeft = right + gap
+                tickIndices.asReversed().forEach { index ->
+                    val label = tickLabels.getValue(index)
+                    // Keep month labels in equal slots without insetting the plotted data or cursor.
+                    val center = if (showAllMonths) left + (index + 0.5f) * monthSlot else point(index, 0L).x
+                    val x = (center - label.size.width / 2f)
+                        .coerceIn(left, (right - label.size.width).coerceAtLeast(left))
+                    if (showAllMonths || x + label.size.width + gap <= nextLabelLeft) {
+                        drawText(label, topLeft = Offset(x, bottom + 5.dp.toPx()))
+                        nextLabelLeft = x
+                    }
                 }
             }
         }
@@ -140,7 +150,7 @@ internal fun ExpensePace(days: Map<LocalDate, AnalyticsDay>, scope: AnalyticsTim
 }
 
 @Composable
-private fun ExpensePaceReadout(date: LocalDate, current: Long, previous: Long, modifier: Modifier = Modifier) {
+private fun ExpensePaceReadout(dateLabel: String, current: Long, previous: Long, modifier: Modifier = Modifier) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val currencySymbol = currencySymbol(LocalLedgerCurrency.current)
     val colors = MaterialTheme.colorScheme
@@ -152,11 +162,11 @@ private fun ExpensePaceReadout(date: LocalDate, current: Long, previous: Long, m
     }
     BaseSurface(color = analyticsChartInfoColor(), shape = LedgerStyle.shapes.chartTooltip,
         modifier = modifier.wrapContentWidth(Alignment.CenterHorizontally).height(18.dp).semantics {
-            contentDescription = "$date，本期支出${current.toFormattedAmount(true, symbol = currencySymbol)}，上期支出${previous.toFormattedAmount(true, symbol = currencySymbol)}${if (previous > 0L) "，${expensePaceChangeLabel(current, previous)}" else ""}"
+            contentDescription = "$dateLabel，本期支出${current.toFormattedAmount(true, symbol = currencySymbol)}，上期支出${previous.toFormattedAmount(true, symbol = currencySymbol)}${if (previous > 0L) "，${expensePaceChangeLabel(current, previous)}" else ""}"
         }) {
         Row(Modifier.padding(horizontal = LedgerStyle.spacing.extraSmall), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.small)) {
-            Text("${date.monthValue}.${date.dayOfMonth}", fontSize = LedgerStyle.typography.chartLabel.fontSize, lineHeight = 12.sp, color = colors.onSurfaceVariant)
+            Text(dateLabel, fontSize = LedgerStyle.typography.chartLabel.fontSize, lineHeight = 12.sp, color = colors.onSurfaceVariant)
             Text("本期 ${current.toFormattedAmount(true, symbol = currencySymbol)}", fontSize = LedgerStyle.typography.chartLabel.fontSize, lineHeight = 12.sp,
                 color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Row(verticalAlignment = Alignment.CenterVertically,
@@ -197,6 +207,11 @@ internal fun expensePaceTickIndices(count: Int, scope: AnalyticsTimeScope? = nul
     val minimumStep = (count - 1 + 4) / 5
     val step = listOf(1, 2, 3, 5, 7, 10).firstOrNull { it >= minimumStep } ?: ((minimumStep + 9) / 10 * 10)
     return (0 until count step step).toList()
+}
+
+internal fun expensePaceReadoutDate(scope: AnalyticsTimeScope, date: LocalDate): String = when (scope) {
+    AnalyticsTimeScope.YEAR, AnalyticsTimeScope.ALL -> expensePaceDateLabel(scope, date)
+    else -> "${date.monthValue}.${date.dayOfMonth}"
 }
 
 internal fun expensePaceDateLabel(scope: AnalyticsTimeScope, date: LocalDate): String = when (scope) {

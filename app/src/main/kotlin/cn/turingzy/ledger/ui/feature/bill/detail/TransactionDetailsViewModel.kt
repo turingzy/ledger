@@ -10,6 +10,7 @@ import cn.turingzy.ledger.data.repository.transaction.TransactionRepository
 import cn.turingzy.ledger.model.account.AccountWithTemplate
 import cn.turingzy.ledger.model.category.CategoryWithIcon
 import cn.turingzy.ledger.model.transaction.Transaction
+import cn.turingzy.ledger.model.currency.CurrencyAmountOverride
 import cn.turingzy.ledger.model.transaction.TransactionDetail
 import cn.turingzy.ledger.util.toFormattedAmount
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -80,11 +81,11 @@ class TransactionDetailsViewModel @Inject constructor(
 
     internal fun selectTransaction(id: Long?) {
         if (_saveState.value.saving || id == selectedTransactionId.value) return
-        _saveState.value = TransactionSaveState()
         savedStateHandle["editingTransactionId"] = id
+        _saveState.value = TransactionSaveState()
     }
 
-    internal fun save(transaction: Transaction) {
+    internal fun save(transaction: Transaction, amountOverride: CurrencyAmountOverride? = null) {
         if (_saveState.value.saving || _saveState.value.saved) return
         val state = uiState.value as? TransactionDetailsUiState.Success ?: return
         val transactionId = selectedTransactionId.value ?: return
@@ -97,20 +98,34 @@ class TransactionDetailsViewModel @Inject constructor(
             _saveState.value = TransactionSaveState(error = "请检查金额、分类和账户")
             return
         }
+        val sourceCurrency = state.accounts.firstOrNull { it.account.id == transaction.accountId }?.account?.currency
+        val targetCurrency = state.accounts.firstOrNull { it.account.id == transaction.toAccountId }?.account?.currency
+        val toAmount = if (sourceCurrency == targetCurrency) validated.toAmount else transaction.toAmount ?: validated.toAmount
+        persist("保存失败，请重试") {
+            repository.updateTransaction(validated.copy(id = transactionId, toAmount = toAmount), amountOverride)
+        }
+    }
+
+    internal fun delete(failureMessage: String) {
+        val transactionId = selectedTransactionId.value ?: return
+        val state = uiState.value as? TransactionDetailsUiState.Success ?: return
+        if (state.detail.transaction.id != transactionId) return
+        persist(failureMessage) { repository.deleteTransaction(transactionId) }
+    }
+
+    private fun persist(failureMessage: String, action: suspend () -> Unit) {
+        if (_saveState.value.saving || _saveState.value.saved) return
         _saveState.value = TransactionSaveState(saving = true)
         viewModelScope.launch {
             try {
-                val sourceCurrency = state.accounts.firstOrNull { it.account.id == transaction.accountId }?.account?.currency
-                val targetCurrency = state.accounts.firstOrNull { it.account.id == transaction.toAccountId }?.account?.currency
-                val toAmount = if (sourceCurrency == targetCurrency) validated.toAmount else transaction.toAmount ?: validated.toAmount
-                repository.updateTransaction(validated.copy(id = transactionId, toAmount = toAmount))
+                action()
                 _saveState.value = TransactionSaveState(saved = true)
             } catch (error: CancellationException) {
                 _saveState.value = TransactionSaveState()
                 throw error
             } catch (error: Exception) {
-                Timber.e(error, "Unable to update transaction %s", transactionId)
-                _saveState.value = TransactionSaveState(error = "保存失败，请重试")
+                Timber.e(error, "Unable to persist transaction %s", selectedTransactionId.value)
+                _saveState.value = TransactionSaveState(error = failureMessage)
             }
         }
     }

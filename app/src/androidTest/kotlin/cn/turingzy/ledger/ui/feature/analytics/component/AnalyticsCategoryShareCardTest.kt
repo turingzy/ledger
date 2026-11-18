@@ -37,7 +37,7 @@ class AnalyticsCategoryShareCardTest {
         compose.onNodeWithText("支出/收入分类占比").assertDoesNotExist()
         compose.onNodeWithText("餐饮 40%").assertIsDisplayed().performClick()
         compose.onNodeWithText("暂无交易记录").assertIsDisplayed()
-        compose.onNodeWithContentDescription("关闭交易明细").performClick()
+        androidx.test.espresso.Espresso.pressBack()
         compose.onNodeWithText("餐饮 40%").assertIsNotSelected()
         compose.onNodeWithText("总支出").assertIsDisplayed()
         compose.onNodeWithText("¥3000.00").assertIsDisplayed()

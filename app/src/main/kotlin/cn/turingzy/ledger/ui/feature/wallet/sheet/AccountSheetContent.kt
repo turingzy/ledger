@@ -20,14 +20,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import cn.turingzy.ledger.ui.component.MaterialSymbols
-import cn.turingzy.ledger.ui.component.card.summary.SummaryCardIconButton
 
 @Composable
 internal fun AccountSheetContent(
     title: String,
-    closeDescription: String,
-    onClose: () -> Unit,
     saveEnabled: Boolean,
     onSave: () -> Unit,
     modifier: Modifier = Modifier,
@@ -40,15 +36,6 @@ internal fun AccountSheetContent(
             Modifier.fillMaxWidth().height(44.dp).padding(horizontal = LedgerStyle.spacing.large),
             contentAlignment = Alignment.Center,
         ) {
-            SummaryCardIconButton(
-                imageVector = MaterialSymbols.Close,
-                contentDescription = closeDescription,
-                onClick = onClose,
-                modifier = Modifier.align(Alignment.CenterStart),
-                containerColor = colors.surface,
-                contentColor = colors.onSurface,
-                showPressFeedback = false,
-            )
             Text(title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
             AccountSaveButton(saveEnabled, onSave, Modifier.align(Alignment.CenterEnd))
         }

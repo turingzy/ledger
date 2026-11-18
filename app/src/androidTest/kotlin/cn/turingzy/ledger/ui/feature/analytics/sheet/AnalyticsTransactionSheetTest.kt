@@ -38,7 +38,7 @@ class AnalyticsTransactionSheetTest {
         compose.onNode(hasScrollAction()).performScrollToNode(hasText("银行卡 · 支出20"))
         compose.onNodeWithText("银行卡 · 支出20").assertIsDisplayed()
         compose.onNodeWithText("11月支出明细").assertIsDisplayed()
-        compose.onNodeWithContentDescription("关闭交易明细").performClick()
+        androidx.test.espresso.Espresso.pressBack()
         compose.runOnIdle { assertTrue(dismissed) }
     }
     @Test fun amountOrderKeepsLargestFirstAcrossDatesWithoutDateGroups() {
@@ -60,7 +60,7 @@ class AnalyticsTransactionSheetTest {
         compose.onNodeWithText("总支出 ¥6.00").assertIsDisplayed()
     }
 
-    @Test fun mixedMonthlyTransactionsShowSeparateExpenseAndIncomeTotals() {
+    @Test fun mixedMonthlyTransactionsShowBothTotalsOnTheSameLine() {
         val date = LocalDate.of(2026, 11, 1)
         val entries = listOf(
             AnalyticsTransaction(1L, date, "餐饮", "现金", 12345L),
@@ -70,8 +70,7 @@ class AnalyticsTransactionSheetTest {
         compose.setContent { LedgerTheme {
             AnalyticsTransactionSheet("11月账单", "2026-11-01 至 2026-11-30", entries, {}, groupByDate = false)
         } }
-        compose.onNodeWithText("总支出 ¥123.45").assertIsDisplayed()
-        compose.onNodeWithText("总收入 ¥678.90").assertIsDisplayed()
+        compose.onNodeWithText("总支出 ¥123.45  总收入 ¥678.90").assertIsDisplayed()
     }
 
 }

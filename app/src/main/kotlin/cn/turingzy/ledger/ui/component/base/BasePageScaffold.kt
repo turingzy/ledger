@@ -60,7 +60,7 @@ fun BasePageScaffold(
         Box(Modifier.fillMaxSize().recordBackdrop(backdrop)) {
             content(PaddingValues(top = barHeight))
         }
-        Box(Modifier.fillMaxWidth().frostedBackdrop(
+        Box(Modifier.fillMaxWidth().blockTouchesBehind().frostedBackdrop(
             backdrop,
             colors.background.copy(alpha = headerOpacity),
             blurRadius = LedgerStyle.dimensions.topBarBlur,

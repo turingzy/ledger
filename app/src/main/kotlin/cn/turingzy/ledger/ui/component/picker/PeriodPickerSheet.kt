@@ -61,7 +61,7 @@ internal fun PeriodPickerSheet(
     onSelect: (DateFilterType, LocalDate) -> Unit,
     modifier: Modifier = Modifier,
     showViewSelector: Boolean = true,
-    header: (@Composable (onDismiss: () -> Unit, onReturn: () -> Unit) -> Unit)? = null,
+    header: (@Composable (onReturn: () -> Unit) -> Unit)? = null,
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val views = listOf(DateFilterType.WEEK, DateFilterType.MONTH, DateFilterType.YEAR)
@@ -94,11 +94,13 @@ internal fun PeriodPickerSheet(
                 .navigationBarsPadding().padding(horizontal = LedgerStyle.spacing.large),
         ) {
             if (header != null) {
-                header(::dismiss) { apply(view, today) }
+                header { apply(view, today) }
             } else {
                 Box(Modifier.fillMaxWidth().height(48.dp), contentAlignment = Alignment.Center) {
-                    BaseIconButtonContent(::dismiss, modifier = Modifier.align(Alignment.CenterStart), showPressFeedback = false) {
-                        Icon(MaterialSymbols.Close, textResources.getString(cn.turingzy.ledger.R.string.ui_close_date_picker))
+                    BaseIconButtonContent(
+                        ::dismiss, modifier = Modifier.align(Alignment.CenterStart), showPressFeedback = false,
+                    ) {
+                        Icon(MaterialSymbols.Close, androidx.compose.ui.res.stringResource(cn.turingzy.ledger.R.string.ui_close_date_picker))
                     }
                     if (showViewSelector) {
                         LedgerSegmentedControl(
@@ -252,17 +254,10 @@ private fun Modifier.periodSelection(date: LocalDate, chosen: Boolean, onSelect:
 @Composable
 internal fun PeriodPickerActions(
     type: DateFilterType,
-    onDismiss: () -> Unit,
     onReturn: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val closeDescription = androidx.compose.ui.res.stringResource(cn.turingzy.ledger.R.string.ui_close_date_picker)
-    Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        BaseIconButton(
-            MaterialSymbols.Close, closeDescription, onDismiss,
-            interaction = UiInteractionKind.Navigation,
-        )
-        Spacer(Modifier.weight(1f))
+    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
         BaseIconButton(
             MaterialSymbols.Undo, type.returnLabel, onReturn,
             contentColor = LedgerStyle.colors.info,

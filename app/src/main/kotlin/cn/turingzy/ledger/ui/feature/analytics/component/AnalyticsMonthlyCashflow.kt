@@ -82,7 +82,7 @@ private fun MonthlyCashflow(days: Map<LocalDate, AnalyticsDay>, month: YearMonth
     val selected = months.firstOrNull { it.month == selectedMonth }
     if (selected != null && showDetails) {
         AnalyticsTransactionSheet("${selected.month.year}年${selected.month.monthValue}月账单",
-            "${selected.month.atDay(1)} 至 ${selected.month.atEndOfMonth()}",
+            null,
             transactions.filter { YearMonth.from(it.date) == selected.month }, { showDetails = false; selectedMonth = null })
     }
     val maximum = months.maxOf { maxOf(it.income, it.expense) }.coerceAtLeast(100L)

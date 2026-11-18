@@ -42,7 +42,7 @@ private fun RecordTransactionPreview(@PreviewParameter(RecordTransactionPreviewP
     LedgerTheme {
         when (case) {
             RecordTransactionPreviewCase.NewRecord, RecordTransactionPreviewCase.RecordDetails, RecordTransactionPreviewCase.Transfer -> RecordTransactionSheet(
-                rememberModalBottomSheetState(skipPartiallyExpanded = true), listOf(category), accounts, {}, { _, _, _, _, _, _, _, _ -> },
+                rememberModalBottomSheetState(skipPartiallyExpanded = true), listOf(category), accounts, {}, { _, _, _, _, _, _, _, _, _ -> },
                 initialTransaction = when (case) {
                     RecordTransactionPreviewCase.RecordDetails -> transaction
                     RecordTransactionPreviewCase.Transfer -> transaction.copy(type = TransactionType.TRANSFER, toAccountId = 2L, transferRate = "0.14", toAmount = 1728L)

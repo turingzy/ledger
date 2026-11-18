@@ -39,8 +39,9 @@ class AnalyticsMonthlyCashflowCardTest {
         assertTrue(summary.top >= chart.top && summary.bottom <= chart.bottom)
         compose.onNodeWithContentDescription("2026年2月收支汇总").performClick()
         compose.onNodeWithText("2026年2月账单").assertIsDisplayed()
+        compose.onNodeWithText("2026 02.01-02.28").assertDoesNotExist()
         compose.onNodeWithText("暂无交易记录").assertIsDisplayed()
-        compose.onNodeWithContentDescription("关闭交易明细").performClick()
+        androidx.test.espresso.Espresso.pressBack()
     }
     @Test fun summaryTogglesAndAutomaticallyDisappears() {
         compose.setContent {

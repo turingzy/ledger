@@ -23,7 +23,7 @@ class AccountDetailsDeleteTest {
             LedgerTheme {
                 AccountDetailsContent(
                     account = Account(id = 7L, name = "现金", type = AccountType.CASH),
-                    onClose = {}, onSave = { saves++ }, onDelete = { deletes++ },
+                    onSave = { saves++ }, onDelete = { deletes++ },
                 )
             }
         }

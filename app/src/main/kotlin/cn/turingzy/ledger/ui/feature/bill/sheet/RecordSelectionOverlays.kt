@@ -34,6 +34,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -55,9 +56,13 @@ internal fun RecordAccountSheet(
     height: Dp,
     onDismiss: () -> Unit,
     onSelect: (Long) -> Unit,
+    emptyMessage: String? = null,
+    optionHint: @Composable (Long) -> String? = { null },
+    header: (@Composable () -> Unit)? = null,
+    selectionColor: Color = LedgerStyle.colors.transaction(transactionType),
+    selectionCheckOnNameRow: Boolean = false,
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
-    val selectionColor = LedgerStyle.colors.transaction(transactionType)
     BaseModalBottomSheet(
         onDismissRequest = onDismiss,
         contentHandlesInsets = true,
@@ -66,31 +71,54 @@ internal fun RecordAccountSheet(
         dragHandle = null,
     ) {
         Column(Modifier.height(height).testTag("recordAccountDrawer").navigationBarsPadding()) {
-            Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (header != null) header()
+            else Row(Modifier.fillMaxWidth().heightIn(min = LedgerStyle.dimensions.touchTarget).padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically) {
                 Text(title, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
-                BaseIconButtonContent(showPressFeedback = false, onClick = onDismiss) {
-                    Icon(MaterialSymbols.Close, textResources.getString(cn.turingzy.ledger.R.string.ui_close_account_picker), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
             }
             BaseDivider()
             if (accounts.isEmpty()) {
-                Text(textResources.getString(cn.turingzy.ledger.R.string.ui_no_accounts_available_add_one_in_wallet), Modifier.padding(LedgerStyle.spacing.extraLarge), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(emptyMessage ?: textResources.getString(cn.turingzy.ledger.R.string.ui_no_accounts_available_add_one_in_wallet), Modifier.padding(LedgerStyle.spacing.extraLarge), color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else LazyColumn(Modifier.fillMaxWidth().weight(1f)) {
                 items(accounts, key = { it.account.id }) { item ->
+                    val selected = item.account.id == selectedId
+                    val selectionCheck: @Composable () -> Unit = {
+                        Icon(MaterialSymbols.Check, textResources.getString(cn.turingzy.ledger.R.string.ui_selected), tint = selectionColor)
+                    }
                     Row(
                         Modifier.fillMaxWidth().clickable { onSelect(item.account.id) }.padding(horizontal = 16.dp, vertical = 14.dp),
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large),
                     ) {
                         cn.turingzy.ledger.ui.component.biz.BusinessAccountIcon(item.account)
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.tiny)) {
-                            Text(item.account.name, style = MaterialTheme.typography.bodyMedium)
-                            cn.turingzy.ledger.ui.component.biz.BusinessAmountText(
-                                item.account.currentBalance, item.account.currency,
-                                textStyle = MaterialTheme.typography.bodySmall,
-                                contentColor = LedgerStyle.colors.textSecondary,
-                            )
+                            if (selectionCheckOnNameRow) {
+                                Row(
+                                    Modifier.fillMaxWidth().heightIn(min = 24.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.small),
+                                ) {
+                                    Text(item.account.name, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                                    if (selected) selectionCheck()
+                                }
+                            } else {
+                                Text(item.account.name, style = MaterialTheme.typography.bodyMedium)
+                            }
+                            Row(
+                                Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.small),
+                            ) {
+                                cn.turingzy.ledger.ui.component.biz.BusinessAmountText(
+                                    item.account.currentBalance, item.account.currency,
+                                    modifier = Modifier.weight(1f),
+                                    textStyle = LedgerStyle.typography.bodySmall,
+                                    contentColor = LedgerStyle.colors.textSecondary,
+                                )
+                                optionHint(item.account.id)?.let {
+                                    Text(it, style = LedgerStyle.typography.label, color = LedgerStyle.colors.textSecondary, maxLines = 1)
+                                }
+                            }
                         }
-                        if (item.account.id == selectedId) Icon(MaterialSymbols.Check, textResources.getString(cn.turingzy.ledger.R.string.ui_selected), tint = selectionColor)
+                        if (selected && !selectionCheckOnNameRow) selectionCheck()
                     }
                 }
             }

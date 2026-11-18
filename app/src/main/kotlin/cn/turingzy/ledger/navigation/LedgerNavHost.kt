@@ -18,7 +18,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import cn.turingzy.ledger.ui.feature.bill.sheet.CreateTransactionSheet
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.hilt.navigation.compose.hiltViewModel
+import cn.turingzy.ledger.ui.feature.bill.detail.TransactionDetailsScreen
+import cn.turingzy.ledger.ui.feature.bill.detail.TransactionDetailsViewModel
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -37,6 +44,7 @@ fun LedgerNavHost(
     modifier: Modifier = Modifier,
     onSettingsDetailVisibleChange: (Boolean) -> Unit = {},
     onAnalyticsDetailVisibleChange: (Boolean) -> Unit = {},
+    onBillSelectionVisibleChange: (Boolean) -> Unit = {},
 ) {
     RetainedDestinationHost(currentDestination, modifier) { destination ->
         val navController = rememberNavController()
@@ -60,6 +68,7 @@ fun LedgerNavHost(
                         showRecordSheet = showRecordSheet,
                         onRecordSheetDismiss = onRecordSheetDismiss,
                         onNavigateToRecord = onNavigateToRecord,
+                        onSelectionVisibleChange = onBillSelectionVisibleChange,
                     )
                 }
                 TopLevelDestination.ANALYTICS -> {
@@ -76,10 +85,19 @@ fun LedgerNavHost(
                         popExitTransition = { slideOutHorizontally(tween(240)) { it } },
                     ) { calendarEntry ->
                         val route = calendarEntry.toRoute<Route.ConsumptionCalendar>()
+                        val transactionViewModel: TransactionDetailsViewModel = hiltViewModel()
+                        val snackbar = remember { SnackbarHostState() }
+                        val scope = rememberCoroutineScope()
                         var recordDate by rememberSaveable { mutableStateOf<Long?>(null) }
                         ConsumptionCalendarScreen(
                             YearMonth.parse(route.month), { navController.popBackStack() },
                             onRecordTransaction = { recordDate = it.toEpochDay() },
+                            onTransactionClick = transactionViewModel::selectTransaction,
+                            snackbarHostState = snackbar,
+                        )
+                        if (recordDate == null) TransactionDetailsScreen(
+                            onLoadFailure = { message -> scope.launch { snackbar.showSnackbar(message) } },
+                            viewModel = transactionViewModel,
                         )
                         recordDate?.let { epochDay ->
                             CreateTransactionSheet(LocalDate.ofEpochDay(epochDay), onDismiss = { recordDate = null })

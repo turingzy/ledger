@@ -3,6 +3,8 @@ package cn.turingzy.ledger.data.repository.currency
 import cn.turingzy.ledger.model.account.Account
 import cn.turingzy.ledger.model.account.AccountType
 import cn.turingzy.ledger.model.account.AccountWithTemplate
+import cn.turingzy.ledger.model.currency.CurrencyAmountOverride
+import cn.turingzy.ledger.model.currency.convertCents
 import cn.turingzy.ledger.model.transaction.CurrencySnapshot
 import cn.turingzy.ledger.model.transaction.Transaction
 import cn.turingzy.ledger.model.transaction.TransactionType
@@ -34,6 +36,19 @@ class MoneyValuationTest {
     @Test fun persistedHistoricalSnapshotDoesNotChangeWithCurrentRates() = runTest {
         val saved = transaction.copy(baseAmount = 70000L, baseCurrency = "CNY", baseRate = "7", baseRateDate = "2026-01-02")
         assertEquals(saved.copy(currencySnapshots = listOf(CurrencySnapshot("CNY", 70000L, "7", "2026-01-02"))), valuation.transaction(saved, usd, null, "CNY"))
+        coVerify(exactly = 0) { rates.quote(any(), any(), any()) }
+    }
+
+    @Test fun manualPrimaryAmountReplacesOnlyItsCurrencySnapshotWithoutFetchingRates() = runTest {
+        val day = "2026-01-02"
+        val hkd = CurrencySnapshot("HKD", 78000L, "7.8", day)
+        val saved = transaction.copy(currencySnapshots = listOf(CurrencySnapshot("CNY", 70000L, "7", day), hkd))
+        val valued = valuation.transaction(saved, usd, null, "CNY", CurrencyAmountOverride("CNY", 73219L))
+
+        assertEquals(transaction.amount, valued.amount)
+        assertEquals(73219L, valued.baseAmount)
+        assertEquals(73219L, convertCents(valued.amount, requireNotNull(valued.baseRate)))
+        assertEquals(listOf(hkd, CurrencySnapshot("CNY", 73219L, "7.3219", day)), valued.currencySnapshots)
         coVerify(exactly = 0) { rates.quote(any(), any(), any()) }
     }
 

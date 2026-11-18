@@ -4,12 +4,19 @@ Guidance for coding agents working in this repository.
 
 ## Project Overview
 
-Ledger is a local-first Android finance app built with Kotlin, Jetpack Compose, Room, DataStore, and Hilt. It uses a single app module with shared convention plugins in `build-logic/`.
+Ledger is a local-first Android finance app built with Kotlin, Jetpack Compose, Room, Preferences DataStore, and Hilt. `:app` is the only application module. Build conventions live in `build-logic/` and dependency versions in `gradle/libs.versions.toml`. Gradle uses the daemon JVM configured in `gradle/gradle-daemon-jvm.properties`. The Android application convention sets Java source and target compatibility to 17.
 
-## Commands
+## Local Validation
+
+Run these checks for app code changes.
 
 ```bash
 ./gradlew :app:compileDebugKotlin :app:testDebugUnitTest :app:lintDebug --offline
+```
+
+For package moves or changes that affect instrumentation test sources, also compile those sources. After package moves, search all source sets for stale imports and package declarations.
+
+```bash
 ./gradlew :app:compileDebugAndroidTestKotlin --offline
 ```
 
@@ -17,30 +24,30 @@ Validation is local only. Do not install apps, run device tests, or operate phon
 
 ## Repository Structure
 
-Source packages live under `app/src/main/kotlin/cn/turingzy/ledger/`:
+Main Kotlin sources live under `app/src/main/kotlin/cn/turingzy/ledger/`.
 
-- `data/database/`: Room entities, DAOs, migrations, mappers, and seed data.
-- `data/repository/`: Repository interfaces and implementations grouped by business domain.
-- `data/transfer/`: Bill file parsing, import planning, and backup validation.
-- `model/`: Business models grouped by domain; keep Android UI dependencies out.
-- `di/`: Hilt bindings and coroutine dispatcher qualifiers.
-- `navigation/`: Application routes and navigation coordination.
-- `ui/feature/`: Bill, analytics, wallet, and settings screens with feature-local components.
-- `ui/component/`: Shared base, business, picker, card, input, and navigation components.
-- `ui/theme/` and `ui/interaction/`: Shared styling and interaction behavior.
+- `data/database/` holds Room entities, DAOs, migrations, mappers, and seed data.
+- `data/repository/` groups repositories by domain. Currency selection, rates, and valuation live in `currency/`. App preferences and card appearance live in `settings/`.
+- `data/transfer/` holds bill file parsing, import planning, duplicate detection, and backup validation.
+- `model/` holds business models and calculations shared across layers. Keep it free of Android UI dependencies.
+- `di/` owns Hilt bindings, database setup, and dispatcher qualifiers. `navigation/` owns routes and destination coordination.
+- `ui/feature/` contains bill, analytics, wallet, and settings screens with their ViewModels and feature-local components. Analytics calculations and the consumption calendar live under `ui/feature/analytics/calculation/` and `ui/feature/analytics/calendar/`.
+- `ui/component/` contains shared UI in `base/`, `biz/`, `card/`, `input/`, `navigation/`, and `picker/`. Shared styling and interaction behavior live in `ui/theme/` and `ui/interaction/`.
 
-Keep test packages aligned with the code they exercise. Prefer cohesive, singular directory names. Place preview files in the same directory as the UI components they preview; avoid cross-feature preview collections.
+Mirror production packages in `app/src/test/` and `app/src/androidTest/`. Prefer cohesive, singular directory names and colocate Compose previews with their components. Keep debug scenario data in `app/src/debug/`. See [test-data/README.md](test-data/README.md) for import fixtures and expected outcomes.
 
 ## Development Conventions
 
-- Store and calculate money as `Long` cents; use `BigDecimal` for rates and rounding.
+- Store and calculate money as `Long` cents. Use `BigDecimal` for rates and rounding, and reuse `convertCents` for currency conversion.
+- Preserve original transaction amounts and historical currency snapshots. Reuse `MoneyValuation` for valuation and `primaryAmount` and `primaryBalance` for primary-currency totals. Keep the source and destination amounts of cross-currency transfers distinct.
+- Keep transaction writes and related account balance updates atomic. Preserve import duplicate detection and backup validation. When changing the Room schema, add a migration in `LedgerMigrations.kt` and register it in `DatabaseModule.kt`.
 - Avoid `!!`, empty catches, and swallowing coroutine cancellation.
 - Expose read-only state flows and inject coroutine dispatchers.
 - Keep DAOs and Room entities out of UI/ViewModels. Coordinate feature navigation through `navigation/`.
-- Reuse shared components and theme tokens. Preserve unrelated layout and interactions.
-- Use official Material Symbols Rounded (400/0/24) through `ui/component/MaterialSymbols.kt`. Add symbols through `scripts/sync_material_symbols.py`; do not edit generated vector paths.
+- Reuse shared scaffolds, overlays, form controls, business amount displays, and theme tokens. When adding user-facing Compose strings, update the default and English resources under `app/src/main/res/`.
+- Use official Material Symbols Rounded (400/0/24) through `ui/component/MaterialSymbols.kt`. Add symbols to `scripts/sync_material_symbols.py` and regenerate the Kotlin file. Leave generated vector paths to the script.
 - Keep comments focused on non-obvious reasons. Use concise English commit messages.
 
-## Validation and Change Scope
+## Change Scope
 
-Run the relevant local checks after changes. For package moves, also compile Android test sources and check for stale imports. Keep calculation behavior, database schema, persisted formats, and UI appearance unchanged unless the task explicitly requires changes.
+Keep changes limited to the task. Preserve existing calculations, database and backup compatibility, persisted preferences, and unrelated UI layout, appearance, and interactions.

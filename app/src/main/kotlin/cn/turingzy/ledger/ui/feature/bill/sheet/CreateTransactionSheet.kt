@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.bill.sheet
 
+import cn.turingzy.ledger.model.transaction.Transaction
 import cn.turingzy.ledger.ui.feature.bill.BillViewModel
 import cn.turingzy.ledger.ui.feature.bill.detail.TransactionDetailsViewModel
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -28,6 +29,7 @@ internal fun CreateTransactionSheet(
     modifier: Modifier = Modifier,
     viewModel: BillViewModel = hiltViewModel(),
     transactionViewModel: TransactionDetailsViewModel = hiltViewModel(),
+    draft: Transaction? = null,
 ) {
     var ready by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(viewModel) {
@@ -57,12 +59,13 @@ internal fun CreateTransactionSheet(
         categories = categories,
         accounts = accounts,
         initialTransactionTime = initialTime,
+        initialTransaction = draft,
         onDismissRequest = { if (!saveState.saving) onDismiss() },
         onConfirm = viewModel::createTransaction,
         modifier = modifier,
         saving = saveState.saving,
         error = saveState.error,
         sheetHeight = LocalConfiguration.current.screenHeightDp.dp * 0.8f,
-        onLoadTransferRate = transactionViewModel::exchangeRate,
+        onLoadExchangeRate = transactionViewModel::exchangeRate,
     )
 }

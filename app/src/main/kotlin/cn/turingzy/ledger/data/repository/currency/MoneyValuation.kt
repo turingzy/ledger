@@ -7,6 +7,8 @@ import cn.turingzy.ledger.model.transaction.Transaction
 import cn.turingzy.ledger.model.transaction.TransactionDetail
 import cn.turingzy.ledger.model.transaction.TransactionType
 import cn.turingzy.ledger.model.currency.convertCents
+import cn.turingzy.ledger.model.currency.CurrencyAmountOverride
+import cn.turingzy.ledger.model.settings.supportedCurrencyCodes
 import androidx.room.withTransaction
 import cn.turingzy.ledger.data.database.LedgerDatabase
 import kotlinx.serialization.encodeToString
@@ -21,12 +23,24 @@ import timber.log.Timber
 
 @Singleton
 class MoneyValuation @Inject constructor(private val database: LedgerDatabase, private val rates: ExchangeRateRepository) {
-    suspend fun transaction(value: Transaction, source: Account, target: Account?, primary: String): Transaction {
+    suspend fun transaction(
+        value: Transaction,
+        source: Account,
+        target: Account?,
+        primary: String,
+        amountOverride: CurrencyAmountOverride? = null,
+    ): Transaction {
         val date = Instant.ofEpochMilli(value.transactionTime).atZone(ZoneId.systemDefault()).toLocalDate()
         val snapshots = value.currencySnapshots.toMutableList()
         if (value.baseCurrency != null && value.baseAmount != null && snapshots.none { it.currency == value.baseCurrency }) {
             val rate = value.baseRate ?: java.math.BigDecimal.valueOf(value.baseAmount).divide(java.math.BigDecimal.valueOf(value.amount), 18, java.math.RoundingMode.HALF_UP).toPlainString()
             snapshots += CurrencySnapshot(value.baseCurrency, value.baseAmount, rate, value.baseRateDate ?: date.toString())
+        }
+        if (amountOverride != null) {
+            require(amountOverride.currency in supportedCurrencyCodes && amountOverride.currency != source.currency)
+            val rate = amountOverride.rateFor(value.amount)
+            snapshots.removeAll { it.currency == amountOverride.currency }
+            snapshots += CurrencySnapshot(amountOverride.currency, amountOverride.amount, rate, date.toString())
         }
         val snapshot = snapshots.firstOrNull { it.currency == primary } ?: rates.quote(source.currency, primary, date).let { quote ->
             CurrencySnapshot(primary, convertCents(value.amount, quote.rate), quote.rate, quote.date).also { snapshots += it }

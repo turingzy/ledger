@@ -142,7 +142,7 @@ class PeriodPickerSheetTest {
                 PeriodPickerSheet(DateFilterType.MONTH, LocalDate.of(2024, 2, 1), {}, { type, date -> selected = type to date })
             }
         }
-        compose.onNodeWithContentDescription("关闭日期选择").performClick()
+        androidx.test.espresso.Espresso.pressBack()
         assertNull(selected)
     }
 
@@ -156,7 +156,7 @@ class PeriodPickerSheetTest {
         }
         compose.onNodeWithText("年").performClick()
         compose.onNodeWithText("月").performClick()
-        compose.onNodeWithContentDescription("关闭日期选择").performClick()
+        androidx.test.espresso.Espresso.pressBack()
         assertNull(selected)
     }
 
@@ -170,7 +170,7 @@ class PeriodPickerSheetTest {
             }
         }
         compose.onNodeWithText("月").performClick()
-        compose.onNodeWithContentDescription("关闭日期选择").performClick()
+        androidx.test.espresso.Espresso.pressBack()
         assertEquals(DateFilterType.MONTH to LocalDate.now().withDayOfMonth(1), selected)
     }
 

@@ -64,7 +64,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
@@ -105,6 +104,7 @@ fun BillScreen(
     modifier: Modifier = Modifier,
     viewModel: BillViewModel = hiltViewModel(),
     onNavigateToRecord: () -> Unit = {},
+    onSelectionVisibleChange: (Boolean) -> Unit = {},
 ) {
     val transactionViewModel: TransactionDetailsViewModel = hiltViewModel()
     val cardViewModel: BillCardViewModel = hiltViewModel()
@@ -120,7 +120,6 @@ fun BillScreen(
     }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    val drawerHeight = LocalConfiguration.current.screenHeightDp.dp * 0.8f
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(showRecordSheet) {
@@ -129,31 +128,35 @@ fun BillScreen(
         }
     }
 
-    BillContent(
+    BillTransactionActions(
         uiState = uiState,
-        onSearch = viewModel::search,
-        modifier = modifier,
-        cardAppearance = cardUiState.appearance,
-        cardBackground = background,
-        cardSettingsEnabled = !cardUiState.loading && !cardUiState.importing,
-        onUploadCardBackground = {
-            cardViewModel.clearError()
-            showBackgroundDialog = true
-        },
-        onCardTransparencyChange = cardViewModel::setTransparencyPercent,
+        viewModel = viewModel,
+        transactionViewModel = transactionViewModel,
         snackbarHostState = snackbarHostState,
-        onTransactionClick = transactionViewModel::selectTransaction,
-        onSelectPeriod = viewModel::selectPeriod,
-    )
+        onSelectionVisibleChange = onSelectionVisibleChange,
+    ) { transactionRow ->
+        BillContent(
+            uiState = uiState,
+            onSearch = viewModel::search,
+            modifier = modifier,
+            cardAppearance = cardUiState.appearance,
+            cardBackground = background,
+            cardSettingsEnabled = !cardUiState.loading && !cardUiState.importing,
+            onUploadCardBackground = {
+                cardViewModel.clearError()
+                showBackgroundDialog = true
+            },
+            onCardTransparencyChange = cardViewModel::setTransparencyPercent,
+            snackbarHostState = snackbarHostState,
+            onTransactionClick = transactionViewModel::selectTransaction,
+            onSelectPeriod = viewModel::selectPeriod,
+            transactionRow = transactionRow,
+        )
+    }
 
     if (!showRecordSheet) TransactionDetailsScreen(
-        onBack = { transactionViewModel.selectTransaction(null) },
-        onLoadFailure = { message ->
-            transactionViewModel.selectTransaction(null)
-            scope.launch { snackbarHostState.showSnackbar(message) }
-        },
+        onLoadFailure = { message -> scope.launch { snackbarHostState.showSnackbar(message) } },
         viewModel = transactionViewModel,
-        sheetHeight = drawerHeight,
     )
 
     if (showBackgroundDialog) {
@@ -198,6 +201,7 @@ fun BillContent(
     onUploadCardBackground: () -> Unit = {},
     onCardTransparencyChange: (Int) -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    transactionRow: (@Composable (TransactionDetail) -> Unit)? = null,
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     var isSearchActive by rememberSaveable { mutableStateOf(initialSearchActive) }
@@ -430,7 +434,7 @@ fun BillContent(
                         } else {
                             filteredDayGroups.forEach { dayGroup ->
                                 item(key = "group_${dayGroup.dateEpochDay}") {
-                                    DayGroupSection(dayGroup = dayGroup, onTransactionClick = onTransactionClick, currency = uiState.currency)
+                                    DayGroupSection(dayGroup = dayGroup, onTransactionClick = onTransactionClick, currency = uiState.currency, transactionRow = transactionRow)
                                 }
                             }
                         }
@@ -461,6 +465,7 @@ fun DayGroupSection(
     modifier: Modifier = Modifier,
     onTransactionClick: (Long) -> Unit = {},
     currency: String = "CNY",
+    transactionRow: (@Composable (TransactionDetail) -> Unit)? = null,
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
@@ -520,7 +525,8 @@ fun DayGroupSection(
                 dayGroup.transactions.forEachIndexed { index, detail ->
                     key(detail.transaction.id) {
                         if (index > 0) BaseDivider(Modifier.padding(start = 62.dp, end = 14.dp))
-                        DayTransactionRowItem(detail = detail, onClick = { onTransactionClick(detail.transaction.id) })
+                        if (transactionRow != null) transactionRow(detail)
+                        else DayTransactionRowItem(detail = detail, onClick = { onTransactionClick(detail.transaction.id) })
                     }
                 }
             }
@@ -532,7 +538,7 @@ fun DayGroupSection(
 fun DayTransactionRowItem(
     detail: TransactionDetail,
     modifier: Modifier = Modifier,
-    onClick: () -> Unit = {},
+    onClick: (() -> Unit)? = {},
 ) {
     val tx = detail.transaction
     val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm") }

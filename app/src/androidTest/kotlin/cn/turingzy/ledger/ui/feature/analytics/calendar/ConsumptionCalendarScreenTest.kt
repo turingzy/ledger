@@ -47,7 +47,15 @@ class ConsumptionCalendarScreenTest {
                 AnalyticsTransaction(2L, day, "工资", "银行卡", 99900L, TransactionType.INCOME),
             ),
         )
-        compose.setContent { LedgerTheme { ConsumptionCalendarContent(dashboard, YearMonth.from(today), {}, today = today) } }
+        var openedTransaction: Long? = null
+        compose.setContent {
+            LedgerTheme {
+                ConsumptionCalendarContent(
+                    dashboard, YearMonth.from(today), {}, today = today,
+                    onTransactionClick = { openedTransaction = it },
+                )
+            }
+        }
         compose.onNodeWithText("消费日历").assertIsDisplayed()
         compose.onNodeWithText("11月总支出").assertIsDisplayed()
         compose.onNodeWithText("¥123.45").assertIsDisplayed()
@@ -59,7 +67,8 @@ class ConsumptionCalendarScreenTest {
         compose.onNodeWithText("11月10日 共1笔消费").assertExists()
         compose.onNodeWithContentDescription("${today.plusDays(1)}，支出¥0.00").assertIsNotEnabled()
         compose.onNode(hasScrollAction()).performScrollToNode(hasText("银行卡 · 午餐"))
-        compose.onNodeWithText("银行卡 · 午餐").assertIsDisplayed()
+        compose.onNodeWithText("银行卡 · 午餐").assertIsDisplayed().performClick()
+        compose.runOnIdle { assertEquals(1L, openedTransaction) }
         compose.onNodeWithText("−¥123.45").assertIsDisplayed()
         compose.onNodeWithText("12:00").assertIsDisplayed()
         compose.onNodeWithText("工资").assertDoesNotExist()

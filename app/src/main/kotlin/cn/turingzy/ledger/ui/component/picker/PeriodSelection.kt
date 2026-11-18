@@ -8,13 +8,7 @@ import java.time.temporal.ChronoUnit
 
 internal fun weekStart(date: LocalDate): LocalDate = date.with(DayOfWeek.MONDAY)
 
-internal fun weekLabel(date: LocalDate): String {
-    val start = weekStart(date)
-    val end = start.plusDays(6)
-    val first = start.format(DateTimeFormatter.ofPattern("yyyy.MM.dd"))
-    val last = end.format(DateTimeFormatter.ofPattern(if (start.year == end.year) "MM.dd" else "yyyy.MM.dd"))
-    return "$first–$last"
-}
+internal fun weekLabel(date: LocalDate): String = CalendarSelection.week(date).displayRange()
 
 internal fun periodStart(type: DateFilterType, date: LocalDate): LocalDate = when (type) {
     DateFilterType.WEEK -> weekStart(date)

@@ -32,6 +32,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
+import android.view.HapticFeedbackConstants
+import android.view.SoundEffectConstants
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -47,6 +50,7 @@ internal fun LedgerBottomBar(
     backdrop: BackdropState? = null,
 ) {
     val colors = MaterialTheme.colorScheme
+    val view = LocalView.current
     BaseSurface(
         modifier = modifier
             .fillMaxWidth()
@@ -102,7 +106,11 @@ internal fun LedgerBottomBar(
                             interactionSource = interactionSource,
                             indication = null,
                         ) {
-                            if (!selected) onNavigateToDestination(destination)
+                            if (!selected) {
+                                view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+                                view.playSoundEffect(SoundEffectConstants.CLICK)
+                                onNavigateToDestination(destination)
+                            }
                         },
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(1.dp, Alignment.CenterVertically),

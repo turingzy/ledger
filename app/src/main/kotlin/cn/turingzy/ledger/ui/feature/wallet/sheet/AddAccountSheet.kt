@@ -34,14 +34,13 @@ fun AddAccountSheet(
         sheetState = sheetState,
         modifier = modifier,
     ) {
-        AddAccountSheetContent(onDismissRequest, onConfirm, templates = templates)
+        AddAccountSheetContent(onConfirm, templates = templates)
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddAccountSheetContent(
-    onDismissRequest: () -> Unit,
     onConfirm: (
         name: String,
         type: AccountType,
@@ -57,7 +56,6 @@ fun AddAccountSheetContent(
     AccountEditorContent(
         account = null,
         templates = templates,
-        onClose = onDismissRequest,
         onSave = { value ->
             onConfirm(
                 value.name, value.type, value.initialBalance, value.cardNumber,
@@ -73,6 +71,6 @@ fun AddAccountSheetContent(
 @Composable
 private fun AddAccountSheetContentPreview() {
     LedgerTheme {
-        AddAccountSheetContent(onDismissRequest = {}, onConfirm = { _, _, _, _, _, _, _ -> })
+        AddAccountSheetContent(onConfirm = { _, _, _, _, _, _, _ -> })
     }
 }

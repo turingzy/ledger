@@ -1,6 +1,19 @@
 package cn.turingzy.ledger.ui.feature.bill
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -15,6 +28,7 @@ import cn.turingzy.ledger.model.category.Icon
 import cn.turingzy.ledger.model.transaction.Transaction
 import cn.turingzy.ledger.model.transaction.TransactionDetail
 import cn.turingzy.ledger.model.transaction.TransactionType
+import cn.turingzy.ledger.ui.feature.bill.component.BillSwipeRow
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -22,17 +36,18 @@ import org.junit.Test
 class BillTransactionsTest {
     @get:Rule val compose = createComposeRule()
 
+    private val detail = TransactionDetail(
+        Transaction(id = 42L, type = TransactionType.EXPENSE, amount = 123L, accountId = 1L, categoryId = 1L, transactionTime = 0L),
+        Account(id = 1L, name = "测试账户", type = AccountType.DEBIT),
+        category = CategoryWithIcon(
+            Category(id = 1L, name = "测试餐饮", type = CategoryType.EXPENSE, iconId = 1L),
+            Icon(id = 1L, keyName = "food", displayName = "餐饮", iconUri = "res://"),
+        ),
+    )
+
     @Test
     fun dailyHeaderTogglesRowsAndRowOpensSelectedTransaction() {
         var selectedId: Long? = null
-        val detail = TransactionDetail(
-            Transaction(id = 42L, type = TransactionType.EXPENSE, amount = 123L, accountId = 1L, categoryId = 1L, transactionTime = 0L),
-            Account(id = 1L, name = "测试账户", type = AccountType.DEBIT),
-            category = CategoryWithIcon(
-                Category(id = 1L, name = "测试餐饮", type = CategoryType.EXPENSE, iconId = 1L),
-                Icon(id = 1L, keyName = "food", displayName = "餐饮", iconUri = "res://"),
-            ),
-        )
         compose.setContent {
             MaterialTheme {
                 DayGroupSection(DayTransactionGroup(0L, "今天", 123L, 0L, listOf(detail)), onTransactionClick = { selectedId = it })
@@ -73,6 +88,40 @@ class BillTransactionsTest {
     fun nonzeroIncomeAndExpenseAreBothShown() {
         showSummary(expense = 123L, income = 456L)
         compose.onNodeWithText("支出: 1.23  收入: 4.56").assertIsDisplayed()
+    }
+
+    @Test
+    fun swipingAnotherRowClosesTheFirstRowActions() {
+        var copiedId: Long? = null
+        compose.setContent {
+            MaterialTheme {
+                var revealedId by remember { mutableStateOf<Long?>(null) }
+                Column {
+                    for (id in listOf(42L, 43L)) Box(Modifier.testTag("transaction-$id")) {
+                        BillSwipeRow(
+                            detail = detail.copy(transaction = detail.transaction.copy(id = id)),
+                            selecting = false,
+                            selected = false,
+                            enabled = true,
+                            revealed = revealedId == id,
+                            onRevealChange = { open -> if (open || revealedId == id) revealedId = id.takeIf { open } },
+                            onClick = {},
+                            onLongClick = {},
+                            onCopy = { copiedId = id },
+                            onEdit = {},
+                            onDelete = {},
+                        )
+                    }
+                }
+            }
+        }
+
+        compose.onNodeWithTag("transaction-42").performTouchInput { swipeLeft() }
+        compose.onNodeWithContentDescription("复制交易").assertIsDisplayed()
+        compose.onNodeWithTag("transaction-43").performTouchInput { swipeLeft() }
+        compose.onAllNodesWithContentDescription("复制交易").assertCountEquals(1)
+        compose.onNodeWithContentDescription("复制交易").performClick()
+        assertEquals(43L, copiedId)
     }
 
     private fun showSummary(expense: Long, income: Long) {

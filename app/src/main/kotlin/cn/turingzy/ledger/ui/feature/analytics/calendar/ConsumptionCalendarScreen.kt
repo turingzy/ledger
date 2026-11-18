@@ -61,10 +61,20 @@ internal fun ConsumptionCalendarScreen(
     modifier: Modifier = Modifier,
     onRecordTransaction: (LocalDate) -> Unit = {},
     viewModel: AnalyticsDashboardViewModel = hiltViewModel(),
+    onTransactionClick: (Long) -> Unit = {},
+    snackbarHostState: SnackbarHostState? = null,
 ) {
     val dashboard by viewModel.uiState.collectAsStateWithLifecycle()
     CompositionLocalProvider(LocalLedgerCurrency provides dashboard.currency) {
-        ConsumptionCalendarContent(dashboard, initialMonth, onBack, modifier, onRecordTransaction = onRecordTransaction)
+        Box(modifier.fillMaxSize()) {
+            ConsumptionCalendarContent(
+                dashboard, initialMonth, onBack,
+                onRecordTransaction = onRecordTransaction, onTransactionClick = onTransactionClick,
+            )
+            snackbarHostState?.let { host ->
+                SnackbarHost(host, Modifier.align(Alignment.BottomCenter).navigationBarsPadding())
+            }
+        }
     }
 }
 
@@ -77,6 +87,7 @@ internal fun ConsumptionCalendarContent(
     modifier: Modifier = Modifier,
     today: LocalDate = LocalDate.now(),
     onRecordTransaction: (LocalDate) -> Unit = {},
+    onTransactionClick: (Long) -> Unit = {},
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
@@ -191,6 +202,7 @@ internal fun ConsumptionCalendarContent(
                             amount = entry.amount, currency = entry.currency, type = entry.type,
                             category = entry.category, accountName = entry.accountName,
                             timeText = entry.time?.format(timeFormatter).orEmpty(), note = entry.note,
+                            onClick = { onTransactionClick(entry.id) },
                         )
                     }
                 }
@@ -205,8 +217,8 @@ internal fun ConsumptionCalendarContent(
         PeriodPickerSheet(
             DateFilterType.MONTH, month.atDay(1), { showPicker = false },
             { type, date -> selectMonth(type to date) }, showViewSelector = false,
-            header = { dismiss, returnToCurrent ->
-                PeriodPickerActions(DateFilterType.MONTH, dismiss, returnToCurrent)
+            header = { returnToCurrent ->
+                PeriodPickerActions(DateFilterType.MONTH, returnToCurrent)
             },
         )
     }

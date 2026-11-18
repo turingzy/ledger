@@ -19,7 +19,7 @@ class AnalyticsChartInteractionTest {
     private val start = LocalDate.of(2026, 11, 1)
 
     @Test
-    fun barIsReadOnlyAndCategoryListOpensMatchingTransactions() {
+    fun barSelectsCategoryInlineAndLegendOpensMatchingTransactions() {
         val transaction = AnalyticsTransaction(1L, start, "午餐", "现金", 1200L)
         val state = AnalyticsUiState.Success(
             AnalyticsTimeScope.MONTH, CategoryType.EXPENSE, "", 3000L, 0L, -3000L,
@@ -28,19 +28,22 @@ class AnalyticsChartInteractionTest {
         )
         compose.setContent { LedgerTheme { AnalyticsCategoryShareCard(state, {}) } }
         compose.onNodeWithContentDescription("支出分类占比条", substring = true).performTouchInput {
-            click(Offset(width * 0.20f, center.y))
+            click(Offset(width * 0.80f, center.y))
         }
         compose.onNodeWithText("午餐").assertDoesNotExist()
-        compose.onNodeWithText("餐饮 40%").assertIsNotSelected()
+        compose.onNodeWithText("餐饮 40%").assertIsSelected()
+        compose.onNodeWithText("餐饮").assertIsDisplayed()
+        compose.onNodeWithText("¥12.00").assertIsDisplayed()
         compose.onNodeWithContentDescription("支出分类占比条", substring = true).performTouchInput {
-            click(Offset(width * 0.20f, center.y))
+            click(Offset(width * 0.80f, center.y))
         }
+        compose.onNodeWithText("总支出").assertIsDisplayed()
         compose.onNodeWithText("午餐").assertDoesNotExist()
         compose.onNodeWithContentDescription("支出分类占比条", substring = true).assertHasNoClickAction()
         compose.onNodeWithText("餐饮 40%").assertIsNotSelected().performClick()
         compose.onNodeWithText("午餐").assertIsDisplayed()
         compose.onNodeWithText("−¥12.00").assertIsDisplayed()
-        compose.onNodeWithContentDescription("关闭交易明细").performClick()
+        androidx.test.espresso.Espresso.pressBack()
         compose.onNodeWithText("餐饮 40%").assertIsNotSelected()
     }
 

@@ -63,7 +63,6 @@ fun AccountDetailsSheet(
         AccountDetailsContent(
             account = account,
             templates = templates,
-            onClose = ::dismiss,
             onDelete = { onDelete(account.id); dismiss() },
             onSave = {
                 onSave(it)
@@ -77,7 +76,6 @@ fun AccountDetailsSheet(
 @Composable
 fun AccountDetailsContent(
     account: Account,
-    onClose: () -> Unit,
     onSave: (Account) -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
@@ -88,7 +86,6 @@ fun AccountDetailsContent(
     AccountEditorContent(
         account = account,
         templates = templates,
-        onClose = onClose,
         onSave = onSave,
         modifier = modifier,
         onDelete = { confirmDelete = true },
@@ -137,7 +134,6 @@ private fun AccountDetailsPreview() {
     LedgerTheme {
         AccountDetailsContent(
             account = Account(id = 1L, name = textResources.getString(cn.turingzy.ledger.R.string.ui_salary_account), type = AccountType.DEBIT, currentBalance = 123456L, cardNumber = "1234"),
-            onClose = {},
             onSave = {},
             onDelete = {},
         )

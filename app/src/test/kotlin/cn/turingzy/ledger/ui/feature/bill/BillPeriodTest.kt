@@ -15,8 +15,8 @@ class BillPeriodTest {
     fun weekLabelIncludesBothYearsWhenWeekCrossesNewYear() {
         val anchor = LocalDate.of(2021, 1, 1)
         assertEquals(LocalDate.of(2020, 12, 28), weekStart(anchor))
-        assertEquals("2020.12.28–2021.01.03", weekLabel(anchor))
-        assertEquals("2024.02.26–03.03", weekLabel(LocalDate.of(2024, 2, 29)))
+        assertEquals("2020 12.28-2021 01.03", weekLabel(anchor))
+        assertEquals("2024 02.26-03.03", weekLabel(LocalDate.of(2024, 2, 29)))
     }
 
     @Test
