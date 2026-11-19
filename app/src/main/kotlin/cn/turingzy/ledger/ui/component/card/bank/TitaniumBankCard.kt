@@ -53,9 +53,19 @@ internal fun TitaniumBankCard(
     textColor: Color? = null,
     motionEnabled: Boolean = true,
     drag: TitaniumDrag = TitaniumDrag.Immediate,
+    tuning: TitaniumCardTuning = DefaultTitaniumCardTuning,
     onClick: (() -> Unit)? = null,
 ) {
-    TitaniumCardSurface(preset, imageUri, modifier, textColor, motionEnabled, drag, onClick) { ink ->
+    TitaniumCardSurface(
+        preset = preset,
+        imageUri = imageUri,
+        modifier = modifier,
+        textColor = textColor,
+        motionEnabled = motionEnabled,
+        drag = drag,
+        tuning = tuning,
+        onClick = onClick,
+    ) { ink ->
         val style = MaterialTheme.typography.bodyMedium.copy(
             color = ink,
             fontWeight = FontWeight.Normal,
@@ -109,6 +119,7 @@ internal fun TitaniumCardSurface(
     textColor: Color? = null,
     motionEnabled: Boolean = false,
     drag: TitaniumDrag = TitaniumDrag.Disabled,
+    tuning: TitaniumCardTuning = DefaultTitaniumCardTuning,
     onClick: (() -> Unit)? = null,
     content: @Composable BoxScope.(Color) -> Unit,
 ) {
@@ -116,13 +127,13 @@ internal fun TitaniumCardSurface(
     val image = rememberTitaniumCardImage(imageUri, preset.base.toArgb())
     val dark = image?.luminance?.let { it < .20 } ?: preset.dark
     val ink = textColor ?: if (dark) Color(0xFFF0EDE7) else Color(0xFF28262A)
-    val (motion, gesture) = rememberTitaniumTilt(motionEnabled && !inspection, drag)
+    val (motion, gesture) = rememberTitaniumTilt(motionEnabled && !inspection, drag, tuning)
     Box(
         modifier.aspectRatio(BankCardAspectRatio)
             .then(gesture)
             .graphicsLayer {
                 val (angle, dragStrength) = motion.value
-                val maxAngle = lerp(4.6f, 15f, dragStrength)
+                val maxAngle = lerp(tuning.gravityAngleDegrees, tuning.dragAngleDegrees, dragStrength)
                 rotationX = -angle.y * maxAngle
                 rotationY = angle.x * maxAngle
                 cameraDistance = (size.width * (1.4f - .35f * dragStrength)).coerceAtLeast(1f)
@@ -136,12 +147,12 @@ internal fun TitaniumCardSurface(
             .then(if (onClick == null) Modifier else Modifier.clickable(onClick = onClick)),
     ) {
         if (image == null) {
-            TitaniumMaterial(preset, motion, Modifier.matchParentSize())
-            if (Build.VERSION.SDK_INT < 33 || inspection) TitaniumFallbackReflection(motion, Modifier.matchParentSize())
+            TitaniumMaterial(preset, motion, tuning, Modifier.matchParentSize())
+            if (Build.VERSION.SDK_INT < 33 || inspection) TitaniumFallbackReflection(motion, tuning, Modifier.matchParentSize())
         } else {
             // RenderEffect samples the image layer alone, leaving the etched lettering unlit.
             val reflection = if (Build.VERSION.SDK_INT >= 33 && !inspection) {
-                Modifier.titaniumImageReflection(motion)
+                Modifier.titaniumImageReflection(motion, tuning)
             } else Modifier
             Box(Modifier.matchParentSize().then(reflection).background(preset.base)) {
                 Image(
@@ -151,7 +162,7 @@ internal fun TitaniumCardSurface(
                     contentScale = ContentScale.Crop,
                 )
             }
-            if (Build.VERSION.SDK_INT < 33 || inspection) TitaniumFallbackReflection(motion, Modifier.matchParentSize())
+            if (Build.VERSION.SDK_INT < 33 || inspection) TitaniumFallbackReflection(motion, tuning, Modifier.matchParentSize())
         }
         content(ink)
         EtchedContactlessWaves(ink, Modifier.align(Alignment.TopEnd).padding(top = 17.dp, end = 20.dp))

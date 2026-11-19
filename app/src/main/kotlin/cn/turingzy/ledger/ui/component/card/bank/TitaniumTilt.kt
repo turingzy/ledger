@@ -34,6 +34,7 @@ private val restingMotion = mutableStateOf(TitaniumMotion(Offset.Zero, 0f))
 internal fun rememberTitaniumTilt(
     enabled: Boolean,
     drag: TitaniumDrag,
+    tuning: TitaniumCardTuning,
 ): Pair<State<TitaniumMotion>, Modifier> {
     if (!enabled) return restingMotion to Modifier
 
@@ -57,13 +58,13 @@ internal fun rememberTitaniumTilt(
         }
     }
 
-    val gesture = if (drag == TitaniumDrag.Disabled) Modifier else Modifier.pointerInput(drag) {
+    val gesture = if (drag == TitaniumDrag.Disabled) Modifier else Modifier.pointerInput(drag, tuning.horizontalDragFraction, tuning.verticalDragFraction) {
         fun grip() { touch = motion.value.tilt * .45f }
 
         fun follow(delta: Offset) {
             val movement = Offset(
-                delta.x / (size.width * .23f).coerceAtLeast(1f),
-                delta.y / (size.height * .29f).coerceAtLeast(1f),
+                delta.x / (size.width * tuning.horizontalDragFraction).coerceAtLeast(1f),
+                delta.y / (size.height * tuning.verticalDragFraction).coerceAtLeast(1f),
             )
             touch = ((touch ?: Offset.Zero) + movement).limitToUnitCircle()
         }

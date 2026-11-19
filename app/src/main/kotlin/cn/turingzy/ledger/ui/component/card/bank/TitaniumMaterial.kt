@@ -62,9 +62,14 @@ private val titaniumGlows = mapOf(
 )
 
 @Composable
-internal fun TitaniumMaterial(preset: TitaniumPreset, motion: State<TitaniumMotion>, modifier: Modifier) {
+internal fun TitaniumMaterial(
+    preset: TitaniumPreset,
+    motion: State<TitaniumMotion>,
+    tuning: TitaniumCardTuning,
+    modifier: Modifier,
+) {
     if (Build.VERSION.SDK_INT >= 33 && !LocalInspectionMode.current) {
-        TitaniumShaderSurface(preset, motion, modifier)
+        TitaniumShaderSurface(preset, motion, tuning, modifier)
     } else {
         Canvas(modifier.drawWithCache {
             val glows = titaniumGlows.getValue(preset).map { glow ->
@@ -95,8 +100,13 @@ internal fun TitaniumMaterial(preset: TitaniumPreset, motion: State<TitaniumMoti
 
 @RequiresApi(33)
 @Composable
-private fun TitaniumShaderSurface(preset: TitaniumPreset, motion: State<TitaniumMotion>, modifier: Modifier) {
-    val shader = remember(preset) {
+private fun TitaniumShaderSurface(
+    preset: TitaniumPreset,
+    motion: State<TitaniumMotion>,
+    tuning: TitaniumCardTuning,
+    modifier: Modifier,
+) {
+    val shader = remember(preset, tuning.shaderDragBandStrength, tuning.shaderDragCoreStrength) {
         val glows = titaniumGlows.getValue(preset)
         val source = buildString {
             appendLine(lightingUniforms)
@@ -108,7 +118,7 @@ private fun TitaniumShaderSurface(preset: TitaniumPreset, motion: State<Titanium
                 "color = mix(color, float3(glowColor$i.rgb), glow(uv, glowPosition$i));"
             }))
         }
-        RuntimeShader(source).apply {
+        titaniumLightingShader(source, tuning).apply {
             setColorUniform("baseColor", preset.base.toAndroidColor())
             glows.forEachIndexed { i, glow ->
                 setColorUniform("glowColor$i", glow.color.toAndroidColor())
@@ -128,8 +138,13 @@ private fun Color.toAndroidColor() = android.graphics.Color.valueOf(red, green, 
 
 @RequiresApi(33)
 @Composable
-internal fun Modifier.titaniumImageReflection(motion: State<TitaniumMotion>): Modifier {
-    val shader = remember { RuntimeShader("$lightingUniforms\n$imageReflectionShader") }
+internal fun Modifier.titaniumImageReflection(
+    motion: State<TitaniumMotion>,
+    tuning: TitaniumCardTuning,
+): Modifier {
+    val shader = remember(tuning.shaderDragBandStrength, tuning.shaderDragCoreStrength) {
+        titaniumLightingShader("$lightingUniforms\n$imageReflectionShader", tuning)
+    }
     return graphicsLayer {
         if (size.width > 0f && size.height > 0f) {
             shader.updateLighting(size.width, size.height, motion.value)
@@ -139,7 +154,11 @@ internal fun Modifier.titaniumImageReflection(motion: State<TitaniumMotion>): Mo
 }
 
 @Composable
-internal fun TitaniumFallbackReflection(motion: State<TitaniumMotion>, modifier: Modifier) {
+internal fun TitaniumFallbackReflection(
+    motion: State<TitaniumMotion>,
+    tuning: TitaniumCardTuning,
+    modifier: Modifier,
+) {
     Canvas(modifier.drawWithCache {
         val band = Brush.linearGradient(
             0f to Color.Transparent,
@@ -159,12 +178,18 @@ internal fun TitaniumFallbackReflection(motion: State<TitaniumMotion>, modifier:
                     band,
                     topLeft = Offset(-size.width, -size.height),
                     size = size * 3f,
-                    alpha = .1875f + .68f * dragStrength,
+                    alpha = (.1875f + tuning.fallbackDragHighlightBoost * dragStrength).coerceIn(0f, 1f),
                 )
             }
         }
     }) {}
 }
+
+@RequiresApi(33)
+private fun titaniumLightingShader(source: String, tuning: TitaniumCardTuning): RuntimeShader =
+    RuntimeShader(source).apply {
+        setFloatUniform("dragHighlight", tuning.shaderDragBandStrength, tuning.shaderDragCoreStrength)
+    }
 
 @RequiresApi(33)
 private fun RuntimeShader.updateLighting(width: Float, height: Float, motion: TitaniumMotion) {
@@ -177,6 +202,7 @@ private const val lightingUniforms = """
 uniform float2 resolution;
 uniform float2 tilt;
 uniform float dragStrength;
+uniform float2 dragHighlight;
 
 float2 reflection(float2 uv) {
     float2 normal = normalize(float2(.85, .49 + tilt.y * (.28 + .25 * dragStrength)));
@@ -187,8 +213,8 @@ float2 reflection(float2 uv) {
     if (dragStrength <= 0.) return float2(band * ambient, 0.);
 
     float core = exp(-d * d * 112.);
-    float strength = mix(ambient, .16, dragStrength);
-    float light = band * strength + core * .21 * dragStrength;
+    float strength = mix(ambient, dragHighlight.x, dragStrength);
+    float light = clamp(band * strength + core * dragHighlight.y * dragStrength, 0., 1.);
     float shoulder = d - .22;
     float shadow = exp(-shoulder * shoulder * 72.) * .13 * dragStrength;
     return float2(light, shadow);
