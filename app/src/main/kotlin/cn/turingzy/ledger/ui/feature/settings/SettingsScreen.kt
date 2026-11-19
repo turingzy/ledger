@@ -8,7 +8,7 @@ import cn.turingzy.ledger.ui.feature.settings.screen.GeneralSettingsScreen
 import cn.turingzy.ledger.ui.feature.settings.screen.OpenSourceLibrariesScreen
 import cn.turingzy.ledger.ui.feature.settings.screen.ParseRulesScreen
 import cn.turingzy.ledger.ui.component.base.BaseAlertDialog
-import cn.turingzy.ledger.ui.component.base.ScrollTitleContainer
+import cn.turingzy.ledger.ui.component.base.ScrollTitleContainerBase
 import androidx.compose.foundation.lazy.rememberLazyListState
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.navigation.SettingsDestination
@@ -29,10 +29,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import cn.turingzy.ledger.ui.component.navigation.LocalBottomBarContentPadding
 import androidx.compose.foundation.layout.ColumnScope
-import cn.turingzy.ledger.ui.component.base.BasePageFrame
-import cn.turingzy.ledger.ui.component.base.BaseCard
-import cn.turingzy.ledger.ui.component.base.BaseDivider
-import cn.turingzy.ledger.ui.component.base.BaseListRow
+import cn.turingzy.ledger.ui.component.base.PageFrameBase
+import cn.turingzy.ledger.ui.component.base.CardBase
+import cn.turingzy.ledger.ui.component.base.DividerBase
+import cn.turingzy.ledger.ui.component.base.ListRowBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -45,7 +45,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import cn.turingzy.ledger.ui.AppSettingsViewModel
+import cn.turingzy.ledger.ui.AppStateViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
@@ -56,7 +56,7 @@ fun SettingsScreen(
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val appSettingsViewModel: AppSettingsViewModel = hiltViewModel()
+    val appStateViewModel: AppStateViewModel = hiltViewModel()
 
     val parseRulePreviews = (uiState as? SettingsUiState.Success)?.rules.orEmpty()
     val message = (uiState as? SettingsUiState.Success)?.message
@@ -81,7 +81,7 @@ fun SettingsScreen(
                 onBackupClick = { navigate(SettingsDestination.BACKUP) },
                 onAboutClick = { navigate(SettingsDestination.ABOUT) },
             )
-            SettingsDestination.GENERAL -> GeneralSettingsScreen(onBack = back, viewModel = appSettingsViewModel)
+            SettingsDestination.GENERAL -> GeneralSettingsScreen(onBack = back, viewModel = appStateViewModel)
             SettingsDestination.PARSE_RULES -> ParseRulesScreen(
                 accounts = (uiState as? SettingsUiState.Success)?.accounts.orEmpty(),
                 categories = (uiState as? SettingsUiState.Success)?.categories.orEmpty(),
@@ -127,7 +127,7 @@ fun SettingsContent(
     onGeneralSettingsClick: () -> Unit = {},
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
-    BasePageFrame(modifier) {
+    PageFrameBase(modifier) {
         when (uiState) {
             SettingsUiState.Loading -> {
                 Box(
@@ -141,7 +141,7 @@ fun SettingsContent(
 
             is SettingsUiState.Success -> {
                 val listState = rememberLazyListState()
-                ScrollTitleContainer(
+                ScrollTitleContainerBase(
                     title = textResources.getString(cn.turingzy.ledger.R.string.ui_settings),
                     scrollOffset = {
                         if (listState.firstVisibleItemIndex == 0) listState.firstVisibleItemScrollOffset
@@ -187,21 +187,21 @@ fun SettingsContent(
                                         title = androidx.compose.ui.res.stringResource(cn.turingzy.ledger.R.string.general_settings),
                                         onClick = onGeneralSettingsClick,
                                     )
-                                    BaseDivider(Modifier.padding(start = LedgerStyle.dimensions.settingsDividerInset))
+                                    DividerBase(Modifier.padding(start = LedgerStyle.dimensions.settingsDividerInset))
                                     SettingsRowItem(
                                         icon = MaterialSymbols.DashboardCustomize,
                                         iconColor = MaterialTheme.colorScheme.primary,
                                         title = textResources.getString(cn.turingzy.ledger.R.string.ui_card_designs),
                                         onClick = onCardManagementClick,
                                     )
-                                    BaseDivider(Modifier.padding(start = LedgerStyle.dimensions.settingsDividerInset))
+                                    DividerBase(Modifier.padding(start = LedgerStyle.dimensions.settingsDividerInset))
                                     SettingsRowItem(
                                         icon = MaterialSymbols.Code,
                                         iconColor = MaterialTheme.colorScheme.secondary,
                                         title = textResources.getString(cn.turingzy.ledger.R.string.ui_import_rules),
                                         onClick = onParseRulesClick,
                                     )
-                                    BaseDivider(Modifier.padding(start = LedgerStyle.dimensions.settingsDividerInset))
+                                    DividerBase(Modifier.padding(start = LedgerStyle.dimensions.settingsDividerInset))
                                     SettingsRowItem(
                                         icon = MaterialSymbols.ImportExport,
                                         iconColor = MaterialTheme.colorScheme.tertiary,
@@ -220,7 +220,7 @@ fun SettingsContent(
                                     title = textResources.getString(cn.turingzy.ledger.R.string.ui_backup_and_restore),
                                     onClick = onBackupClick,
                                 )
-                                BaseDivider(Modifier.padding(start = LedgerStyle.dimensions.settingsDividerInset))
+                                DividerBase(Modifier.padding(start = LedgerStyle.dimensions.settingsDividerInset))
                                 SettingsRowItem(
                                     icon = MaterialSymbols.Info,
                                     iconColor = MaterialTheme.colorScheme.primary,
@@ -239,7 +239,7 @@ fun SettingsContent(
 @Composable
 private fun SettingsGroup(content: @Composable ColumnScope.() -> Unit) {
     val shadow = MaterialTheme.colorScheme.scrim.copy(alpha = LedgerStyle.opacity.subtleCardShadow)
-    BaseCard(
+    CardBase(
         modifier = Modifier.shadow(
             elevation = LedgerStyle.dimensions.subtleCardShadow,
             shape = LedgerStyle.shapes.card,
@@ -259,7 +259,7 @@ fun SettingsRowItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    BaseListRow(
+    ListRowBase(
         headline = { Text(title, style = LedgerStyle.typography.settingsRowTitle) },
         modifier = modifier,
         contentPadding = PaddingValues(

@@ -14,7 +14,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import cn.turingzy.ledger.R
 import cn.turingzy.ledger.ui.component.MaterialSymbols
-import cn.turingzy.ledger.ui.component.base.BaseIconButton
+import cn.turingzy.ledger.ui.component.base.IconButtonBase
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -49,7 +49,7 @@ internal fun AccountSheetContent(
             contentAlignment = Alignment.Center,
         ) {
             Text(title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
-            BaseIconButton(MaterialSymbols.Close, stringResource(R.string.ui_cancel), onDismiss,
+            IconButtonBase(MaterialSymbols.Close, stringResource(R.string.ui_cancel), onDismiss,
                 modifier = Modifier.align(Alignment.CenterStart), showPressFeedback = false)
             AccountSaveButton(saveEnabled, onSave, Modifier.align(Alignment.CenterEnd))
         }

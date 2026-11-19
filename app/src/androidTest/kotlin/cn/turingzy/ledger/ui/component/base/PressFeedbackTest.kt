@@ -2,7 +2,7 @@ package cn.turingzy.ledger.ui.component.base
 
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.card.summary.TopBarIconButton
-import cn.turingzy.ledger.ui.component.input.LedgerSegmentedControl
+import cn.turingzy.ledger.ui.component.input.SegmentedControl
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -77,7 +77,7 @@ class PressFeedbackTest {
     fun segmentedControlDoesNotPaintAnotherSelectionWhilePressed() {
         compose.setContent {
             LedgerTheme {
-                LedgerSegmentedControl(listOf("支出", "收入"), 0, {}, Modifier.testTag("segments"))
+                SegmentedControl(listOf("支出", "收入"), 0, {}, Modifier.testTag("segments"))
             }
         }
         val target = compose.onNodeWithTag("segments")
@@ -95,7 +95,7 @@ class PressFeedbackTest {
         compose.setContent {
             LedgerTheme {
                 Box(Modifier.background(MaterialTheme.colorScheme.surface)) {
-                    BaseIconButtonContent({}, Modifier.testTag("dismiss"), showPressFeedback = false) {}
+                    IconButtonContentBase({}, Modifier.testTag("dismiss"), showPressFeedback = false) {}
                 }
             }
         }

@@ -1,7 +1,9 @@
 package cn.turingzy.ledger.ui
 
+import android.content.Context
 import android.content.res.Configuration
 import android.os.LocaleList
+import android.view.ContextThemeWrapper
 import android.view.Window
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -19,14 +21,14 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import cn.turingzy.ledger.model.settings.AppPreferences
-import cn.turingzy.ledger.ui.component.biz.LocalLedgerCurrency
+import cn.turingzy.ledger.ui.component.biz.LocalCurrencyBiz
 import cn.turingzy.ledger.ui.theme.LedgerTheme
 import java.util.Locale
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
-internal fun LedgerRoot(window: Window, viewModel: AppSettingsViewModel = hiltViewModel()) {
+internal fun LedgerRoot(window: Window, viewModel: AppStateViewModel = hiltViewModel()) {
     val preferences by viewModel.preferences.collectAsStateWithLifecycle()
     val settings = preferences ?: AppPreferences()
     val context = LocalContext.current
@@ -54,10 +56,14 @@ internal fun LedgerRoot(window: Window, viewModel: AppSettingsViewModel = hiltVi
         }
     }
     CompositionLocalProvider(LocalContext provides localizedContext, LocalConfiguration provides configuration,
-        LocalLedgerCurrency provides settings.primaryCurrency) {
+        LocalCurrencyBiz provides settings.primaryCurrency) {
         LedgerTheme(darkTheme = dark) {
             if (preferences == null) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             else LedgerApp()
         }
     }
 }
+
+internal fun localizedActivityContext(context: Context, configuration: Configuration): ContextThemeWrapper =
+    ContextThemeWrapper(context, context.theme).apply { applyOverrideConfiguration(configuration) }
+

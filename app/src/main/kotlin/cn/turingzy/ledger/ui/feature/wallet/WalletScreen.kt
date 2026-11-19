@@ -3,11 +3,11 @@ package cn.turingzy.ledger.ui.feature.wallet
 import cn.turingzy.ledger.ui.feature.wallet.component.SwipeableBankCardDeck
 import cn.turingzy.ledger.ui.feature.wallet.sheet.AccountDetailsSheet
 import cn.turingzy.ledger.ui.feature.wallet.sheet.AddAccountSheet
-import cn.turingzy.ledger.ui.component.base.ScrollTitleContainer
+import cn.turingzy.ledger.ui.component.base.ScrollTitleContainerBase
 import androidx.compose.foundation.lazy.rememberLazyListState
 import cn.turingzy.ledger.ui.component.card.summary.TopBarIconButton
 import cn.turingzy.ledger.ui.component.MaterialSymbols
-import cn.turingzy.ledger.ui.component.base.BasePageFrame
+import cn.turingzy.ledger.ui.component.base.PageFrameBase
 import cn.turingzy.ledger.ui.interaction.rememberUiEvent
 import cn.turingzy.ledger.ui.interaction.rememberUiAction
 import cn.turingzy.ledger.ui.interaction.UiInteractionKind
@@ -210,7 +210,7 @@ fun WalletContent(
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val openAccount = rememberUiEvent(onAdjustBalanceClick, UiInteractionKind.Navigation)
-    BasePageFrame(modifier) {
+    PageFrameBase(modifier) {
         when (uiState) {
             WalletUiState.Loading -> {
                 Box(
@@ -229,7 +229,7 @@ fun WalletContent(
                 var selectedAccountId by rememberSaveable { mutableStateOf<Long?>(null) }
 
                 val listState = rememberLazyListState()
-                ScrollTitleContainer(
+                ScrollTitleContainerBase(
                     title = textResources.getString(cn.turingzy.ledger.R.string.ui_wallet),
                     scrollOffset = {
                         if (listState.firstVisibleItemIndex == 0) listState.firstVisibleItemScrollOffset

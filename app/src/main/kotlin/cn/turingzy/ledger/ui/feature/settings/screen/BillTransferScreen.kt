@@ -6,13 +6,13 @@ import cn.turingzy.ledger.ui.feature.settings.component.SettingsTransferAction
 import cn.turingzy.ledger.ui.feature.settings.component.SettingsTransferFileRow
 import cn.turingzy.ledger.ui.feature.settings.component.selectedTransferFileName
 import cn.turingzy.ledger.ui.feature.settings.component.settingsPageScroll
-import cn.turingzy.ledger.ui.component.base.BaseIconButton
+import cn.turingzy.ledger.ui.component.base.IconButtonBase
 import cn.turingzy.ledger.ui.component.input.PreferenceChoice
 import cn.turingzy.ledger.ui.component.picker.LedgerDateTimeDialog
 import cn.turingzy.ledger.ui.interaction.uiClickable
-import cn.turingzy.ledger.ui.component.base.BaseDivider
+import cn.turingzy.ledger.ui.component.base.DividerBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
-import cn.turingzy.ledger.ui.component.base.BaseSurface
+import cn.turingzy.ledger.ui.component.base.SurfaceBase
 import cn.turingzy.ledger.ui.component.base.BaseAlertDialog
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -47,7 +47,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import cn.turingzy.ledger.ui.component.input.LedgerSegmentedControl
+import cn.turingzy.ledger.ui.component.input.SegmentedControl
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.theme.LedgerTheme
 import java.time.Instant
@@ -168,7 +168,7 @@ internal fun BillTransferScreen(
             confirmDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_skip_duplicates),
             onConfirm = { duplicateConfirmation = null; runTransfer(preview = false) },
             secondaryAction = {
-                BaseIconButton(
+                IconButtonBase(
                     MaterialSymbols.FileCopy, textResources.getString(cn.turingzy.ledger.R.string.ui_import_anyway),
                     { duplicateConfirmation = null; runTransfer(preview = false, includePossibleDuplicates = true) },
                 )
@@ -182,7 +182,7 @@ internal fun BillTransferScreen(
             verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large),
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.small)) {
-                LedgerSegmentedControl(
+                SegmentedControl(
                     labels = listOf(textResources.getString(cn.turingzy.ledger.R.string.ui_import), textResources.getString(cn.turingzy.ledger.R.string.ui_export)),
                     selectedIndex = if (importing) 0 else 1,
                     onSelect = { importing = it == 0; resetResult() },
@@ -298,7 +298,7 @@ private val billDateFormat = DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm")
 
 @Composable
 private fun BillTransferCard(content: @Composable ColumnScope.() -> Unit) {
-    BaseSurface(shape = LedgerStyle.shapes.card, color = MaterialTheme.colorScheme.surface) {
+    SurfaceBase(shape = LedgerStyle.shapes.card, color = MaterialTheme.colorScheme.surface) {
         Column(Modifier.fillMaxWidth(), content = content)
     }
 }
@@ -311,7 +311,7 @@ private fun BillTransferOption(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
-    BaseSurface(modifier, shape = LedgerStyle.shapes.card, color = MaterialTheme.colorScheme.surface) {
+    SurfaceBase(modifier, shape = LedgerStyle.shapes.card, color = MaterialTheme.colorScheme.surface) {
         Row(
             Modifier.fillMaxWidth().heightIn(min = SettingsItemHeight)
                 .selectable(selected = selected, enabled = enabled, role = Role.RadioButton, onClick = onClick)
@@ -326,7 +326,7 @@ private fun BillTransferOption(
 
 @Composable
 private fun BillTransferDivider() {
-    BaseDivider()
+    DividerBase()
 }
 
 @Composable

@@ -4,12 +4,12 @@ import androidx.compose.animation.Crossfade
 import cn.turingzy.ledger.ui.feature.settings.component.SettingsItemHeight
 import cn.turingzy.ledger.ui.feature.settings.component.SettingsSubpageScaffold
 import cn.turingzy.ledger.ui.feature.settings.component.settingsPageScroll
-import cn.turingzy.ledger.ui.component.base.BaseButtonVariant
-import cn.turingzy.ledger.ui.component.base.BaseActionButton
+import cn.turingzy.ledger.ui.component.base.ButtonVariantBase
+import cn.turingzy.ledger.ui.component.base.ActionButtonBase
 import androidx.compose.foundation.layout.*
 import cn.turingzy.ledger.model.settings.AppPreferences
-import cn.turingzy.ledger.ui.component.base.BaseCard
-import cn.turingzy.ledger.ui.component.base.BaseDivider
+import cn.turingzy.ledger.ui.component.base.CardBase
+import cn.turingzy.ledger.ui.component.base.DividerBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -27,14 +27,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cn.turingzy.ledger.R
-import cn.turingzy.ledger.ui.AppSettingsViewModel
+import cn.turingzy.ledger.ui.AppStateViewModel
 import cn.turingzy.ledger.ui.RateRefreshStatus
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.input.GeneralPreferencesForm
 import cn.turingzy.ledger.ui.component.input.PreferenceChoice
 
 @Composable
-internal fun GeneralSettingsScreen(onBack: () -> Unit, viewModel: AppSettingsViewModel) {
+internal fun GeneralSettingsScreen(onBack: () -> Unit, viewModel: AppStateViewModel) {
     val settings by viewModel.preferences.collectAsStateWithLifecycle()
     val accounts by viewModel.accounts.collectAsStateWithLifecycle()
     val busy by viewModel.busy.collectAsStateWithLifecycle()
@@ -103,9 +103,9 @@ internal fun GeneralSettingsContent(
             Text(stringResource(R.string.basic_preferences), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
             GeneralPreferencesForm(draft, onPreferencesChange, !busy)
             Text(stringResource(R.string.exchange_rates), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-            BaseCard(contentPadding = PaddingValues(LedgerStyle.spacing.none), contentSpacing = LedgerStyle.spacing.none) {
+            CardBase(contentPadding = PaddingValues(LedgerStyle.spacing.none), contentSpacing = LedgerStyle.spacing.none) {
                 PreferenceChoice(stringResource(R.string.account_currency), from, currencies, !busy, onFromChange)
-                BaseDivider(Modifier.padding(horizontal = LedgerStyle.spacing.large))
+                DividerBase(Modifier.padding(horizontal = LedgerStyle.spacing.large))
                 ExchangeRateField(from, draft.primaryCurrency, rate, !busy, onRateChange)
             }
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -124,7 +124,7 @@ internal fun GeneralSettingsContent(
                         }
                     }
                 }
-                BaseActionButton(variant = BaseButtonVariant.Text, onClick = onRefresh, enabled = !busy,
+                ActionButtonBase(variant = ButtonVariantBase.Text, onClick = onRefresh, enabled = !busy,
                     showPressFeedback = false,
                     contentPadding = PaddingValues(vertical = LedgerStyle.spacing.medium)) {
                     Text(stringResource(R.string.refresh_rates), style = MaterialTheme.typography.bodyMedium)

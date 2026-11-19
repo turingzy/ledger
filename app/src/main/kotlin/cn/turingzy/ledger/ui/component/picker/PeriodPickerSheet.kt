@@ -1,9 +1,9 @@
 package cn.turingzy.ledger.ui.component.picker
 
 import cn.turingzy.ledger.ui.component.MaterialSymbols
-import cn.turingzy.ledger.ui.component.input.LedgerSegmentedControl
-import cn.turingzy.ledger.ui.component.base.BaseIconButtonContent
-import cn.turingzy.ledger.ui.component.base.BaseIconButton
+import cn.turingzy.ledger.ui.component.input.SegmentedControl
+import cn.turingzy.ledger.ui.component.base.IconButtonContentBase
+import cn.turingzy.ledger.ui.component.base.IconButtonBase
 import cn.turingzy.ledger.ui.interaction.UiInteractionKind
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.model.transaction.DateFilterType
@@ -88,7 +88,7 @@ internal fun PeriodPickerSheet(
         if (view != type) onSelect(view, periodStart(view, today))
         onDismiss()
     }
-    cn.turingzy.ledger.ui.component.base.BaseModalBottomSheet(::dismiss, sheetState, modifier) {
+    cn.turingzy.ledger.ui.component.base.ModalBottomSheetBase(::dismiss, sheetState, modifier) {
         Column(
             Modifier.height(height).fillMaxWidth().testTag("ledgerPeriodPicker")
                 .navigationBarsPadding().padding(horizontal = LedgerStyle.spacing.large),
@@ -97,13 +97,13 @@ internal fun PeriodPickerSheet(
                 header { apply(view, today) }
             } else {
                 Box(Modifier.fillMaxWidth().height(48.dp), contentAlignment = Alignment.Center) {
-                    BaseIconButtonContent(
+                    IconButtonContentBase(
                         ::dismiss, modifier = Modifier.align(Alignment.CenterStart), showPressFeedback = false,
                     ) {
                         Icon(MaterialSymbols.Close, androidx.compose.ui.res.stringResource(cn.turingzy.ledger.R.string.ui_close_date_picker))
                     }
                     if (showViewSelector) {
-                        LedgerSegmentedControl(
+                        SegmentedControl(
                             labels = listOf(textResources.getString(cn.turingzy.ledger.R.string.ui_week), textResources.getString(cn.turingzy.ledger.R.string.ui_month), textResources.getString(cn.turingzy.ledger.R.string.ui_year)),
                             selectedIndex = views.indexOf(view),
                             onSelect = { view = views[it] },
@@ -111,7 +111,7 @@ internal fun PeriodPickerSheet(
                             fontSize = LedgerStyle.typography.bodySmall.fontSize, fontWeight = FontWeight.Normal,
                         )
                     }
-                    BaseIconButtonContent(
+                    IconButtonContentBase(
                         { apply(view, today) }, modifier = Modifier.align(Alignment.CenterEnd),
                         showPressFeedback = false,
                     ) {
@@ -258,7 +258,7 @@ internal fun PeriodPickerActions(
     modifier: Modifier = Modifier,
 ) {
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
-        BaseIconButton(
+        IconButtonBase(
             MaterialSymbols.Undo, type.returnLabel, onReturn,
             contentColor = LedgerStyle.colors.info,
             interaction = UiInteractionKind.Navigation,

@@ -11,7 +11,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import cn.turingzy.ledger.ui.component.base.BaseCard
+import cn.turingzy.ledger.ui.component.base.CardBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import java.time.LocalDate
 import java.time.YearMonth
@@ -53,7 +53,7 @@ internal fun DashboardCard(
     contentSpacing: androidx.compose.ui.unit.Dp = LedgerStyle.spacing.sectionGap,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    BaseCard(
+    CardBase(
         modifier.padding(top = AnalyticsCardTopSpacing),
         shape = LedgerStyle.shapes.summaryCard,
         outlined = true,

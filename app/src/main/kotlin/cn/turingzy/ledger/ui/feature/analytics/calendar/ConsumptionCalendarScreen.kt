@@ -34,16 +34,16 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cn.turingzy.ledger.R
 import cn.turingzy.ledger.model.transaction.DateFilterType
 import cn.turingzy.ledger.model.transaction.TransactionType
-import cn.turingzy.ledger.ui.component.biz.LocalLedgerCurrency
+import cn.turingzy.ledger.ui.component.biz.LocalCurrencyBiz
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.picker.PeriodPickerActions
 import cn.turingzy.ledger.ui.component.picker.PeriodPickerSheet
-import cn.turingzy.ledger.ui.component.biz.currencySymbol
+import cn.turingzy.ledger.ui.component.biz.currencySymbolBiz
 import cn.turingzy.ledger.ui.component.picker.returnLabel
 import cn.turingzy.ledger.ui.component.base.*
-import cn.turingzy.ledger.ui.component.biz.BusinessAmountSize
-import cn.turingzy.ledger.ui.component.biz.BusinessAmountText
-import cn.turingzy.ledger.ui.component.biz.BusinessTransactionItem
+import cn.turingzy.ledger.ui.component.biz.AmountSizeBiz
+import cn.turingzy.ledger.ui.component.biz.AmountTextBiz
+import cn.turingzy.ledger.ui.component.biz.TransactionItemBiz
 import cn.turingzy.ledger.ui.interaction.UiInteractionKind
 import cn.turingzy.ledger.ui.interaction.rememberUiEvent
 import cn.turingzy.ledger.ui.interaction.uiSelectable
@@ -65,7 +65,7 @@ internal fun ConsumptionCalendarScreen(
     snackbarHostState: SnackbarHostState? = null,
 ) {
     val dashboard by viewModel.uiState.collectAsStateWithLifecycle()
-    CompositionLocalProvider(LocalLedgerCurrency provides dashboard.currency) {
+    CompositionLocalProvider(LocalCurrencyBiz provides dashboard.currency) {
         Box(modifier.fillMaxSize()) {
             ConsumptionCalendarContent(
                 dashboard, initialMonth, onBack,
@@ -105,7 +105,7 @@ internal fun ConsumptionCalendarContent(
     val dayFormatter = remember(configuration) { DateTimeFormatter.ofPattern(if (configuration.locales[0].language == "en") "MMM d" else "M月d日", configuration.locales[0]) }
     val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
     val listState = rememberLazyListState()
-    BasePageScaffold(
+    PageScaffoldBase(
         title = textResources.getString(R.string.ui_spending_calendar),
         modifier = modifier,
         onBack = onBack,
@@ -125,11 +125,11 @@ internal fun ConsumptionCalendarContent(
         ) {
             if (!dashboard.amountsAvailable) {
                 item(key = "missing_rates") {
-                    BaseEmptyState(title = textResources.getString(R.string.ui_exchange_rate_needed_refresh_or_enter_a_rate))
+                    EmptyStateBase(title = textResources.getString(R.string.ui_exchange_rate_needed_refresh_or_enter_a_rate))
                 }
             } else {
                 item(key = "calendar") {
-                    BaseCard(
+                    CardBase(
                         shape = LedgerStyle.shapes.summaryCard,
                         outlined = true,
                         contentPadding = PaddingValues(horizontal = LedgerStyle.spacing.calendarCardHorizontal, vertical = LedgerStyle.spacing.calendarCardVertical),
@@ -150,7 +150,7 @@ internal fun ConsumptionCalendarContent(
                                     textResources.getString(R.string.calendar_month_expense, month.monthValue).trim(),
                                     style = LedgerStyle.typography.calendarMonthLabel, color = colors.textSecondary,
                                 )
-                                BusinessAmountText(data.totalExpense, dashboard.currency, textStyle = LedgerStyle.typography.calendarMonthAmount)
+                                AmountTextBiz(data.totalExpense, dashboard.currency, textStyle = LedgerStyle.typography.calendarMonthAmount)
                             }
                         }
                         ConsumptionMonthGrid(data, selectedDate, today, { selectedEpoch = it.toEpochDay() })
@@ -168,23 +168,23 @@ internal fun ConsumptionCalendarContent(
                     }
                 }
                 item(key = "day") {
-                    BaseSectionHeader(
+                    SectionHeaderBase(
                         title = textResources.getString(R.string.calendar_day_count, selectedDate.format(dayFormatter), entries.size),
-                        variant = BaseSectionHeaderVariant.Supporting,
+                        variant = SectionHeaderVariantBase.Supporting,
                         modifier = Modifier.padding(top = LedgerStyle.spacing.section, bottom = LedgerStyle.spacing.medium),
-                        actions = { BusinessAmountText(data.expenses[selectedDate] ?: 0L, dashboard.currency, size = BusinessAmountSize.Small) },
+                        actions = { AmountTextBiz(data.expenses[selectedDate] ?: 0L, dashboard.currency, size = AmountSizeBiz.Small) },
                     )
                 }
                 if (entries.isEmpty()) item(key = "empty") {
                     when {
-                        dashboard.loading -> BaseEmptyState(title = textResources.getString(R.string.ui_loading_transactions))
+                        dashboard.loading -> EmptyStateBase(title = textResources.getString(R.string.ui_loading_transactions))
                         else -> ConsumptionCalendarEmptyState(onRecord = { onRecordTransaction(selectedDate) })
                     }
                 }
                 itemsIndexed(entries, key = { _, entry -> entry.id }) { index, entry ->
                     val corners = LedgerStyle.shapes.summaryCard
                     val square = CornerSize(LedgerStyle.spacing.none)
-                    BaseCard(
+                    CardBase(
                         shape = corners.copy(
                             topStart = if (index == 0) corners.topStart else square,
                             topEnd = if (index == 0) corners.topEnd else square,
@@ -194,11 +194,11 @@ internal fun ConsumptionCalendarContent(
                         contentPadding = PaddingValues(LedgerStyle.spacing.none),
                         contentSpacing = LedgerStyle.spacing.none,
                     ) {
-                        if (index > 0) BaseDivider(Modifier.padding(
+                        if (index > 0) DividerBase(Modifier.padding(
                             start = LedgerStyle.dimensions.compactIconButton + LedgerStyle.spacing.rowHorizontal + LedgerStyle.spacing.sectionGap,
                             end = LedgerStyle.spacing.rowHorizontal,
                         ))
-                        BusinessTransactionItem(
+                        TransactionItemBiz(
                             amount = entry.amount, currency = entry.currency, type = entry.type,
                             category = entry.category, accountName = entry.accountName,
                             timeText = entry.time?.format(timeFormatter).orEmpty(), note = entry.note,
@@ -232,7 +232,7 @@ private fun ConsumptionMonthGrid(
     onSelect: (LocalDate) -> Unit,
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
-    val currencySymbol = currencySymbol(LocalLedgerCurrency.current)
+    val currencySymbol = currencySymbolBiz(LocalCurrencyBiz.current)
     val colors = MaterialTheme.colorScheme
     Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {

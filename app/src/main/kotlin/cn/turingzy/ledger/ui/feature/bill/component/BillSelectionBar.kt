@@ -48,14 +48,14 @@ import cn.turingzy.ledger.model.transaction.TransactionBatchChange
 import cn.turingzy.ledger.model.transaction.TransactionType
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.base.BaseAlertDialog
-import cn.turingzy.ledger.ui.component.base.BaseIconButton
-import cn.turingzy.ledger.ui.component.base.BaseDivider
-import cn.turingzy.ledger.ui.component.base.BaseEmptyState
-import cn.turingzy.ledger.ui.component.base.BaseModalBottomSheet
-import cn.turingzy.ledger.ui.component.base.BaseSurface
-import cn.turingzy.ledger.ui.component.biz.BusinessTypeIcon
-import cn.turingzy.ledger.ui.component.biz.categoryGlyph
-import cn.turingzy.ledger.ui.component.input.LedgerSegmentedControl
+import cn.turingzy.ledger.ui.component.base.IconButtonBase
+import cn.turingzy.ledger.ui.component.base.DividerBase
+import cn.turingzy.ledger.ui.component.base.EmptyStateBase
+import cn.turingzy.ledger.ui.component.base.ModalBottomSheetBase
+import cn.turingzy.ledger.ui.component.base.SurfaceBase
+import cn.turingzy.ledger.ui.component.biz.TypeIconBiz
+import cn.turingzy.ledger.ui.component.biz.categoryGlyphBiz
+import cn.turingzy.ledger.ui.component.input.SegmentedControl
 import cn.turingzy.ledger.ui.component.navigation.BottomBarContentPadding
 import cn.turingzy.ledger.ui.component.navigation.BottomBarHeight
 import cn.turingzy.ledger.ui.component.navigation.BottomBarVerticalPadding
@@ -81,7 +81,7 @@ internal fun BillSelectionBar(
 ) {
     val colors = LedgerStyle.colors
     val actionsEnabled = enabled && selectedCount > 0
-    BaseSurface(
+    SurfaceBase(
         modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = BottomBarVerticalPadding),
         shape = CircleShape, color = colors.surface, shadowElevation = 2.dp,
         border = BorderStroke(0.5.dp, colors.divider),
@@ -173,7 +173,7 @@ internal enum class BillActionPicker {
                     }
                 },
             )
-        } else BaseModalBottomSheet(
+        } else ModalBottomSheetBase(
             onDismissRequest = onDismiss,
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
             contentHandlesInsets = true,
@@ -181,7 +181,7 @@ internal enum class BillActionPicker {
             Column(Modifier.fillMaxWidth().height(height).navigationBarsPadding()) {
                 val types = listOf(TransactionType.EXPENSE, TransactionType.INCOME)
                 BillPickerHeader(stringResource(R.string.bill_close_category_picker), onDismiss, confirm) {
-                    LedgerSegmentedControl(
+                    SegmentedControl(
                         labels = listOf(stringResource(R.string.ui_expense), stringResource(R.string.ui_income)),
                         selectedIndex = types.indexOf(categoryType),
                         onSelect = { index ->
@@ -196,8 +196,8 @@ internal enum class BillActionPicker {
                         fontSize = LedgerStyle.typography.label.fontSize,
                     )
                 }
-                BaseDivider()
-                if (visibleCategories.isEmpty()) BaseEmptyState(title = stringResource(R.string.bill_no_compatible_categories))
+                DividerBase()
+                if (visibleCategories.isEmpty()) EmptyStateBase(title = stringResource(R.string.bill_no_compatible_categories))
                 else key(categoryType) {
                     LazyVerticalGrid(
                         columns = GridCells.Adaptive(minSize = 64.dp),
@@ -221,7 +221,7 @@ internal enum class BillActionPicker {
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.tiny),
                             ) {
-                                BusinessTypeIcon(item.icon.categoryGlyph(), categoryType, highlighted = isSelected)
+                                TypeIconBiz(item.icon.categoryGlyphBiz(), categoryType, highlighted = isSelected)
                                 Text(
                                     item.category.name, style = LedgerStyle.typography.label,
                                     textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis,
@@ -251,9 +251,9 @@ private fun BillPickerHeader(
         Modifier.fillMaxWidth().heightIn(min = LedgerStyle.dimensions.touchTarget).padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        BaseIconButton(MaterialSymbols.Close, closeDescription, onDismiss, showPressFeedback = false)
+        IconButtonBase(MaterialSymbols.Close, closeDescription, onDismiss, showPressFeedback = false)
         Box(Modifier.weight(1f), contentAlignment = Alignment.Center) { content() }
-        BaseIconButton(
+        IconButtonBase(
             MaterialSymbols.Check, stringResource(R.string.ui_confirm), { onConfirm?.invoke() },
             enabled = onConfirm != null, contentColor = LedgerStyle.colors.success, showPressFeedback = false,
         )

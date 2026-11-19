@@ -1,11 +1,11 @@
 package cn.turingzy.ledger.ui.feature.wallet.sheet
 
-import cn.turingzy.ledger.ui.component.base.BaseModalBottomSheet
+import cn.turingzy.ledger.ui.component.base.ModalBottomSheetBase
 import cn.turingzy.ledger.ui.component.base.keepSheetAnchorDuringIme
-import cn.turingzy.ledger.ui.component.base.BaseIconButtonContent
+import cn.turingzy.ledger.ui.component.base.IconButtonContentBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
-import cn.turingzy.ledger.ui.component.base.BaseSurface
-import cn.turingzy.ledger.ui.component.base.BaseDialogWindow
+import cn.turingzy.ledger.ui.component.base.SurfaceBase
+import cn.turingzy.ledger.ui.component.base.DialogWindowBase
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -56,7 +56,7 @@ fun AccountDetailsSheet(
         }
     }
 
-    BaseModalBottomSheet(
+    ModalBottomSheetBase(
         contentHandlesInsets = true,
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
@@ -99,12 +99,12 @@ fun AccountDetailsContent(
         onDelete = { confirmDelete = true },
     )
     if (confirmDelete) {
-        BaseDialogWindow(onDismissRequest = { confirmDelete = false }) {
+        DialogWindowBase(onDismissRequest = { confirmDelete = false }) {
             val colors = MaterialTheme.colorScheme
             // Include the official symbols' viewport insets when aligning their visible edges.
             val closeIconInset = 8.dp + 24.dp * (217f / 960f)
             val deleteIconInset = 8.dp + 24.dp * (160f / 960f)
-            BaseSurface(shape = LedgerStyle.shapes.confirmationDialog, color = colors.surface) {
+            SurfaceBase(shape = LedgerStyle.shapes.confirmationDialog, color = colors.surface) {
                 Column(Modifier.padding(LedgerStyle.spacing.block), verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.extraLarge)) {
                     Text(textResources.getString(cn.turingzy.ledger.R.string.ui_delete_account_2), style = MaterialTheme.typography.headlineSmall)
                     Text(
@@ -116,13 +116,13 @@ fun AccountDetailsContent(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        BaseIconButtonContent(
+                        IconButtonContentBase(
                             onClick = { confirmDelete = false },
                             modifier = Modifier.offset(x = -closeIconInset).size(40.dp), showPressFeedback = false,
                         ) {
                             Icon(MaterialSymbols.Close, textResources.getString(cn.turingzy.ledger.R.string.ui_cancel_account_deletion), Modifier.size(LedgerStyle.icons.default), tint = colors.onSurface)
                         }
-                        BaseIconButtonContent(
+                        IconButtonContentBase(
                             onClick = { confirmDelete = false; onDelete() },
                             modifier = Modifier.offset(x = deleteIconInset).size(40.dp), showPressFeedback = false,
                         ) {

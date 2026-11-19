@@ -1,11 +1,11 @@
 package cn.turingzy.ledger.ui.feature.analytics.sheet
 
 import cn.turingzy.ledger.ui.feature.analytics.AnalyticsTransaction
-import cn.turingzy.ledger.ui.component.biz.BusinessTransactionRow
+import cn.turingzy.ledger.ui.component.biz.TransactionRowBiz
 import cn.turingzy.ledger.ui.theme.LedgerStyle
-import cn.turingzy.ledger.ui.component.base.BaseModalBottomSheet
-import cn.turingzy.ledger.ui.component.biz.LocalLedgerCurrency
-import cn.turingzy.ledger.ui.component.biz.currencySymbol
+import cn.turingzy.ledger.ui.component.base.ModalBottomSheetBase
+import cn.turingzy.ledger.ui.component.biz.LocalCurrencyBiz
+import cn.turingzy.ledger.ui.component.biz.currencySymbolBiz
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -23,9 +23,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cn.turingzy.ledger.model.transaction.TransactionType
-import cn.turingzy.ledger.ui.component.base.BaseDivider
+import cn.turingzy.ledger.ui.component.base.DividerBase
 import cn.turingzy.ledger.ui.component.MaterialSymbols
-import cn.turingzy.ledger.ui.component.biz.categoryGlyph
+import cn.turingzy.ledger.ui.component.biz.categoryGlyphBiz
 import cn.turingzy.ledger.util.toFormattedAmount
 import java.time.format.DateTimeFormatter
 import androidx.compose.ui.res.stringResource
@@ -53,7 +53,7 @@ internal fun AnalyticsTransactionSheet(
     val dateFormatter = remember(locale) { DateTimeFormatter.ofPattern("MM.dd E", locale) }
     val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
     val shortDateFormatter = remember { DateTimeFormatter.ofPattern("MM.dd") }
-    BaseModalBottomSheet(
+    ModalBottomSheetBase(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
     ) {
@@ -62,7 +62,7 @@ internal fun AnalyticsTransactionSheet(
                 Text(title, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
-            BaseDivider()
+            DividerBase()
             Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.small)) {
                 if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
@@ -87,8 +87,8 @@ internal fun AnalyticsTransactionSheet(
                         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(
                             topStart = topRadius, topEnd = topRadius, bottomStart = bottomRadius, bottomEnd = bottomRadius,
                         )).background(colors.surface)) {
-                            if (index > 0) BaseDivider(Modifier.padding(start = 62.dp, end = 14.dp))
-                            BusinessTransactionRow(
+                            if (index > 0) DividerBase(Modifier.padding(start = 62.dp, end = 14.dp))
+                            TransactionRowBiz(
                                 categoryName = categoryName,
                                 supportingText = supportingText,
                                 timeText = if (groupByDate) entry.time?.format(timeFormatter).orEmpty()
@@ -96,7 +96,7 @@ internal fun AnalyticsTransactionSheet(
                                 amount = entry.amount,
                                 currency = entry.currency,
                                 type = entry.type,
-                                icon = entry.category?.icon?.categoryGlyph() ?: MaterialSymbols.Payments,
+                                icon = entry.category?.icon?.categoryGlyphBiz() ?: MaterialSymbols.Payments,
                             )
                         }
                     }
@@ -113,7 +113,7 @@ private fun AnalyticsTransactionTotals(
     modifier: Modifier,
     showTotalLabel: Boolean = false,
 ) {
-    val currencySymbol = currencySymbol(LocalLedgerCurrency.current)
+    val currencySymbol = currencySymbolBiz(LocalCurrencyBiz.current)
     val expense = remember(transactions) { transactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.primaryAmount } }
     val income = remember(transactions) { transactions.filter { it.type == TransactionType.INCOME }.sumOf { it.primaryAmount } }
     val showExpense = summaryType == TransactionType.EXPENSE || (summaryType == null && (expense > 0L || income == 0L))

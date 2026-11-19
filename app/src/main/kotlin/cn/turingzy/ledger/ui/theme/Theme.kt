@@ -53,7 +53,7 @@ private val LightColorScheme = lightColorScheme(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LedgerTheme(
+fun AppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
@@ -67,3 +67,9 @@ fun LedgerTheme(
         CompositionLocalProvider(LocalIndication provides feedback, LocalRippleConfiguration provides null, content = content)
     }
 }
+
+@Composable
+fun LedgerTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit,
+) = AppTheme(darkTheme = darkTheme, content = content)

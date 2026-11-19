@@ -5,7 +5,7 @@ import cn.turingzy.ledger.ui.feature.settings.component.SettingsPageContentTopPa
 import cn.turingzy.ledger.ui.feature.settings.component.SettingsSubpageScaffold
 import cn.turingzy.ledger.ui.interaction.uiClickable
 import cn.turingzy.ledger.ui.theme.LedgerStyle
-import cn.turingzy.ledger.ui.component.base.BaseSurface
+import cn.turingzy.ledger.ui.component.base.SurfaceBase
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -58,7 +58,7 @@ internal fun OpenSourceLibrariesScreen(onBack: () -> Unit, modifier: Modifier = 
             verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium),
         ) {
             items(openSourceLibraries, key = { it.name }) { library ->
-                BaseSurface(shape = LedgerStyle.shapes.card, color = MaterialTheme.colorScheme.surface) {
+                SurfaceBase(shape = LedgerStyle.shapes.card, color = MaterialTheme.colorScheme.surface) {
                     Column(
                         Modifier.fillMaxWidth().uiClickable { uriHandler.openUri(library.url) }
                             .padding(horizontal = 12.dp, vertical = 10.dp),

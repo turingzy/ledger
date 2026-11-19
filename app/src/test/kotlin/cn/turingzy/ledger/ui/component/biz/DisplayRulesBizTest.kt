@@ -1,0 +1,80 @@
+package cn.turingzy.ledger.ui.component.biz
+
+import cn.turingzy.ledger.model.account.Account
+import cn.turingzy.ledger.model.account.AccountType
+import cn.turingzy.ledger.model.category.Category
+import cn.turingzy.ledger.model.category.CategoryType
+import cn.turingzy.ledger.model.category.CategoryWithIcon
+import cn.turingzy.ledger.model.category.Icon
+import cn.turingzy.ledger.model.transaction.Transaction
+import cn.turingzy.ledger.model.transaction.TransactionDetail
+import cn.turingzy.ledger.model.transaction.TransactionType
+import cn.turingzy.ledger.model.currency.primaryBalance
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Test
+import cn.turingzy.ledger.util.AmountFormatter
+
+class DisplayRulesBizTest {
+    @Test
+    fun primaryCurrencyUsesItsOwnSymbolAndForeignCurrencyUsesAnExplicitCode() {
+        mapOf("CNY" to "¥", "USD" to "$", "EUR" to "€", "GBP" to "£", "JPY" to "¥").forEach { (code, symbol) ->
+            assertEquals("${symbol}12.34", amountTextBiz(1234L, code, code))
+            val other = if (code == "CNY") "USD" else "CNY"
+            assertEquals("12.34 $code", amountTextBiz(1234L, code, other))
+        }
+        assertEquals("12.34 ZZZ", amountTextBiz(1234L, "ZZZ", "CNY"))
+        assertEquals("ZZZ 12.34", amountTextBiz(1234L, "ZZZ", "ZZZ"))
+    }
+
+    @Test
+    fun typesChooseSignsAndNegativeValuesNeverAcquireDuplicateSigns() {
+        assertEquals("−¥12.34", amountTextBiz(1234L, "CNY", "CNY", TransactionType.EXPENSE))
+        assertEquals("+¥12.34", amountTextBiz(1234L, "CNY", "CNY", TransactionType.INCOME))
+        assertEquals("¥12.34", amountTextBiz(1234L, "CNY", "CNY", TransactionType.TRANSFER))
+        TransactionType.entries.forEach {
+            assertEquals("−12.34 USD", amountTextBiz(-1234L, "USD", "CNY", it))
+        }
+        assertEquals("¥0.00", amountTextBiz(0L, "CNY", "CNY"))
+    }
+
+    @Test
+    fun missingAndHiddenAmountsCannotBeMistakenForZeroOrRevealTheCurrencyValue() {
+        assertEquals("—", amountTextBiz(null, "USD", "CNY"))
+        assertEquals("****", amountTextBiz(1234L, "USD", "CNY", hidden = true))
+        assertEquals("****", amountTextBiz(null, "USD", "CNY", hidden = true))
+    }
+
+    @Test
+    fun fullLongRangeIsFormattedWithoutOverflowOrFloatingPointRounding() {
+        assertEquals("−¥92233720368547758.08", amountTextBiz(Long.MIN_VALUE, "CNY", "CNY"))
+        assertEquals("¥92233720368547758.07", amountTextBiz(Long.MAX_VALUE, "CNY", "CNY"))
+    }
+
+    @Test
+    fun groupingUsesTheExistingAmountFormatterForOrdinaryValues() {
+        assertEquals(
+            "¥" + AmountFormatter.formatCents(12345678L, useGrouping = true),
+            amountTextBiz(12345678L, "CNY", "CNY", useGrouping = true),
+        )
+    }
+
+    @Test
+    fun accountGlyphAccentPreservesBrandPriorityAndEveryAccountType() {
+        mapOf(AccountType.DEBIT to AccountAccent.Primary, AccountType.CREDIT to AccountAccent.Credit,
+            AccountType.WALLET to AccountAccent.Income, AccountType.CASH to AccountAccent.Cash).forEach { (type, accent) ->
+            assertEquals(accent, Account(name = "账户", type = type).displayAccent())
+        }
+        assertEquals(AccountAccent.Primary, Account(name = "支付宝", type = AccountType.CASH).displayAccent())
+        assertEquals(AccountAccent.Income, Account(name = "微信", type = AccountType.CREDIT).displayAccent())
+    }
+
+    @Test
+    fun accountValuationDoesNotUseASnapshotOfTheWrongCurrency() {
+        val account = Account(name = "账户", type = AccountType.DEBIT, currency = "USD", currentBalance = 10000L,
+            baseCurrency = "EUR", baseBalance = 9000L)
+        assertNull(account.primaryBalance("CNY"))
+        assertEquals(9000L, account.primaryBalance("EUR"))
+        assertEquals(10000L, account.primaryBalance("USD"))
+    }
+}

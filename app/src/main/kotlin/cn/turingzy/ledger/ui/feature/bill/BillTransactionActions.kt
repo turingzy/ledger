@@ -31,7 +31,7 @@ import cn.turingzy.ledger.ui.feature.bill.component.BillSelectionBar
 import cn.turingzy.ledger.ui.feature.bill.component.BillSelectionBarPadding
 import cn.turingzy.ledger.ui.feature.bill.component.BillSwipeRow
 import cn.turingzy.ledger.ui.feature.bill.detail.TransactionDetailsViewModel
-import cn.turingzy.ledger.ui.feature.bill.sheet.CreateTransactionSheet
+import cn.turingzy.ledger.ui.feature.bill.sheet.RecordCreateSheet
 import java.time.LocalDate
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -185,7 +185,7 @@ internal fun BillTransactionActions(
         )
     }
     draft?.let { transaction ->
-        CreateTransactionSheet(
+        RecordCreateSheet(
             date = LocalDate.now(), onDismiss = { draft = null },
             viewModel = viewModel, transactionViewModel = transactionViewModel, draft = transaction,
         )

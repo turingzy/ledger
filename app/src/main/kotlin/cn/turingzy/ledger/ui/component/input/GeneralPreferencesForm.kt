@@ -1,9 +1,9 @@
 package cn.turingzy.ledger.ui.component.input
 
-import cn.turingzy.ledger.ui.component.base.BaseDropdownIndicator
+import cn.turingzy.ledger.ui.component.base.DropdownIndicatorBase
 import androidx.compose.foundation.layout.*
-import cn.turingzy.ledger.ui.component.base.BaseCard
-import cn.turingzy.ledger.ui.component.base.BaseDivider
+import cn.turingzy.ledger.ui.component.base.CardBase
+import cn.turingzy.ledger.ui.component.base.DividerBase
 import cn.turingzy.ledger.ui.interaction.uiClickable
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.material3.*
@@ -24,16 +24,16 @@ internal fun GeneralPreferencesForm(value: AppPreferences, onChange: (AppPrefere
     val currencies = remember(value.primaryCurrency) {
         (listOf(value.primaryCurrency, "CNY", "USD") + supportedCurrencyCodes.sorted()).distinct()
     }
-    BaseCard(
+    CardBase(
         contentPadding = PaddingValues(LedgerStyle.spacing.none),
         contentSpacing = LedgerStyle.spacing.none,
     ) {
         PreferenceChoice(stringResource(R.string.preference_language), value.language,
             listOf("system" to stringResource(R.string.follow_system), "zh" to "简体中文", "en" to "English"), enabled) { onChange(value.copy(language = it)) }
-        BaseDivider(Modifier.padding(horizontal = LedgerStyle.spacing.large))
+        DividerBase(Modifier.padding(horizontal = LedgerStyle.spacing.large))
         PreferenceChoice(stringResource(R.string.preference_theme), value.theme,
             listOf("system" to stringResource(R.string.follow_system), "light" to stringResource(R.string.light_theme), "dark" to stringResource(R.string.dark_theme)), enabled) { onChange(value.copy(theme = it)) }
-        BaseDivider(Modifier.padding(horizontal = LedgerStyle.spacing.large))
+        DividerBase(Modifier.padding(horizontal = LedgerStyle.spacing.large))
         PreferenceChoice(stringResource(R.string.primary_currency), value.primaryCurrency,
             currencies.map { it to it }, enabled) { onChange(value.copy(primaryCurrency = it)) }
     }
@@ -66,7 +66,7 @@ internal fun PreferenceChoice(title: String, selected: String, options: List<Pai
                     color = colors.onSurfaceVariant.copy(alpha = if (enabled) 1f else LedgerStyle.opacity.disabled),
                     style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.End,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
-                BaseDropdownIndicator(expanded, contentColor = colors.onSurfaceVariant.copy(alpha = if (enabled) 1f else LedgerStyle.opacity.disabled))
+                DropdownIndicatorBase(expanded, contentColor = colors.onSurfaceVariant.copy(alpha = if (enabled) 1f else LedgerStyle.opacity.disabled))
             }
         }
     }

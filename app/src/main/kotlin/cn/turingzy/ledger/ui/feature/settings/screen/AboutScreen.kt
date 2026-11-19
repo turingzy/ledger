@@ -4,7 +4,7 @@ import cn.turingzy.ledger.ui.feature.settings.component.SettingsActionRow
 import cn.turingzy.ledger.ui.feature.settings.component.SettingsSubpageScaffold
 import cn.turingzy.ledger.ui.feature.settings.component.settingsPageScroll
 import cn.turingzy.ledger.ui.theme.LedgerStyle
-import cn.turingzy.ledger.ui.component.base.BaseSurface
+import cn.turingzy.ledger.ui.component.base.SurfaceBase
 import cn.turingzy.ledger.ui.component.base.BaseAlertDialog
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.BorderStroke
@@ -118,7 +118,7 @@ private fun AboutContent(
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val colors = MaterialTheme.colorScheme
     Column(modifier.fillMaxWidth().settingsPageScroll()) {
-        BaseSurface(
+        SurfaceBase(
             onClick = onCheckUpdate,
             enabled = updateState != UpdateCheckState.CHECKING,
             modifier = Modifier.semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_check_for_updates) },

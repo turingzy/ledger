@@ -1,8 +1,8 @@
 package cn.turingzy.ledger.ui.feature.bill.sheet
 
-import cn.turingzy.ledger.ui.component.base.BaseDivider
+import cn.turingzy.ledger.ui.component.base.DividerBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
-import cn.turingzy.ledger.ui.component.base.BaseModalBottomSheet
+import cn.turingzy.ledger.ui.component.base.ModalBottomSheetBase
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.Arrangement
@@ -47,7 +47,7 @@ internal fun RecordAccountSheet(
     selectionCheckOnNameRow: Boolean = false,
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
-    BaseModalBottomSheet(
+    ModalBottomSheetBase(
         onDismissRequest = onDismiss,
         contentHandlesInsets = true,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
@@ -60,7 +60,7 @@ internal fun RecordAccountSheet(
                 verticalAlignment = Alignment.CenterVertically) {
                 Text(title, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
             }
-            BaseDivider()
+            DividerBase()
             if (accounts.isEmpty()) {
                 Text(emptyMessage ?: textResources.getString(cn.turingzy.ledger.R.string.ui_no_accounts_available_add_one_in_wallet), Modifier.padding(LedgerStyle.spacing.extraLarge), color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else LazyColumn(Modifier.fillMaxWidth().weight(1f)) {
@@ -73,7 +73,7 @@ internal fun RecordAccountSheet(
                         Modifier.fillMaxWidth().clickable { onSelect(item.account.id) }.padding(horizontal = 16.dp, vertical = 14.dp),
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large),
                     ) {
-                        cn.turingzy.ledger.ui.component.biz.BusinessAccountIcon(item.account)
+                        cn.turingzy.ledger.ui.component.biz.AccountIconBiz(item.account)
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.tiny)) {
                             if (selectionCheckOnNameRow) {
                                 Row(
@@ -91,7 +91,7 @@ internal fun RecordAccountSheet(
                                 Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.small),
                             ) {
-                                cn.turingzy.ledger.ui.component.biz.BusinessAmountText(
+                                cn.turingzy.ledger.ui.component.biz.AmountTextBiz(
                                     item.account.currentBalance, item.account.currency,
                                     modifier = Modifier.weight(1f),
                                     textStyle = LedgerStyle.typography.bodySmall,

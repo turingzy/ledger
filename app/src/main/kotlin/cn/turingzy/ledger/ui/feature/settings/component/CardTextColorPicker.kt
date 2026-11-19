@@ -1,9 +1,9 @@
 package cn.turingzy.ledger.ui.feature.settings.component
 
-import cn.turingzy.ledger.ui.component.base.BaseIconButtonContent
+import cn.turingzy.ledger.ui.component.base.IconButtonContentBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
-import cn.turingzy.ledger.ui.component.base.BaseSurface
-import cn.turingzy.ledger.ui.component.base.BaseDialogWindow
+import cn.turingzy.ledger.ui.component.base.SurfaceBase
+import cn.turingzy.ledger.ui.component.base.DialogWindowBase
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -79,7 +79,7 @@ internal fun CardTextColorPicker(
                     Text(textResources.getString(cn.turingzy.ledger.R.string.ui_card_text_color_auto))
                 }
             }
-            BaseIconButtonContent(onClick = { focusManager.clearFocus(); showDialog = true }) {
+            IconButtonContentBase(onClick = { focusManager.clearFocus(); showDialog = true }) {
                 Icon(MaterialSymbols.Palette, textResources.getString(cn.turingzy.ledger.R.string.ui_more_colors), Modifier.size(LedgerStyle.icons.default))
             }
         }
@@ -121,8 +121,8 @@ private fun CardTextColorDialog(initialColor: Color, onDismiss: () -> Unit, onCo
     val parsed = hex.asCardTextColor()
     val colors = MaterialTheme.colorScheme
     fun updateColor() { hex = Color.hsv(hue, saturation, brightness, alpha).asHex() }
-    BaseDialogWindow(onDismissRequest = onDismiss) {
-        BaseSurface(modifier = Modifier.padding(vertical = LedgerStyle.spacing.large), shape = LedgerStyle.shapes.confirmationDialog, color = colors.surface) {
+    DialogWindowBase(onDismissRequest = onDismiss) {
+        SurfaceBase(modifier = Modifier.padding(vertical = LedgerStyle.spacing.large), shape = LedgerStyle.shapes.confirmationDialog, color = colors.surface) {
             Column(
                 Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(LedgerStyle.spacing.extraLarge),
                 verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium),
@@ -143,7 +143,7 @@ private fun CardTextColorDialog(initialColor: Color, onDismiss: () -> Unit, onCo
                         modifier = Modifier.weight(1f).padding(start = 12.dp).semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_brightness) },
                     )
                 }
-                BaseSurface(shape = LedgerStyle.shapes.field, color = colors.surface) {
+                SurfaceBase(shape = LedgerStyle.shapes.field, color = colors.surface) {
                     Row(
                         Modifier.fillMaxWidth().padding(10.dp),
                         horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large),
@@ -167,8 +167,8 @@ private fun CardTextColorDialog(initialColor: Color, onDismiss: () -> Unit, onCo
                     }
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    BaseIconButtonContent(onClick = onDismiss, modifier = Modifier.size(40.dp)) { Icon(MaterialSymbols.Close, textResources.getString(cn.turingzy.ledger.R.string.ui_cancel_color_selection)) }
-                    BaseIconButtonContent(modifier = Modifier.size(40.dp), enabled = parsed != null, onClick = { parsed?.let(onConfirm) }) {
+                    IconButtonContentBase(onClick = onDismiss, modifier = Modifier.size(40.dp)) { Icon(MaterialSymbols.Close, textResources.getString(cn.turingzy.ledger.R.string.ui_cancel_color_selection)) }
+                    IconButtonContentBase(modifier = Modifier.size(40.dp), enabled = parsed != null, onClick = { parsed?.let(onConfirm) }) {
                         Icon(MaterialSymbols.Check, textResources.getString(cn.turingzy.ledger.R.string.ui_apply_text_color), tint = colors.tertiary.copy(alpha = if (parsed == null) 0.38f else 1f))
                     }
                 }

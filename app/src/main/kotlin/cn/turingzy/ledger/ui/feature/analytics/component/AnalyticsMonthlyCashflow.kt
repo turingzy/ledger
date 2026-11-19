@@ -6,9 +6,9 @@ import cn.turingzy.ledger.ui.feature.analytics.calculation.analyticsRatio
 import cn.turingzy.ledger.ui.feature.analytics.calculation.monthlyAnalytics
 import cn.turingzy.ledger.ui.feature.analytics.sheet.AnalyticsTransactionSheet
 import cn.turingzy.ledger.ui.theme.LedgerStyle
-import cn.turingzy.ledger.ui.component.base.BaseSurface
-import cn.turingzy.ledger.ui.component.biz.LocalLedgerCurrency
-import cn.turingzy.ledger.ui.component.biz.currencySymbol
+import cn.turingzy.ledger.ui.component.base.SurfaceBase
+import cn.turingzy.ledger.ui.component.biz.LocalCurrencyBiz
+import cn.turingzy.ledger.ui.component.biz.currencySymbolBiz
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -73,7 +73,7 @@ private fun CashflowLegend(label: String, color: Color, line: Boolean = false) {
 @Composable
 private fun MonthlyCashflow(days: Map<LocalDate, AnalyticsDay>, month: YearMonth, transactions: List<AnalyticsTransaction>) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
-    val currencySymbol = currencySymbol(LocalLedgerCurrency.current)
+    val currencySymbol = currencySymbolBiz(LocalCurrencyBiz.current)
     val months = remember(days, month) { monthlyAnalytics(days, month) }
     var selectedMonth by remember(month, months) { mutableStateOf<YearMonth?>(null) }
     var showDetails by remember(month, months) { mutableStateOf(false) }
@@ -178,7 +178,7 @@ private fun MonthlyCashflow(days: Map<LocalDate, AnalyticsDay>, month: YearMonth
                 val summaryWidth = minOf(132.dp, viewportWidth)
                 val visibleX = slot * (months.indexOf(selected) + 0.5f) - with(LocalDensity.current) { scroll.value.toDp() }
                 val summaryX = (visibleX - summaryWidth / 2).coerceIn(0.dp, viewportWidth - summaryWidth)
-                BaseSurface(onClick = { showDetails = true }, shape = RoundedCornerShape(10.dp),
+                SurfaceBase(onClick = { showDetails = true }, shape = RoundedCornerShape(10.dp),
                     color = analyticsChartInfoColor(),
                     modifier = Modifier.offset(x = summaryX, y = 4.dp).width(summaryWidth)
                         .semantics { contentDescription = "${selected.month.year}年${selected.month.monthValue}月收支汇总" },

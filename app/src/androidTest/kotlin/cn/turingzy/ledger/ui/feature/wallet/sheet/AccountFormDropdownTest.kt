@@ -1,6 +1,6 @@
 package cn.turingzy.ledger.ui.feature.wallet.sheet
 
-import cn.turingzy.ledger.ui.component.input.LedgerFormDropdown as AccountFormDropdown
+import cn.turingzy.ledger.ui.component.input.FormDropdown as AccountFormDropdown
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText

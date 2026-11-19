@@ -1,10 +1,10 @@
 package cn.turingzy.ledger.ui.component.picker
 
 import cn.turingzy.ledger.ui.component.MaterialSymbols
-import cn.turingzy.ledger.ui.component.base.BaseIconButton
+import cn.turingzy.ledger.ui.component.base.IconButtonBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
-import cn.turingzy.ledger.ui.component.base.BaseSurface
-import cn.turingzy.ledger.ui.component.base.BaseDialogWindow
+import cn.turingzy.ledger.ui.component.base.SurfaceBase
+import cn.turingzy.ledger.ui.component.base.DialogWindowBase
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -36,8 +36,8 @@ internal fun LedgerDatePickerDialog(
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     var day by rememberSaveable(initialDate) { mutableLongStateOf(initialDate.toEpochDay()) }
     val date = LocalDate.ofEpochDay(day)
-    BaseDialogWindow(onDismiss) {
-        BaseSurface(
+    DialogWindowBase(onDismiss) {
+        SurfaceBase(
             modifier.fillMaxWidth().testTag("ledgerDatePickerDialog"),
             shape = LedgerStyle.shapes.dialog, color = MaterialTheme.colorScheme.surface,
         ) {
@@ -49,10 +49,10 @@ internal fun LedgerDatePickerDialog(
                     LedgerDatePicker(date) { day = it.toEpochDay() }
                 }
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    BaseIconButton(MaterialSymbols.Close, textResources.getString(cn.turingzy.ledger.R.string.ui_cancel),
+                    IconButtonBase(MaterialSymbols.Close, textResources.getString(cn.turingzy.ledger.R.string.ui_cancel),
                         onDismiss, showPressFeedback = false)
                     Spacer(Modifier.weight(1f))
-                    BaseIconButton(MaterialSymbols.Check, textResources.getString(cn.turingzy.ledger.R.string.ui_confirm),
+                    IconButtonBase(MaterialSymbols.Check, textResources.getString(cn.turingzy.ledger.R.string.ui_confirm),
                         { onConfirm(date) }, contentColor = MaterialTheme.colorScheme.tertiary, showPressFeedback = false)
                 }
             }

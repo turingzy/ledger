@@ -13,7 +13,7 @@ import cn.turingzy.ledger.model.category.Category
 import cn.turingzy.ledger.model.category.CategoryType
 import cn.turingzy.ledger.model.category.CategoryWithIcon
 import cn.turingzy.ledger.model.category.Icon
-import cn.turingzy.ledger.ui.component.biz.LocalLedgerCurrency
+import cn.turingzy.ledger.ui.component.biz.LocalCurrencyBiz
 import cn.turingzy.ledger.ui.theme.LedgerTheme
 import java.time.LocalDate
 import java.time.LocalTime
@@ -45,7 +45,7 @@ internal class ConsumptionCalendarPreviewProvider : PreviewParameterProvider<Ana
 @Preview(name = "Calendar Dark", showBackground = true, showSystemUi = true, widthDp = 420, heightDp = 900, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun ConsumptionCalendarPreview(@PreviewParameter(ConsumptionCalendarPreviewProvider::class) state: AnalyticsDashboardState) {
-    CompositionLocalProvider(LocalLedgerCurrency provides state.currency) {
+    CompositionLocalProvider(LocalCurrencyBiz provides state.currency) {
         LedgerTheme {
             ConsumptionCalendarContent(state, YearMonth.from(previewDay), {}, today = previewDay)
         }

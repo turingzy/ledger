@@ -1,12 +1,12 @@
 package cn.turingzy.ledger.ui.component.card.summary
 
 import cn.turingzy.ledger.ui.component.MaterialSymbols
-import cn.turingzy.ledger.ui.component.base.BaseButtonVariant
-import cn.turingzy.ledger.ui.component.base.BaseActionButton
-import cn.turingzy.ledger.ui.component.base.BaseIconButtonContent
+import cn.turingzy.ledger.ui.component.base.ButtonVariantBase
+import cn.turingzy.ledger.ui.component.base.ActionButtonBase
+import cn.turingzy.ledger.ui.component.base.IconButtonContentBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
-import cn.turingzy.ledger.ui.component.base.BaseSurface
-import cn.turingzy.ledger.ui.component.base.BaseDialogWindow
+import cn.turingzy.ledger.ui.component.base.SurfaceBase
+import cn.turingzy.ledger.ui.component.base.DialogWindowBase
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -63,8 +63,8 @@ internal fun CardBackgroundDialog(
     }
     val canConfirm = !busy && (restoreDefault || preparedFilename != null)
 
-    BaseDialogWindow(onDismissRequest = { if (!busy) onDismiss() }) {
-        BaseSurface(shape = LedgerStyle.shapes.confirmationDialog, color = colors.surface) {
+    DialogWindowBase(onDismissRequest = { if (!busy) onDismiss() }) {
+        SurfaceBase(shape = LedgerStyle.shapes.confirmationDialog, color = colors.surface) {
             Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(LedgerStyle.spacing.block)) {
                 Text(textResources.getString(cn.turingzy.ledger.R.string.ui_change_card_background), style = MaterialTheme.typography.titleLarge)
                 Spacer(Modifier.height(20.dp))
@@ -92,11 +92,11 @@ internal fun CardBackgroundDialog(
                 }
                 Spacer(Modifier.height(24.dp))
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    BaseIconButtonContent(showPressFeedback = false, onClick = onDismiss, enabled = !busy, modifier = Modifier.offset(x = (-8).dp).size(40.dp)) {
+                    IconButtonContentBase(showPressFeedback = false, onClick = onDismiss, enabled = !busy, modifier = Modifier.offset(x = (-8).dp).size(40.dp)) {
                         Icon(MaterialSymbols.Close, contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_close_background_settings), modifier = Modifier.size(LedgerStyle.icons.default))
                     }
                     Spacer(Modifier.weight(1f))
-                    BaseIconButtonContent(showPressFeedback = false, onClick = { onConfirm(restoreDefault) }, enabled = canConfirm, modifier = Modifier.size(40.dp)) {
+                    IconButtonContentBase(showPressFeedback = false, onClick = { onConfirm(restoreDefault) }, enabled = canConfirm, modifier = Modifier.size(40.dp)) {
                         Icon(
                             MaterialSymbols.Check,
                             contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_apply_background),
@@ -119,7 +119,7 @@ private fun BackgroundSourceButton(
     modifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.colorScheme
-    BaseActionButton(variant = BaseButtonVariant.Outlined,
+    ActionButtonBase(variant = ButtonVariantBase.Outlined,
         onClick = onClick,
         enabled = enabled,
         modifier = modifier.semantics { contentDescription = label },

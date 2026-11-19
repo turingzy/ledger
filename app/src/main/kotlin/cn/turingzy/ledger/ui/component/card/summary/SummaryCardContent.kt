@@ -1,7 +1,7 @@
 package cn.turingzy.ledger.ui.component.card.summary
 
 import cn.turingzy.ledger.ui.component.MaterialSymbols
-import cn.turingzy.ledger.ui.component.biz.currencySymbol
+import cn.turingzy.ledger.ui.component.biz.currencySymbolBiz
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.platform.LocalDensity
@@ -40,7 +40,7 @@ fun SummaryCardContent(
     currency: String = "CNY",
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
-    val currencySymbol = currencySymbol(currency)
+    val currencySymbol = currencySymbolBiz(currency)
     val visibilityIconSize = with(LocalDensity.current) { 15.sp.toDp() }
     Box(modifier.fillMaxSize()) {
         Column(

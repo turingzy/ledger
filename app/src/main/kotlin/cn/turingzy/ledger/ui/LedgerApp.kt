@@ -21,8 +21,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.navigation.LedgerNavHost
 import cn.turingzy.ledger.navigation.TopLevelDestination
-import cn.turingzy.ledger.ui.component.base.rememberBackdropState
-import cn.turingzy.ledger.ui.component.base.recordBackdrop
+import cn.turingzy.ledger.ui.component.base.rememberBackdropStateBaseBase
+import cn.turingzy.ledger.ui.component.base.recordBackdropBase
 import cn.turingzy.ledger.ui.component.navigation.LedgerBottomBar
 import cn.turingzy.ledger.ui.component.navigation.LedgerFloatingActionButton
 
@@ -30,7 +30,7 @@ import cn.turingzy.ledger.ui.component.navigation.LedgerFloatingActionButton
 fun LedgerApp(
     modifier: Modifier = Modifier,
 ) {
-    val navigationBackdrop = rememberBackdropState()
+    val navigationBackdrop = rememberBackdropStateBaseBase()
     var currentTopLevelDestination by rememberSaveable { mutableStateOf(TopLevelDestination.BILL) }
 
     var settingsDetailVisible by remember { mutableStateOf(false) }
@@ -59,7 +59,7 @@ fun LedgerApp(
                 onSettingsDetailVisibleChange = { settingsDetailVisible = it },
                 onAnalyticsDetailVisibleChange = { analyticsDetailVisible = it },
                 onBillSelectionVisibleChange = { billSelectionVisible = it },
-                modifier = Modifier.fillMaxSize().recordBackdrop(navigationBackdrop)
+                modifier = Modifier.fillMaxSize().recordBackdropBase(navigationBackdrop)
                     .then(if (showBottomBar) Modifier else Modifier.navigationBarsPadding()),
             )
         }

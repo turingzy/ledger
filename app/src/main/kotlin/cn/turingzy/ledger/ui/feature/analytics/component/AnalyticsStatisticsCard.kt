@@ -6,7 +6,7 @@ import cn.turingzy.ledger.ui.feature.analytics.calculation.AnalyticsExpenseAvera
 import cn.turingzy.ledger.ui.feature.analytics.calculation.analyticsExpenseAverage
 import cn.turingzy.ledger.ui.feature.analytics.calculation.previousAnalyticsRange
 import cn.turingzy.ledger.ui.theme.LedgerStyle
-import cn.turingzy.ledger.ui.component.base.BaseSurface
+import cn.turingzy.ledger.ui.component.base.SurfaceBase
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -61,7 +61,7 @@ internal fun AnalyticsStatisticsCard(state: AnalyticsUiState.Success, days: Map<
 private fun StatisticsMetric(label: String, amount: Long, modifier: Modifier = Modifier, average: AnalyticsExpenseAverage? = null) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val colors = MaterialTheme.colorScheme
-    BaseSurface(modifier.fillMaxHeight(), shape = LedgerStyle.shapes.bankCard, color = analyticsChartInfoColor()) {
+    SurfaceBase(modifier.fillMaxHeight(), shape = LedgerStyle.shapes.bankCard, color = analyticsChartInfoColor()) {
         Column(Modifier.padding(horizontal = 8.dp, vertical = 5.dp), verticalArrangement = Arrangement.spacedBy(1.dp)) {
             Text(label, fontSize = LedgerStyle.typography.caption.fontSize, lineHeight = 14.sp, color = colors.onSurfaceVariant)
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.extraSmall)) {

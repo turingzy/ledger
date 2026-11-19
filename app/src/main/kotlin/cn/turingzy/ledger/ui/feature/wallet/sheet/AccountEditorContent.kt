@@ -2,10 +2,10 @@ package cn.turingzy.ledger.ui.feature.wallet.sheet
 
 import cn.turingzy.ledger.ui.component.card.bank.titaniumTitle
 import cn.turingzy.ledger.ui.feature.wallet.component.displayName
-import cn.turingzy.ledger.ui.component.base.BaseButtonVariant
-import cn.turingzy.ledger.ui.component.base.BaseActionButton
+import cn.turingzy.ledger.ui.component.base.ButtonVariantBase
+import cn.turingzy.ledger.ui.component.base.ActionButtonBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
-import cn.turingzy.ledger.ui.component.input.LedgerFormDropdown as AccountFormDropdown
+import cn.turingzy.ledger.ui.component.input.FormDropdown as AccountFormDropdown
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -55,7 +55,7 @@ internal fun AccountEditorContent(
     var type by rememberSaveable(account?.id) { mutableStateOf(account?.type ?: AccountType.DEBIT) }
     var balance by rememberSaveable(account?.id) { mutableStateOf(account?.initialBalance?.toFormattedAmount().orEmpty()) }
     var cardNumber by rememberSaveable(account?.id) { mutableStateOf(account?.cardNumber.orEmpty()) }
-    val primaryCurrency = cn.turingzy.ledger.ui.component.biz.LocalLedgerCurrency.current
+    val primaryCurrency = cn.turingzy.ledger.ui.component.biz.LocalCurrencyBiz.current
     var currency by rememberSaveable(account?.id) { mutableStateOf(account?.currency ?: primaryCurrency) }
     var templateId by rememberSaveable(account?.id) { mutableStateOf(account?.templateId) }
     var includeInTotal by rememberSaveable(account?.id) { mutableStateOf(account?.includeInTotal ?: true) }
@@ -148,7 +148,7 @@ internal fun AccountEditorContent(
         )
 
         if (account != null && onDelete != null) {
-            BaseActionButton(variant = BaseButtonVariant.Outlined,
+            ActionButtonBase(variant = ButtonVariantBase.Outlined,
                 onClick = { focusManager.clearFocus(); onDelete() },
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp).height(44.dp),
                 shape = LedgerStyle.shapes.field,

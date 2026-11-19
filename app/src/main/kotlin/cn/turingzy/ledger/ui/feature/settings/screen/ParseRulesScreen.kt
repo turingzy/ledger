@@ -6,7 +6,7 @@ import cn.turingzy.ledger.ui.feature.settings.component.SettingsPageBottomPaddin
 import cn.turingzy.ledger.ui.feature.settings.component.SettingsPageContentTopPadding
 import cn.turingzy.ledger.ui.feature.settings.component.SettingsSubpageScaffold
 import cn.turingzy.ledger.ui.feature.settings.component.settingsPageScroll
-import cn.turingzy.ledger.ui.component.base.BaseDropdownIndicator
+import cn.turingzy.ledger.ui.component.base.DropdownIndicatorBase
 import android.view.WindowManager
 import androidx.activity.compose.LocalActivity
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -17,9 +17,9 @@ import cn.turingzy.ledger.navigation.SettingsSubpageTransition
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.input.LedgerDropdown
 import androidx.compose.foundation.layout.Box
-import cn.turingzy.ledger.ui.component.base.BaseCard
-import cn.turingzy.ledger.ui.component.base.BaseDivider
-import cn.turingzy.ledger.ui.component.base.BaseIconButton
+import cn.turingzy.ledger.ui.component.base.CardBase
+import cn.turingzy.ledger.ui.component.base.DividerBase
+import cn.turingzy.ledger.ui.component.base.IconButtonBase
 import cn.turingzy.ledger.ui.interaction.uiClickable
 import cn.turingzy.ledger.ui.feature.settings.component.SettingsDeleteAction
 import cn.turingzy.ledger.ui.interaction.rememberUiAction
@@ -112,7 +112,7 @@ internal fun ParseRulesScreen(
                         emptyDraft = ParseRulePreview(id = 0L)
                         draft = null
                     })
-                } else BaseIconButton(
+                } else IconButtonBase(
                     imageVector = if (editing == null) MaterialSymbols.Add else MaterialSymbols.Check,
                     contentDescription = if (editing == null) textResources.getString(cn.turingzy.ledger.R.string.ui_new_import_rule)
                         else textResources.getString(cn.turingzy.ledger.R.string.ui_save_rule),
@@ -217,12 +217,12 @@ private fun KeepRuleEditorWindowStationary(enabled: Boolean) {
 
 @Composable
 private fun RuleFieldGroup(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
-    BaseCard(modifier, contentPadding = PaddingValues(LedgerStyle.spacing.none), contentSpacing = LedgerStyle.spacing.none, content = content)
+    CardBase(modifier, contentPadding = PaddingValues(LedgerStyle.spacing.none), contentSpacing = LedgerStyle.spacing.none, content = content)
 }
 
 @Composable
 private fun RuleDivider() {
-    BaseDivider(Modifier.padding(horizontal = LedgerStyle.spacing.large))
+    DividerBase(Modifier.padding(horizontal = LedgerStyle.spacing.large))
 }
 
 @Composable
@@ -282,7 +282,7 @@ private fun RuleChoiceDropdown(
             ) {
                 Text(label, Modifier.width(LedgerStyle.dimensions.formLabelWidth), style = MaterialTheme.typography.bodyLarge)
                 Text(value, Modifier.weight(1f), textAlign = TextAlign.End, color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                BaseDropdownIndicator(expanded)
+                DropdownIndicatorBase(expanded)
             }
         }
     }

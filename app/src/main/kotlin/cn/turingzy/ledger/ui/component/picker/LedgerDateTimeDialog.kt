@@ -24,9 +24,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import cn.turingzy.ledger.R
 import cn.turingzy.ledger.ui.component.MaterialSymbols
-import cn.turingzy.ledger.ui.component.base.BaseDialogWindow
-import cn.turingzy.ledger.ui.component.base.BaseIconButton
-import cn.turingzy.ledger.ui.component.base.BaseSurface
+import cn.turingzy.ledger.ui.component.base.DialogWindowBase
+import cn.turingzy.ledger.ui.component.base.IconButtonBase
+import cn.turingzy.ledger.ui.component.base.SurfaceBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import java.time.Instant
 import java.time.LocalDate
@@ -48,8 +48,8 @@ internal fun LedgerDateTimeDialog(
     val date = LocalDate.ofEpochDay(day)
     val selectedTime = recordTimeMillis(date, hour, minute, zone)
     val allowedTime = selectedTime?.takeIf(isTimeAllowed)
-    BaseDialogWindow(onDismissRequest = onDismiss) {
-        BaseSurface(
+    DialogWindowBase(onDismissRequest = onDismiss) {
+        SurfaceBase(
             modifier = Modifier.fillMaxWidth().testTag("recordTimeDialog"),
             shape = LedgerStyle.shapes.dialog, color = MaterialTheme.colorScheme.surface,
         ) {
@@ -61,9 +61,9 @@ internal fun LedgerDateTimeDialog(
                     }
                 }
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    BaseIconButton(MaterialSymbols.Close, stringResource(R.string.ui_cancel), onDismiss, showPressFeedback = false)
+                    IconButtonBase(MaterialSymbols.Close, stringResource(R.string.ui_cancel), onDismiss, showPressFeedback = false)
                     Spacer(Modifier.weight(1f))
-                    BaseIconButton(MaterialSymbols.Check, stringResource(R.string.ui_confirm), { allowedTime?.let(onConfirm) },
+                    IconButtonBase(MaterialSymbols.Check, stringResource(R.string.ui_confirm), { allowedTime?.let(onConfirm) },
                         enabled = allowedTime != null, contentColor = MaterialTheme.colorScheme.tertiary, showPressFeedback = false)
                 }
             }

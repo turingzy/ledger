@@ -1,11 +1,11 @@
 package cn.turingzy.ledger.ui.feature.bill.sheet
 
 import cn.turingzy.ledger.ui.component.picker.LedgerDateTimeDialog
-import cn.turingzy.ledger.ui.component.base.BaseIconButtonContent
-import cn.turingzy.ledger.ui.component.base.BaseDivider
+import cn.turingzy.ledger.ui.component.base.IconButtonContentBase
+import cn.turingzy.ledger.ui.component.base.DividerBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
-import cn.turingzy.ledger.ui.component.base.BaseSurface
-import cn.turingzy.ledger.ui.component.base.BaseModalBottomSheet
+import cn.turingzy.ledger.ui.component.base.SurfaceBase
+import cn.turingzy.ledger.ui.component.base.ModalBottomSheetBase
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
@@ -77,7 +77,7 @@ import cn.turingzy.ledger.model.account.AccountWithTemplate
 import cn.turingzy.ledger.model.category.CategoryWithIcon
 import cn.turingzy.ledger.model.transaction.Transaction
 import cn.turingzy.ledger.model.transaction.TransactionType
-import cn.turingzy.ledger.ui.component.input.LedgerSegmentedControl
+import cn.turingzy.ledger.ui.component.input.SegmentedControl
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.card.summary.SummaryCardIconButton
 import cn.turingzy.ledger.model.currency.convertCents
@@ -85,12 +85,12 @@ import cn.turingzy.ledger.model.currency.CurrencyAmountOverride
 import cn.turingzy.ledger.ui.component.base.BaseAlertDialog
 import cn.turingzy.ledger.ui.component.base.keepSheetAnchorDuringIme
 import androidx.compose.ui.text.input.KeyboardType
-import cn.turingzy.ledger.ui.component.biz.LocalLedgerCurrency
-import cn.turingzy.ledger.ui.component.biz.businessAmountText
+import cn.turingzy.ledger.ui.component.biz.LocalCurrencyBiz
+import cn.turingzy.ledger.ui.component.biz.amountTextBiz
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.res.stringResource
 import cn.turingzy.ledger.R
-import cn.turingzy.ledger.ui.component.biz.categoryGlyph
+import cn.turingzy.ledger.ui.component.biz.categoryGlyphBiz
 import cn.turingzy.ledger.util.AmountFormatter
 import cn.turingzy.ledger.util.toFormattedAmount
 import java.time.Instant
@@ -163,7 +163,7 @@ fun RecordTransactionSheet(
     val transaction = RecordFormInput(type, expression, accountId, destinationId, categoryId, transactionTime, note, transferRate.takeIf { crossCurrency })
         .toTransactionOrNull(accounts, categories)
 
-    val primaryCurrency = LocalLedgerCurrency.current
+    val primaryCurrency = LocalCurrencyBiz.current
     val needsConversion = sourceCurrency != null && sourceCurrency != primaryCurrency
     val historicalAmount = initialTransaction?.takeIf {
         needsConversion && it.accountId == accountId && it.transactionTime == transactionTime && it.amount == enteredAmount
@@ -196,7 +196,7 @@ fun RecordTransactionSheet(
         panel = target
     }
 
-    BaseModalBottomSheet(
+    ModalBottomSheetBase(
         onDismissRequest = onDismissRequest, sheetState = sheetState,
         modifier = modifier.keepSheetAnchorDuringIme(),
         containerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -215,7 +215,7 @@ fun RecordTransactionSheet(
             timeLabel = recordTimeLabel(transactionTime, zone),
             error = error ?: rateError,
             primaryAmountLabel = if (canEditPrimaryAmount) {
-                val amountText = businessAmountText(primaryAmount, primaryCurrency, primaryCurrency, useGrouping = true)
+                val amountText = amountTextBiz(primaryAmount, primaryCurrency, primaryCurrency, useGrouping = true)
                 when {
                     primaryAmount == null -> "$amountText $primaryCurrency"
                     amountOverride == null -> "≈ $amountText"
@@ -351,7 +351,7 @@ internal fun RecordTransactionContent(
                 modifier = Modifier.align(Alignment.CenterStart), enabled = actionsEnabled,
                 containerColor = colors.surface, contentColor = colors.onSurface, showPressFeedback = false,
             )
-            LedgerSegmentedControl(
+            SegmentedControl(
                 listOf(textResources.getString(cn.turingzy.ledger.R.string.ui_expense), textResources.getString(cn.turingzy.ledger.R.string.ui_income), textResources.getString(cn.turingzy.ledger.R.string.ui_transfer)), TransactionType.entries.indexOf(type),
                 { onTypeChange(TransactionType.entries[it]) },
                 modifier = Modifier.width(168.dp), height = 27.dp, fontSize = LedgerStyle.typography.label.fontSize,
@@ -367,7 +367,7 @@ internal fun RecordTransactionContent(
             } else key(type) {
                 RecordCategoryGrid(categories, selectedCategoryId, selectionColor, onCategorySelect, footerHeight + footerLift)
             }
-            BaseSurface(
+            SurfaceBase(
                 Modifier.align(Alignment.BottomCenter).offset(y = -footerLift).fillMaxWidth().onSizeChanged { footerHeight = with(density) { it.height.toDp() } },
                 shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp), color = colors.surfaceVariant,
             ) {
@@ -387,10 +387,10 @@ internal fun RecordTransactionContent(
                             enabled = actionsEnabled,
                         )
                     }
-                    BaseSurface(shape = LedgerStyle.shapes.summaryCard, color = colors.surface) {
+                    SurfaceBase(shape = LedgerStyle.shapes.summaryCard, color = colors.surface) {
                         Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp)) {
                             Row(Modifier.fillMaxWidth().height(48.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Text(cn.turingzy.ledger.ui.component.biz.currencySymbol(currency).trim(), fontSize = 20.sp, color = amountColor)
+                                Text(cn.turingzy.ledger.ui.component.biz.currencySymbolBiz(currency).trim(), fontSize = 20.sp, color = amountColor)
                                 Text(
                                     expression.ifEmpty { "0.00" },
                                     modifier = Modifier.weight(1f).horizontalScroll(expressionScroll),
@@ -398,7 +398,7 @@ internal fun RecordTransactionContent(
                                     maxLines = 1, softWrap = false,
                                 )
                             }
-                            BaseDivider()
+                            DividerBase()
                             BasicTextField(
                                 value = note, onValueChange = onNoteChange, singleLine = true,
                                 textStyle = TextStyle(fontSize = LedgerStyle.typography.bodySmall.fontSize, lineHeight = 18.sp, color = colors.onSurfaceVariant),
@@ -526,7 +526,7 @@ private fun RecordCategoryGrid(
                 Box(
                     Modifier.size(LedgerStyle.dimensions.compactIconButton).clip(CircleShape).background(if (chosen) selectedColor else colors.surface.copy(alpha = 0.55f)),
                     contentAlignment = Alignment.Center,
-                ) { Icon(item.icon.categoryGlyph(), null, Modifier.size(22.dp), tint = if (chosen) colors.onPrimary else colors.onSurfaceVariant) }
+                ) { Icon(item.icon.categoryGlyphBiz(), null, Modifier.size(22.dp), tint = if (chosen) colors.onPrimary else colors.onSurfaceVariant) }
                 Text(item.category.name, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = LedgerStyle.typography.label.fontSize, color = colors.onSurface)
             }
         }
@@ -540,13 +540,13 @@ private fun RecordTransferAccounts(
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     Box(modifier, contentAlignment = Alignment.TopCenter) {
-        BaseSurface(shape = LedgerStyle.shapes.summaryCard, color = MaterialTheme.colorScheme.surface) {
+        SurfaceBase(shape = LedgerStyle.shapes.summaryCard, color = MaterialTheme.colorScheme.surface) {
             Row(
                 Modifier.fillMaxWidth().padding(LedgerStyle.spacing.extraSmall),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 TransferAccountSelector(textResources.getString(cn.turingzy.ledger.R.string.ui_from), source, onSource, Modifier.weight(1f))
-                BaseIconButtonContent(
+                IconButtonContentBase(
                     onClick = onSwap,
                     enabled = source != null && destination != null,
                     modifier = Modifier.size(40.dp),

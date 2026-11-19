@@ -14,7 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import cn.turingzy.ledger.R
-import cn.turingzy.ledger.ui.component.base.BaseIconButton
+import cn.turingzy.ledger.ui.component.base.IconButtonBase
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -22,8 +22,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.PaddingValues
-import cn.turingzy.ledger.ui.component.base.BaseCard
-import cn.turingzy.ledger.ui.component.base.BaseListRow
+import cn.turingzy.ledger.ui.component.base.CardBase
+import cn.turingzy.ledger.ui.component.base.ListRowBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.card.summary.SummaryCardIconButton
@@ -41,8 +41,8 @@ internal fun SettingsActionRow(
     showChevron: Boolean = true,
     enabled: Boolean = true,
 ) {
-    BaseCard(modifier, contentPadding = PaddingValues(LedgerStyle.spacing.none), contentSpacing = LedgerStyle.spacing.none) {
-        BaseListRow(
+    CardBase(modifier, contentPadding = PaddingValues(LedgerStyle.spacing.none), contentSpacing = LedgerStyle.spacing.none) {
+        ListRowBase(
             headline = {
                 Row(horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.hairline), verticalAlignment = Alignment.CenterVertically) {
                     Text(title, style = MaterialTheme.typography.bodyLarge,
@@ -77,7 +77,7 @@ internal fun SettingsDeleteAction(
     val colors = MaterialTheme.colorScheme
     val action: @Composable (ImageVector, String, Color, () -> Unit) -> Unit = { icon, label, tint, onClick ->
         if (compact) SummaryCardIconButton(icon, label, onClick, contentColor = tint)
-        else BaseIconButton(icon, label, onClick, contentColor = tint)
+        else IconButtonBase(icon, label, onClick, contentColor = tint)
     }
     Row(modifier, horizontalArrangement = Arrangement.spacedBy(if (compact) LedgerStyle.spacing.small else LedgerStyle.spacing.none),
         verticalAlignment = Alignment.CenterVertically) {

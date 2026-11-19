@@ -15,7 +15,7 @@ import java.time.LocalDate
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
-import cn.turingzy.ledger.ui.feature.bill.sheet.CreateTransactionSheet
+import cn.turingzy.ledger.ui.feature.bill.sheet.RecordCreateSheet
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.material3.SnackbarHostState
@@ -100,7 +100,7 @@ fun LedgerNavHost(
                             viewModel = transactionViewModel,
                         )
                         recordDate?.let { epochDay ->
-                            CreateTransactionSheet(LocalDate.ofEpochDay(epochDay), onDismiss = { recordDate = null })
+                            RecordCreateSheet(LocalDate.ofEpochDay(epochDay), onDismiss = { recordDate = null })
                         }
                     }
                 }

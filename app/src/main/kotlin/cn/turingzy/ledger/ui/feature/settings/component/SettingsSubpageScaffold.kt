@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.RowScope
-import cn.turingzy.ledger.ui.component.base.BasePageScaffold
+import cn.turingzy.ledger.ui.component.base.PageScaffoldBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -56,7 +56,7 @@ internal fun SettingsSubpageScaffold(
         if (scrolled) LedgerStyle.opacity.topBarScrolled else 1f,
         label = "SettingsSubpageHeaderOpacity",
     )
-    BasePageScaffold(
+    PageScaffoldBase(
         title, modifier, onBack = onBack,
         titleStyle = LedgerStyle.typography.detailPageTitle,
         titlePadding = LedgerStyle.spacing.none,

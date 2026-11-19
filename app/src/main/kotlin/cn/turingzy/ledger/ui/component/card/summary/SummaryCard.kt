@@ -1,7 +1,7 @@
 package cn.turingzy.ledger.ui.component.card.summary
 
 import cn.turingzy.ledger.ui.component.MaterialSymbols
-import cn.turingzy.ledger.ui.component.base.rememberBlurredBackdrop
+import cn.turingzy.ledger.ui.component.base.rememberBlurredBackdropBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
@@ -64,7 +64,7 @@ fun SummaryCard(
     val backgroundPainter = remember(background, defaultPainter) {
         background?.let(::BitmapPainter) ?: defaultPainter
     }
-    val blurredBackdrop = rememberBlurredBackdrop(defaultBackgroundRes, background)
+    val blurredBackdrop = rememberBlurredBackdropBase(defaultBackgroundRes, background)
     val colors = MaterialTheme.colorScheme
     val shape = LedgerStyle.shapes.summaryCard
 

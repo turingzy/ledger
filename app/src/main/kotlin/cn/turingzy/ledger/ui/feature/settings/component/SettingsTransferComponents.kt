@@ -1,9 +1,9 @@
 package cn.turingzy.ledger.ui.feature.settings.component
 
 import cn.turingzy.ledger.ui.theme.LedgerStyle
-import cn.turingzy.ledger.ui.component.base.BaseSurface
-import cn.turingzy.ledger.ui.component.base.BaseButtonVariant
-import cn.turingzy.ledger.ui.component.base.BaseActionButton
+import cn.turingzy.ledger.ui.component.base.SurfaceBase
+import cn.turingzy.ledger.ui.component.base.ButtonVariantBase
+import cn.turingzy.ledger.ui.component.base.ActionButtonBase
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
@@ -66,7 +66,7 @@ internal fun SettingsTransferAction(
             Text("$progress%", textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
         }
         if (!running && progress == null) Spacer(Modifier.weight(1f))
-        BaseActionButton(variant = BaseButtonVariant.Text, actionKey = running,
+        ActionButtonBase(variant = ButtonVariantBase.Text, actionKey = running,
             onClick = onClick,
             enabled = enabled,
             modifier = Modifier.heightIn(min = SettingsItemHeight),
@@ -88,7 +88,7 @@ internal fun SettingsTransferFileRow(
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val colors = MaterialTheme.colorScheme
-    BaseSurface(modifier, shape = LedgerStyle.shapes.card, color = colors.surface) {
+    SurfaceBase(modifier, shape = LedgerStyle.shapes.card, color = colors.surface) {
         Row(
             Modifier.fillMaxWidth().heightIn(min = SettingsItemHeight)
                 .clickable(enabled = enabled, role = Role.Button, onClick = onClick)

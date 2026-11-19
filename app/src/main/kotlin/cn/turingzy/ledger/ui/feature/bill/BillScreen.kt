@@ -3,8 +3,8 @@ package cn.turingzy.ledger.ui.feature.bill
 import cn.turingzy.ledger.ui.feature.bill.component.SummaryHeroBanner
 import cn.turingzy.ledger.ui.feature.bill.detail.TransactionDetailsScreen
 import cn.turingzy.ledger.ui.feature.bill.detail.TransactionDetailsViewModel
-import cn.turingzy.ledger.ui.feature.bill.sheet.CreateTransactionSheet
-import cn.turingzy.ledger.ui.component.base.ScrollTitleContainer
+import cn.turingzy.ledger.ui.feature.bill.sheet.RecordCreateSheet
+import cn.turingzy.ledger.ui.component.base.ScrollTitleContainerBase
 import androidx.compose.foundation.lazy.rememberLazyListState
 import cn.turingzy.ledger.ui.component.picker.PeriodPickerSheet
 import cn.turingzy.ledger.model.transaction.DateFilterType
@@ -47,11 +47,11 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import cn.turingzy.ledger.model.settings.LedgerCardAppearance
 import cn.turingzy.ledger.ui.component.navigation.LocalBottomBarContentPadding
-import cn.turingzy.ledger.ui.component.base.BasePageFrame
-import cn.turingzy.ledger.ui.component.base.BaseCard
-import cn.turingzy.ledger.ui.component.base.BaseDivider
-import cn.turingzy.ledger.ui.component.base.BaseEmptyState
-import cn.turingzy.ledger.ui.component.biz.BusinessTransactionRow
+import cn.turingzy.ledger.ui.component.base.PageFrameBase
+import cn.turingzy.ledger.ui.component.base.CardBase
+import cn.turingzy.ledger.ui.component.base.DividerBase
+import cn.turingzy.ledger.ui.component.base.EmptyStateBase
+import cn.turingzy.ledger.ui.component.biz.TransactionRowBiz
 import cn.turingzy.ledger.ui.interaction.rememberUiAction
 import cn.turingzy.ledger.ui.interaction.uiClickable
 import cn.turingzy.ledger.ui.interaction.UiInteractionKind
@@ -84,7 +84,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cn.turingzy.ledger.ui.component.card.summary.TopBarIconButton
 import cn.turingzy.ledger.ui.component.card.summary.CardBackgroundDialog
-import cn.turingzy.ledger.ui.component.biz.categoryGlyph
+import cn.turingzy.ledger.ui.component.biz.categoryGlyphBiz
 import cn.turingzy.ledger.model.transaction.TransactionDetail
 import cn.turingzy.ledger.model.transaction.TransactionType
 import cn.turingzy.ledger.model.currency.primaryAmount
@@ -178,7 +178,7 @@ fun BillScreen(
     }
 
     if (showRecordSheet) {
-        CreateTransactionSheet(
+        RecordCreateSheet(
             date = LocalDate.now(),
             onDismiss = onRecordSheetDismiss,
             viewModel = viewModel,
@@ -219,7 +219,7 @@ fun BillContent(
         }
     }
 
-    BasePageFrame(modifier) {
+    PageFrameBase(modifier) {
         when (uiState) {
             BillUiState.Loading -> {
                 Box(
@@ -235,7 +235,7 @@ fun BillContent(
                 val filteredDayGroups = uiState.dayGroups
 
                 val listState = rememberLazyListState()
-                ScrollTitleContainer(
+                ScrollTitleContainerBase(
                     title = textResources.getString(cn.turingzy.ledger.R.string.ui_bill),
                     scrollOffset = {
                         if (listState.firstVisibleItemIndex == 0) listState.firstVisibleItemScrollOffset
@@ -423,7 +423,7 @@ fun BillContent(
 
                         if (filteredDayGroups.isEmpty()) {
                             item(key = "empty_placeholder") {
-                                BaseEmptyState(
+                                EmptyStateBase(
                                     title = if (submittedSearchQuery.isNotBlank()) textResources.getString(cn.turingzy.ledger.R.string.ui_no_matching_transactions)
                                         else textResources.getString(cn.turingzy.ledger.R.string.ui_no_transactions_for_this_period_tap_to_add),
                                     contentPadding = PaddingValues(vertical = LedgerStyle.spacing.block * 2),
@@ -517,14 +517,14 @@ fun DayGroupSection(
             )
         }
         if (expanded) {
-            BaseCard(
+            CardBase(
                 shape = LedgerStyle.shapes.summaryCard,
                 contentPadding = PaddingValues(LedgerStyle.spacing.none),
                 contentSpacing = LedgerStyle.spacing.none,
             ) {
                 dayGroup.transactions.forEachIndexed { index, detail ->
                     key(detail.transaction.id) {
-                        if (index > 0) BaseDivider(Modifier.padding(start = 62.dp, end = 14.dp))
+                        if (index > 0) DividerBase(Modifier.padding(start = 62.dp, end = 14.dp))
                         if (transactionRow != null) transactionRow(detail)
                         else DayTransactionRowItem(detail = detail, onClick = { onTransactionClick(detail.transaction.id) })
                     }
@@ -545,14 +545,14 @@ fun DayTransactionRowItem(
     val timeStr = remember(tx.transactionTime) {
         Instant.ofEpochMilli(tx.transactionTime).atZone(ZoneId.systemDefault()).format(timeFormatter)
     }
-    BusinessTransactionRow(
+    TransactionRowBiz(
         categoryName = detail.category.category.name,
         supportingText = listOfNotNull(detail.account.name, tx.note?.takeIf { it.isNotBlank() }).joinToString(" · "),
         timeText = timeStr,
         amount = tx.amount,
         currency = detail.account.currency,
         type = tx.type,
-        icon = detail.category.icon.categoryGlyph(),
+        icon = detail.category.icon.categoryGlyphBiz(),
         modifier = modifier,
         onClick = onClick,
     )

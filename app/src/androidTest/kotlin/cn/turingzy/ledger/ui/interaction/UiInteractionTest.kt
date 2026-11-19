@@ -16,7 +16,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
-import cn.turingzy.ledger.ui.component.base.BaseButton
+import cn.turingzy.ledger.ui.component.base.ButtonBase
 import cn.turingzy.ledger.ui.theme.LedgerTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -39,7 +39,7 @@ class UiInteractionTest {
         compose.setContent {
             CompositionLocalProvider(LocalUiInteractionClock provides clock, LocalHapticFeedback provides feedback) {
                 LedgerTheme {
-                    BaseButton("选择", { calls.add(label) }, interaction = UiInteractionKind.Selection)
+                    ButtonBase("选择", { calls.add(label) }, interaction = UiInteractionKind.Selection)
                 }
             }
         }
@@ -63,7 +63,7 @@ class UiInteractionTest {
 
     @Test
     fun aQuickTapShowsFeedbackAndThenRestoresItsBackground() {
-        compose.setContent { LedgerTheme { BaseButton("按钮", {}, Modifier.testTag("quick")) } }
+        compose.setContent { LedgerTheme { ButtonBase("按钮", {}, Modifier.testTag("quick")) } }
         val target = compose.onNodeWithTag("quick")
         val before = target.captureToImage().toPixelMap()
         compose.mainClock.autoAdvance = false

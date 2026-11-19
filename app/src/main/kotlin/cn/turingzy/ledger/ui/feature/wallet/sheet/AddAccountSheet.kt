@@ -1,6 +1,6 @@
 package cn.turingzy.ledger.ui.feature.wallet.sheet
 
-import cn.turingzy.ledger.ui.component.base.BaseModalBottomSheet
+import cn.turingzy.ledger.ui.component.base.ModalBottomSheetBase
 import cn.turingzy.ledger.ui.component.base.keepSheetAnchorDuringIme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SheetState
@@ -39,7 +39,7 @@ fun AddAccountSheet(
         }
     }
 
-    BaseModalBottomSheet(
+    ModalBottomSheetBase(
         contentHandlesInsets = true,
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,

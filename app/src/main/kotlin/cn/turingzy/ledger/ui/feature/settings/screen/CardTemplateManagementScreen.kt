@@ -4,11 +4,11 @@ import cn.turingzy.ledger.ui.feature.settings.component.CardTextColorPicker
 import cn.turingzy.ledger.ui.feature.settings.component.SettingsItemHeight
 import cn.turingzy.ledger.ui.feature.settings.component.SettingsSubpageScaffold
 import cn.turingzy.ledger.ui.feature.settings.component.settingsPageScroll
-import cn.turingzy.ledger.ui.component.base.BaseIconButtonContent
+import cn.turingzy.ledger.ui.component.base.IconButtonContentBase
 import cn.turingzy.ledger.ui.interaction.uiClickable
 import cn.turingzy.ledger.ui.feature.settings.component.SettingsDeleteAction
 import cn.turingzy.ledger.ui.theme.LedgerStyle
-import cn.turingzy.ledger.ui.component.base.BaseSurface
+import cn.turingzy.ledger.ui.component.base.SurfaceBase
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -131,7 +131,7 @@ internal fun CardTemplateManagementScreen(
                 title = textResources.getString(cn.turingzy.ledger.R.string.ui_new_card_design),
                 onBack = { if (drafts.isEmpty()) onDismissRequest() else creating = false },
                 actions = {
-                    BaseIconButtonContent(enabled = canSave, onClick = {
+                    IconButtonContentBase(enabled = canSave, onClick = {
                         saving = true
                         scope.launch {
                             try {
@@ -162,7 +162,7 @@ internal fun CardTemplateManagementScreen(
                 title = textResources.getString(cn.turingzy.ledger.R.string.ui_card_designs),
                 onBack = onDismissRequest,
                 actions = {
-                    BaseIconButtonContent(onClick = {
+                    IconButtonContentBase(onClick = {
                         newFace = CardTemplate(id = minOf(drafts.minOfOrNull { it.id } ?: 0L, 0L) - 1L, name = "", coverUri = "")
                         creating = true
                     }) { Icon(MaterialSymbols.Add, textResources.getString(cn.turingzy.ledger.R.string.ui_new_card_design)) }
@@ -220,7 +220,7 @@ private fun CardFaceProperties(
     val textResources = androidx.compose.ui.platform.LocalResources.current
     val colors = MaterialTheme.colorScheme
     Column(verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large)) {
-        BaseSurface(shape = LedgerStyle.shapes.card, color = colors.surface) {
+        SurfaceBase(shape = LedgerStyle.shapes.card, color = colors.surface) {
             Row(
                 Modifier.fillMaxWidth().heightIn(min = SettingsItemHeight).padding(horizontal = LedgerStyle.spacing.large),
                 verticalAlignment = Alignment.CenterVertically,
@@ -242,7 +242,7 @@ private fun CardFaceProperties(
                 )
             }
         }
-        BaseSurface(shape = LedgerStyle.shapes.card, color = colors.surface) {
+        SurfaceBase(shape = LedgerStyle.shapes.card, color = colors.surface) {
             CardTextColorPicker(
                 value = template.textColor,
                 automatic = template.titaniumInkOverride() == null,

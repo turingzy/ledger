@@ -1,6 +1,6 @@
 package cn.turingzy.ledger.ui.component.navigation
 
-import cn.turingzy.ledger.ui.component.base.ScrollTitleContainer
+import cn.turingzy.ledger.ui.component.base.ScrollTitleContainerBase
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -80,7 +80,7 @@ class NavigationAndScrollHeaderTest {
         compose.setContent {
             LedgerTheme {
                 listState = rememberLazyListState()
-                ScrollTitleContainer(
+                ScrollTitleContainerBase(
                     title = "账单",
                     scrollOffset = {
                         if (listState.firstVisibleItemIndex == 0) listState.firstVisibleItemScrollOffset

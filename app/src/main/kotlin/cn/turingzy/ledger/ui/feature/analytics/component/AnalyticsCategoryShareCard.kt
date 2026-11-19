@@ -3,8 +3,8 @@ package cn.turingzy.ledger.ui.feature.analytics.component
 import cn.turingzy.ledger.ui.feature.analytics.AnalyticsUiState
 import cn.turingzy.ledger.ui.feature.analytics.calculation.analyticsRatio
 import cn.turingzy.ledger.ui.feature.analytics.sheet.AnalyticsTransactionSheet
-import cn.turingzy.ledger.ui.component.biz.LocalLedgerCurrency
-import cn.turingzy.ledger.ui.component.biz.currencySymbol
+import cn.turingzy.ledger.ui.component.biz.LocalCurrencyBiz
+import cn.turingzy.ledger.ui.component.biz.currencySymbolBiz
 import androidx.compose.ui.draw.clip
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -49,7 +49,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cn.turingzy.ledger.model.category.CategoryType
-import cn.turingzy.ledger.ui.component.input.LedgerSegmentedControl
+import cn.turingzy.ledger.ui.component.input.SegmentedControl
 import cn.turingzy.ledger.util.toFormattedAmount
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import java.math.BigDecimal
@@ -62,7 +62,7 @@ internal fun AnalyticsCategoryShareCard(
     modifier: Modifier = Modifier,
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
-    val currencySymbol = currencySymbol(LocalLedgerCurrency.current)
+    val currencySymbol = currencySymbolBiz(LocalCurrencyBiz.current)
     val colors = MaterialTheme.colorScheme
     val income = state.categoryType == CategoryType.INCOME
     val rankings = remember(state.rankings) { state.rankings.sortedByDescending { it.totalAmount } }
@@ -95,7 +95,7 @@ internal fun AnalyticsCategoryShareCard(
     DashboardCard(modifier, contentSpacing = LedgerStyle.spacing.extraLarge) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium)) {
             AnalyticsCardTitle(textResources.getString(cn.turingzy.ledger.R.string.ui_category_breakdown), Modifier.weight(1f))
-            LedgerSegmentedControl(
+            SegmentedControl(
                 listOf(textResources.getString(cn.turingzy.ledger.R.string.ui_expense), textResources.getString(cn.turingzy.ledger.R.string.ui_income)), if (income) 1 else 0,
                 { onCategoryTypeChange(if (it == 1) CategoryType.INCOME else CategoryType.EXPENSE) },
                 Modifier.width(88.dp), height = 26.dp, fontSize = LedgerStyle.typography.label.fontSize, emphasizeSelection = false,

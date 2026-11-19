@@ -6,9 +6,9 @@ import cn.turingzy.ledger.ui.feature.analytics.calculation.analyticsRatio
 import cn.turingzy.ledger.ui.feature.analytics.calculation.expensePaceChangeLabel
 import cn.turingzy.ledger.ui.feature.analytics.calculation.expensePaceData
 import cn.turingzy.ledger.ui.theme.LedgerStyle
-import cn.turingzy.ledger.ui.component.base.BaseSurface
-import cn.turingzy.ledger.ui.component.biz.LocalLedgerCurrency
-import cn.turingzy.ledger.ui.component.biz.currencySymbol
+import cn.turingzy.ledger.ui.component.base.SurfaceBase
+import cn.turingzy.ledger.ui.component.biz.LocalCurrencyBiz
+import cn.turingzy.ledger.ui.component.biz.currencySymbolBiz
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -47,7 +47,7 @@ import java.time.LocalDate
 internal fun ExpensePace(days: Map<LocalDate, AnalyticsDay>, scope: AnalyticsTimeScope, start: LocalDate, end: LocalDate, today: LocalDate) {
     val data = remember(days, scope, start, end, today) { expensePaceData(days, scope, start, end, today) }
     var selectedIndex by remember(data) { mutableStateOf<Int?>(null) }
-    val currencySymbol = currencySymbol(LocalLedgerCurrency.current)
+    val currencySymbol = currencySymbolBiz(LocalCurrencyBiz.current)
     val colors = MaterialTheme.colorScheme
     val measurer = rememberTextMeasurer()
     val labelStyle = TextStyle(fontSize = LedgerStyle.typography.chartLabel.fontSize, lineHeight = 12.sp, color = colors.onSurfaceVariant)
@@ -152,7 +152,7 @@ internal fun ExpensePace(days: Map<LocalDate, AnalyticsDay>, scope: AnalyticsTim
 @Composable
 private fun ExpensePaceReadout(dateLabel: String, current: Long, previous: Long, modifier: Modifier = Modifier) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
-    val currencySymbol = currencySymbol(LocalLedgerCurrency.current)
+    val currencySymbol = currencySymbolBiz(LocalCurrencyBiz.current)
     val colors = MaterialTheme.colorScheme
     val direction = current.compareTo(previous)
     val changeColor = when {
@@ -160,7 +160,7 @@ private fun ExpensePaceReadout(dateLabel: String, current: Long, previous: Long,
         direction > 0 -> colors.error
         else -> colors.tertiary
     }
-    BaseSurface(color = analyticsChartInfoColor(), shape = LedgerStyle.shapes.chartTooltip,
+    SurfaceBase(color = analyticsChartInfoColor(), shape = LedgerStyle.shapes.chartTooltip,
         modifier = modifier.wrapContentWidth(Alignment.CenterHorizontally).height(18.dp).semantics {
             contentDescription = "$dateLabel，本期支出${current.toFormattedAmount(true, symbol = currencySymbol)}，上期支出${previous.toFormattedAmount(true, symbol = currencySymbol)}${if (previous > 0L) "，${expensePaceChangeLabel(current, previous)}" else ""}"
         }) {

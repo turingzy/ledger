@@ -2,8 +2,8 @@ package cn.turingzy.ledger.ui.feature.analytics
 
 import cn.turingzy.ledger.ui.feature.analytics.component.AnalyticsChartInteractionHost
 import cn.turingzy.ledger.ui.feature.analytics.component.AnalyticsDashboardCards
-import cn.turingzy.ledger.ui.component.base.ScrollTitleContainer
-import cn.turingzy.ledger.ui.component.biz.LocalLedgerCurrency
+import cn.turingzy.ledger.ui.component.base.ScrollTitleContainerBase
+import cn.turingzy.ledger.ui.component.biz.LocalCurrencyBiz
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.background
@@ -22,7 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import cn.turingzy.ledger.ui.component.base.BasePageFrame
+import cn.turingzy.ledger.ui.component.base.PageFrameBase
 import androidx.compose.material3.Text
 import cn.turingzy.ledger.ui.component.navigation.LocalBottomBarContentPadding
 import androidx.compose.runtime.Composable
@@ -45,7 +45,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cn.turingzy.ledger.model.transaction.DateFilterType
 import cn.turingzy.ledger.ui.component.picker.LedgerDatePickerDialog
-import cn.turingzy.ledger.ui.component.input.LedgerSegmentedControl
+import cn.turingzy.ledger.ui.component.input.SegmentedControl
 import cn.turingzy.ledger.ui.component.card.summary.TopBarIconButton
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.picker.PeriodPickerSheet
@@ -96,9 +96,9 @@ fun AnalyticsContent(
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     var showPeriodPicker by rememberSaveable { mutableStateOf(false) }
     var dateEndpoint by rememberSaveable { mutableStateOf<AnalyticsDateEndpoint?>(null) }
-    androidx.compose.runtime.CompositionLocalProvider(LocalLedgerCurrency provides ((uiState as? AnalyticsUiState.Success)?.currency ?: "CNY")) {
+    androidx.compose.runtime.CompositionLocalProvider(LocalCurrencyBiz provides ((uiState as? AnalyticsUiState.Success)?.currency ?: "CNY")) {
         AnalyticsChartInteractionHost {
-            BasePageFrame(modifier) {
+            PageFrameBase(modifier) {
                 when (uiState) {
                     AnalyticsUiState.Loading -> Box(
                         Modifier.fillMaxSize(), contentAlignment = Alignment.Center,
@@ -107,7 +107,7 @@ fun AnalyticsContent(
                     }
                     is AnalyticsUiState.Success -> {
                         val scrollState = rememberScrollState()
-                        ScrollTitleContainer(
+                        ScrollTitleContainerBase(
                             title = textResources.getString(cn.turingzy.ledger.R.string.ui_analytics),
                             scrollOffset = { scrollState.value },
                             onScrollToTop = { scrollState.animateScrollTo(0) },
@@ -233,7 +233,7 @@ fun AnalyticsTimeScopeSelector(
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val scopes = listOf(AnalyticsTimeScope.WEEK, AnalyticsTimeScope.MONTH, AnalyticsTimeScope.YEAR, AnalyticsTimeScope.ALL)
     var selectedScope by remember(currentScope) { mutableStateOf(currentScope) }
-    LedgerSegmentedControl(
+    SegmentedControl(
         labels = listOf(textResources.getString(cn.turingzy.ledger.R.string.ui_week), textResources.getString(cn.turingzy.ledger.R.string.ui_month), textResources.getString(cn.turingzy.ledger.R.string.ui_year), textResources.getString(cn.turingzy.ledger.R.string.ui_all)),
         selectedIndex = scopes.indexOf(selectedScope).coerceAtLeast(0),
         onSelect = { selectedScope = scopes[it]; onScopeSelected(scopes[it]) },

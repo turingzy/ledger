@@ -6,9 +6,9 @@ import cn.turingzy.ledger.ui.feature.settings.component.SettingsTransferAction
 import cn.turingzy.ledger.ui.feature.settings.component.SettingsTransferFileRow
 import cn.turingzy.ledger.ui.feature.settings.component.selectedTransferFileName
 import cn.turingzy.ledger.ui.feature.settings.component.settingsPageScroll
-import cn.turingzy.ledger.ui.component.base.BaseDivider
+import cn.turingzy.ledger.ui.component.base.DividerBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
-import cn.turingzy.ledger.ui.component.base.BaseSurface
+import cn.turingzy.ledger.ui.component.base.SurfaceBase
 import cn.turingzy.ledger.ui.component.base.BaseAlertDialog
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -36,7 +36,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.ui.component.MaterialSymbols
-import cn.turingzy.ledger.ui.component.input.LedgerSegmentedControl
+import cn.turingzy.ledger.ui.component.input.SegmentedControl
 import cn.turingzy.ledger.ui.theme.LedgerTheme
 import kotlinx.coroutines.Job
 import android.net.Uri
@@ -153,7 +153,7 @@ private fun DataTransferContent(
         modifier.fillMaxWidth().settingsPageScroll(),
         verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large),
     ) {
-        LedgerSegmentedControl(
+        SegmentedControl(
             labels = listOf(textResources.getString(cn.turingzy.ledger.R.string.ui_backup), textResources.getString(cn.turingzy.ledger.R.string.ui_restore)),
             selectedIndex = if (restoring) 1 else 0,
             onSelect = { onModeChange(it == 1) },
@@ -164,10 +164,10 @@ private fun DataTransferContent(
             SettingsTransferFileRow(fileName = fileName, enabled = !running, onClick = onChooseFile)
         } else {
             Text(textResources.getString(cn.turingzy.ledger.R.string.ui_backup_contents), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-            BaseSurface(shape = LedgerStyle.shapes.card, color = colors.surface) {
+            SurfaceBase(shape = LedgerStyle.shapes.card, color = colors.surface) {
                 Column(Modifier.fillMaxWidth()) {
                     BackupContentOption(textResources.getString(cn.turingzy.ledger.R.string.ui_transactions_and_accounts), includeBills, !running, onBillsChange)
-                    BaseDivider(Modifier.padding(horizontal = LedgerStyle.spacing.large))
+                    DividerBase(Modifier.padding(horizontal = LedgerStyle.spacing.large))
                     BackupContentOption(textResources.getString(cn.turingzy.ledger.R.string.ui_app_settings), includeSettings, !running, onSettingsChange)
                 }
             }

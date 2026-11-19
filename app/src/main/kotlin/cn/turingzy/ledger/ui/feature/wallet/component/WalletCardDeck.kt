@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.ui.component.card.bank.BankCardAspectRatio
 import cn.turingzy.ledger.ui.component.card.bank.rememberCircularCardPagerState
 import cn.turingzy.ledger.ui.component.card.bank.CardPageIndicator
-import cn.turingzy.ledger.ui.component.base.BaseEmptyState
+import cn.turingzy.ledger.ui.component.base.EmptyStateBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.model.account.Account
 import cn.turingzy.ledger.model.account.AccountWithTemplate
@@ -76,7 +76,7 @@ fun SwipeableBankCardDeck(
 private fun EmptyCardDeck(modifier: Modifier = Modifier) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     Box(modifier.fillMaxWidth().aspectRatio(BankCardAspectRatio), contentAlignment = Alignment.Center) {
-        BaseEmptyState(
+        EmptyStateBase(
             title = textResources.getString(cn.turingzy.ledger.R.string.ui_no_accounts),
             contentPadding = PaddingValues(LedgerStyle.spacing.none),
             titleStyle = MaterialTheme.typography.bodyLarge,

@@ -1,7 +1,7 @@
 package cn.turingzy.ledger.ui.component.navigation
 
-import cn.turingzy.ledger.ui.component.base.BackdropState
-import cn.turingzy.ledger.ui.component.base.frostedBackdrop
+import cn.turingzy.ledger.ui.component.base.BackdropStateBase
+import cn.turingzy.ledger.ui.component.base.frostedBackdropBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -52,7 +52,7 @@ internal fun LedgerBottomBar(
     currentDestination: TopLevelDestination,
     onNavigateToDestination: (TopLevelDestination) -> Unit,
     modifier: Modifier = Modifier,
-    backdrop: BackdropState? = null,
+    backdrop: BackdropStateBase? = null,
     visible: Boolean = true,
 ) {
     val colors = MaterialTheme.colorScheme
@@ -72,7 +72,7 @@ internal fun LedgerBottomBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(BottomBarHeight)
-                .frostedBackdrop(backdrop, colors.surface.copy(alpha = 0.72f), 12.dp)
+                .frostedBackdropBase(backdrop, colors.surface.copy(alpha = 0.72f), 12.dp)
                 .selectableGroup()
                 .padding(horizontal = 4.dp, vertical = 3.dp),
             horizontalArrangement = Arrangement.SpaceAround,

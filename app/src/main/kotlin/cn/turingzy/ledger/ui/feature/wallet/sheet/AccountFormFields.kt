@@ -1,7 +1,7 @@
 package cn.turingzy.ledger.ui.feature.wallet.sheet
 
-import cn.turingzy.ledger.ui.component.base.BaseFormFieldFrame
-import cn.turingzy.ledger.ui.component.base.BaseIconButtonContent
+import cn.turingzy.ledger.ui.component.base.FormFieldFrameBase
+import cn.turingzy.ledger.ui.component.base.IconButtonContentBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,7 +44,7 @@ internal fun AccountSaveButton(
     contentDescription: String = androidx.compose.ui.res.stringResource(cn.turingzy.ledger.R.string.ui_save_account),
 ) {
     val color = MaterialTheme.colorScheme.tertiary
-    BaseIconButtonContent(showPressFeedback = false, onClick = onClick, enabled = enabled, modifier = modifier) {
+    IconButtonContentBase(showPressFeedback = false, onClick = onClick, enabled = enabled, modifier = modifier) {
         Icon(
             MaterialSymbols.Check,
             contentDescription = contentDescription,
@@ -73,7 +73,7 @@ internal fun AccountFormTextField(
     val source = remember { MutableInteractionSource() }
     val focused by source.collectIsFocusedAsState()
     val textColor = if (readOnly) colors.onSurface.copy(alpha = 0.38f) else colors.onSurface
-    BaseFormFieldFrame(
+    FormFieldFrameBase(
         label, modifier, focused = focused, readOnly = readOnly, error = error,
         onClick = if (readOnly) null else ({ focusRequester.requestFocus() }),
     ) {
@@ -111,7 +111,7 @@ internal fun AccountCardFaceField(
     val colors = MaterialTheme.colorScheme
     val contentColor = if (enabled) colors.onSurface else colors.onSurface.copy(alpha = 0.38f)
     Column(modifier.fillMaxWidth().semantics { if (!enabled) disabled() }) {
-        BaseFormFieldFrame(textResources.getString(cn.turingzy.ledger.R.string.ui_card_design), readOnly = !enabled, onClick = if (enabled) onClick else null) {
+        FormFieldFrameBase(textResources.getString(cn.turingzy.ledger.R.string.ui_card_design), readOnly = !enabled, onClick = if (enabled) onClick else null) {
             Text(value, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = contentColor, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Icon(MaterialSymbols.ChevronRight, null, Modifier.size(LedgerStyle.icons.default), tint = contentColor)
         }
