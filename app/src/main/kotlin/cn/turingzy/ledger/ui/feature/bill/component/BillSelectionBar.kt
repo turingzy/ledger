@@ -272,6 +272,6 @@ internal fun BillDeleteDialog(count: Int, onDismiss: () -> Unit, onConfirm: () -
         text = { Text(stringResource(R.string.ui_delete_transaction_message)) },
         onConfirm = onConfirm,
         destructive = true,
-        confirmDescription = stringResource(R.string.bill_delete_action),
+        confirmLabel = stringResource(R.string.bill_delete_action),
     )
 }

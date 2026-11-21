@@ -30,7 +30,7 @@ import cn.turingzy.ledger.data.database.entity.TransactionEntity
         BackupConfigEntity::class,
         cn.turingzy.ledger.data.database.entity.ExchangeRateEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = false,
 )
 @TypeConverters(RoomTypeConverters::class)

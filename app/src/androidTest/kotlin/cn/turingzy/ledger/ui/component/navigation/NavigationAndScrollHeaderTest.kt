@@ -67,8 +67,8 @@ class NavigationAndScrollHeaderTest {
                 })
             }
         }
-        listOf("账单", "分析", "钱包", "设置").forEach { compose.onNodeWithText(it).assertIsDisplayed() }
-        compose.onNodeWithText("账单").assertIsSelected().performClick()
+        listOf("账本", "分析", "钱包", "设置").forEach { compose.onNodeWithText(it).assertIsDisplayed() }
+        compose.onNodeWithText("账本").assertIsSelected().performClick()
         compose.runOnIdle { assertEquals(0, navigationCount) }
         compose.onNodeWithText("钱包").performClick().assertIsSelected()
         compose.runOnIdle { assertEquals(1, navigationCount) }
@@ -81,7 +81,7 @@ class NavigationAndScrollHeaderTest {
             LedgerTheme {
                 listState = rememberLazyListState()
                 ScrollTitleContainerBase(
-                    title = "账单",
+                    title = "账本",
                     scrollOffset = {
                         if (listState.firstVisibleItemIndex == 0) listState.firstVisibleItemScrollOffset
                         else Int.MAX_VALUE
@@ -95,7 +95,7 @@ class NavigationAndScrollHeaderTest {
             }
         }
         compose.onNodeWithTag("scrollContent").performScrollToIndex(30)
-        compose.onNodeWithText("账单").assertIsDisplayed()
+        compose.onNodeWithText("账本").assertIsDisplayed()
         compose.onNodeWithContentDescription("回到顶部").performClick()
         compose.waitForIdle()
         compose.runOnIdle {

@@ -168,7 +168,7 @@ private fun ExpensePaceReadout(dateLabel: String, current: Long, previous: Long,
             horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.small)) {
             Text(dateLabel, fontSize = LedgerStyle.typography.chartLabel.fontSize, lineHeight = 12.sp, color = colors.onSurfaceVariant)
             Text("本期 ${current.toFormattedAmount(true, symbol = currencySymbol)}", fontSize = LedgerStyle.typography.chartLabel.fontSize, lineHeight = 12.sp,
-                color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                color = colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Row(verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                 Text("上期 ${previous.toFormattedAmount(true, symbol = currencySymbol)}", fontSize = LedgerStyle.typography.chartLabel.fontSize, lineHeight = 12.sp,

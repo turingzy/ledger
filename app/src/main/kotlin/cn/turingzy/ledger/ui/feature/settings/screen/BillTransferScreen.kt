@@ -6,7 +6,8 @@ import cn.turingzy.ledger.ui.feature.settings.component.SettingsTransferAction
 import cn.turingzy.ledger.ui.feature.settings.component.SettingsTransferFileRow
 import cn.turingzy.ledger.ui.feature.settings.component.selectedTransferFileName
 import cn.turingzy.ledger.ui.feature.settings.component.settingsPageScroll
-import cn.turingzy.ledger.ui.component.base.IconButtonBase
+import cn.turingzy.ledger.ui.component.base.ButtonBase
+import cn.turingzy.ledger.ui.component.base.ButtonVariantBase
 import cn.turingzy.ledger.ui.component.input.PreferenceChoice
 import cn.turingzy.ledger.ui.component.picker.LedgerDateTimeDialog
 import cn.turingzy.ledger.ui.interaction.uiClickable
@@ -165,12 +166,13 @@ internal fun BillTransferScreen(
             onDismissRequest = { duplicateConfirmation = null },
             title = { Text(textResources.getString(cn.turingzy.ledger.R.string.ui_possible_duplicate_transactions)) },
             text = { Text(textResources.getString(cn.turingzy.ledger.R.string.duplicate_prompt, preview.possibleDuplicates)) },
-            confirmDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_skip_duplicates),
+            confirmLabel = textResources.getString(cn.turingzy.ledger.R.string.ui_skip_duplicates),
             onConfirm = { duplicateConfirmation = null; runTransfer(preview = false) },
             secondaryAction = {
-                IconButtonBase(
-                    MaterialSymbols.FileCopy, textResources.getString(cn.turingzy.ledger.R.string.ui_import_anyway),
+                ButtonBase(
+                    textResources.getString(cn.turingzy.ledger.R.string.ui_import_anyway),
                     { duplicateConfirmation = null; runTransfer(preview = false, includePossibleDuplicates = true) },
+                    variant = ButtonVariantBase.Text,
                 )
             },
         )

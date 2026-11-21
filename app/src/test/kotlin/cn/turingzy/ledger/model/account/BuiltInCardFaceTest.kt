@@ -48,7 +48,7 @@ class BuiltInCardFaceTest {
     }
 
     @Test
-    fun savingAppearanceKeepsTheBuiltInMaterialAndCardIdentity() {
+    fun savingAppearanceKeepsCardIdentityAndReplacementImage() {
         val face = BuiltInCardFace.PearlLight
         val default = face.asTemplate()
         val appearance = default.copy(
@@ -56,11 +56,11 @@ class BuiltInCardFaceTest {
             textColor = "#FF223344",
             coverUri = "file:///different.png",
             isSystem = false,
-            isDeleted = true,
         )
 
         val saved = face.asTemplate(appearance)
-        assertEquals(default.copy(name = "我的珠光", textColor = "#FF223344"), saved)
+        assertEquals(appearance.copy(isSystem = true), saved)
+        assertTrue(face.asTemplate(appearance.copy(isDeleted = true)).isDeleted)
         assertEquals(face, BuiltInCardFace.forTemplate(saved))
         assertTrue(face.hasDefaultName(default))
         assertFalse(face.hasDefaultName(saved))

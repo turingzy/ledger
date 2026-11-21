@@ -69,42 +69,15 @@ class SummaryCardViewModelTest {
     }
 
     @Test
-    fun restoringWalletBackgroundKeepsLedgerBackgroundAndWalletTransparency() = runTest {
-        val ledgerBitmap = mockk<Bitmap>()
-        val walletBitmap = mockk<Bitmap>()
-        ledger.value = ledger.value.copy(backgroundFile = "ledger.jpg")
-        wallet.value = wallet.value.copy(backgroundFile = "wallet.jpg")
-        coEvery { repository.loadBackground("ledger.jpg") } returns ledgerBitmap
-        coEvery { repository.loadBackground("wallet.jpg") } returns walletBitmap
-        coEvery { repository.resetBackground(SummaryCardTarget.WALLET) } answers {
-            wallet.value = wallet.value.copy(backgroundFile = null)
-        }
-        val ledgerViewModel = SummaryCardViewModel(repository, SummaryCardTarget.LEDGER)
-        val walletViewModel = WalletCardViewModel(repository)
-        runCurrent()
-        walletViewModel.resetBackground()
-        runCurrent()
-        assertNull(walletViewModel.uiState.value.background)
-        assertEquals(75, walletViewModel.uiState.value.appearance.transparencyPercent)
-        assertSame(ledgerBitmap, ledgerViewModel.uiState.value.background)
-        assertEquals("ledger.jpg", ledger.value.backgroundFile)
-        coVerify(exactly = 0) { repository.resetBackground(SummaryCardTarget.LEDGER) }
-    }
-
-    @Test
-    fun preparedImageIsOnlyAppliedToWalletAfterConfirmation() = runTest {
+    fun selectedImageIsAppliedDirectlyToWallet() = runTest {
         val uri = mockk<Uri>()
         coEvery { repository.prepareBackground(uri, SummaryCardTarget.WALLET) } returns "unique.jpg"
         val viewModel = WalletCardViewModel(repository)
         runCurrent()
-        viewModel.prepareBackground(uri)
-        runCurrent()
-        assertEquals("unique.jpg", viewModel.uiState.value.preparedBackground)
-        coVerify(exactly = 0) { repository.applyPreparedBackground(any(), any()) }
-        viewModel.applyBackground(restoreDefault = false)
+        viewModel.importBackground(uri)
         runCurrent()
         coVerify(exactly = 1) { repository.applyPreparedBackground("unique.jpg", SummaryCardTarget.WALLET) }
         coVerify(exactly = 0) { repository.applyPreparedBackground(any(), SummaryCardTarget.LEDGER) }
-        assertNull(viewModel.uiState.value.preparedBackground)
+        coVerify { repository.discardPreparedBackground("unique.jpg") }
     }
 }

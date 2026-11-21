@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -24,8 +23,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cn.turingzy.ledger.ui.component.MaterialSymbols
@@ -61,7 +58,7 @@ internal fun AnalyticsStatisticsCard(state: AnalyticsUiState.Success, days: Map<
 private fun StatisticsMetric(label: String, amount: Long, modifier: Modifier = Modifier, average: AnalyticsExpenseAverage? = null) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val colors = MaterialTheme.colorScheme
-    SurfaceBase(modifier.fillMaxHeight(), shape = LedgerStyle.shapes.bankCard, color = analyticsChartInfoColor()) {
+    SurfaceBase(modifier.fillMaxHeight(), shape = LedgerStyle.shapes.summaryCard, color = analyticsChartInfoColor()) {
         Column(Modifier.padding(horizontal = 8.dp, vertical = 5.dp), verticalArrangement = Arrangement.spacedBy(1.dp)) {
             Text(label, fontSize = LedgerStyle.typography.caption.fontSize, lineHeight = 14.sp, color = colors.onSurfaceVariant)
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.extraSmall)) {

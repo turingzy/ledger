@@ -28,7 +28,7 @@ object AppTypography {
     val settingsRowTitle = body.copy(fontSize = 17.sp)
     val bodyMedium = textStyle(14.sp, 20.sp)
     val button = bodyMedium.copy(fontWeight = FontWeight.Medium)
-    val calendarMonthTitle = body.copy(fontWeight = FontWeight.SemiBold)
+    val periodPill = body.copy(fontSize = sectionTitle.fontSize, fontWeight = FontWeight.Medium)
     val calendarMonthLabel = textStyle(11.sp, 13.sp)
     val calendarMonthAmount = numericStyle(15.sp, 17.sp, FontWeight.SemiBold)
     val bodySmall = textStyle(13.sp, 18.sp)

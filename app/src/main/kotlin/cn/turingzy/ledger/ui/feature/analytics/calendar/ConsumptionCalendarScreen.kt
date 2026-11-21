@@ -35,11 +35,11 @@ import cn.turingzy.ledger.R
 import cn.turingzy.ledger.model.transaction.DateFilterType
 import cn.turingzy.ledger.model.transaction.TransactionType
 import cn.turingzy.ledger.ui.component.biz.LocalCurrencyBiz
-import cn.turingzy.ledger.ui.component.MaterialSymbols
-import cn.turingzy.ledger.ui.component.picker.PeriodPickerActions
 import cn.turingzy.ledger.ui.component.picker.PeriodPickerSheet
+import cn.turingzy.ledger.ui.component.picker.PeriodPickerPill
+import cn.turingzy.ledger.ui.component.picker.MonthGridWeekdays
+import cn.turingzy.ledger.ui.component.picker.sundayFirstColumn
 import cn.turingzy.ledger.ui.component.biz.currencySymbolBiz
-import cn.turingzy.ledger.ui.component.picker.returnLabel
 import cn.turingzy.ledger.ui.component.base.*
 import cn.turingzy.ledger.ui.component.biz.AmountSizeBiz
 import cn.turingzy.ledger.ui.component.biz.AmountTextBiz
@@ -136,13 +136,10 @@ internal fun ConsumptionCalendarContent(
                         contentSpacing = LedgerStyle.spacing.inlineGap,
                     ) {
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                month.format(DateTimeFormatter.ofPattern(if (configuration.locales[0].language == "en") "MMM yyyy" else "yyyy年M月", configuration.locales[0])),
-                                Modifier.clip(LedgerStyle.shapes.control)
-                                    .uiClickable(kind = UiInteractionKind.Navigation) { showPicker = true }
-                                    .padding(vertical = LedgerStyle.spacing.small),
-                                style = LedgerStyle.typography.calendarMonthTitle,
-                                color = colors.textPrimary, maxLines = 1,
+                            PeriodPickerPill(
+                                text = month.format(DateTimeFormatter.ofPattern(if (configuration.locales[0].language == "en") "MMM yyyy" else "yyyy年M月", configuration.locales[0])),
+                                onClick = { showPicker = true },
+                                background = colors.background,
                             )
                             Spacer(Modifier.weight(1f))
                             Column(horizontalAlignment = Alignment.End) {
@@ -217,9 +214,6 @@ internal fun ConsumptionCalendarContent(
         PeriodPickerSheet(
             DateFilterType.MONTH, month.atDay(1), { showPicker = false },
             { type, date -> selectMonth(type to date) }, showViewSelector = false,
-            header = { returnToCurrent ->
-                PeriodPickerActions(DateFilterType.MONTH, returnToCurrent)
-            },
         )
     }
 }
@@ -236,8 +230,8 @@ private fun ConsumptionMonthGrid(
     val colors = MaterialTheme.colorScheme
     Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-            listOf(textResources.getString(cn.turingzy.ledger.R.string.ui_mon), textResources.getString(cn.turingzy.ledger.R.string.ui_tue), textResources.getString(cn.turingzy.ledger.R.string.ui_wed), textResources.getString(cn.turingzy.ledger.R.string.ui_thu_2), textResources.getString(cn.turingzy.ledger.R.string.ui_fri), textResources.getString(cn.turingzy.ledger.R.string.ui_sat), textResources.getString(cn.turingzy.ledger.R.string.ui_sun_2)).forEachIndexed { index, label ->
-                val highlighted = today.dayOfWeek.value == index + 1
+            MonthGridWeekdays.map(textResources::getString).forEachIndexed { index, label ->
+                val highlighted = today.dayOfWeek.sundayFirstColumn() == index
                 Text(label, Modifier.weight(1f).padding(vertical = 5.dp).semantics { selected = highlighted }, fontSize = LedgerStyle.typography.label.fontSize, lineHeight = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                     letterSpacing = 0.5.sp,

@@ -1,7 +1,6 @@
 package cn.turingzy.ledger.ui.feature.settings.screen
 
-import cn.turingzy.ledger.ui.feature.settings.component.SettingsPageBottomPadding
-import cn.turingzy.ledger.ui.feature.settings.component.SettingsPageContentTopPadding
+import cn.turingzy.ledger.ui.feature.settings.component.settingsPageContentPadding
 import cn.turingzy.ledger.ui.feature.settings.component.SettingsSubpageScaffold
 import cn.turingzy.ledger.ui.interaction.uiClickable
 import cn.turingzy.ledger.ui.theme.LedgerStyle
@@ -10,7 +9,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -54,7 +52,7 @@ internal fun OpenSourceLibrariesScreen(onBack: () -> Unit, modifier: Modifier = 
         modifier = modifier,
     ) {
         LazyColumn(
-            contentPadding = PaddingValues(top = SettingsPageContentTopPadding, bottom = SettingsPageBottomPadding),
+            contentPadding = settingsPageContentPadding(),
             verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium),
         ) {
             items(openSourceLibraries, key = { it.name }) { library ->

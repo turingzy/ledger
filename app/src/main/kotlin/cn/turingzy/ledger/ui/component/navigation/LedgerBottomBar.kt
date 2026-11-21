@@ -37,14 +37,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
-import android.view.HapticFeedbackConstants
-import android.view.SoundEffectConstants
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import cn.turingzy.ledger.navigation.TopLevelDestination
+import cn.turingzy.ledger.ui.interaction.rememberSystemClickFeedback
 
 @Composable
 internal fun LedgerBottomBar(
@@ -56,7 +54,7 @@ internal fun LedgerBottomBar(
     visible: Boolean = true,
 ) {
     val colors = MaterialTheme.colorScheme
-    val view = LocalView.current
+    val clickFeedback = rememberSystemClickFeedback()
     val visibility = animateFloatAsState(if (visible) 1f else 0f, tween(160), label = "BottomBarVisibility")
     Box(
         modifier = modifier
@@ -111,8 +109,7 @@ internal fun LedgerBottomBar(
                             indication = null,
                         ) {
                             if (!selected) {
-                                view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
-                                view.playSoundEffect(SoundEffectConstants.CLICK)
+                                clickFeedback()
                                 onNavigateToDestination(destination)
                             }
                         }),

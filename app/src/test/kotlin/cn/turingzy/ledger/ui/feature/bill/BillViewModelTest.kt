@@ -14,6 +14,7 @@ import cn.turingzy.ledger.model.category.Category
 import cn.turingzy.ledger.model.category.CategoryType
 import cn.turingzy.ledger.model.category.CategoryWithIcon
 import cn.turingzy.ledger.model.category.Icon
+import cn.turingzy.ledger.ui.feature.bill.search.BillSearchRequest
 import cn.turingzy.ledger.model.transaction.Transaction
 import cn.turingzy.ledger.model.transaction.TransactionDetail
 import cn.turingzy.ledger.model.transaction.TransactionType
@@ -253,7 +254,7 @@ class BillViewModelTest {
     }
 
     @Test
-    fun globalSearchIgnoresTheSelectedPeriodAndCurrencyAndClosingRestoresThem() = runTest {
+    fun globalSearchReturnsHistoricalBillsWithoutChangingTheSelectedPeriod() = runTest {
         coEvery { categoryRepository.getCategoriesStream() } returns flowOf(emptyList())
         coEvery { accountRepository.getAccountsStream() } returns flowOf(emptyList())
         coEvery { transactionRepository.getAmountSum(any(), any(), any(), "CNY") } returns flowOf(0L)
@@ -271,16 +272,13 @@ class BillViewModelTest {
             awaitItem()
             testDispatcher.scheduler.advanceUntilIdle()
             val before = awaitItem() as BillUiState.Success
-            viewModel.search("  旧账  ")
-            testDispatcher.scheduler.advanceUntilIdle()
-            val result = awaitItem() as BillUiState.Success
-            assertEquals(10L, result.dayGroups.single().transactions.single().transaction.id)
-            assertEquals("USD", result.dayGroups.single().transactions.single().account.currency)
-            assertEquals(0L, result.dayGroups.single().totalExpense)
-            viewModel.search("")
-            testDispatcher.scheduler.advanceUntilIdle()
-            val restored = awaitItem() as BillUiState.Success
-            assertEquals(before, restored)
+            viewModel.search(BillSearchRequest(query = "  旧账  ")).test {
+                val result = awaitItem()
+                assertEquals(10L, result.groups.single().transactions.single().transaction.id)
+                assertEquals("USD", result.groups.single().transactions.single().account.currency)
+                assertEquals(0L, result.groups.single().totalExpense)
+            }
+            assertEquals(before, viewModel.uiState.value)
         }
     }
 

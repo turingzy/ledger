@@ -82,7 +82,7 @@ fun AboutScreen(
         onDismissRequest = { updateMessage = null }, text = { Text(updateMessage.orEmpty()) },
         onConfirm = { updateMessage = null },
         showCancel = false,
-        confirmDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_ok),
+        confirmLabel = textResources.getString(cn.turingzy.ledger.R.string.ui_ok),
     )
     SettingsSubpageScaffold(
         title = textResources.getString(cn.turingzy.ledger.R.string.ui_about),

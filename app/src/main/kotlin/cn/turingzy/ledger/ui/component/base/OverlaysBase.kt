@@ -15,8 +15,8 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -29,9 +29,11 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.SheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.constrainHeight
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -87,11 +89,36 @@ fun ModalBottomSheetBase(
     )
 }
 
+/** Centers a drawer title independently of its close button and optional action. */
+@Composable
+internal fun BottomSheetHeaderBase(
+    closeDescription: String,
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier,
+    action: (@Composable () -> Unit)? = null,
+    title: @Composable () -> Unit,
+) {
+    Box(
+        modifier.fillMaxWidth().heightIn(min = LedgerStyle.dimensions.touchTarget),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(Modifier.padding(horizontal = LedgerStyle.dimensions.touchTarget), contentAlignment = Alignment.Center) {
+            title()
+        }
+        IconButtonBase(
+            MaterialSymbols.Close, closeDescription, onClose,
+            modifier = Modifier.align(Alignment.CenterStart),
+            showPressFeedback = false,
+        )
+        if (action != null) Box(Modifier.align(Alignment.CenterEnd)) { action() }
+    }
+}
+
 @Composable
 internal fun BaseAlertDialog(
     onDismissRequest: () -> Unit,
     onConfirm: () -> Unit,
-    confirmDescription: String = stringResource(R.string.ui_confirm),
+    confirmLabel: String = stringResource(R.string.ui_confirm),
     confirmEnabled: Boolean = true,
     destructive: Boolean = false,
     showCancel: Boolean = true,
@@ -101,24 +128,55 @@ internal fun BaseAlertDialog(
 ) {
     DialogWindowBase(onDismissRequest) {
         SurfaceBase(Modifier.fillMaxWidth(), shape = LedgerStyle.shapes.confirmationDialog, color = LedgerStyle.colors.surface) {
-            Column(Modifier.padding(LedgerStyle.spacing.block), verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium)) {
+            Column(Modifier.dialogContentPadding(LedgerStyle.spacing.block), verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium)) {
                 Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium)) {
                     if (title != null) ProvideTextStyle(MaterialTheme.typography.titleLarge, title)
                     if (text != null) ProvideTextStyle(MaterialTheme.typography.bodyMedium, text)
                 }
-                Row(Modifier.fillMaxWidth()) {
-                    if (showCancel) IconButtonBase(MaterialSymbols.Close, stringResource(R.string.ui_cancel), onDismissRequest)
-                    Spacer(Modifier.weight(1f))
-                    secondaryAction?.invoke()
-                    IconButtonBase(
-                        if (destructive) MaterialSymbols.Delete else MaterialSymbols.Check,
-                        confirmDescription, onConfirm, enabled = confirmEnabled,
-                        contentColor = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary,
-                    )
-                }
+                DialogActions(
+                    onCancel = onDismissRequest.takeIf { showCancel },
+                    onConfirm = onConfirm,
+                    confirmLabel = confirmLabel,
+                    confirmEnabled = confirmEnabled,
+                    destructive = destructive,
+                    secondaryAction = secondaryAction,
+                )
             }
         }
+    }
+}
+
+/** Keeps the usual content insets and tucks the action row closer to the bottom edge. */
+internal fun Modifier.dialogContentPadding(inset: Dp): Modifier =
+    padding(start = inset, top = inset, end = inset, bottom = LedgerStyle.spacing.medium)
+
+/** Lays out dialog actions and wraps long localized labels on narrow screens. */
+@Composable
+internal fun DialogActions(
+    onCancel: (() -> Unit)?,
+    onConfirm: () -> Unit,
+    confirmLabel: String = stringResource(R.string.ui_confirm),
+    cancelEnabled: Boolean = true,
+    confirmEnabled: Boolean = true,
+    destructive: Boolean = false,
+    secondaryAction: (@Composable () -> Unit)? = null,
+) {
+    FlowRow(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = if (onCancel == null) Arrangement.End else Arrangement.SpaceBetween,
+    ) {
+        if (onCancel != null) {
+            ButtonBase(
+                stringResource(R.string.ui_cancel), onCancel, enabled = cancelEnabled,
+                variant = ButtonVariantBase.Text, tone = ButtonToneBase.Neutral,
+            )
+        }
+        secondaryAction?.invoke()
+        ButtonBase(
+            confirmLabel, onConfirm, enabled = confirmEnabled, variant = ButtonVariantBase.Text,
+            tone = if (destructive) ButtonToneBase.Destructive else ButtonToneBase.Default,
+        )
     }
 }
 

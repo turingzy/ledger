@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import cn.turingzy.ledger.ui.component.base.PageFrameBase
@@ -52,7 +51,6 @@ import cn.turingzy.ledger.ui.component.picker.PeriodPickerSheet
 import cn.turingzy.ledger.ui.interaction.UiInteractionKind
 import cn.turingzy.ledger.ui.interaction.rememberUiAction
 import cn.turingzy.ledger.ui.interaction.uiClickable
-import cn.turingzy.ledger.ui.component.picker.PeriodPickerActions
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -100,11 +98,7 @@ fun AnalyticsContent(
         AnalyticsChartInteractionHost {
             PageFrameBase(modifier) {
                 when (uiState) {
-                    AnalyticsUiState.Loading -> Box(
-                        Modifier.fillMaxSize(), contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                    }
+                    AnalyticsUiState.Loading -> Unit
                     is AnalyticsUiState.Success -> {
                         val scrollState = rememberScrollState()
                         ScrollTitleContainerBase(
@@ -183,7 +177,6 @@ fun AnalyticsContent(
                 type = pickerType, initialDate = periodState.periodStart,
                 onDismiss = { showPeriodPicker = false }, onSelect = { _, date -> onSelectPeriod(date) },
                 showViewSelector = false,
-                header = { returnToCurrent -> PeriodPickerActions(pickerType, returnToCurrent) },
             )
         }
         val endpoint = dateEndpoint

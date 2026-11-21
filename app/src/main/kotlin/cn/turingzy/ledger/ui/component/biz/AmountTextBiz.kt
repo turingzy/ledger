@@ -16,6 +16,7 @@ import cn.turingzy.ledger.ui.theme.LedgerStyle
 
 enum class AmountSizeBiz { Small, Regular, Emphasis, Hero, Transaction }
 
+/** Renders a transaction or balance amount using the shared currency and color conventions. */
 @Composable
 fun AmountTextBiz(
     amount: Long?,
@@ -32,7 +33,7 @@ fun AmountTextBiz(
     val colors = LedgerStyle.colors
     val color = contentColor ?: when {
         hidden || amount == null -> colors.textSecondary
-        type == null || type == TransactionType.TRANSFER -> colors.textPrimary
+        type == null -> colors.textPrimary
         else -> colors.transaction(type)
     }
     val style = textStyle ?: when (size) {

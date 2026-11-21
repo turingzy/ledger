@@ -2,21 +2,15 @@ package cn.turingzy.ledger.ui.component.card.bank
 
 import android.net.Uri
 import android.os.Build
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,7 +22,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
@@ -47,7 +40,6 @@ internal fun TitaniumBankCard(
     name: String,
     modifier: Modifier = Modifier,
     preset: TitaniumPreset = TitaniumPreset.IridescentLight,
-    typeLabel: String? = null,
     tailNumber: String? = null,
     imageUri: Uri? = null,
     textColor: Color? = null,
@@ -71,28 +63,13 @@ internal fun TitaniumBankCard(
             fontWeight = FontWeight.Normal,
             letterSpacing = 0.sp,
         )
-        Row(
-            Modifier.align(Alignment.TopStart).fillMaxWidth().padding(start = 20.dp, end = 46.dp, top = 17.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                name,
-                Modifier.weight(1f, fill = false),
-                style = style.copy(fontSize = 17.sp, lineHeight = 21.sp),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (!typeLabel.isNullOrBlank()) {
-                Text(
-                    typeLabel,
-                    Modifier.border(.75.dp, ink.copy(alpha = .46f), CircleShape)
-                        .padding(horizontal = 7.dp, vertical = 2.dp),
-                    style = style.copy(fontSize = 11.sp, lineHeight = 14.sp),
-                    maxLines = 1,
-                )
-            }
-        }
+        Text(
+            name,
+            Modifier.align(Alignment.TopStart).fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 17.dp),
+            style = style.copy(fontSize = 17.sp, lineHeight = 21.sp),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
 
         val tail = tailNumber.orEmpty().filter { it in '0'..'9' }.takeLast(4)
         if (tail.isNotEmpty()) {
@@ -165,7 +142,6 @@ internal fun TitaniumCardSurface(
             if (Build.VERSION.SDK_INT < 33 || inspection) TitaniumFallbackReflection(motion, tuning, Modifier.matchParentSize())
         }
         content(ink)
-        EtchedContactlessWaves(ink, Modifier.align(Alignment.TopEnd).padding(top = 17.dp, end = 20.dp))
     }
 }
 
@@ -189,24 +165,5 @@ private fun Modifier.titaniumEdge(dark: Boolean): Modifier = drawWithCache {
             cornerRadius = CornerRadius(radius),
             style = Stroke(stroke),
         )
-    }
-}
-
-@Composable
-private fun EtchedContactlessWaves(ink: Color, modifier: Modifier) {
-    Canvas(modifier.size(width = 18.dp, height = 20.dp)) {
-        val center = Offset(2.dp.toPx(), size.height / 2)
-        for (wave in 1..4) {
-            val radius = (wave * 3.6f).dp.toPx()
-            drawArc(
-                color = ink.copy(alpha = .85f),
-                startAngle = -37f,
-                sweepAngle = 74f,
-                useCenter = false,
-                topLeft = center - Offset(radius, radius),
-                size = Size(radius * 2f, radius * 2f),
-                style = Stroke(1.1.dp.toPx(), cap = StrokeCap.Round),
-            )
-        }
     }
 }

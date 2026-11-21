@@ -32,3 +32,10 @@ internal val Migration3To4 = object : Migration(3, 4) {
         db.execSQL("CREATE TABLE IF NOT EXISTS tb_exchange_rate (date TEXT NOT NULL, currency TEXT NOT NULL, perUsd TEXT NOT NULL, manual INTEGER NOT NULL, PRIMARY KEY(date, currency))")
     }
 }
+
+/** Leaves historical rates without a timestamp until they are fetched or edited. */
+internal val Migration4To5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE tb_exchange_rate ADD COLUMN updated_at_millis INTEGER")
+    }
+}

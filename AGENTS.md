@@ -46,7 +46,7 @@ Mirror production packages in `app/src/test/` and `app/src/androidTest/`. Prefer
 - Keep DAOs and Room entities out of UI/ViewModels. Coordinate feature navigation through `navigation/`.
 - Reuse shared scaffolds, overlays, form controls, business amount displays, and theme tokens. When adding user-facing Compose strings, update the default and English resources under `app/src/main/res/`.
 - Use official Material Symbols Rounded (400/0/24) through `ui/component/MaterialSymbols.kt`. Add symbols to `scripts/sync_material_symbols.py` and regenerate the Kotlin file. Leave generated vector paths to the script.
-- Keep comments focused on non-obvious reasons. Use concise English commit messages.
+- Give classes and functions concise, clear comments that explain their purpose or non-obvious constraints. Use concise English commit messages.
 
 ## Change Scope
 

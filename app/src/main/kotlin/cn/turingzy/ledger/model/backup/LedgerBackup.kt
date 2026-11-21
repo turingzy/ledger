@@ -41,4 +41,10 @@ data class LedgerSettingsSnapshot(
 data class BackupAppearance(val target: SummaryCardTarget, val transparency: Int, val image: String? = null)
 
 @Serializable
-data class BackupExchangeRate(val date: String, val currency: String, val perUsd: String, val manual: Boolean = false)
+data class BackupExchangeRate(
+    val date: String,
+    val currency: String,
+    val perUsd: String,
+    val manual: Boolean = false,
+    val updatedAtMillis: Long? = null,
+)

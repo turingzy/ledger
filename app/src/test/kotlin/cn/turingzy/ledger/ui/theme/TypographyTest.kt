@@ -28,7 +28,7 @@ class TypographyTest {
                 screenTitle, sectionTitle, cardTitle, body, bodyMedium, bodySmall,
                 label, caption, chartLabel, navigationLabel, amount, amountSmall,
                 amountEmphasis, heroAmount, inputAmount, cardNumber, transactionTitle, transactionAmount,
-                button, calendarMonthTitle, calendarMonthLabel, calendarMonthAmount,
+                button, periodPill, calendarMonthLabel, calendarMonthAmount,
             ).forEach { style ->
                 assertEquals(TextUnitType.Sp, style.fontSize.type)
                 assertEquals(TextUnitType.Sp, style.lineHeight.type)

@@ -8,6 +8,8 @@ import cn.turingzy.ledger.data.repository.settings.LedgerCardAppearanceRepositor
 import cn.turingzy.ledger.model.settings.LedgerCardAppearance
 import cn.turingzy.ledger.model.settings.SummaryCardTarget
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -21,7 +23,6 @@ internal data class SummaryCardUiState(
     val loading: Boolean = true,
     val importing: Boolean = false,
     val error: String? = null,
-    val preparedBackground: String? = null,
 )
 
 internal open class SummaryCardViewModel(
@@ -57,37 +58,15 @@ internal open class SummaryCardViewModel(
         save { repository.setTransparencyPercent(percent, target) }
     }
 
-    fun resetBackground() {
-        applyBackground(restoreDefault = true)
-    }
-
-    fun prepareBackground(uri: Uri) {
+    /** Replaces the saved image as soon as a usable selection has been prepared. */
+    fun importBackground(uri: Uri) {
         backgroundOperation {
             val filename = repository.prepareBackground(uri, target)
-            val previous = _uiState.value.preparedBackground
-            _uiState.update { it.copy(preparedBackground = filename) }
-            previous?.let { repository.discardPreparedBackground(it) }
-        }
-    }
-
-    fun discardPreparedBackground() {
-        val filename = _uiState.value.preparedBackground ?: return
-        _uiState.update { it.copy(preparedBackground = null) }
-        save { repository.discardPreparedBackground(filename) }
-    }
-
-    fun applyBackground(restoreDefault: Boolean, onSuccess: () -> Unit = {}) {
-        val filename = _uiState.value.preparedBackground
-        if (!restoreDefault && filename == null) return
-        backgroundOperation {
-            if (restoreDefault) {
-                repository.resetBackground(target)
-                filename?.let { repository.discardPreparedBackground(it) }
-            } else if (filename != null) {
+            try {
                 repository.applyPreparedBackground(filename, target)
+            } finally {
+                withContext(NonCancellable) { repository.discardPreparedBackground(filename) }
             }
-            _uiState.update { it.copy(preparedBackground = null) }
-            onSuccess()
         }
     }
 

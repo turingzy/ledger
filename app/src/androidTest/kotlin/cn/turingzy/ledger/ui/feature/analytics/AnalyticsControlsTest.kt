@@ -88,7 +88,10 @@ class AnalyticsControlsTest {
         compose.onNodeWithContentDescription("选择分析日期").performClick()
         compose.onNodeWithTag("ledgerPeriodPicker").assertIsDisplayed()
         compose.onNodeWithTag("periodViewSelector").assertDoesNotExist()
+        compose.onNodeWithContentDescription("关闭日期选择").performClick()
+        compose.onNodeWithTag("ledgerPeriodPicker").assertDoesNotExist()
         assertNull(selected)
+        compose.onNodeWithContentDescription("选择分析日期").performClick()
         compose.onNodeWithTag("ledgerPeriod-${target.toEpochDay()}").performClick()
         assertEquals(target, selected)
     }
@@ -114,15 +117,15 @@ class AnalyticsControlsTest {
         compose.onNodeWithContentDescription("小时").assertDoesNotExist()
         compose.onNodeWithContentDescription("分钟").assertDoesNotExist()
         compose.onNodeWithContentDescription("2026-11-11").performClick()
-        compose.onNodeWithContentDescription("取消").performClick()
+        compose.onNodeWithText("取消").performClick()
         assertEquals(start, state.value.periodStart)
         compose.onNodeWithContentDescription("选择分析开始日期").performClick()
         compose.onNodeWithContentDescription("2026-11-11").performClick()
-        compose.onNodeWithContentDescription("确认").performClick()
+        compose.onNodeWithText("确认").performClick()
         assertEquals(start.minusDays(1), state.value.periodStart)
         compose.onNodeWithContentDescription("选择分析结束日期").performClick()
         compose.onNodeWithContentDescription("2026-11-15").performClick()
-        compose.onNodeWithContentDescription("确认").performClick()
+        compose.onNodeWithText("确认").performClick()
         assertEquals(end.plusDays(1), state.value.periodEnd)
         assertEquals(AnalyticsTimeScope.ALL, state.value.timeScope)
     }
@@ -144,7 +147,7 @@ class AnalyticsControlsTest {
         }
         compose.onNodeWithContentDescription("选择分析结束日期").performClick()
         compose.onNodeWithContentDescription("2026-11-11").performClick()
-        compose.onNodeWithContentDescription("确认").performClick()
+        compose.onNodeWithText("确认").performClick()
         assertEquals(date.minusDays(1) to date.minusDays(1), selected)
     }
 }

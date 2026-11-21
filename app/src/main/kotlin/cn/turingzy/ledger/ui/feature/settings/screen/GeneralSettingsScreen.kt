@@ -27,6 +27,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cn.turingzy.ledger.R
+import cn.turingzy.ledger.data.repository.currency.ExchangeQuote
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import cn.turingzy.ledger.ui.AppStateViewModel
 import cn.turingzy.ledger.ui.RateRefreshStatus
 import cn.turingzy.ledger.ui.component.MaterialSymbols
@@ -46,12 +51,13 @@ internal fun GeneralSettingsScreen(onBack: () -> Unit, viewModel: AppStateViewMo
     var rate by rememberSaveable(from, primary) { mutableStateOf("") }
     var edited by rememberSaveable(from, primary) { mutableStateOf(false) }
     var rateDate by remember(from, primary) { mutableStateOf<String?>(null) }
-    LaunchedEffect(from, primary, busy) {
+    var savedRateVersion by remember(from, primary) { mutableIntStateOf(0) }
+    LaunchedEffect(from, primary, busy, savedRateVersion) {
         if (busy) return@LaunchedEffect
         try {
             val quote = viewModel.currentRate(from, primary)
             if (!edited) rate = quote.rate
-            rateDate = quote.date
+            rateDate = quote.displayUpdateTime()
         } catch (error: kotlinx.coroutines.CancellationException) { throw error }
         catch (error: Exception) { timber.log.Timber.w(error, "No saved rate for settings preview") }
     }
@@ -67,7 +73,7 @@ internal fun GeneralSettingsScreen(onBack: () -> Unit, viewModel: AppStateViewMo
             viewModel.editManualRate(from, primary, it) {
                 if (rate == it) {
                     edited = false
-                    rateDate = java.time.LocalDate.now().toString()
+                    savedRateVersion++
                 }
             }
         },
@@ -158,3 +164,9 @@ private fun ExchangeRateField(from: String, primary: String, value: String, enab
         Text(primary, style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant)
     }
 }
+
+/** Shows actual local update time when known, otherwise the provider's date. */
+private fun ExchangeQuote.displayUpdateTime(): String = updatedAtMillis?.let {
+    DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")
+        .format(Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()))
+} ?: DateTimeFormatter.ofPattern("yyyy/MM/dd").format(LocalDate.parse(date))

@@ -2,7 +2,6 @@ package cn.turingzy.ledger.ui.feature.wallet.sheet
 
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -46,10 +45,10 @@ class AccountDetailsDeleteTest {
         }
         compose.onNodeWithText("删除账户").performScrollTo().performClick()
         compose.runOnIdle { assertEquals(0, deletes) }
-        compose.onNodeWithContentDescription("取消删除账户").performClick()
+        compose.onNodeWithText("取消").performClick()
         compose.runOnIdle { assertEquals(0, deletes) }
         compose.onNodeWithText("删除账户").performScrollTo().performClick()
-        compose.onNodeWithContentDescription("确认删除账户").performClick()
+        compose.onNodeWithText("删除").performClick()
         compose.runOnIdle {
             assertEquals(1, deletes)
             assertEquals(0, saves)

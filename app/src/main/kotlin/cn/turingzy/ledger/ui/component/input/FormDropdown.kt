@@ -4,8 +4,6 @@ import cn.turingzy.ledger.ui.component.base.FormFieldFrameBase
 import cn.turingzy.ledger.ui.component.base.DropdownIndicatorBase
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -52,7 +50,7 @@ internal fun <T> FormDropdown(
         modifier = modifier,
         alignMenuToStart = alignMenuToStart,
         menuTestTag = menuTestTag,
-    ) { anchorModifier, expanded, onToggle ->
+    ) { anchorModifier, expanded, opensUp, onToggle ->
         FormFieldFrameBase(
             label = label,
             modifier = anchorModifier.semantics { contentDescription = label },
@@ -60,11 +58,12 @@ internal fun <T> FormDropdown(
             onClick = onToggle,
         ) {
             Text(value, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            DropdownIndicatorBase(expanded)
+            DropdownIndicatorBase(expanded, opensUp = opensUp)
         }
     }
 }
 
+/** Positions the menu and supplies its direction to the anchor indicator. */
 @Composable
 internal fun <T> LedgerDropdown(
     options: List<T>,
@@ -75,7 +74,7 @@ internal fun <T> LedgerDropdown(
     alignMenuToStart: Boolean = false,
     menuTestTag: String = "dropdownOptions",
     direction: DropdownDirection = DropdownDirection.UP,
-    anchor: @Composable (Modifier, Boolean, () -> Unit) -> Unit,
+    anchor: @Composable (modifier: Modifier, expanded: Boolean, opensUp: Boolean, onToggle: () -> Unit) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
     val menuPositionProvider = remember(alignMenuToStart, direction) { FormMenuPositionProvider(alignMenuToStart, direction) }
@@ -99,6 +98,7 @@ internal fun <T> LedgerDropdown(
                 if (expanded) updateMenuHeight(it)
             },
             expanded,
+            direction == DropdownDirection.UP,
             {
                 focusManager.clearFocus()
                 if (!expanded) {

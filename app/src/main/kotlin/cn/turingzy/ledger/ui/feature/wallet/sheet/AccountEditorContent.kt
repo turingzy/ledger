@@ -4,6 +4,7 @@ import cn.turingzy.ledger.ui.component.card.bank.titaniumTitle
 import cn.turingzy.ledger.ui.feature.wallet.component.displayName
 import cn.turingzy.ledger.ui.component.base.ButtonVariantBase
 import cn.turingzy.ledger.ui.component.base.ActionButtonBase
+import cn.turingzy.ledger.ui.component.input.FormTextField
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.ui.component.input.FormDropdown as AccountFormDropdown
 import androidx.compose.foundation.BorderStroke
@@ -101,7 +102,7 @@ internal fun AccountEditorContent(
                 )
             }
         }
-        AccountFormTextField(
+        FormTextField(
             label = textResources.getString(cn.turingzy.ledger.R.string.ui_account_name), value = name, onValueChange = { name = it },
             placeholder = textResources.getString(cn.turingzy.ledger.R.string.ui_salary_account),
         )
@@ -110,7 +111,7 @@ internal fun AccountEditorContent(
             optionLabel = { it.displayName(textResources) }, onSelect = { type = it },
         )
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large)) {
-            AccountFormTextField(
+            FormTextField(
                 label = if (type == AccountType.CREDIT) textResources.getString(cn.turingzy.ledger.R.string.ui_opening_debt) else textResources.getString(cn.turingzy.ledger.R.string.ui_opening_balance),
                 value = balance, onValueChange = { balance = it }, placeholder = "0.00",
                 error = if (input.balanceCents == null) textResources.getString(cn.turingzy.ledger.R.string.ui_enter_a_valid_amount) else null,
@@ -124,14 +125,14 @@ internal fun AccountEditorContent(
                     alignMenuToStart = false,
                 )
             } else {
-                AccountFormTextField(
+                FormTextField(
                     label = textResources.getString(cn.turingzy.ledger.R.string.ui_currency), value = account.currency, onValueChange = {}, readOnly = true,
                     modifier = Modifier.weight(0.8f),
                 )
             }
         }
         if (account != null) {
-            AccountFormTextField(
+            FormTextField(
                 label = if (account.type == AccountType.CREDIT) textResources.getString(cn.turingzy.ledger.R.string.ui_current_debt) else textResources.getString(cn.turingzy.ledger.R.string.ui_current_balance),
                 value = account.currentBalance.toFormattedAmount(useGrouping = true),
                 onValueChange = {}, suffix = account.currency, readOnly = true,

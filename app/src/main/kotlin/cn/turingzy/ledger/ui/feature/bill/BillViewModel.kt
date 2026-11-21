@@ -1,10 +1,14 @@
 package cn.turingzy.ledger.ui.feature.bill
 
 import cn.turingzy.ledger.ui.feature.bill.detail.TransactionSaveState
+import cn.turingzy.ledger.ui.feature.bill.search.BillSearchRequest
+import cn.turingzy.ledger.ui.feature.bill.search.buildBillSearchResults
 import cn.turingzy.ledger.ui.component.picker.weekLabel
 import cn.turingzy.ledger.model.currency.primaryAmount
 import cn.turingzy.ledger.model.currency.CurrencyAmountOverride
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import cn.turingzy.ledger.model.transaction.DateFilterType
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -14,7 +18,6 @@ import cn.turingzy.ledger.data.repository.transaction.TransactionRepository
 import cn.turingzy.ledger.model.account.AccountWithTemplate
 import cn.turingzy.ledger.model.category.CategoryWithIcon
 import cn.turingzy.ledger.model.transaction.Transaction
-import cn.turingzy.ledger.model.transaction.TransactionDetail
 import cn.turingzy.ledger.model.transaction.TransactionBatchChange
 import cn.turingzy.ledger.model.transaction.TransactionType
 import cn.turingzy.ledger.di.Dispatcher
@@ -35,12 +38,9 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
-import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 import javax.inject.Inject
 
 sealed interface BillDateFilter {
@@ -88,15 +88,11 @@ class BillViewModel @Inject constructor(
             initialValue = emptyList(),
         )
 
-    private val searchQuery = MutableStateFlow("")
     private val _saveState = MutableStateFlow(TransactionSaveState())
     internal val saveState = _saveState.asStateFlow()
-    fun search(query: String) { searchQuery.value = query.trim() }
     internal fun resetSaveState() { if (!_saveState.value.saving) _saveState.value = TransactionSaveState() }
 
-    val uiState: StateFlow<BillUiState> = combine(dateFilter, currencies.selection, searchQuery) { filter, currency, query ->
-        Triple(filter, currency, query)
-    }.flatMapLatest { (filter, currency, query) ->
+    val uiState: StateFlow<BillUiState> = combine(dateFilter, currencies.selection, ::Pair).flatMapLatest { (filter, currency) ->
         val zone = ZoneId.systemDefault()
         val calc = when (filter) {
             is BillDateFilter.Week -> {
@@ -133,20 +129,15 @@ class BillViewModel @Inject constructor(
             }
         }
 
-        combine(
-            transactionRepository.getTransactionsBetween(calc.startEpoch, calc.endEpoch, currency.currency),
-            if (query.isBlank()) kotlinx.coroutines.flow.flowOf(emptyList()) else transactionRepository.searchTransactions(query),
-        ) { periodTransactions, searchTransactions ->
-            val transactions = if (query.isBlank()) periodTransactions else searchTransactions
+        transactionRepository.getTransactionsBetween(calc.startEpoch, calc.endEpoch, currency.currency).map { periodTransactions ->
             val available = periodTransactions.filter { it.transaction.type != TransactionType.TRANSFER }.all { it.primaryAmount(currency.currency) != null }
             fun total(type: TransactionType) = periodTransactions.filter { it.transaction.type == type }
                 .fold(0L) { total, entry -> Math.addExact(total, entry.primaryAmount(currency.currency) ?: 0L) }
             val income = total(TransactionType.INCOME)
             val expense = total(TransactionType.EXPENSE)
-            val dayGroups = groupTransactionsByDay(transactions, zone, currency.currency)
+            val dayGroups = groupTransactionsByDay(periodTransactions, zone, currency.currency)
             BillUiState.Success(
                 currency = currency.currency,
-                searchQuery = query,
                 amountsAvailable = available,
                 year = calc.year,
                 month = calc.month,
@@ -166,6 +157,24 @@ class BillViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = BillUiState.Loading,
     )
+
+    /** Uses the most recent transactions to rank selectable categories by frequency. */
+    internal val searchSuggestions = combine(categories, flow { emitAll(transactionRepository.recentCategoryIds(100)) }) { available, recent ->
+        val counts = recent.groupingBy { it }.eachCount()
+        available.asSequence()
+            .filterNot { it.category.isDeleted }
+            .sortedWith(compareByDescending<CategoryWithIcon> { counts[it.category.id] ?: 0 }.thenBy { it.category.sortOrder })
+            .take(6).toList()
+    }.flowOn(defaultDispatcher)
+
+    /** Searches independently of the date filter on the bill page. */
+    internal fun search(request: BillSearchRequest) = combine(
+        currencies.selection,
+        request.categoryId?.let(transactionRepository::getTransactionsByCategory)
+            ?: transactionRepository.searchTransactions(request.query.trim()),
+    ) { currency, rows ->
+        buildBillSearchResults(rows, request, currency.currency, ZoneId.systemDefault())
+    }.flowOn(defaultDispatcher)
 
     fun setMonth(year: Int, month: Int) {
         dateFilter.value = BillDateFilter.Month(YearMonth.of(year, month))
@@ -232,40 +241,5 @@ class BillViewModel @Inject constructor(
         viewModelScope.launch {
             transactionRepository.deleteTransaction(id)
         }
-    }
-
-    private fun groupTransactionsByDay(
-        transactions: List<TransactionDetail>,
-        zone: ZoneId,
-        primary: String,
-    ): List<DayTransactionGroup> {
-        val dateFormatter = DateTimeFormatter.ofPattern("MM/dd E", Locale.CHINESE)
-
-        return transactions
-            .groupBy { tx ->
-                Instant.ofEpochMilli(tx.transaction.transactionTime).atZone(zone).toLocalDate()
-            }
-            .map { (date, txList) ->
-                val dayExpense = txList
-                    .filter { it.transaction.type == TransactionType.EXPENSE }
-                    .sumOf { it.primaryAmount(primary) ?: 0L }
-                val dayIncome = txList
-                    .filter { it.transaction.type == TransactionType.INCOME }
-                    .sumOf { it.primaryAmount(primary) ?: 0L }
-
-                DayTransactionGroup(
-                    dateEpochDay = date.toEpochDay(),
-                    displayDate = date.format(dateFormatter),
-                    totalExpense = dayExpense,
-                    totalIncome = dayIncome,
-                    transactions = txList.sortedByDescending { it.transaction.transactionTime },
-                    currencyAmounts = txList.groupBy { it.account.currency }.map { (code, entries) ->
-                        DayCurrencyAmounts(code,
-                            entries.filter { it.transaction.type == TransactionType.EXPENSE }.sumOf { it.transaction.amount },
-                            entries.filter { it.transaction.type == TransactionType.INCOME }.sumOf { it.transaction.amount })
-                    },
-                )
-            }
-            .sortedByDescending { it.dateEpochDay }
     }
 }

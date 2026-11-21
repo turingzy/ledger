@@ -18,5 +18,5 @@ internal class SettingsPreviewProvider : PreviewParameterProvider<SettingsUiStat
 @Preview(name = "Settings Dark", showBackground = true, showSystemUi = true, widthDp = 420, heightDp = 900, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun SettingsPreview(@PreviewParameter(SettingsPreviewProvider::class) state: SettingsUiState) {
-    LedgerTheme { SettingsContent(state, {}, {}, {}, {}, {}) }
+    LedgerTheme { SettingsContent(state, {}, {}, {}, {}) }
 }

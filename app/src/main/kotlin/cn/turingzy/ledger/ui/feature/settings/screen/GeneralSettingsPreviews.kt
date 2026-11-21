@@ -26,7 +26,7 @@ private fun GeneralSettingsPreview(@PreviewParameter(GeneralSettingsPreviewProvi
     LedgerTheme {
         GeneralSettingsContent(
             draft = AppPreferences(primaryCurrency = "CNY"), busy = case.busy,
-            from = "USD", rate = case.rate, rateDate = "2026-11-17", message = case.message,
+            from = "USD", rate = case.rate, rateDate = "2026/11/17 14:32:05", message = case.message,
             currencies = listOf("USD" to "USD", "HKD" to "HKD", "EUR" to "EUR"),
             onPreferencesChange = {}, onFromChange = {}, onRateChange = {}, onRefresh = {}, onBack = {},
         )

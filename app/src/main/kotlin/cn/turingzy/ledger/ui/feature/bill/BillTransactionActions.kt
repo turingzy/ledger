@@ -3,6 +3,7 @@ package cn.turingzy.ledger.ui.feature.bill
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -39,12 +40,13 @@ import timber.log.Timber
 
 @Composable
 internal fun BillTransactionActions(
-    uiState: BillUiState,
+    dayGroups: List<DayTransactionGroup>,
+    ungroupedRows: List<TransactionDetail> = emptyList(),
     viewModel: BillViewModel,
     transactionViewModel: TransactionDetailsViewModel,
     snackbarHostState: SnackbarHostState,
     onSelectionVisibleChange: (Boolean) -> Unit,
-    content: @Composable (@Composable (TransactionDetail) -> Unit) -> Unit,
+    content: @Composable (@Composable (detail: TransactionDetail, roundTop: Boolean, roundBottom: Boolean) -> Unit) -> Unit,
 ) {
     var selection by remember { mutableStateOf<Set<Long>?>(null) }
     var swipeId by remember { mutableStateOf<Long?>(null) }
@@ -52,9 +54,8 @@ internal fun BillTransactionActions(
     var deleteIds by remember { mutableStateOf<Set<Long>?>(null) }
     var draft by remember { mutableStateOf<Transaction?>(null) }
     var applying by remember { mutableStateOf(false) }
-    val transactions = remember(uiState) {
-        (uiState as? BillUiState.Success)?.dayGroups.orEmpty()
-            .flatMap { it.transactions }.associateBy { it.transaction.id }
+    val transactions = remember(dayGroups, ungroupedRows) {
+        (dayGroups.flatMap { it.transactions } + ungroupedRows).associateBy { it.transaction.id }
     }
     val selecting = selection != null
     val selectedIds = selection.orEmpty().intersect(transactions.keys)
@@ -98,10 +99,13 @@ internal fun BillTransactionActions(
     val bottomPadding = if (selecting) BillSelectionBarPadding else LocalBottomBarContentPadding.current
     Box(Modifier.fillMaxSize()) {
         CompositionLocalProvider(LocalBottomBarContentPadding provides bottomPadding) {
-            content { detail ->
+            content { detail, roundTop, roundBottom ->
                 val id = detail.transaction.id
                 BillSwipeRow(
                     detail = detail,
+                    showDate = ungroupedRows.isNotEmpty(),
+                    roundTop = roundTop,
+                    roundBottom = roundBottom,
                     selecting = selecting,
                     selected = id in selectedIds,
                     enabled = !applying,
@@ -149,7 +153,7 @@ internal fun BillTransactionActions(
             onSelectAccount = { picker = BillActionPicker.Account },
             onSelectCategory = { picker = BillActionPicker.Category },
             onDelete = { deleteIds = selectedIds },
-            modifier = Modifier.align(Alignment.BottomCenter),
+            modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding(),
         )
     }
 

@@ -38,8 +38,22 @@ class ExchangeRateRepositoryTest {
         val quote = repository.quote("USD", "CNY", date)
         assertEquals("7.1", quote.rate)
         assertEquals(date.minusDays(10).toString(), quote.date)
+        assertNull(quote.updatedAtMillis)
         repository.quote("USD", "CNY", date)
         coVerify(exactly = 1) { source.fetch(any(), any(), any()) }
+    }
+
+    @Test fun refreshRecordsUpdateTimeEvenWhenTheProviderRateHasNotChanged() = runTest {
+        val cached = ExchangeRateEntity(date.toString(), "CNY", "7.2", updatedAtMillis = 1L)
+        storage += cached
+        coEvery { source.fetch(any(), any(), any()) } returns listOf(cached.copy(updatedAtMillis = null))
+
+        repository.prepare(setOf(date), setOf("USD", "CNY"), refresh = true)
+        val quote = repository.quote("USD", "CNY", date)
+
+        assertEquals(cached.date, quote.date)
+        assertEquals(cached.perUsd, quote.rate)
+        assertTrue(checkNotNull(quote.updatedAtMillis) > checkNotNull(cached.updatedAtMillis))
     }
 
     @Test fun unavailableRatesFailExplicitlyInsteadOfUsingOneToOne() = runTest {
@@ -51,9 +65,13 @@ class ExchangeRateRepositoryTest {
 
     @Test fun manualQuotesAreNotOverwrittenByAutomaticRefresh() = runTest {
         repository.setManualRate("USD", "CNY", "7.3", date)
+        val manualUpdate = storage.single().updatedAtMillis
+        assertNotNull(manualUpdate)
         coEvery { source.fetch(any(), any(), any()) } returns listOf(ExchangeRateEntity(date.toString(), "CNY", "7.1"))
         repository.prepare(setOf(date), setOf("CNY", "USD"), refresh = true)
-        assertEquals("7.3", repository.quote("USD", "CNY", date).rate)
+        val quote = repository.quote("USD", "CNY", date)
+        assertEquals("7.3", quote.rate)
+        assertEquals(manualUpdate, quote.updatedAtMillis)
     }
 
     @Test fun manualQuoteToUsdCanBeUsedForOtherPairs() = runTest {

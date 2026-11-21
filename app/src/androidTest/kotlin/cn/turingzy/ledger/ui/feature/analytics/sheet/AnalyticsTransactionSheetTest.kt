@@ -37,8 +37,10 @@ class AnalyticsTransactionSheetTest {
         compose.onNodeWithText("−¥1.00").assertIsDisplayed()
         compose.onNode(hasScrollAction()).performScrollToNode(hasText("银行卡 · 支出20"))
         compose.onNodeWithText("银行卡 · 支出20").assertIsDisplayed()
-        compose.onNodeWithText("11月支出明细").assertIsDisplayed()
-        androidx.test.espresso.Espresso.pressBack()
+        val title = compose.onNodeWithText("11月支出明细").assertIsDisplayed()
+        val close = compose.onNodeWithContentDescription("关闭交易明细").assertIsDisplayed()
+        assertTrue(close.getUnclippedBoundsInRoot().left < title.getUnclippedBoundsInRoot().left)
+        close.performClick()
         compose.runOnIdle { assertTrue(dismissed) }
     }
     @Test fun amountOrderKeepsLargestFirstAcrossDatesWithoutDateGroups() {

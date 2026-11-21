@@ -48,7 +48,7 @@ internal fun PreferenceChoice(title: String, selected: String, options: List<Pai
         isSelected = { it.first == selected },
         onSelect = { if (enabled) onSelect(it.first) },
         direction = DropdownDirection.DOWN,
-    ) { anchorModifier, expanded, onToggle ->
+    ) { anchorModifier, expanded, opensUp, onToggle ->
         Box(
             Modifier.fillMaxWidth()
                 .semantics(mergeDescendants = true) { contentDescription = title }
@@ -66,7 +66,7 @@ internal fun PreferenceChoice(title: String, selected: String, options: List<Pai
                     color = colors.onSurfaceVariant.copy(alpha = if (enabled) 1f else LedgerStyle.opacity.disabled),
                     style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.End,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
-                DropdownIndicatorBase(expanded, contentColor = colors.onSurfaceVariant.copy(alpha = if (enabled) 1f else LedgerStyle.opacity.disabled))
+                DropdownIndicatorBase(expanded, opensUp = opensUp, contentColor = colors.onSurfaceVariant.copy(alpha = if (enabled) 1f else LedgerStyle.opacity.disabled))
             }
         }
     }

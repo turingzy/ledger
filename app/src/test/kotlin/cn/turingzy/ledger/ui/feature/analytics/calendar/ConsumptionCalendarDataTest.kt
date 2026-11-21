@@ -9,16 +9,17 @@ import org.junit.Test
 class ConsumptionCalendarDataTest {
     private val today = LocalDate.of(2026, 11, 14)
 
-    @Test fun leapMonthUsesMondayFirstAndIncludesLeapDay() {
+    @Test fun leapMonthUsesSundayFirstAndIncludesLeapDay() {
         val data = consumptionCalendarData(emptyMap(), YearMonth.of(2024, 2), today)
         assertEquals(35, data.cells.size)
-        assertTrue(data.cells.take(3).all { it == null })
-        assertEquals(LocalDate.of(2024, 2, 1), data.cells[3])
+        assertTrue(data.cells.take(4).all { it == null })
+        assertEquals(LocalDate.of(2024, 2, 1), data.cells[4])
         assertEquals(LocalDate.of(2024, 2, 29), data.cells.filterNotNull().last())
         assertEquals(29, data.cells.filterNotNull().size)
-        val sixWeeks = consumptionCalendarData(emptyMap(), YearMonth.of(2026, 3), today)
-        assertEquals(42, sixWeeks.cells.size)
-        assertEquals(LocalDate.of(2026, 3, 1), sixWeeks.cells[6])
+        val sundayStart = consumptionCalendarData(emptyMap(), YearMonth.of(2026, 3), today)
+        assertEquals(35, sundayStart.cells.size)
+        assertEquals(LocalDate.of(2026, 3, 1), sundayStart.cells.first())
+        assertEquals(42, consumptionCalendarData(emptyMap(), YearMonth.of(2026, 5), today).cells.size)
     }
 
     @Test fun summaryExcludesIncomeOtherMonthsAndFutureDates() {

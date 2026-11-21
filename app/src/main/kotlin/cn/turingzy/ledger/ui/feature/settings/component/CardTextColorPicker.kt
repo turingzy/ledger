@@ -4,6 +4,8 @@ import cn.turingzy.ledger.ui.component.base.IconButtonContentBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.ui.component.base.SurfaceBase
 import cn.turingzy.ledger.ui.component.base.DialogWindowBase
+import cn.turingzy.ledger.ui.component.base.DialogActions
+import cn.turingzy.ledger.ui.component.base.dialogContentPadding
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -51,7 +53,6 @@ import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.ui.component.input.CompactSlider
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.card.bank.asCardTextColor
-import androidx.compose.material3.TextButton
 
 private fun Color.asHex(): String {
     val hex = toArgb().toUInt().toString(16).uppercase().padStart(8, '0')
@@ -63,7 +64,6 @@ internal fun CardTextColorPicker(
     value: String,
     onChange: (String) -> Unit,
     automatic: Boolean = false,
-    onSelectAutomatic: (() -> Unit)? = null,
 ) {
     val textResources = androidx.compose.ui.platform.LocalResources.current
     val colors = MaterialTheme.colorScheme
@@ -74,11 +74,6 @@ internal fun CardTextColorPicker(
     Column {
         Row(Modifier.fillMaxWidth().height(SettingsItemHeight), verticalAlignment = Alignment.CenterVertically) {
             Text(textResources.getString(cn.turingzy.ledger.R.string.ui_text_color), Modifier.weight(1f).padding(start = 12.dp), style = MaterialTheme.typography.bodyLarge)
-            if (onSelectAutomatic != null) {
-                TextButton(onClick = onSelectAutomatic, enabled = !automatic) {
-                    Text(textResources.getString(cn.turingzy.ledger.R.string.ui_card_text_color_auto))
-                }
-            }
             IconButtonContentBase(onClick = { focusManager.clearFocus(); showDialog = true }) {
                 Icon(MaterialSymbols.Palette, textResources.getString(cn.turingzy.ledger.R.string.ui_more_colors), Modifier.size(LedgerStyle.icons.default))
             }
@@ -124,7 +119,7 @@ private fun CardTextColorDialog(initialColor: Color, onDismiss: () -> Unit, onCo
     DialogWindowBase(onDismissRequest = onDismiss) {
         SurfaceBase(modifier = Modifier.padding(vertical = LedgerStyle.spacing.large), shape = LedgerStyle.shapes.confirmationDialog, color = colors.surface) {
             Column(
-                Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(LedgerStyle.spacing.extraLarge),
+                Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).dialogContentPadding(LedgerStyle.spacing.extraLarge),
                 verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium),
             ) {
                 Text(textResources.getString(cn.turingzy.ledger.R.string.ui_custom_color), style = MaterialTheme.typography.titleLarge)
@@ -166,12 +161,11 @@ private fun CardTextColorDialog(initialColor: Color, onDismiss: () -> Unit, onCo
                         Box(Modifier.size(LedgerStyle.icons.default).clip(CircleShape).background(parsed ?: initialColor).border(0.5.dp, colors.outlineVariant, CircleShape))
                     }
                 }
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    IconButtonContentBase(onClick = onDismiss, modifier = Modifier.size(40.dp)) { Icon(MaterialSymbols.Close, textResources.getString(cn.turingzy.ledger.R.string.ui_cancel_color_selection)) }
-                    IconButtonContentBase(modifier = Modifier.size(40.dp), enabled = parsed != null, onClick = { parsed?.let(onConfirm) }) {
-                        Icon(MaterialSymbols.Check, textResources.getString(cn.turingzy.ledger.R.string.ui_apply_text_color), tint = colors.tertiary.copy(alpha = if (parsed == null) 0.38f else 1f))
-                    }
-                }
+                DialogActions(
+                    onCancel = onDismiss,
+                    onConfirm = { parsed?.let(onConfirm) },
+                    confirmEnabled = parsed != null,
+                )
             }
         }
     }

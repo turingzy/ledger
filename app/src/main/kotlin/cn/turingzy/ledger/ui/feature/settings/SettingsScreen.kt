@@ -1,7 +1,6 @@
 package cn.turingzy.ledger.ui.feature.settings
 
 import cn.turingzy.ledger.ui.feature.settings.screen.AboutScreen
-import cn.turingzy.ledger.ui.feature.settings.screen.BackupAndRestoreScreen
 import cn.turingzy.ledger.ui.feature.settings.screen.BillTransferScreen
 import cn.turingzy.ledger.ui.feature.settings.screen.CardTemplateManagementScreen
 import cn.turingzy.ledger.ui.feature.settings.screen.GeneralSettingsScreen
@@ -23,7 +22,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -51,8 +49,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun SettingsScreen(
     modifier: Modifier = Modifier,
-    onDetailVisibleChange: (Boolean) -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel(),
+    onSubpageChange: (Boolean) -> Unit = {},
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -65,11 +63,11 @@ fun SettingsScreen(
         text = { Text(message.orEmpty()) },
         onConfirm = viewModel::dismissMessage,
         showCancel = false,
-        confirmDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_ok),
+        confirmLabel = textResources.getString(cn.turingzy.ledger.R.string.ui_ok),
     )
     SettingsNavigation(
-        onDetailVisibleChange = onDetailVisibleChange,
         modifier = modifier,
+        onSubpageChange = onSubpageChange,
     ) { destination, navigate, back ->
         when (destination) {
             SettingsDestination.ROOT -> SettingsContent(
@@ -78,7 +76,6 @@ fun SettingsScreen(
                 onParseRulesClick = { navigate(SettingsDestination.PARSE_RULES) },
                 onCardManagementClick = { navigate(SettingsDestination.CARDS) },
                 onBillTransferClick = { navigate(SettingsDestination.BILL_TRANSFER) },
-                onBackupClick = { navigate(SettingsDestination.BACKUP) },
                 onAboutClick = { navigate(SettingsDestination.ABOUT) },
             )
             SettingsDestination.GENERAL -> GeneralSettingsScreen(onBack = back, viewModel = appStateViewModel)
@@ -90,7 +87,6 @@ fun SettingsScreen(
                 onDeleteRule = viewModel::deleteRule,
                 onDismissRequest = back,
             )
-            SettingsDestination.BACKUP -> BackupAndRestoreScreen(onDismissRequest = back, onBackup = viewModel::backup, onRestore = viewModel::restore)
             SettingsDestination.CARDS -> (uiState as? SettingsUiState.Success)?.let { settings ->
                 CardTemplateManagementScreen(
                     templates = settings.cardTemplates,
@@ -121,7 +117,6 @@ fun SettingsContent(
     onParseRulesClick: () -> Unit,
     onCardManagementClick: () -> Unit,
     onBillTransferClick: () -> Unit,
-    onBackupClick: () -> Unit,
     onAboutClick: () -> Unit,
     modifier: Modifier = Modifier,
     onGeneralSettingsClick: () -> Unit = {},
@@ -129,16 +124,7 @@ fun SettingsContent(
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     PageFrameBase(modifier) {
         when (uiState) {
-            SettingsUiState.Loading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                }
-            }
-
+            SettingsUiState.Loading -> Unit
             is SettingsUiState.Success -> {
                 val listState = rememberLazyListState()
                 ScrollTitleContainerBase(
@@ -212,15 +198,8 @@ fun SettingsContent(
                             }
                         }
 
-                        item(key = "backup_and_about") {
+                        item(key = "about") {
                             SettingsGroup {
-                                SettingsRowItem(
-                                    icon = MaterialSymbols.CloudUpload,
-                                    iconColor = MaterialTheme.colorScheme.tertiary,
-                                    title = textResources.getString(cn.turingzy.ledger.R.string.ui_backup_and_restore),
-                                    onClick = onBackupClick,
-                                )
-                                DividerBase(Modifier.padding(start = LedgerStyle.dimensions.settingsDividerInset))
                                 SettingsRowItem(
                                     icon = MaterialSymbols.Info,
                                     iconColor = MaterialTheme.colorScheme.primary,

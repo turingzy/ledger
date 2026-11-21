@@ -21,10 +21,10 @@ import org.junit.Test
 class SettingsMigrationTest {
     @get:Rule val compose = createComposeRule()
 
-    @Test fun menuOrderAndSeparateDebouncePreserveAllSixDestinations() {
+    @Test fun menuOrderAndSeparateDebouncePreserveFirstReleaseDestinations() {
         val events = mutableListOf<String>()
         var now = 0L
-        val labels = listOf("常规", "卡面管理", "账单解析规则", "账单导入与导出", "备份与恢复", "关于")
+        val labels = listOf("常规", "卡面管理", "账单解析规则", "账单导入与导出", "关于")
         compose.setContent {
             CompositionLocalProvider(LocalUiInteractionClock provides { now }) {
                 LedgerTheme {
@@ -34,12 +34,12 @@ class SettingsMigrationTest {
                         onCardManagementClick = { events += labels[1] },
                         onParseRulesClick = { events += labels[2] },
                         onBillTransferClick = { events += labels[3] },
-                        onBackupClick = { events += labels[4] },
-                        onAboutClick = { events += labels[5] },
+                        onAboutClick = { events += labels[4] },
                     )
                 }
             }
         }
+        compose.onNodeWithText("备份与恢复").assertDoesNotExist()
         val positions = labels.map { label ->
             compose.onNodeWithText(label).getUnclippedBoundsInRoot().top
         }
@@ -65,7 +65,7 @@ class SettingsMigrationTest {
     }
 
     @Test fun loadingDoesNotExposeMenuActions() {
-        compose.setContent { LedgerTheme { SettingsContent(SettingsUiState.Loading, {}, {}, {}, {}, {}) } }
+        compose.setContent { LedgerTheme { SettingsContent(SettingsUiState.Loading, {}, {}, {}, {}) } }
         compose.onNodeWithText("常规").assertDoesNotExist()
         compose.onNodeWithText("关于").assertDoesNotExist()
     }

@@ -2,6 +2,7 @@ package cn.turingzy.ledger.ui.feature.bill
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -15,10 +16,12 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.model.account.Account
 import cn.turingzy.ledger.model.account.AccountType
 import cn.turingzy.ledger.model.category.Category
@@ -30,6 +33,7 @@ import cn.turingzy.ledger.model.transaction.TransactionDetail
 import cn.turingzy.ledger.model.transaction.TransactionType
 import cn.turingzy.ledger.ui.feature.bill.component.BillSwipeRow
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -46,7 +50,7 @@ class BillTransactionsTest {
     )
 
     @Test
-    fun dailyHeaderTogglesRowsAndRowOpensSelectedTransaction() {
+    fun dailyHeaderStaysExpandedAndRowOpensSelectedTransaction() {
         var selectedId: Long? = null
         compose.setContent {
             MaterialTheme {
@@ -54,10 +58,9 @@ class BillTransactionsTest {
             }
         }
         compose.onNodeWithText("测试餐饮").assertIsDisplayed()
-        compose.onNodeWithContentDescription("隐藏当日交易").performClick()
-        compose.onNodeWithText("01/01", substring = true).assertIsDisplayed()
-        compose.onNodeWithText("测试餐饮").assertDoesNotExist()
-        compose.onNodeWithContentDescription("显示当日交易").performClick()
+        compose.onNodeWithText("01/01", substring = true).assertIsDisplayed().assertHasNoClickAction()
+        compose.onNodeWithContentDescription("隐藏当日交易").assertDoesNotExist()
+        compose.onNodeWithContentDescription("显示当日交易").assertDoesNotExist()
         compose.onNodeWithText("测试餐饮").performClick()
         assertEquals(42L, selectedId)
     }
@@ -76,10 +79,9 @@ class BillTransactionsTest {
     }
 
     @Test
-    fun zeroTotalsKeepDateAndCollapseControlWithoutSummary() {
+    fun zeroTotalsKeepDateWithoutSummary() {
         showSummary(expense = 0L, income = 0L)
         compose.onNodeWithText("01/01", substring = true).assertIsDisplayed()
-        compose.onNodeWithContentDescription("隐藏当日交易").assertExists()
         compose.onNodeWithText("支出:", substring = true).assertDoesNotExist()
         compose.onNodeWithText("收入:", substring = true).assertDoesNotExist()
     }
@@ -122,6 +124,45 @@ class BillTransactionsTest {
         compose.onAllNodesWithContentDescription("复制交易").assertCountEquals(1)
         compose.onNodeWithContentDescription("复制交易").performClick()
         assertEquals(43L, copiedId)
+    }
+
+    @Test
+    fun swipedForegroundExtendsPastTheDayGroupEdge() {
+        compose.setContent {
+            MaterialTheme {
+                var revealed by remember { mutableStateOf(false) }
+                Box(Modifier.padding(horizontal = 20.dp)) {
+                    DayGroupSection(
+                        DayTransactionGroup(0L, "今天", 123L, 0L, listOf(detail)),
+                        modifier = Modifier.testTag("swipeDayGroup"),
+                        transactionRow = { row, roundTop, roundBottom ->
+                            BillSwipeRow(
+                                detail = row,
+                                selecting = false,
+                                selected = false,
+                                enabled = true,
+                                revealed = revealed,
+                                onRevealChange = { revealed = it },
+                                onClick = {},
+                                onLongClick = {},
+                                onCopy = {},
+                                onEdit = {},
+                                onDelete = {},
+                                roundTop = roundTop,
+                                roundBottom = roundBottom,
+                            )
+                        },
+                    )
+                }
+            }
+        }
+
+        val group = compose.onNodeWithTag("swipeDayGroup")
+        val row = compose.onNodeWithText("测试餐饮")
+        val groupLeft = group.fetchSemanticsNode().boundsInRoot.left
+        row.performTouchInput { swipeLeft() }
+        assertTrue(row.fetchSemanticsNode().boundsInRoot.left < groupLeft)
+        compose.onNodeWithContentDescription("复制交易").assertIsDisplayed()
     }
 
     private fun showSummary(expense: Long, income: Long) {

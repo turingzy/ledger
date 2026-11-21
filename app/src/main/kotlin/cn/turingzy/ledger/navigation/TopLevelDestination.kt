@@ -12,6 +12,9 @@ sealed interface Route {
     data object Bill : Route
 
     @Serializable
+    data object BillSearch : Route
+
+    @Serializable
     data object Analytics : Route
 
     @Serializable

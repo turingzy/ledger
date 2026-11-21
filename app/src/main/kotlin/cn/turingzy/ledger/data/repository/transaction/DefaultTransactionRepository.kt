@@ -43,6 +43,7 @@ class DefaultTransactionRepository @Inject constructor(
 
     override fun getTransactionsStream(limit: Int): Flow<List<TransactionDetail>> = valued(transactionDao.getPopulatedTransactions(limit))
     override fun searchTransactions(query: String): Flow<List<TransactionDetail>> = valued(transactionDao.searchTransactions(query))
+    override fun recentCategoryIds(limit: Int): Flow<List<Long>> = transactionDao.recentCategoryIds(limit)
     override fun getTransaction(id: Long): Flow<TransactionDetail?> =
         valued(transactionDao.getPopulatedTransactionById(id).map { listOfNotNull(it) }).map { it.firstOrNull() }
     override fun getTransactionsBetween(startTime: Long, endTime: Long, currency: String?): Flow<List<TransactionDetail>> =

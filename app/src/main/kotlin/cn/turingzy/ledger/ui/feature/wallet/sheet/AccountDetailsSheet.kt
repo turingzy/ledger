@@ -2,21 +2,13 @@ package cn.turingzy.ledger.ui.feature.wallet.sheet
 
 import cn.turingzy.ledger.ui.component.base.ModalBottomSheetBase
 import cn.turingzy.ledger.ui.component.base.keepSheetAnchorDuringIme
-import cn.turingzy.ledger.ui.component.base.IconButtonContentBase
-import cn.turingzy.ledger.ui.theme.LedgerStyle
-import cn.turingzy.ledger.ui.component.base.SurfaceBase
 import cn.turingzy.ledger.ui.component.base.DialogWindowBase
+import cn.turingzy.ledger.ui.component.base.DialogActions
+import cn.turingzy.ledger.ui.component.base.dialogContentPadding
+import cn.turingzy.ledger.ui.component.base.SurfaceBase
+import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Icon
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.unit.dp
-import cn.turingzy.ledger.ui.component.MaterialSymbols
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
@@ -100,35 +92,22 @@ fun AccountDetailsContent(
     )
     if (confirmDelete) {
         DialogWindowBase(onDismissRequest = { confirmDelete = false }) {
-            val colors = MaterialTheme.colorScheme
-            // Include the official symbols' viewport insets when aligning their visible edges.
-            val closeIconInset = 8.dp + 24.dp * (217f / 960f)
-            val deleteIconInset = 8.dp + 24.dp * (160f / 960f)
-            SurfaceBase(shape = LedgerStyle.shapes.confirmationDialog, color = colors.surface) {
-                Column(Modifier.padding(LedgerStyle.spacing.block), verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.extraLarge)) {
+            SurfaceBase(shape = LedgerStyle.shapes.confirmationDialog, color = MaterialTheme.colorScheme.surface) {
+                Column(
+                    Modifier.dialogContentPadding(LedgerStyle.spacing.block),
+                    verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.extraLarge),
+                ) {
                     Text(textResources.getString(cn.turingzy.ledger.R.string.ui_delete_account_2), style = MaterialTheme.typography.headlineSmall)
                     Text(
                         "删除“${account.name}”后，该账户将不再显示，历史交易保留。",
                         style = MaterialTheme.typography.bodyMedium,
                     )
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        IconButtonContentBase(
-                            onClick = { confirmDelete = false },
-                            modifier = Modifier.offset(x = -closeIconInset).size(40.dp), showPressFeedback = false,
-                        ) {
-                            Icon(MaterialSymbols.Close, textResources.getString(cn.turingzy.ledger.R.string.ui_cancel_account_deletion), Modifier.size(LedgerStyle.icons.default), tint = colors.onSurface)
-                        }
-                        IconButtonContentBase(
-                            onClick = { confirmDelete = false; onDelete() },
-                            modifier = Modifier.offset(x = deleteIconInset).size(40.dp), showPressFeedback = false,
-                        ) {
-                            Icon(MaterialSymbols.Delete, textResources.getString(cn.turingzy.ledger.R.string.ui_delete_account_3), Modifier.size(LedgerStyle.icons.default), tint = colors.error)
-                        }
-                    }
+                    DialogActions(
+                        onCancel = { confirmDelete = false },
+                        onConfirm = { confirmDelete = false; onDelete() },
+                        confirmLabel = textResources.getString(cn.turingzy.ledger.R.string.bill_delete_action),
+                        destructive = true,
+                    )
                 }
             }
         }

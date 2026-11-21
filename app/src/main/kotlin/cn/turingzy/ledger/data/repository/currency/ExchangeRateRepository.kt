@@ -14,7 +14,8 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import timber.log.Timber
 
-data class ExchangeQuote(val rate: String, val date: String)
+/** Keeps the source rate date separate from the last local update time. */
+data class ExchangeQuote(val rate: String, val date: String, val updatedAtMillis: Long? = null)
 
 @Singleton
 class ExchangeRateRepository @Inject constructor(private val database: LedgerDatabase, private val source: ExchangeRateSource) {
@@ -43,10 +44,17 @@ class ExchangeRateRepository @Inject constructor(private val database: LedgerDat
             val start = (missing.minOrNull() ?: dates.min()).minusDays(7)
             val rows = source.fetch(start, minOf(dates.max(), today), currencies)
             val byKey = existing.associateBy { it.date to it.currency }
-            val changed = rows.filter { row -> byKey[row.date to row.currency]?.let { !it.manual && it != row } ?: true }
-            if (changed.isNotEmpty()) {
-                database.exchangeRateDao().insert(changed)
-                _changes.value++
+            val updatedAt = System.currentTimeMillis()
+            val updates = rows.mapNotNull { row ->
+                val cached = byKey[row.date to row.currency]
+                if (cached?.manual == true) null
+                else if (refresh || cached?.updatedAtMillis == null || cached.perUsd != row.perUsd) {
+                    row.copy(updatedAtMillis = updatedAt)
+                } else null
+            }
+            if (updates.isNotEmpty()) {
+                database.exchangeRateDao().insert(updates)
+                if (updates.any { byKey[it.date to it.currency]?.perUsd != it.perUsd }) _changes.value++
             }
         } catch (error: CancellationException) { throw error }
         catch (error: Exception) {
@@ -69,7 +77,8 @@ class ExchangeRateRepository @Inject constructor(private val database: LedgerDat
         val source = rate(from)
         val target = rate(to)
         val ratio = target.perUsd.toBigDecimal().divide(source.perUsd.toBigDecimal(), 18, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString()
-        return ExchangeQuote(ratio, minOf(source.date, target.date))
+        val updatedAt = listOfNotNull(source.updatedAtMillis, target.updatedAtMillis).maxOrNull()
+        return ExchangeQuote(ratio, minOf(source.date, target.date), updatedAt)
     }
 
     suspend fun setManualRate(from: String, to: String, rate: String, date: LocalDate = LocalDate.now()) = mutex.withLock {
@@ -79,9 +88,13 @@ class ExchangeRateRepository @Inject constructor(private val database: LedgerDat
         val rows = database.exchangeRateDao().rows()
         val target = if (to == "USD") BigDecimal.ONE else if (from == "USD") value
             else rows.lastOrNull { it.currency == to }?.perUsd?.toBigDecimal() ?: error("请先设置 USD 与 $to 的汇率")
-        val entries = if (from == "USD") listOf(ExchangeRateEntity(date.toString(), to, value.toPlainString(), true))
-            else listOf(ExchangeRateEntity(date.toString(), from, target.divide(value, 18, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString(), true))
-        database.exchangeRateDao().insert(entries)
+        val perUsd = if (from == "USD") value
+            else target.divide(value, 18, RoundingMode.HALF_UP).stripTrailingZeros()
+        val entry = ExchangeRateEntity(
+            date.toString(), if (from == "USD") to else from, perUsd.toPlainString(),
+            manual = true, updatedAtMillis = System.currentTimeMillis(),
+        )
+        database.exchangeRateDao().insert(listOf(entry))
         attempts.clear()
         lastFailureAt = 0L
         _changes.value++

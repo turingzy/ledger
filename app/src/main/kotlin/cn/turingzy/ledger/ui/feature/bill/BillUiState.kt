@@ -31,7 +31,6 @@ sealed interface BillUiState {
         val filterStartDate: LocalDate? = null,
         val filterEndDate: LocalDate? = null,
         val currency: String = "CNY",
-        val searchQuery: String = "",
         val amountsAvailable: Boolean = true,
     ) : BillUiState
 }

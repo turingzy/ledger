@@ -1,22 +1,19 @@
 package cn.turingzy.ledger.ui.feature.bill.sheet
 
 import cn.turingzy.ledger.ui.theme.LedgerStyle
+import cn.turingzy.ledger.ui.interaction.rememberSystemClickFeedback
 import cn.turingzy.ledger.ui.component.MaterialSymbols
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.constrainHeight
@@ -32,6 +29,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+/** Lays out the numeric keys, arithmetic operators, and the record action. */
 @Composable
 fun BuiltInKeypad(
     hasPendingCalculation: Boolean,
@@ -62,7 +60,7 @@ fun BuiltInKeypad(
             KeypadButton("AC", onClearClick, Modifier.testTag("keypad_clear"))
             Box(
                 Modifier.testTag("keypad_action").clip(LedgerStyle.shapes.field)
-                    .background(actionColor).clickable(enabled = actionEnabled, onClick = onActionClick),
+                    .background(actionColor).keypadClickable(enabled = actionEnabled, onClick = onActionClick),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
@@ -98,12 +96,11 @@ fun KeypadButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
     Box(
         modifier = modifier
             .clip(LedgerStyle.shapes.field)
             .background(MaterialTheme.colorScheme.surface)
-            .clickable(interactionSource = interactionSource, indication = LocalIndication.current, role = Role.Button, onClick = onClick),
+            .keypadClickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Text(
@@ -122,12 +119,11 @@ fun KeypadIconButton(
     modifier: Modifier = Modifier,
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
-    val interactionSource = remember { MutableInteractionSource() }
     Box(
         modifier = modifier
             .clip(LedgerStyle.shapes.field)
             .background(MaterialTheme.colorScheme.surface)
-            .clickable(interactionSource = interactionSource, indication = LocalIndication.current, role = Role.Button, onClick = onClick),
+            .keypadClickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
@@ -136,5 +132,15 @@ fun KeypadIconButton(
             tint = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.size(26.dp),
         )
+    }
+}
+
+/** Uses the same system click feedback as the bottom navigation. */
+@Composable
+private fun Modifier.keypadClickable(enabled: Boolean = true, onClick: () -> Unit): Modifier {
+    val clickFeedback = rememberSystemClickFeedback()
+    return clickable(enabled = enabled, role = Role.Button) {
+        clickFeedback()
+        onClick()
     }
 }

@@ -3,12 +3,11 @@ package cn.turingzy.ledger.ui.feature.wallet.sheet
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.ui.component.base.SurfaceBase
 import cn.turingzy.ledger.ui.component.base.DialogWindowBase
+import cn.turingzy.ledger.ui.component.base.DialogActions
+import cn.turingzy.ledger.ui.component.base.dialogContentPadding
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -25,8 +24,6 @@ import cn.turingzy.ledger.model.account.BuiltInCardFace
 import cn.turingzy.ledger.model.account.selectableCardTemplates
 import cn.turingzy.ledger.ui.component.card.bank.rememberCircularCardPagerState
 import cn.turingzy.ledger.ui.component.card.bank.CardPageIndicator
-import cn.turingzy.ledger.ui.component.MaterialSymbols
-import cn.turingzy.ledger.ui.component.base.IconButtonBase
 import cn.turingzy.ledger.ui.component.card.bank.titaniumTitle
 import cn.turingzy.ledger.ui.feature.wallet.component.BankCardItem
 
@@ -52,7 +49,7 @@ internal fun AccountCardFaceDialog(
     val colors = MaterialTheme.colorScheme
     DialogWindowBase(onDismissRequest = onDismiss) {
         SurfaceBase(shape = LedgerStyle.shapes.dialog, color = colors.surface) {
-            Column(Modifier.padding(LedgerStyle.spacing.extraLarge), verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large)) {
+            Column(Modifier.dialogContentPadding(LedgerStyle.spacing.extraLarge), verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large)) {
                 Text(textResources.getString(cn.turingzy.ledger.R.string.ui_select_card_design), style = MaterialTheme.typography.titleMedium)
                 HorizontalPager(state = pager, key = { it }, pageSpacing = 12.dp) { page ->
                     val face = faces[Math.floorMod(page, faces.size)]
@@ -74,16 +71,12 @@ internal fun AccountCardFaceDialog(
                     style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
                     maxLines = 1, overflow = TextOverflow.Ellipsis,
                 )
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    IconButtonBase(MaterialSymbols.Close, textResources.getString(cn.turingzy.ledger.R.string.ui_close_card_design_picker),
-                        onDismiss, showPressFeedback = false)
-                    Spacer(Modifier.weight(1f))
-                    IconButtonBase(
-                        MaterialSymbols.Check, textResources.getString(cn.turingzy.ledger.R.string.ui_apply_card_design),
-                        { onConfirm(faces[Math.floorMod(pager.settledPage, faces.size)].id) },
-                        enabled = !pager.isScrollInProgress, contentColor = colors.tertiary, showPressFeedback = false,
-                    )
-                }
+                DialogActions(
+                    onCancel = onDismiss,
+                    onConfirm = { onConfirm(faces[Math.floorMod(pager.settledPage, faces.size)].id) },
+                    confirmLabel = textResources.getString(cn.turingzy.ledger.R.string.ui_apply_card_design),
+                    confirmEnabled = !pager.isScrollInProgress,
+                )
             }
         }
     }

@@ -3,6 +3,7 @@ package cn.turingzy.ledger.ui.feature.bill.sheet
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertTrue
@@ -10,6 +11,8 @@ import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -29,6 +32,7 @@ import cn.turingzy.ledger.model.category.Icon
 import cn.turingzy.ledger.model.currency.CurrencyAmountOverride
 import cn.turingzy.ledger.model.transaction.Transaction
 import cn.turingzy.ledger.model.transaction.TransactionType
+import cn.turingzy.ledger.ui.interaction.LocalSystemClickFeedback
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -177,7 +181,7 @@ class RecordTransactionSheetTest {
         compose.onNodeWithText("24 小时制").assertDoesNotExist()
         compose.onNodeWithContentDescription("小时").performScrollToIndex(23)
         compose.onNodeWithContentDescription("分钟").performScrollToIndex(59)
-        compose.onNodeWithContentDescription("确认").performClick()
+        compose.onNodeWithText("确认").performClick()
         compose.onNodeWithText("23:59", substring = true).assertIsDisplayed()
         assertEquals(before, compose.onNodeWithTag("recordDrawer").getUnclippedBoundsInRoot())
         compose.onNodeWithText("转账").performClick()
@@ -253,10 +257,10 @@ class RecordTransactionSheetTest {
         compose.onNodeWithContentDescription("选择月份").assertIsDisplayed()
         compose.onNodeWithContentDescription("小时").assertIsDisplayed()
         compose.onNodeWithContentDescription("分钟").assertIsDisplayed()
-        val cancel = compose.onNodeWithContentDescription("取消").getUnclippedBoundsInRoot()
-        val confirm = compose.onNodeWithContentDescription("确认").getUnclippedBoundsInRoot()
+        val cancel = compose.onNodeWithText("取消").getUnclippedBoundsInRoot()
+        val confirm = compose.onNodeWithText("确认").getUnclippedBoundsInRoot()
         assertTrue(cancel.right < confirm.left)
-        compose.onNodeWithContentDescription("取消").performClick()
+        compose.onNodeWithText("取消").performClick()
         compose.onNodeWithTag("recordTimeDialog").assertDoesNotExist()
     }
 
@@ -269,7 +273,7 @@ class RecordTransactionSheetTest {
         compose.onNodeWithContentDescription("年份2024").performClick()
         compose.onNodeWithContentDescription("月份02").performClick()
         compose.onNodeWithContentDescription("2024-02-29").performClick()
-        compose.onNodeWithContentDescription("确认").performClick()
+        compose.onNodeWithText("确认").performClick()
         compose.onNodeWithText("02.29", substring = true).assertIsDisplayed()
     }
 
@@ -308,20 +312,52 @@ class RecordTransactionSheetTest {
         compose.runOnIdle { assertEquals(initialTime, checkNotNull(saved).transactionTime) }
     }
 
-    private fun showSheet(sheetHeight: Dp = 520.dp, initialTransaction: Transaction? = null, initialTransactionTime: Long? = null, onSave: (Transaction) -> Unit) {
+    @Test
+    fun accountPickerCentersItsTitleAndClosesFromTheLeft() {
+        showSheet {}
+        compose.onNodeWithContentDescription("选择账户").performClick()
+        val drawer = compose.onNodeWithTag("recordAccountDrawer")
+        val title = compose.onNode(hasText("选择账户") and hasAnyAncestor(hasTestTag("recordAccountDrawer")))
+        val close = compose.onNodeWithContentDescription("关闭账户选择")
+
+        val titleBounds = title.fetchSemanticsNode().boundsInRoot
+        assertEquals(drawer.fetchSemanticsNode().boundsInRoot.center.x, titleBounds.center.x, 1f)
+        assertTrue(close.fetchSemanticsNode().boundsInRoot.right < titleBounds.left)
+        close.performClick()
+        drawer.assertDoesNotExist()
+    }
+
+    @Test
+    fun keypadUsesHostFeedbackForEveryTapInsideTheSheet() {
+        var clicks = 0
+        showSheet(onClickFeedback = { clicks++ }) {}
+        compose.onNodeWithTag("keypad_5").performClick().performClick()
+        compose.onNodeWithTag("keypad_backspace").performClick()
+        compose.runOnIdle { assertEquals(3, clicks) }
+    }
+
+    private fun showSheet(
+        sheetHeight: Dp = 520.dp,
+        initialTransaction: Transaction? = null,
+        initialTransactionTime: Long? = null,
+        onClickFeedback: (() -> Unit)? = null,
+        onSave: (Transaction) -> Unit,
+    ) {
         compose.setContent {
-            MaterialTheme {
-                RecordTransactionSheet(
-                    sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-                    sheetHeight = sheetHeight, initialTransaction = initialTransaction, initialTransactionTime = initialTransactionTime,
-                    categories = categories, accounts = accounts, onDismissRequest = {},
-                    onConfirm = { type, amount, accountId, destinationId, categoryId, note, time, toAmount, _ ->
-                        onSave(Transaction(
-                            type = type, amount = amount, accountId = accountId, toAccountId = destinationId,
-                            categoryId = categoryId, note = note, transactionTime = time, toAmount = toAmount,
-                        ))
-                    },
-                )
+            CompositionLocalProvider(LocalSystemClickFeedback provides onClickFeedback) {
+                MaterialTheme {
+                    RecordTransactionSheet(
+                        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+                        sheetHeight = sheetHeight, initialTransaction = initialTransaction, initialTransactionTime = initialTransactionTime,
+                        categories = categories, accounts = accounts, onDismissRequest = {},
+                        onConfirm = { type, amount, accountId, destinationId, categoryId, note, time, toAmount, _ ->
+                            onSave(Transaction(
+                                type = type, amount = amount, accountId = accountId, toAccountId = destinationId,
+                                categoryId = categoryId, note = note, transactionTime = time, toAmount = toAmount,
+                            ))
+                        },
+                    )
+                }
             }
         }
     }

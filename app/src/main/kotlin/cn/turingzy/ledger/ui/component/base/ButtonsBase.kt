@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
@@ -18,6 +19,7 @@ import androidx.compose.material3.IconButtonColors
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LocalRippleConfiguration
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -32,6 +34,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.ui.interaction.UiInteractionKind
 import cn.turingzy.ledger.ui.interaction.rememberUiAction
 import cn.turingzy.ledger.ui.interaction.rememberUiIndication
@@ -54,7 +57,7 @@ fun ButtonBase(
     interaction: UiInteractionKind = UiInteractionKind.Action,
     trailingIcon: ImageVector? = null,
     iconSize: Dp = LedgerStyle.icons.default,
-    shape: Shape = LedgerStyle.shapes.control,
+    shape: Shape = if (variant == ButtonVariantBase.Text) LedgerStyle.shapes.pill else LedgerStyle.shapes.control,
     showPressFeedback: Boolean = true,
 ) {
     val colors = LedgerStyle.colors
@@ -68,11 +71,12 @@ fun ButtonBase(
         ButtonToneBase.Destructive -> MaterialTheme.colorScheme.onError
         ButtonToneBase.Neutral -> colors.textSecondary
     }
-    val buttonModifier = modifier.heightIn(min = LedgerStyle.dimensions.touchTarget)
-    val padding = PaddingValues(
-        horizontal = LedgerStyle.spacing.extraLarge,
-        vertical = LedgerStyle.spacing.rowVertical,
-    )
+    val isTextButton = variant == ButtonVariantBase.Text
+    // Reserve the touch target outside the compact, clipped press background.
+    val buttonModifier = if (isTextButton) modifier.minimumInteractiveComponentSize().height(40.dp)
+        else modifier.heightIn(min = LedgerStyle.dimensions.touchTarget)
+    val padding = if (isTextButton) PaddingValues(horizontal = LedgerStyle.spacing.large)
+        else PaddingValues(horizontal = LedgerStyle.spacing.extraLarge, vertical = LedgerStyle.spacing.rowVertical)
     val content: @Composable RowScope.() -> Unit = {
         Row(
             verticalAlignment = Alignment.CenterVertically,

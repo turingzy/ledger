@@ -2,7 +2,6 @@ package cn.turingzy.ledger.ui.feature.wallet.component
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalResources
 import cn.turingzy.ledger.model.account.Account
 import cn.turingzy.ledger.model.account.AccountType
 import cn.turingzy.ledger.model.account.CardTemplate
@@ -25,7 +24,6 @@ internal fun BankCardItem(
         name = account.name,
         modifier = modifier,
         preset = template.titaniumPreset(),
-        typeLabel = account.type.displayName(LocalResources.current),
         tailNumber = account.cardNumber.takeIf { isBankAccount },
         imageUri = template.titaniumImageUri(),
         textColor = template.titaniumInkOverride(),

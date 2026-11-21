@@ -1,6 +1,8 @@
 package cn.turingzy.ledger.ui.component.base
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -14,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -70,11 +73,7 @@ fun PageScaffoldBase(
                     .onSizeChanged { barHeight = with(density) { it.height.toDp() } },
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                if (onBack != null) IconButtonBase(
-                    MaterialSymbols.ChevronLeft, backDescription, onBack,
-                    modifier = Modifier.size(backButtonSize),
-                    iconSize = LedgerStyle.icons.back, interaction = UiInteractionKind.Navigation,
-                )
+                if (onBack != null) PageBackButton(backDescription, backButtonSize, onBack)
                 Text(
                     title, Modifier.weight(1f).padding(horizontal = titlePadding),
                     style = titleStyle,
@@ -83,6 +82,26 @@ fun PageScaffoldBase(
                 actions()
             }
         }
+    }
+}
+
+/** Applies press feedback to the back glyph while preserving its touch target. */
+@Composable
+private fun PageBackButton(description: String, size: Dp, onBack: () -> Unit) {
+    val source = remember { MutableInteractionSource() }
+    val pressed by source.collectIsPressedAsState()
+    val tint = LedgerStyle.colors.textPrimary
+    IconButtonContentBase(
+        onClick = onBack,
+        modifier = Modifier.size(size),
+        interactionSource = source,
+        interaction = UiInteractionKind.Navigation,
+        showPressFeedback = false,
+    ) {
+        Icon(
+            MaterialSymbols.ChevronLeft, description, Modifier.size(LedgerStyle.icons.back),
+            tint = if (pressed) tint.copy(alpha = tint.alpha * 0.55f) else tint,
+        )
     }
 }
 

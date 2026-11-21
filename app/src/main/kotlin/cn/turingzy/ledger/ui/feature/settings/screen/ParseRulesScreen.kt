@@ -2,8 +2,7 @@ package cn.turingzy.ledger.ui.feature.settings.screen
 
 import cn.turingzy.ledger.ui.feature.settings.component.SettingsActionRow
 import cn.turingzy.ledger.ui.feature.settings.component.SettingsItemHeight
-import cn.turingzy.ledger.ui.feature.settings.component.SettingsPageBottomPadding
-import cn.turingzy.ledger.ui.feature.settings.component.SettingsPageContentTopPadding
+import cn.turingzy.ledger.ui.feature.settings.component.settingsPageContentPadding
 import cn.turingzy.ledger.ui.feature.settings.component.SettingsSubpageScaffold
 import cn.turingzy.ledger.ui.feature.settings.component.settingsPageScroll
 import cn.turingzy.ledger.ui.component.base.DropdownIndicatorBase
@@ -22,9 +21,7 @@ import cn.turingzy.ledger.ui.component.base.DividerBase
 import cn.turingzy.ledger.ui.component.base.IconButtonBase
 import cn.turingzy.ledger.ui.interaction.uiClickable
 import cn.turingzy.ledger.ui.feature.settings.component.SettingsDeleteAction
-import cn.turingzy.ledger.ui.interaction.rememberUiAction
 import cn.turingzy.ledger.ui.theme.LedgerStyle
-import androidx.compose.foundation.layout.size
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -38,7 +35,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.foundation.layout.PaddingValues
@@ -54,7 +50,6 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.model.account.AccountWithTemplate
 import cn.turingzy.ledger.model.category.CategoryWithIcon
 
@@ -116,7 +111,6 @@ internal fun ParseRulesScreen(
                     imageVector = if (editing == null) MaterialSymbols.Add else MaterialSymbols.Check,
                     contentDescription = if (editing == null) textResources.getString(cn.turingzy.ledger.R.string.ui_new_import_rule)
                         else textResources.getString(cn.turingzy.ledger.R.string.ui_save_rule),
-                    showPressFeedback = false,
                     enabled = editing == null || editing.valid,
                     contentColor = if (editing == null) colors.onSurfaceVariant else colors.tertiary,
                     onClick = {
@@ -135,7 +129,7 @@ internal fun ParseRulesScreen(
             if (editing == null) {
                 LazyColumn(
                     Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(top = SettingsPageContentTopPadding, bottom = SettingsPageBottomPadding),
+                    contentPadding = settingsPageContentPadding(),
                     verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.inlineGap),
                 ) {
                     items(rules, key = { it.id }) { rule ->
@@ -270,7 +264,7 @@ private fun RuleChoiceDropdown(
         isSelected = { it.id == selectedId },
         onSelect = onSelect,
         menuTestTag = menuTestTag,
-    ) { anchorModifier, expanded, onToggle ->
+    ) { anchorModifier, expanded, opensUp, onToggle ->
         Box(
             Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = label }
                 .uiClickable(showPressFeedback = false, onClick = onToggle).padding(horizontal = LedgerStyle.spacing.large),
@@ -282,7 +276,7 @@ private fun RuleChoiceDropdown(
             ) {
                 Text(label, Modifier.width(LedgerStyle.dimensions.formLabelWidth), style = MaterialTheme.typography.bodyLarge)
                 Text(value, Modifier.weight(1f), textAlign = TextAlign.End, color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                DropdownIndicatorBase(expanded)
+                DropdownIndicatorBase(expanded, opensUp = opensUp)
             }
         }
     }

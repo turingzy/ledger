@@ -71,8 +71,9 @@ class DefaultSettingsDataRepository @Inject constructor(
 
     override suspend fun saveTemplate(template: CardTemplate): Long = withContext(ioDispatcher) {
         require(template.name.isNotBlank() && template.coverUri.isNotBlank()) { "请填写卡面名称并选择图片" }
-        val stable = BuiltInCardFace.byId(template.id)?.asTemplate(template)
-            ?: template.copy(id = template.id.coerceAtLeast(0), coverUri = storeImage(template.coverUri))
+        val normalized = BuiltInCardFace.byId(template.id)?.asTemplate(template)
+            ?: template.copy(id = template.id.coerceAtLeast(0))
+        val stable = normalized.copy(coverUri = storeImage(normalized.coverUri))
         if (stable.id == 0L) database.cardTemplateDao().insertTemplate(stable.asEntity())
         else { database.cardTemplateDao().updateTemplate(stable.asEntity()); stable.id }
     }
@@ -195,7 +196,7 @@ class DefaultSettingsDataRepository @Inject constructor(
         val packed = snapshot.copy(
             bills = snapshot.bills?.copy(templates = snapshot.bills.templates.map(::pack)),
             settings = snapshot.settings?.copy(templates = snapshot.settings.templates.map(::pack), appearances = appearanceData,
-                preferences = preferences.preferences.first(), rates = database.exchangeRateDao().rows().map { BackupExchangeRate(it.date, it.currency, it.perUsd, it.manual) }),
+                preferences = preferences.preferences.first(), rates = database.exchangeRateDao().rows().map { BackupExchangeRate(it.date, it.currency, it.perUsd, it.manual, it.updatedAtMillis) }),
         )
         LedgerBackupValidator.validate(packed)
         val bytes = json.encodeToString(packed).toByteArray(Charsets.UTF_8)
@@ -207,9 +208,10 @@ class DefaultSettingsDataRepository @Inject constructor(
         val backup = json.decodeFromString<LedgerBackup>(read(uri, MAX_BACKUP_BYTES).toString(Charsets.UTF_8))
         LedgerBackupValidator.validate(backup)
         val unpackedImages = mutableMapOf<String, String>()
-        fun unpack(template: CardTemplate): CardTemplate =
-            BuiltInCardFace.byId(template.id)?.asTemplate(template)
-                ?: template.copy(coverUri = unpackedImages.getOrPut(template.coverUri) { unpackImage(template.coverUri) })
+        fun unpack(template: CardTemplate): CardTemplate {
+            val normalized = BuiltInCardFace.byId(template.id)?.asTemplate(template) ?: template
+            return normalized.copy(coverUri = unpackedImages.getOrPut(normalized.coverUri) { unpackImage(normalized.coverUri) })
+        }
         val bills = backup.bills?.let { it.copy(templates = it.templates.map(::unpack)) }
         val settings = backup.settings?.let { it.copy(templates = it.templates.map(::unpack)) }
         // Keep rollback copies because applying a background removes its previous image.
@@ -271,7 +273,7 @@ class DefaultSettingsDataRepository @Inject constructor(
                 }
                 if (settings != null) {
                     database.exchangeRateDao().clear()
-                    database.exchangeRateDao().insert(settings.rates.map { cn.turingzy.ledger.data.database.entity.ExchangeRateEntity(it.date, it.currency, it.perUsd, it.manual) })
+                    database.exchangeRateDao().insert(settings.rates.map { cn.turingzy.ledger.data.database.entity.ExchangeRateEntity(it.date, it.currency, it.perUsd, it.manual, it.updatedAtMillis) })
                     settings.preferences?.let { preferencesChanged = true; preferences.save(it) }
                 }
                 settings?.appearances?.forEach { appearance ->

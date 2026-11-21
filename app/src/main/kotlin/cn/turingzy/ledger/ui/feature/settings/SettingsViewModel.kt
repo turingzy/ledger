@@ -21,8 +21,6 @@ import cn.turingzy.ledger.model.account.CardTemplate
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.joinAll
-import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -120,13 +118,4 @@ class SettingsViewModel @Inject constructor(
     suspend fun previewImport(uri: Uri, rule: BillParseRule, accountId: Long?) = dataRepository.previewImport(uri, rule, accountId)
     suspend fun importBills(uri: Uri, rule: BillParseRule, accountId: Long?, includePossibleDuplicates: Boolean) = dataRepository.importBills(uri, rule, accountId, includePossibleDuplicates)
     suspend fun exportBills(uri: Uri, excel: Boolean, start: Long, end: Long): Int = dataRepository.exportBills(uri, excel, start, end)
-    suspend fun backup(uri: Uri, bills: Boolean, settings: Boolean) {
-        templateJobs.values.toList().joinAll()
-        dataRepository.backup(uri, bills, settings)
-    }
-    suspend fun restore(uri: Uri) {
-        templateJobs.values.toList().forEach { it.cancelAndJoin() }
-        templateJobs.clear()
-        dataRepository.restore(uri)
-    }
 }

@@ -18,7 +18,7 @@ import cn.turingzy.ledger.ui.theme.LedgerTheme
 import java.time.LocalDate
 import java.time.ZoneId
 
-internal data class BillPreviewCase(val state: BillUiState, val searchActive: Boolean = false)
+internal data class BillPreviewCase(val state: BillUiState)
 
 internal class BillPreviewProvider : PreviewParameterProvider<BillPreviewCase> {
     override val values: Sequence<BillPreviewCase> = sequence {
@@ -39,7 +39,6 @@ internal class BillPreviewProvider : PreviewParameterProvider<BillPreviewCase> {
         yield(BillPreviewCase(BillUiState.Loading))
         yield(BillPreviewCase(empty))
         yield(BillPreviewCase(populated))
-        yield(BillPreviewCase(populated, searchActive = true))
         yield(BillPreviewCase(populated.copy(amountsAvailable = false)))
         val foreignDay = day.copy(transactions = listOf(detail.copy(account = account.copy(currency = "USD"))))
         yield(BillPreviewCase(populated.copy(dayGroups = listOf(foreignDay))))
@@ -54,5 +53,5 @@ internal class BillPreviewProvider : PreviewParameterProvider<BillPreviewCase> {
 @Preview(name = "Ledger Dark", showBackground = true, showSystemUi = true, widthDp = 420, heightDp = 900, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun BillPreview(@PreviewParameter(BillPreviewProvider::class) case: BillPreviewCase) {
-    LedgerTheme { BillContent(case.state, initialSearchActive = case.searchActive) }
+    LedgerTheme { BillContent(case.state) }
 }

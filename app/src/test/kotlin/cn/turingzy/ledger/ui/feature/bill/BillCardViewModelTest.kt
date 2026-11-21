@@ -89,7 +89,7 @@ class BillCardViewModelTest {
         coEvery { repository.prepareBackground(uri) } throws IOException("unreadable image")
         val viewModel = BillCardViewModel(repository)
         runCurrent()
-        viewModel.prepareBackground(uri)
+        viewModel.importBackground(uri)
         runCurrent()
         assertFalse(viewModel.uiState.value.importing)
         assertEquals(LedgerCardAppearance(), viewModel.uiState.value.appearance)
@@ -107,125 +107,42 @@ class BillCardViewModelTest {
     }
 
     @Test
-    fun preparingImageRejectsDuplicateSubmissions() = runTest {
+    fun directImportAppliesOnceAndCleansTheTemporaryImage() = runTest {
         val uri = mockk<Uri>()
+        val bitmap = mockk<Bitmap>()
         coEvery { repository.prepareBackground(uri) } returns "unique.jpg"
+        coEvery { repository.applyPreparedBackground("unique.jpg") } answers {
+            stored.value = stored.value.copy(backgroundFile = "unique.jpg")
+        }
+        coEvery { repository.loadBackground("unique.jpg") } returns bitmap
         val viewModel = BillCardViewModel(repository)
         runCurrent()
-        viewModel.prepareBackground(uri)
-        viewModel.prepareBackground(uri)
+        viewModel.importBackground(uri)
+        viewModel.importBackground(uri)
         runCurrent()
         coVerify(exactly = 1) { repository.prepareBackground(uri) }
-        assertEquals("unique.jpg", viewModel.uiState.value.preparedBackground)
+        coVerify(exactly = 1) { repository.applyPreparedBackground("unique.jpg") }
+        coVerify { repository.discardPreparedBackground("unique.jpg") }
+        assertSame(bitmap, viewModel.uiState.value.background)
         assertFalse(viewModel.uiState.value.importing)
     }
 
     @Test
-    fun cancellingRemovesPreparedImageWithoutChangingCurrentBackground() = runTest {
+    fun failedApplyCleansTheTemporaryImageAndKeepsTheSavedBackground() = runTest {
         val uri = mockk<Uri>()
-        coEvery { repository.prepareBackground(uri) } returns "unique.jpg"
-        val viewModel = BillCardViewModel(repository)
-        runCurrent()
-        viewModel.prepareBackground(uri)
-        runCurrent()
-        viewModel.discardPreparedBackground()
-        runCurrent()
-        coVerify { repository.discardPreparedBackground("unique.jpg") }
-        coVerify(exactly = 0) { repository.applyPreparedBackground(any(), any()) }
-        assertNull(viewModel.uiState.value.preparedBackground)
-        assertNull(viewModel.uiState.value.appearance.backgroundFile)
-    }
-
-    @Test
-    fun replacingPreparedImageCleansPreviousFileAndFailedSelectionRetainsCurrentChoice() = runTest {
-        val first = mockk<Uri>()
-        val second = mockk<Uri>()
-        val invalid = mockk<Uri>()
-        coEvery { repository.prepareBackground(first) } returns "first.jpg"
-        coEvery { repository.prepareBackground(second) } returns "second.jpg"
-        coEvery { repository.prepareBackground(invalid) } throws IOException("invalid image")
-        val viewModel = BillCardViewModel(repository)
-        runCurrent()
-        viewModel.prepareBackground(first)
-        runCurrent()
-        viewModel.prepareBackground(second)
-        runCurrent()
-        coVerify { repository.discardPreparedBackground("first.jpg") }
-        viewModel.prepareBackground(invalid)
-        runCurrent()
-        assertEquals("second.jpg", viewModel.uiState.value.preparedBackground)
-        coVerify(exactly = 0) { repository.discardPreparedBackground("second.jpg") }
-        assertNotNull(viewModel.uiState.value.error)
-    }
-
-    @Test
-    fun failedApplyRetainsPreparedImageForRetryAndDoesNotCloseDialog() = runTest {
-        val uri = mockk<Uri>()
+        val bitmap = mockk<Bitmap>()
+        stored.value = LedgerCardAppearance(backgroundFile = "current.jpg")
+        coEvery { repository.loadBackground("current.jpg") } returns bitmap
         coEvery { repository.prepareBackground(uri) } returns "unique.jpg"
         coEvery { repository.applyPreparedBackground("unique.jpg") } throws IOException("disk full")
         val viewModel = BillCardViewModel(repository)
-        var dismissed = false
         runCurrent()
-        viewModel.prepareBackground(uri)
+        viewModel.importBackground(uri)
         runCurrent()
-        viewModel.applyBackground(restoreDefault = false) { dismissed = true }
-        runCurrent()
-        assertFalse(dismissed)
-        assertEquals("unique.jpg", viewModel.uiState.value.preparedBackground)
-        assertNull(viewModel.uiState.value.appearance.backgroundFile)
-        assertNotNull(viewModel.uiState.value.error)
-    }
-
-    @Test
-    fun restoringDefaultDiscardsPreparedImageAfterConfirmation() = runTest {
-        val uri = mockk<Uri>()
-        coEvery { repository.prepareBackground(uri) } returns "unique.jpg"
-        val viewModel = BillCardViewModel(repository)
-        runCurrent()
-        viewModel.prepareBackground(uri)
-        runCurrent()
-        coVerify(exactly = 0) { repository.resetBackground() }
-        viewModel.resetBackground()
-        runCurrent()
-        coVerify { repository.resetBackground() }
         coVerify { repository.discardPreparedBackground("unique.jpg") }
-        assertNull(viewModel.uiState.value.preparedBackground)
-    }
-
-    @Test
-    fun resetBackgroundClearsCustomImageAndRetainsTransparencySettings() = runTest {
-        val bitmap = mockk<Bitmap>()
-        stored.value = LedgerCardAppearance(
-            backgroundFile = "custom.jpg",
-            transparencyPercent = 80,
-        )
-        coEvery { repository.loadBackground("custom.jpg") } returns bitmap
-        coEvery { repository.resetBackground() } answers {
-            stored.value = stored.value.copy(backgroundFile = null)
-        }
-        val viewModel = BillCardViewModel(repository)
-        runCurrent()
-        viewModel.resetBackground()
-        runCurrent()
-        assertNull(viewModel.uiState.value.background)
-        assertNull(viewModel.uiState.value.appearance.backgroundFile)
-        assertEquals(80, viewModel.uiState.value.appearance.transparencyPercent)
-        coVerify(exactly = 1) { repository.resetBackground() }
-    }
-
-    @Test
-    fun failedBackgroundResetKeepsCurrentImageAndReportsError() = runTest {
-        val bitmap = mockk<Bitmap>()
-        stored.value = LedgerCardAppearance(backgroundFile = "custom.jpg")
-        coEvery { repository.loadBackground("custom.jpg") } returns bitmap
-        coEvery { repository.resetBackground() } throws IOException("disk unavailable")
-        val viewModel = BillCardViewModel(repository)
-        runCurrent()
-        viewModel.resetBackground()
-        runCurrent()
         assertSame(bitmap, viewModel.uiState.value.background)
-        assertEquals("custom.jpg", viewModel.uiState.value.appearance.backgroundFile)
         assertNotNull(viewModel.uiState.value.error)
+        assertFalse(viewModel.uiState.value.importing)
     }
 
     @Test

@@ -6,6 +6,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
 import cn.turingzy.ledger.ui.component.base.PageScaffoldBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
@@ -28,11 +29,17 @@ import androidx.compose.ui.unit.dp
 internal val SettingsPageHeaderHeight = 56.dp
 internal val SettingsPageContentTopPadding = SettingsPageHeaderHeight + 12.dp
 
-internal val SettingsPageBottomPadding = 24.dp
+private val SettingsPageBottomPadding = 24.dp
+
+/** Shares scroll insets between lazy and regular settings subpages. */
+internal fun settingsPageContentPadding(): PaddingValues = PaddingValues(
+    top = SettingsPageContentTopPadding,
+    bottom = SettingsPageBottomPadding,
+)
 
 @Composable
 internal fun Modifier.settingsPageScroll(): Modifier =
-    verticalScroll(rememberScrollState()).padding(top = SettingsPageContentTopPadding, bottom = SettingsPageBottomPadding)
+    verticalScroll(rememberScrollState()).padding(settingsPageContentPadding())
 
 @Composable
 internal fun SettingsSubpageScaffold(

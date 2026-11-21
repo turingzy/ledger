@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.analytics.calendar
 
+import cn.turingzy.ledger.ui.component.picker.sundayFirstColumn
 import cn.turingzy.ledger.ui.feature.analytics.calculation.AnalyticsDay
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -24,7 +25,7 @@ internal fun consumptionCalendarData(days: Map<LocalDate, AnalyticsDay>, month: 
         BigDecimal.valueOf(amount).multiply(BigDecimal.valueOf(4))
             .divide(BigDecimal.valueOf(maximum), 0, RoundingMode.CEILING).intValueExact().coerceIn(1, 4)
     }
-    val leading = month.atDay(1).dayOfWeek.value - 1
+    val leading = month.atDay(1).dayOfWeek.sundayFirstColumn()
     val count = ((leading + month.lengthOfMonth() + 6) / 7) * 7
     val cells = List(count) { index ->
         val day = index - leading + 1

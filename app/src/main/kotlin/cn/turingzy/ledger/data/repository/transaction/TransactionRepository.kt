@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.Flow
 interface TransactionRepository {
     fun getTransactionsStream(limit: Int = 100): Flow<List<TransactionDetail>>
     fun searchTransactions(query: String): Flow<List<TransactionDetail>>
+    fun recentCategoryIds(limit: Int): Flow<List<Long>>
     fun getTransaction(id: Long): Flow<TransactionDetail?>
     fun getTransactionsBetween(startTime: Long, endTime: Long, currency: String? = null): Flow<List<TransactionDetail>>
     fun getTransactionsByAccount(accountId: Long): Flow<List<TransactionDetail>>

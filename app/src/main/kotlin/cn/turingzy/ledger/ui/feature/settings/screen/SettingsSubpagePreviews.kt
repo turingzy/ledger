@@ -12,7 +12,7 @@ import cn.turingzy.ledger.model.account.AccountWithTemplate
 import cn.turingzy.ledger.model.account.CardTemplate
 import cn.turingzy.ledger.ui.theme.LedgerTheme
 
-internal enum class SettingsSubpagePreviewCase { CardDesigns, NewCardDesign, ImportExport, BackupRestore, About, Licenses }
+internal enum class SettingsSubpagePreviewCase { CardDesigns, NewCardDesign, ImportExport, About, Licenses }
 
 internal class SettingsSubpagePreviewProvider : PreviewParameterProvider<SettingsSubpagePreviewCase> {
     override val values: Sequence<SettingsSubpagePreviewCase> = SettingsSubpagePreviewCase.entries.asSequence()
@@ -32,7 +32,6 @@ private fun SettingsSubpagePreview(@PreviewParameter(SettingsSubpagePreviewProvi
                 if (case == SettingsSubpagePreviewCase.NewCardDesign) emptyList() else templates, {}, { 1L }, {}, {}, { null },
             )
             SettingsSubpagePreviewCase.ImportExport -> BillTransferScreen(defaultParseRulePreviews(), {}, accounts)
-            SettingsSubpagePreviewCase.BackupRestore -> BackupAndRestoreScreen({}, { _, _, _ -> }, {})
             SettingsSubpagePreviewCase.About -> AboutScreen("1.0.0", {})
             SettingsSubpagePreviewCase.Licenses -> OpenSourceLibrariesScreen({})
         }

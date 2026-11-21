@@ -107,13 +107,13 @@ class SettingsInteractionTest {
     }
 
     @Test
-    fun detailNavigationAndBackRestoreSettingsList() {
-        var detailVisible by mutableStateOf(false)
+    fun detailNavigationRestoresTheRootBarAtTheStartOfTheReturnTransition() {
+        var isSubpage = false
         compose.setContent {
             LedgerTheme {
                 SettingsNavigation(
-                    onDetailVisibleChange = { detailVisible = it },
-                    modifier = Modifier.fillMaxSize().padding(bottom = if (detailVisible) 0.dp else 76.dp),
+                    modifier = Modifier.fillMaxSize(),
+                    onSubpageChange = { isSubpage = it },
                 ) { destination, navigate, back ->
                     if (destination == SettingsDestination.ROOT) {
                         SettingsContent(
@@ -121,7 +121,6 @@ class SettingsInteractionTest {
                             onParseRulesClick = { navigate(SettingsDestination.PARSE_RULES) },
                             onCardManagementClick = { navigate(SettingsDestination.CARDS) },
                             onBillTransferClick = { navigate(SettingsDestination.BILL_TRANSFER) },
-                            onBackupClick = { navigate(SettingsDestination.BACKUP) },
                             onAboutClick = { navigate(SettingsDestination.ABOUT) },
                         )
                     } else if (destination == SettingsDestination.OPEN_SOURCE_LICENSES) {
@@ -138,21 +137,22 @@ class SettingsInteractionTest {
         }
         compose.onNodeWithText("关于").performClick()
         compose.onNodeWithText("1.0.0").assertIsDisplayed()
-        compose.runOnIdle { assertEquals(true, detailVisible) }
+        compose.runOnIdle { assertTrue(isSubpage) }
         compose.onNodeWithText("开源许可证").performClick()
         compose.onNodeWithText("Kotlin").assertIsDisplayed()
+        compose.runOnIdle { assertTrue(isSubpage) }
         pressBack()
         compose.onNodeWithText("1.0.0").assertIsDisplayed()
+        compose.runOnIdle { assertTrue(isSubpage) }
         val buttonTop = compose.onNodeWithContentDescription("返回").fetchSemanticsNode().boundsInRoot.top
         compose.mainClock.autoAdvance = false
         compose.onNodeWithContentDescription("返回").performClick()
         compose.mainClock.advanceTimeBy(80)
-        compose.runOnIdle { assertEquals(true, detailVisible) }
+        compose.runOnIdle { assertEquals(false, isSubpage) }
         assertEquals(buttonTop, compose.onNodeWithContentDescription("返回").fetchSemanticsNode().boundsInRoot.top, 0.5f)
         compose.mainClock.advanceTimeBy(400)
         compose.mainClock.autoAdvance = true
         compose.onNodeWithText("卡面管理").assertIsDisplayed()
-        compose.runOnIdle { assertEquals(false, detailVisible) }
     }
 
     @Test
@@ -307,17 +307,19 @@ class SettingsInteractionTest {
         compose.onNodeWithText("自定义颜色").assertIsDisplayed()
         compose.onNodeWithContentDescription("方形色板").assertIsDisplayed()
         compose.onNodeWithContentDescription("HEX 颜色值").assertIsDisplayed()
-        compose.onNodeWithContentDescription("取消颜色选择").performClick()
+        compose.onNodeWithText("取消").performClick()
         compose.onNodeWithContentDescription("确认新增卡面").assertIsDisplayed()
         compose.onNodeWithText("文字颜色").assertIsDisplayed()
         compose.onNodeWithContentDescription("返回").performClick()
         compose.onNodeWithContentDescription("卡面名称").assertTextEquals("原有卡面")
-        compose.onNodeWithContentDescription("更换卡面").assertIsDisplayed()
+        compose.onNodeWithText("更换卡面").performScrollTo().assertIsDisplayed()
         compose.onAllNodesWithText("新卡面").assertCountEquals(0)
-        compose.onNodeWithContentDescription("删除卡面").performClick()
+        compose.onNodeWithText("删除卡面").performScrollTo().performClick()
         compose.onNodeWithContentDescription("卡面名称").assertTextEquals("原有卡面")
         compose.onNodeWithContentDescription("确认").performClick()
         compose.onNodeWithText("新增").assertIsDisplayed()
+        compose.onNodeWithText("上传卡面图片").assertIsDisplayed()
+        compose.onNodeWithText("自动").assertDoesNotExist()
     }
 
     @Test

@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -36,7 +37,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
@@ -74,6 +74,9 @@ internal fun BillSwipeRow(
     onCopy: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    showDate: Boolean = false,
+    roundTop: Boolean = false,
+    roundBottom: Boolean = false,
 ) {
     val colors = LedgerStyle.colors
     val width = with(LocalDensity.current) { SwipeActionsWidth.toPx() }
@@ -92,7 +95,8 @@ internal fun BillSwipeRow(
     val updateRevealed by rememberUpdatedState(onRevealChange)
     val wasRevealed by rememberUpdatedState(revealed)
 
-    Box(Modifier.fillMaxWidth().clipToBounds()) {
+    // The foreground may cross the group's left edge while the action rail stays in place.
+    Box(Modifier.fillMaxWidth()) {
         if (offset > 0f) Box(Modifier.matchParentSize().background(colors.background)) {
             Row(
                 Modifier.align(Alignment.CenterEnd).width(SwipeActionsWidth).fillMaxHeight(),
@@ -126,10 +130,13 @@ internal fun BillSwipeRow(
                 },
             )
         } else Modifier
-        val corner = 20.dp * (offset / width).coerceIn(0f, 1f)
+        val movingCorner = CornerSize(20.dp * (offset / width).coerceIn(0f, 1f))
+        val groupCorner = LedgerStyle.shapes.summaryCard.topStart
+        val top = if (roundTop) groupCorner else movingCorner
+        val bottom = if (roundBottom) groupCorner else movingCorner
         Row(
             Modifier.fillMaxWidth().offset { IntOffset(-offset.roundToInt(), 0) }
-                .clip(RoundedCornerShape(corner)).background(colors.surface)
+                .clip(RoundedCornerShape(top, top, bottom, bottom)).background(colors.surface)
                 .then(dragModifier)
                 .then(if (selecting) Modifier.semantics { toggleableState = ToggleableState(selected) } else Modifier)
                 .combinedClickable(
@@ -151,7 +158,7 @@ internal fun BillSwipeRow(
             ) {
                 BillSelectionIndicator(selected, Modifier.padding(start = LedgerStyle.dimensions.transactionRowHorizontal))
             }
-            DayTransactionRowItem(detail, Modifier.weight(1f), onClick = null)
+            DayTransactionRowItem(detail, Modifier.weight(1f), onClick = null, showDate = showDate)
         }
     }
 }

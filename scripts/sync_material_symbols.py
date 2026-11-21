@@ -7,7 +7,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 
 symbols = {
-'Add':'add', 'AddCard':'add_card', 'AddPhotoAlternate':'add_photo_alternate', 'ArrowUpward':'arrow_upward',
+'ArrowBack':'arrow_back', 'Add':'add', 'AddCard':'add_card', 'AddPhotoAlternate':'add_photo_alternate', 'ArrowUpward':'arrow_upward',
 'RadioButtonChecked':'radio_button_checked', 'RadioButtonUnchecked':'radio_button_unchecked',
 'Backspace':'backspace', 'Check':'check', 'ChevronLeft':'chevron_left', 'ChevronRight':'chevron_right',
 'CheckBox':'check_box', 'CheckBoxOutlineBlank':'check_box_outline_blank',

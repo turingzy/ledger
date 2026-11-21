@@ -23,6 +23,9 @@ interface TransactionDao {
         ORDER BY t.transaction_time DESC, t.transaction_id DESC""")
     fun searchTransactions(query: String): Flow<List<PopulatedTransaction>>
 
+    @Query("SELECT category_id FROM tb_transaction WHERE is_deleted = 0 ORDER BY transaction_time DESC, transaction_id DESC LIMIT :limit")
+    fun recentCategoryIds(limit: Int): Flow<List<Long>>
+
     @Query("UPDATE tb_transaction SET base_amount = :amount, base_currency = :currency, base_rate = :rate, base_rate_date = :date, to_amount = :toAmount, transfer_rate = :transferRate, currency_snapshots = :snapshots WHERE transaction_id = :id AND amount = :originalAmount AND transaction_time = :originalTime")
     suspend fun updateValuation(id: Long, originalAmount: Long, originalTime: Long, amount: Long?, currency: String?, rate: String?, date: String?, toAmount: Long?, transferRate: String?, snapshots: String)
 

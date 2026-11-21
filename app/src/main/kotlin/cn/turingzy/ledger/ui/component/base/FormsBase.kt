@@ -129,17 +129,19 @@ fun <T> DropdownMenuBase(
     }
 }
 
+/** Shows a chevron when closed and points toward the menu when open. */
 @Composable
 fun DropdownIndicatorBase(
     expanded: Boolean,
     modifier: Modifier = Modifier,
+    opensUp: Boolean = true,
     contentColor: Color = LedgerStyle.colors.textSecondary,
 ) {
     val state = stringResource(if (expanded) R.string.ui_expanded else R.string.ui_collapsed)
     Icon(
         if (expanded) MaterialSymbols.ExpandMore else MaterialSymbols.ChevronRight,
         contentDescription = null,
-        modifier = modifier.size(LedgerStyle.icons.default).rotate(if (expanded) 180f else 0f)
+        modifier = modifier.size(LedgerStyle.icons.default).rotate(if (expanded && opensUp) 180f else 0f)
             .semantics { stateDescription = state },
         tint = contentColor,
     )

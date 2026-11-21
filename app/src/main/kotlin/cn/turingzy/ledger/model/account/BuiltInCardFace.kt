@@ -16,9 +16,10 @@ internal enum class BuiltInCardFace(
     fun asTemplate(appearance: CardTemplate? = null) = CardTemplate(
         id = id,
         name = appearance?.name?.takeIf { it.isNotBlank() } ?: nameZh,
-        coverUri = coverUri,
+        coverUri = appearance?.coverUri?.takeIf { it.isNotBlank() && !it.startsWith("res://") } ?: coverUri,
         textColor = appearance?.textColor ?: "#FFFFFF",
         isSystem = true,
+        isDeleted = appearance?.isDeleted ?: false,
     )
 
     fun hasDefaultName(template: CardTemplate): Boolean =
@@ -38,7 +39,7 @@ internal enum class BuiltInCardFace(
 
         fun forTemplate(template: CardTemplate): BuiltInCardFace? =
             if (template.isSystem && !template.isDeleted) {
-                entries.firstOrNull { template.coverUri == it.coverUri || it.isLegacyCover(template) }
+                byId(template.id) ?: entries.firstOrNull { template.coverUri == it.coverUri || it.isLegacyCover(template) }
             } else null
     }
 }

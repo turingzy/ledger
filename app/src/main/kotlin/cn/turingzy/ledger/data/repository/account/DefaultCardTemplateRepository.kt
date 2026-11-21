@@ -40,7 +40,7 @@ class DefaultCardTemplateRepository @Inject constructor(
 
     override suspend fun deleteTemplate(id: Long) {
         withContext(ioDispatcher) {
-            if (BuiltInCardFace.byId(id) == null) cardTemplateDao.softDeleteTemplate(id)
+            cardTemplateDao.softDeleteTemplate(id)
         }
     }
 }

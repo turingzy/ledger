@@ -19,6 +19,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toPixelMap
@@ -168,7 +169,7 @@ class ConsumptionCalendarScreenTest {
         assertEquals(14.sp, count.single().layoutInput.style.fontSize)
     }
 
-    @Test fun monthHeadingKeepsItsOriginalNeutralColorAndTypography() {
+    @Test fun monthPillMatchesBillTypographyAndHeight() {
         var foreground = Color.Unspecified
         compose.setContent { LedgerTheme {
             foreground = MaterialTheme.colorScheme.onSurface
@@ -177,11 +178,11 @@ class ConsumptionCalendarScreenTest {
         val month = mutableListOf<TextLayoutResult>()
         val amount = mutableListOf<TextLayoutResult>()
         val label = mutableListOf<TextLayoutResult>()
-        compose.onNodeWithText("2026年11月").performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(month) }
+        compose.onNodeWithText("2026年11月").assertHeightIsEqualTo(32.dp).performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(month) }
         compose.onNodeWithText("11月总支出").performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(label) }
         compose.onAllNodesWithText("¥0.00")[0].performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(amount) }
-        assertEquals(16.sp, month.single().layoutInput.style.fontSize)
-        assertEquals(FontWeight.SemiBold, month.single().layoutInput.style.fontWeight)
+        assertEquals(17.sp, month.single().layoutInput.style.fontSize)
+        assertEquals(FontWeight.Medium, month.single().layoutInput.style.fontWeight)
         assertEquals(foreground, month.single().layoutInput.style.color)
         assertEquals(11.sp, label.single().layoutInput.style.fontSize)
         assertEquals(15.sp, amount.single().layoutInput.style.fontSize)

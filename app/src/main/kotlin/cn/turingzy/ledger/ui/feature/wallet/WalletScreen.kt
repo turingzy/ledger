@@ -17,13 +17,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
@@ -32,7 +30,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import cn.turingzy.ledger.model.settings.LedgerCardAppearance
-import cn.turingzy.ledger.ui.component.card.summary.CardBackgroundDialog
+import cn.turingzy.ledger.ui.component.card.summary.rememberSummaryBackgroundPicker
 import androidx.compose.material3.Text
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.Stable
@@ -63,10 +61,9 @@ fun WalletScreen(
     val cardViewModel: WalletCardViewModel = hiltViewModel()
     val cardUiState by cardViewModel.uiState.collectAsStateWithLifecycle()
     val background = remember(cardUiState.background) { cardUiState.background?.asImageBitmap() }
-    var showBackgroundDialog by rememberSaveable { mutableStateOf(false) }
+    val pickBackground = rememberSummaryBackgroundPicker(cardViewModel::importBackground)
     val snackbarHostState = remember { SnackbarHostState() }
-    LaunchedEffect(cardUiState.error, showBackgroundDialog) {
-        if (showBackgroundDialog) return@LaunchedEffect
+    LaunchedEffect(cardUiState.error) {
         val error = cardUiState.error ?: return@LaunchedEffect
         snackbarHostState.showSnackbar(error)
         cardViewModel.clearError()
@@ -83,31 +80,10 @@ fun WalletScreen(
         cardAppearance = cardUiState.appearance,
         cardBackground = background,
         cardSettingsEnabled = !cardUiState.loading && !cardUiState.importing,
-        onUploadCardBackground = {
-            cardViewModel.clearError()
-            showBackgroundDialog = true
-        },
+        onUploadCardBackground = pickBackground,
         onCardTransparencyChange = cardViewModel::setTransparencyPercent,
         snackbarHostState = snackbarHostState,
     )
-
-    if (showBackgroundDialog) {
-        CardBackgroundDialog(
-            defaultFilename = "bg_wallet_card.jpg",
-            preparedFilename = cardUiState.preparedBackground,
-            busy = cardUiState.importing,
-            error = cardUiState.error,
-            onDismiss = {
-                cardViewModel.clearError()
-                cardViewModel.discardPreparedBackground()
-                showBackgroundDialog = false
-            },
-            onLocalImage = cardViewModel::prepareBackground,
-            onConfirm = { restoreDefault ->
-                cardViewModel.applyBackground(restoreDefault) { showBackgroundDialog = false }
-            },
-        )
-    }
 
     WalletAccountSheets(
         controller = accountSheets,
@@ -212,16 +188,7 @@ fun WalletContent(
     val openAccount = rememberUiEvent(onAdjustBalanceClick, UiInteractionKind.Navigation)
     PageFrameBase(modifier) {
         when (uiState) {
-            WalletUiState.Loading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.onSurface)
-                }
-            }
-
+            WalletUiState.Loading -> Unit
             is WalletUiState.Success -> {
                 val accounts = uiState.accounts
                 val currencyTotals = uiState.currencyTotals.ifEmpty { listOf(WalletCurrencyTotals("CNY", assets = uiState.totalAsset)) }

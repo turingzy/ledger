@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -48,7 +47,7 @@ fun LedgerFloatingActionButton(
         val interactionSource = remember { MutableInteractionSource() }
         Row(
             modifier = Modifier
-                .height(40.dp)
+                .height(36.dp)
                 .shadow(
                     elevation = 10.dp,
                     shape = LedgerStyle.shapes.summaryCard,
@@ -67,13 +66,14 @@ fun LedgerFloatingActionButton(
                 ) {
                     onClick()
                 }
-                .padding(horizontal = LedgerStyle.spacing.extraLarge),
+                .padding(horizontal = LedgerStyle.spacing.large),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(7.dp),
         ) {
             Text(
                 text = textResources.getString(cn.turingzy.ledger.R.string.ui_new_transaction),
-                fontSize = LedgerStyle.typography.transactionTitle.fontSize,
+                fontSize = LedgerStyle.typography.sectionTitle.fontSize,
+                lineHeight = 24.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onTertiary,
             )
@@ -81,7 +81,7 @@ fun LedgerFloatingActionButton(
                 imageVector = MaterialSymbols.EditSquare,
                 contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_new_transaction),
                 tint = MaterialTheme.colorScheme.onTertiary,
-                modifier = Modifier.size(LedgerStyle.icons.small),
+                modifier = Modifier.size(LedgerStyle.icons.default),
             )
         }
     }

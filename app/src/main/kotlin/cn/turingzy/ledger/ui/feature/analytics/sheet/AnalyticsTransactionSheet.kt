@@ -1,6 +1,7 @@
 package cn.turingzy.ledger.ui.feature.analytics.sheet
 
 import cn.turingzy.ledger.ui.feature.analytics.AnalyticsTransaction
+import cn.turingzy.ledger.ui.feature.analytics.component.AnalyticsCardTitle
 import cn.turingzy.ledger.ui.component.biz.TransactionRowBiz
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.ui.component.base.ModalBottomSheetBase
@@ -14,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,6 +26,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cn.turingzy.ledger.model.transaction.TransactionType
 import cn.turingzy.ledger.ui.component.base.DividerBase
+import cn.turingzy.ledger.ui.component.base.BottomSheetHeaderBase
+import kotlinx.coroutines.launch
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.biz.categoryGlyphBiz
 import cn.turingzy.ledger.util.toFormattedAmount
@@ -32,6 +36,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import cn.turingzy.ledger.R
 
+/** Shows the transaction rows behind an analytics selection using its grouping and totals. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun AnalyticsTransactionSheet(
@@ -53,14 +58,23 @@ internal fun AnalyticsTransactionSheet(
     val dateFormatter = remember(locale) { DateTimeFormatter.ofPattern("MM.dd E", locale) }
     val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
     val shortDateFormatter = remember { DateTimeFormatter.ofPattern("MM.dd") }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val scope = rememberCoroutineScope()
     ModalBottomSheetBase(
         onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        sheetState = sheetState,
     ) {
         Column(Modifier.fillMaxWidth().height(height).testTag("analyticsTransactionDrawer")) {
-            Row(Modifier.fillMaxWidth().heightIn(min = LedgerStyle.dimensions.touchTarget).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(title, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+            BottomSheetHeaderBase(
+                stringResource(R.string.ui_close_transactions),
+                onClose = {
+                    scope.launch {
+                        sheetState.hide()
+                        if (!sheetState.isVisible) onDismiss()
+                    }
+                },
+            ) {
+                AnalyticsCardTitle(title)
             }
             DividerBase()
             Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),

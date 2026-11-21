@@ -26,7 +26,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -50,7 +49,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.distinctUntilChanged
-import cn.turingzy.ledger.ui.component.MaterialSymbols
+import cn.turingzy.ledger.ui.component.base.DropdownIndicatorBase
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlin.math.abs
@@ -85,7 +84,7 @@ internal fun LedgerDatePicker(selectedDate: LocalDate, onSelect: (LocalDate) -> 
     val colors = MaterialTheme.colorScheme
     val days = remember(month) {
         val first = month.atDay(1)
-        val gridStart = first.minusDays(first.dayOfWeek.value - 1L)
+        val gridStart = first.minusDays(first.dayOfWeek.sundayFirstColumn().toLong())
         List(42) { gridStart.plusDays(it.toLong()) }
     }
     val years = remember(month.year) {
@@ -125,7 +124,7 @@ internal fun LedgerDatePicker(selectedDate: LocalDate, onSelect: (LocalDate) -> 
                 )
                 RecordCalendarPanel.DAYS -> Column {
                     Row(Modifier.fillMaxWidth()) {
-                        listOf(textResources.getString(cn.turingzy.ledger.R.string.ui_mon), textResources.getString(cn.turingzy.ledger.R.string.ui_tue), textResources.getString(cn.turingzy.ledger.R.string.ui_wed), textResources.getString(cn.turingzy.ledger.R.string.ui_thu_2), textResources.getString(cn.turingzy.ledger.R.string.ui_fri), textResources.getString(cn.turingzy.ledger.R.string.ui_sat), textResources.getString(cn.turingzy.ledger.R.string.ui_sun_2)).forEach {
+                        MonthGridWeekdays.map(textResources::getString).forEach {
                             Text(it, Modifier.weight(1f).padding(vertical = LedgerStyle.spacing.extraSmall), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                         }
                     }
@@ -177,12 +176,7 @@ private fun RecordCalendarHeading(text: String, description: String, expanded: B
         horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.tiny),
     ) {
         Text(text, style = MaterialTheme.typography.bodyLarge)
-        Icon(
-            if (expanded) MaterialSymbols.ArrowDropUp else MaterialSymbols.ArrowDropDown,
-            contentDescription = null,
-            modifier = Modifier.size(LedgerStyle.icons.default),
-            tint = LedgerStyle.colors.textSecondary,
-        )
+        DropdownIndicatorBase(expanded, opensUp = false)
     }
 }
 
