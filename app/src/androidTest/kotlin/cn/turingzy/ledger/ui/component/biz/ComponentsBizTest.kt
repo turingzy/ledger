@@ -80,10 +80,10 @@ class ComponentsBizTest {
                 LedgerTheme {
                     unitColor = LedgerStyle.colors.currencyUnit
                     Column {
-                        TransactionRowBiz(category.category.name, "银行卡", "12:00", 1234L, TransactionType.EXPENSE,
+                        TransactionRowBiz(category.category.name, "12:00", 1234L, TransactionType.EXPENSE,
                             MaterialSymbols.Restaurant, currency = "USD")
                         TransactionItemBiz(amount = 1234L, currency = "USD", type = TransactionType.EXPENSE,
-                            category = category, accountName = "银行卡", timeText = "12:00")
+                            category = category, timeText = "12:00")
                     }
                 }
             }
@@ -102,8 +102,8 @@ class ComponentsBizTest {
         compose.setContent { LedgerTheme { Column {
             for (received in listOf(null, 1700L)) TransactionItemBiz(
                 amount = 12345L, currency = "CNY", type = TransactionType.TRANSFER,
-                category = null, accountName = "来源账户", timeText = "12:00", primaryCurrency = "CNY",
-                destinationName = "目标账户", destinationCurrency = "USD", receivedAmount = received,
+                category = null, timeText = "12:00", primaryCurrency = "CNY",
+                destinationCurrency = "USD", receivedAmount = received,
             )
         } } }
         compose.onNodeWithText("到账 —").assertIsDisplayed()
@@ -114,7 +114,7 @@ class ComponentsBizTest {
     private fun TransactionFixture(detail: TransactionDetail, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
         TransactionItemBiz(
             detail.transaction.amount, detail.account.currency, detail.transaction.type,
-            detail.category, detail.account.name, "00:00", modifier,
+            detail.category, "00:00", modifier,
             isDeleted = detail.transaction.isDeleted, onClick = onClick,
         )
     }

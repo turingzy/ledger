@@ -67,14 +67,14 @@ class BillTransactionsTest {
     @Test
     fun zeroIncomeIsOmittedFromDailySummary() {
         showSummary(expense = 123L, income = 0L)
-        compose.onNodeWithText("支出: 1.23").assertIsDisplayed()
+        compose.onNodeWithText("支出: ¥1.23").assertIsDisplayed()
         compose.onNodeWithText("收入:", substring = true).assertDoesNotExist()
     }
 
     @Test
     fun zeroExpenseIsOmittedFromDailySummary() {
         showSummary(expense = 0L, income = 456L)
-        compose.onNodeWithText("收入: 4.56").assertIsDisplayed()
+        compose.onNodeWithText("收入: ¥4.56").assertIsDisplayed()
         compose.onNodeWithText("支出:", substring = true).assertDoesNotExist()
     }
 
@@ -87,9 +87,9 @@ class BillTransactionsTest {
     }
 
     @Test
-    fun nonzeroIncomeAndExpenseAreBothShown() {
-        showSummary(expense = 123L, income = 456L)
-        compose.onNodeWithText("支出: 1.23  收入: 4.56").assertIsDisplayed()
+    fun nonzeroIncomeAndExpenseBothUseTheSelectedPrimaryCurrency() {
+        showSummary(expense = 123L, income = 456L, currency = "USD")
+        compose.onNodeWithText("支出: \$1.23  收入: \$4.56").assertIsDisplayed()
     }
 
     @Test
@@ -165,9 +165,9 @@ class BillTransactionsTest {
         compose.onNodeWithContentDescription("复制交易").assertIsDisplayed()
     }
 
-    private fun showSummary(expense: Long, income: Long) {
+    private fun showSummary(expense: Long, income: Long, currency: String = "CNY") {
         compose.setContent {
-            MaterialTheme { DayGroupSection(DayTransactionGroup(0L, "今天", expense, income, emptyList())) }
+            MaterialTheme { DayGroupSection(DayTransactionGroup(0L, "今天", expense, income, emptyList()), currency = currency) }
         }
     }
 

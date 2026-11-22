@@ -6,7 +6,7 @@
   <string name="preference_theme">主题</string>
   <string name="light_theme">浅色</string>
   <string name="dark_theme">深色</string>
-  <string name="primary_currency">主要货币</string>
+  <string name="display_currency">展示货币</string>
   <string name="account_currency">账户币种</string>
   <string name="save">保存</string>
   <string name="exchange_rates">汇率</string>

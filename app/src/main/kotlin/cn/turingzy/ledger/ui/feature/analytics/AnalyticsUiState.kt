@@ -42,25 +42,25 @@ data class CategoryExpenseRanking(
  * @property id 账单交易 ID。
  * @property date 交易日期。
  * @property note 交易备注。
- * @property accountName 关联账户名称。
  * @property amount 原始交易金额（分）。
  * @property type 交易类型（支出/收入/转账）。
  * @property category 关联的分类及图标。
  * @property time 交易时间（时分秒）。
  * @property currency 交易原始币种代码。
  * @property primaryAmount 折合为主币种后的金额（分）。
+ * @property detail 用于执行账单操作的完整交易明细。
  */
 data class AnalyticsTransaction(
     val id: Long,
     val date: LocalDate,
     val note: String,
-    val accountName: String,
     val amount: Long,
     val type: cn.turingzy.ledger.model.transaction.TransactionType = cn.turingzy.ledger.model.transaction.TransactionType.EXPENSE,
     val category: cn.turingzy.ledger.model.category.CategoryWithIcon? = null,
     val time: java.time.LocalTime? = null,
     val currency: String = "CNY",
     val primaryAmount: Long = amount,
+    internal val detail: cn.turingzy.ledger.model.transaction.TransactionDetail? = null,
 )
 
 /**

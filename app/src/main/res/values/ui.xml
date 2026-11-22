@@ -2,7 +2,11 @@
   <string name="ui_source_code_on_github">Github 上的源代码</string>
   <string name="ui_hex_color">HEX 颜色值</string>
   <string name="ui_ledger_app_icon">Ledger 应用图标</string>
-  <string name="ui_ledger_is_a_local_first_personal_finance_app">Ledger 是一款本地优先的个人记账与资产管理应用，帮助你记录日常收支、管理账户与资产。数据保存在设备本地，注重隐私，纯粹实用。</string>
+  <string name="ui_about_tagline">清晰记录，回归本质</string>
+  <string name="ui_about_version_updates">版本更新</string>
+  <string name="ui_about_installed_version" translatable="false">Version %1$s</string>
+  <string name="ui_about_credit" translatable="false">Designed &amp; Developed by TuringZY</string>
+  <string name="ui_about_copyright" translatable="false">© 2026 TuringZY</string>
   <string name="ui_mon">一</string>
   <string name="ui_wed">三</string>
   <string name="ui_previous_period">上一周期</string>
@@ -98,7 +102,7 @@
   <string name="ui_export_cancelled">已取消导出</string>
   <string name="ui_expanded">已展开</string>
   <string name="ui_collapsed">已折叠</string>
-  <string name="ui_you_are_up_to_date">已是最新版本</string>
+  <string name="ui_you_are_up_to_date">已是最新</string>
   <string name="ui_selected">已选择</string>
   <string name="ui_currency">币种</string>
   <string name="ui_year">年</string>
@@ -154,7 +158,6 @@
   <string name="ui_no_matching_transactions">未找到相关账单</string>
   <string name="ui_no_transactions_for_this_period_tap_to_add">本期暂无交易明细，点击右下角开始记账</string>
   <string name="ui_view_app_source_code">查看此应用的源代码</string>
-  <string name="ui_check_for_updates">检查更新</string>
   <string name="ui_could_not_check_updates_please_try_again">检查更新失败，请重试</string>
   <string name="ui_loading_transactions">正在加载账单</string>
   <string name="ui_spending_calendar">消费日历</string>
@@ -215,6 +218,7 @@
   <string name="ui_select_time">选择时间</string>
   <string name="ui_select_month">选择月份</string>
   <string name="ui_select_account">选择账户</string>
+  <string name="ui_required_field">必填</string>
   <string name="ui_select_ledger_period">选择账本日期</string>
   <string name="ui_select_destination_account">选择转入账户</string>
   <string name="ui_select_source_account">选择转出账户</string>

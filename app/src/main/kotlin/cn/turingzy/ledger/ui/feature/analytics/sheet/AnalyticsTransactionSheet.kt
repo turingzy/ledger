@@ -2,23 +2,19 @@ package cn.turingzy.ledger.ui.feature.analytics.sheet
 
 import cn.turingzy.ledger.ui.feature.analytics.AnalyticsTransaction
 import cn.turingzy.ledger.ui.feature.analytics.component.AnalyticsCardTitle
-import cn.turingzy.ledger.ui.component.biz.TransactionRowBiz
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.ui.component.base.ModalBottomSheetBase
 import cn.turingzy.ledger.ui.component.biz.LocalCurrencyBiz
 import cn.turingzy.ledger.ui.component.biz.currencySymbolBiz
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
@@ -28,13 +24,17 @@ import cn.turingzy.ledger.model.transaction.TransactionType
 import cn.turingzy.ledger.ui.component.base.DividerBase
 import cn.turingzy.ledger.ui.component.base.BottomSheetHeaderBase
 import kotlinx.coroutines.launch
-import cn.turingzy.ledger.ui.component.MaterialSymbols
-import cn.turingzy.ledger.ui.component.biz.categoryGlyphBiz
 import cn.turingzy.ledger.util.toFormattedAmount
 import java.time.format.DateTimeFormatter
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import cn.turingzy.ledger.R
+import androidx.hilt.navigation.compose.hiltViewModel
+import cn.turingzy.ledger.ui.component.navigation.LocalBottomBarContentPadding
+import cn.turingzy.ledger.ui.feature.analytics.AnalyticsTransactionRows
+import cn.turingzy.ledger.ui.feature.analytics.LocalAnalyticsBillViewModel
+import cn.turingzy.ledger.ui.feature.bill.detail.TransactionDetailsScreen
+import cn.turingzy.ledger.ui.feature.bill.detail.TransactionDetailsViewModel
 
 /**
  * 统计分析交易明细底部抽屉。
@@ -71,6 +71,9 @@ internal fun AnalyticsTransactionSheet(
     val shortDateFormatter = remember { DateTimeFormatter.ofPattern("MM.dd") }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val billViewModel = LocalAnalyticsBillViewModel.current
+    val transactionViewModel: TransactionDetailsViewModel? = if (billViewModel != null) hiltViewModel() else null
     ModalBottomSheetBase(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -93,40 +96,48 @@ internal fun AnalyticsTransactionSheet(
                 if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                 AnalyticsTransactionTotals(transactions, summaryType, Modifier.weight(1f), showTotalLabel = true)
             }
-            if (transactions.isEmpty()) Text(textResources.getString(cn.turingzy.ledger.R.string.ui_no_transactions), Modifier.padding(LedgerStyle.spacing.extraLarge), color = colors.onSurfaceVariant)
-            else LazyColumn(Modifier.fillMaxWidth().weight(1f), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 12.dp)) {
-                groups.forEach { (date, entries) ->
-                    if (date != null) item(key = "date:$date") {
-                        Row(Modifier.fillMaxWidth().padding(start = 4.dp, top = 8.dp, bottom = 7.dp),
-                            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.small)) {
-                            Text(date.format(dateFormatter), fontSize = LedgerStyle.typography.bodySmall.fontSize,
-                                lineHeight = 18.sp, color = colors.onSurfaceVariant, maxLines = 1)
-                            AnalyticsTransactionTotals(entries, summaryType, Modifier.weight(1f))
-                        }
-                    }
-                    itemsIndexed(entries, key = { _, entry -> entry.id }) { index, entry ->
-                        val categoryName = entry.category?.category?.name ?: entry.note
-                        val supportingText = listOfNotNull(entry.accountName, entry.note.takeIf { it.isNotBlank() && it != categoryName }).joinToString(" · ")
-                        val topRadius = if (index == 0) 20.dp else 0.dp
-                        val bottomRadius = if (index == entries.lastIndex) 20.dp else 0.dp
-                        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(
-                            topStart = topRadius, topEnd = topRadius, bottomStart = bottomRadius, bottomEnd = bottomRadius,
-                        )).background(colors.surface)) {
-                            if (index > 0) DividerBase(Modifier.padding(start = 62.dp, end = 14.dp))
-                            TransactionRowBiz(
-                                categoryName = categoryName,
-                                supportingText = supportingText,
-                                timeText = if (groupByDate) entry.time?.format(timeFormatter).orEmpty()
-                                else listOfNotNull(entry.date.format(shortDateFormatter), entry.time?.format(timeFormatter)).joinToString(" "),
-                                amount = entry.amount,
-                                currency = entry.currency,
-                                type = entry.type,
-                                icon = entry.category?.icon?.categoryGlyphBiz() ?: MaterialSymbols.Payments,
-                            )
+            if (transactions.isEmpty()) {
+                Text(textResources.getString(R.string.ui_no_transactions), Modifier.padding(LedgerStyle.spacing.extraLarge), color = colors.onSurfaceVariant)
+            } else Box(Modifier.fillMaxWidth().weight(1f)) {
+                AnalyticsTransactionRows(
+                    transactions = transactions,
+                    timeText = { entry ->
+                        val time = entry.time?.format(timeFormatter)
+                        if (groupByDate) time.orEmpty()
+                        else listOfNotNull(entry.date.format(shortDateFormatter), time).joinToString(" ")
+                    },
+                    viewModel = billViewModel,
+                    transactionViewModel = transactionViewModel,
+                    snackbarHostState = snackbarHostState,
+                ) { transactionRow ->
+                    LazyColumn(
+                        Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 12.dp + LocalBottomBarContentPadding.current),
+                    ) {
+                        groups.forEach { (date, entries) ->
+                            if (date != null) item(key = "date:$date") {
+                                Row(Modifier.fillMaxWidth().padding(start = 4.dp, top = 8.dp, bottom = 7.dp),
+                                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.small)) {
+                                    Text(date.format(dateFormatter), fontSize = LedgerStyle.typography.bodySmall.fontSize,
+                                        lineHeight = 18.sp, color = colors.onSurfaceVariant, maxLines = 1)
+                                    AnalyticsTransactionTotals(entries, summaryType, Modifier.weight(1f))
+                                }
+                            }
+                            itemsIndexed(entries, key = { _, entry -> entry.id }) { index, entry ->
+                                Column {
+                                    if (index > 0) DividerBase(Modifier.padding(start = 62.dp, end = 14.dp))
+                                    transactionRow(entry, index == 0, index == entries.lastIndex)
+                                }
+                            }
                         }
                     }
                 }
+                SnackbarHost(snackbarHostState, Modifier.align(Alignment.BottomCenter))
             }
+            if (transactionViewModel != null) TransactionDetailsScreen(
+                onLoadFailure = { message -> scope.launch { snackbarHostState.showSnackbar(message) } },
+                viewModel = transactionViewModel,
+            )
         }
     }
 }

@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.window.PopupPositionProvider
+import androidx.compose.ui.unit.Dp
 import cn.turingzy.ledger.ui.component.base.DropdownMenuBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 
@@ -42,6 +43,7 @@ import cn.turingzy.ledger.ui.theme.LedgerStyle
  * @param onSelect 选中某选项时的回调。
  * @param modifier 应用于该组件的修饰符。
  * @param alignMenuToStart 菜单弹出时是否与锚点左侧（Start）对齐；为 false 时与右侧（End）对齐。
+ * @param menuWidth 弹出菜单的宽度。
  * @param menuTestTag 菜单的测试标签。
  * @param isSelected 判断某选项是否处于选中状态的函数，默认根据文本匹配。
  */
@@ -56,6 +58,7 @@ internal fun <T> FormDropdown(
     alignMenuToStart: Boolean = false,
     menuTestTag: String = "accountDropdownOptions",
     isSelected: (T) -> Boolean = { optionLabel(it) == value },
+    menuWidth: Dp = LedgerStyle.dimensions.dropdownWidth,
 ) {
     LedgerDropdown(
         options = options,
@@ -65,6 +68,7 @@ internal fun <T> FormDropdown(
         modifier = modifier,
         alignMenuToStart = alignMenuToStart,
         menuTestTag = menuTestTag,
+        menuWidth = menuWidth,
     ) { anchorModifier, expanded, opensUp, onToggle ->
         FormFieldFrameBase(
             label = label,
@@ -89,6 +93,7 @@ internal fun <T> FormDropdown(
  * @param onSelect 选项选中回调。
  * @param modifier 外部修饰符。
  * @param alignMenuToStart 是否将弹窗菜单左对齐。
+ * @param menuWidth 弹出菜单的宽度。
  * @param menuTestTag 菜单测试标签。
  * @param direction 菜单展开方向（向上或向下）。
  * @param anchor 锚点组件插槽，接收锚点修饰符、展开状态、是否向上展开以及切换展开状态的回调。
@@ -103,6 +108,7 @@ internal fun <T> LedgerDropdown(
     alignMenuToStart: Boolean = false,
     menuTestTag: String = "dropdownOptions",
     direction: DropdownDirection = DropdownDirection.UP,
+    menuWidth: Dp = LedgerStyle.dimensions.dropdownWidth,
     anchor: @Composable (modifier: Modifier, expanded: Boolean, opensUp: Boolean, onToggle: () -> Unit) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -145,6 +151,7 @@ internal fun <T> LedgerDropdown(
                 onDismissRequest = { expanded = false },
                 positionProvider = menuPositionProvider,
                 maxHeight = menuMaxHeight,
+                menuWidth = menuWidth,
                 modifier = Modifier.testTag(menuTestTag),
             )
         }

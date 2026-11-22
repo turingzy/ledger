@@ -24,11 +24,16 @@ class GeneralSettingsMigrationTest {
     @Test fun preferenceSelectionAppliesWithoutAConfirmationButton() {
         var changed: AppPreferences? = null
         compose.setContent { Content(onPreferencesChange = { changed = it }) }
+        compose.onNodeWithContentDescription("展示货币").assert(hasText("CNY"))
+        compose.onNodeWithText("人民币 CNY").assertDoesNotExist()
         compose.onNodeWithContentDescription("语言").performClick()
+        compose.onNode(hasText("跟随系统") and hasAnyAncestor(hasTestTag("dropdownOptions"))).assertDoesNotExist()
         compose.onNode(hasText("English") and hasAnyAncestor(hasTestTag("dropdownOptions"))).performClick()
         compose.onNodeWithTag("dropdownOptions").assertDoesNotExist()
         compose.runOnIdle { assertEquals("en", changed?.language) }
         compose.onNodeWithContentDescription("保存").assertDoesNotExist()
+        compose.onNodeWithContentDescription("展示货币").performClick()
+        compose.onNode(hasText("人民币 CNY") and hasAnyAncestor(hasTestTag("dropdownOptions"))).assertIsDisplayed()
     }
 
     @Test fun busyDisablesSelectionAndEditingButKeepsBackAvailable() {
@@ -83,7 +88,7 @@ class GeneralSettingsMigrationTest {
         LedgerTheme {
             GeneralSettingsContent(
                 AppPreferences(primaryCurrency = "CNY"), busy, "USD", "7.20", null, null,
-                listOf("USD" to "USD", "EUR" to "EUR"), onPreferencesChange, {}, onRateChange, onRefresh, onBack,
+                listOf("USD", "EUR"), onPreferencesChange, {}, onRateChange, onRefresh, onBack,
             )
         }
     }

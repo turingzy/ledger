@@ -17,13 +17,13 @@ import org.junit.Test
 class AnalyticsTransactionSheetTest {
     @get:Rule val compose = createComposeRule()
 
-    @Test fun sharedLedgerRowsRetainCategoryNoteTimeAndFixedHeaderWhileScrolling() {
+    @Test fun sharedLedgerRowsShowTimeAndNoteUnderCategoryAndKeepHeaderFixedWhileScrolling() {
         val category = CategoryWithIcon(
             Category(1L, "餐饮", CategoryType.EXPENSE, 1L),
             Icon(1L, "ic_food", "餐饮", "res://"),
         )
         val entries = (1..20).map { index ->
-            AnalyticsTransaction(index.toLong(), LocalDate.of(2026, 11, 1), "支出$index", "银行卡", index * 100L,
+            AnalyticsTransaction(index.toLong(), LocalDate.of(2026, 11, 1), "支出$index", index * 100L,
                 category = category, time = LocalTime.of(8, 30).plusMinutes(index - 1L))
         }
         var dismissed = false
@@ -32,11 +32,13 @@ class AnalyticsTransactionSheetTest {
                 AnalyticsTransactionSheet("11月支出明细", "2026-11-01 至 2026-11-30", entries, { dismissed = true })
             }
         }
-        compose.onNodeWithText("银行卡 · 支出1").assertIsDisplayed()
-        compose.onNodeWithText("08:30").assertIsDisplayed()
-        compose.onNodeWithText("−¥1.00").assertIsDisplayed()
-        compose.onNode(hasScrollAction()).performScrollToNode(hasText("银行卡 · 支出20"))
-        compose.onNodeWithText("银行卡 · 支出20").assertIsDisplayed()
+        val categoryBounds = compose.onAllNodesWithText("餐饮")[0].getUnclippedBoundsInRoot()
+        val timeBounds = compose.onNodeWithText("08:30 · 支出1").assertIsDisplayed().getUnclippedBoundsInRoot()
+        val amountBounds = compose.onNodeWithText("−¥1.00").assertIsDisplayed().getUnclippedBoundsInRoot()
+        assertTrue(timeBounds.left == categoryBounds.left && timeBounds.top >= categoryBounds.bottom)
+        assertTrue(timeBounds.left < amountBounds.left && timeBounds.top >= amountBounds.bottom)
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("08:49 · 支出20"))
+        compose.onNodeWithText("08:49 · 支出20").assertIsDisplayed()
         val title = compose.onNodeWithText("11月支出明细").assertIsDisplayed()
         val close = compose.onNodeWithContentDescription("关闭交易明细").assertIsDisplayed()
         assertTrue(close.getUnclippedBoundsInRoot().left < title.getUnclippedBoundsInRoot().left)
@@ -46,9 +48,9 @@ class AnalyticsTransactionSheetTest {
     @Test fun amountOrderKeepsLargestFirstAcrossDatesWithoutDateGroups() {
         val date = LocalDate.of(2026, 11, 1)
         val entries = listOf(
-            AnalyticsTransaction(1L, date.plusDays(2), "小额", "现金", 100L),
-            AnalyticsTransaction(2L, date, "大额", "现金", 300L),
-            AnalyticsTransaction(3L, date.plusDays(1), "中额", "现金", 200L),
+            AnalyticsTransaction(1L, date.plusDays(2), "小额", 100L),
+            AnalyticsTransaction(2L, date, "大额", 300L),
+            AnalyticsTransaction(3L, date.plusDays(1), "中额", 200L),
         )
         compose.setContent { LedgerTheme {
             AnalyticsTransactionSheet("餐饮", "2026-11-01 至 2026-11-30", entries, {}, groupByDate = false)
@@ -65,8 +67,8 @@ class AnalyticsTransactionSheetTest {
     @Test fun mixedMonthlyTransactionsShowBothTotalsOnTheSameLine() {
         val date = LocalDate.of(2026, 11, 1)
         val entries = listOf(
-            AnalyticsTransaction(1L, date, "餐饮", "现金", 12345L),
-            AnalyticsTransaction(2L, date.plusDays(1), "工资", "银行卡", 67890L,
+            AnalyticsTransaction(1L, date, "餐饮", 12345L),
+            AnalyticsTransaction(2L, date.plusDays(1), "工资", 67890L,
                 type = cn.turingzy.ledger.model.transaction.TransactionType.INCOME),
         )
         compose.setContent { LedgerTheme {

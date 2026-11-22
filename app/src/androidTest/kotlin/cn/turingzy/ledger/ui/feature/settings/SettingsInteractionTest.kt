@@ -135,13 +135,13 @@ class SettingsInteractionTest {
             }
         }
         compose.onNodeWithText("关于").performClick()
-        compose.onNodeWithText("1.0.0").assertIsDisplayed()
+        compose.onNodeWithText("Version 1.0.0").assertIsDisplayed()
         compose.runOnIdle { assertTrue(isSubpage) }
         compose.onNodeWithText("开源许可证").performClick()
         compose.onNodeWithText("Kotlin").assertIsDisplayed()
         compose.runOnIdle { assertTrue(isSubpage) }
         pressBack()
-        compose.onNodeWithText("1.0.0").assertIsDisplayed()
+        compose.onNodeWithText("Version 1.0.0").assertIsDisplayed()
         compose.runOnIdle { assertTrue(isSubpage) }
         val buttonTop = compose.onNodeWithContentDescription("返回").fetchSemanticsNode().boundsInRoot.top
         compose.mainClock.autoAdvance = false
@@ -152,6 +152,23 @@ class SettingsInteractionTest {
         compose.mainClock.advanceTimeBy(400)
         compose.mainClock.autoAdvance = true
         compose.onNodeWithText("卡面管理").assertIsDisplayed()
+    }
+
+    @Test
+    fun aboutShowsUpToDateOnlyAfterCheckingTheInstalledVersion() {
+        compose.setContent {
+            LedgerTheme {
+                AboutScreen("1.0", onDismissRequest = {}, onCheckLatest = { "1.0.0" })
+            }
+        }
+        compose.onNodeWithContentDescription("Ledger 应用图标").assertIsDisplayed()
+        compose.onNodeWithText("检查更新").assertDoesNotExist()
+        compose.onNodeWithText("已是最新").assertDoesNotExist()
+        val updates = compose.onNodeWithText("版本更新").assertTextEquals("版本更新", "Version 1.0.0")
+        val licenses = compose.onNodeWithText("开源许可证")
+        assertEquals(licenses.fetchSemanticsNode().boundsInRoot.height, updates.fetchSemanticsNode().boundsInRoot.height, 1f)
+        updates.performClick()
+        compose.onNodeWithText("已是最新").assertIsDisplayed()
     }
 
     @Test

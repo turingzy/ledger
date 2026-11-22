@@ -106,6 +106,7 @@ fun FormFieldFrameBase(
  * @param positionProvider 决定弹窗相对锚点显示位置的 [PopupPositionProvider]。
  * @param modifier 应用于内部滚动列表的修饰符。
  * @param maxHeight 下拉菜单的最大允许高度。
+ * @param menuWidth 弹出菜单的宽度。
  * @param optionTextColor 选项文字颜色。
  */
 @Composable
@@ -119,6 +120,7 @@ fun <T> DropdownMenuBase(
     modifier: Modifier = Modifier,
     maxHeight: Dp = LedgerStyle.dimensions.dropdownMaxHeight,
     optionTextColor: Color = LedgerStyle.colors.textPrimary,
+    menuWidth: Dp = LedgerStyle.dimensions.dropdownWidth,
 ) {
     val dimensions = LedgerStyle.dimensions
     val colors = LedgerStyle.colors
@@ -128,7 +130,7 @@ fun <T> DropdownMenuBase(
         properties = PopupProperties(focusable = true),
     ) {
         SurfaceBase(
-            Modifier.width(dimensions.dropdownWidth).height(minOf(maxHeight,
+            Modifier.width(menuWidth).height(minOf(maxHeight,
                 dimensions.dropdownItemHeight * options.size + LedgerStyle.spacing.extraSmall * 2)),
             shape = LedgerStyle.shapes.card, color = colors.surface,
             tonalElevation = LedgerStyle.spacing.none, shadowElevation = dimensions.dropdownShadow,

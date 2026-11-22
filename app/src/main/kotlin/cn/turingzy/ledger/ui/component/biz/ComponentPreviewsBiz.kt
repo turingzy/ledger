@@ -131,10 +131,10 @@ data class TransactionPreviewCase(val label: String, val detail: TransactionDeta
 
 class TransactionPreviewProvider : PreviewParameterProvider<TransactionPreviewCase> {
     override val values: Sequence<TransactionPreviewCase> = sequence {
-        fun detail(type: TransactionType, currency: String = "CNY", note: String? = null): TransactionDetail =
+        fun detail(type: TransactionType, currency: String = "CNY"): TransactionDetail =
             TransactionDetail(
                 Transaction(id = 1L, type = type, amount = 12345L, accountId = 1L, toAccountId = 2L,
-                    categoryId = 1L, transactionTime = 0L, note = note),
+                    categoryId = 1L, transactionTime = 0L),
                 Account(id = 1L, name = "来源账户", type = AccountType.DEBIT, currency = currency),
                 Account(id = 2L, name = "目标账户", type = AccountType.WALLET, currency = currency),
                 category(when (type) {
@@ -143,9 +143,11 @@ class TransactionPreviewProvider : PreviewParameterProvider<TransactionPreviewCa
                     TransactionType.TRANSFER -> "ic_transfer"
                 }, CategoryType.valueOf(type.name)),
             )
-        for (type in TransactionType.entries) for (currency in listOf("CNY", "USD")) for (note in listOf(null, "备注内容")) {
-            yield(TransactionPreviewCase("$type / $currency / note=$note", detail(type, currency, note)))
+        for (type in TransactionType.entries) for (currency in listOf("CNY", "USD")) {
+            yield(TransactionPreviewCase("$type / $currency", detail(type, currency)))
         }
+        val expense = detail(TransactionType.EXPENSE)
+        yield(TransactionPreviewCase("With note", expense.copy(transaction = expense.transaction.copy(note = "午餐"))))
         val transfer = detail(TransactionType.TRANSFER)
         yield(TransactionPreviewCase("Same currency different received", transfer.copy(transaction = transfer.transaction.copy(toAmount = 12000L))))
         val cross = transfer.copy(toAccount = transfer.toAccount?.copy(currency = "USD"))
@@ -153,11 +155,8 @@ class TransactionPreviewProvider : PreviewParameterProvider<TransactionPreviewCa
         yield(TransactionPreviewCase("Cross currency missing received", cross))
         yield(TransactionPreviewCase("Missing destination", transfer.copy(toAccount = null)))
         yield(TransactionPreviewCase("Hidden transfer", cross, hidden = true))
-        yield(TransactionPreviewCase("Deleted account", transfer.copy(account = transfer.account.copy(isDeleted = true))))
-        yield(TransactionPreviewCase("Deleted destination", transfer.copy(toAccount = transfer.toAccount?.copy(isDeleted = true))))
         yield(TransactionPreviewCase("Deleted category", transfer.copy(category = category("ic_transfer", CategoryType.TRANSFER, deleted = true))))
         yield(TransactionPreviewCase("Deleted transaction: no row", transfer.copy(transaction = transfer.transaction.copy(isDeleted = true))))
-        yield(TransactionPreviewCase("Long text", detail(TransactionType.EXPENSE, note = "较长备注：用于核对长文本与金额列布局")))
     }
 }
 
@@ -171,11 +170,9 @@ private fun TransactionPreview(@PreviewParameter(TransactionPreviewProvider::cla
             val transaction = detail.transaction
             TransactionItemBiz(
                 amount = transaction.amount, currency = detail.account.currency, type = transaction.type,
-                category = detail.category, accountName = detail.account.name, timeText = "00:00",
-                note = transaction.note, primaryCurrency = "CNY", hidden = case.hidden,
-                isDeleted = transaction.isDeleted, accountDeleted = detail.account.isDeleted,
-                destinationName = detail.toAccount?.name, destinationCurrency = detail.toAccount?.currency,
-                destinationDeleted = detail.toAccount?.isDeleted == true, receivedAmount = transaction.toAmount,
+                category = detail.category, timeText = "00:00", note = transaction.note, primaryCurrency = "CNY", hidden = case.hidden,
+                isDeleted = transaction.isDeleted, destinationCurrency = detail.toAccount?.currency,
+                receivedAmount = transaction.toAmount,
             )
         }
     }
@@ -188,15 +185,15 @@ private fun TransactionProjectionPreview() {
         CardBase {
             TransactionItemBiz(
                 amount = 1234L, currency = "USD", type = TransactionType.EXPENSE, category = null,
-                accountName = "投影账户", timeText = "09:30", note = "分类资料缺失，备注保留", primaryCurrency = "CNY",
+                timeText = "09:30", primaryCurrency = "CNY",
             )
             TransactionItemBiz(
                 amount = 0L, currency = "CNY", type = TransactionType.INCOME, category = null,
-                accountName = "投影账户", timeText = "", primaryCurrency = "CNY",
+                timeText = "", primaryCurrency = "CNY",
             )
             TransactionItemBiz(
                 amount = Long.MIN_VALUE, currency = "USD", type = TransactionType.EXPENSE,
-                category = category("ic_food"), accountName = "长金额账户", timeText = "09:30", primaryCurrency = "CNY",
+                category = category("ic_food"), timeText = "09:30", primaryCurrency = "CNY",
             )
         }
     }

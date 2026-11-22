@@ -65,6 +65,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -435,6 +436,7 @@ internal fun RecordTransactionContent(
                         if (type != TransactionType.TRANSFER) RecordCompactSelector(
                             accountName ?: textResources.getString(cn.turingzy.ledger.R.string.ui_select_account), MaterialSymbols.AccountBalanceWallet, onAccountClick,
                             Modifier.weight(1f, fill = false), textResources.getString(cn.turingzy.ledger.R.string.ui_select_account),
+                            required = true,
                         )
                         RecordCompactSelector(timeLabel, MaterialSymbols.Schedule, onTimeClick, description = textResources.getString(R.string.ui_select_time))
                         if (primaryAmountLabel != null) RecordCompactSelector(
@@ -531,6 +533,7 @@ private fun PrimaryAmountEditor(
     )
 }
 
+/** Displays a compact entry control and marks account fields that must be filled. */
 @Composable
 private fun RecordCompactSelector(
     label: String,
@@ -539,17 +542,29 @@ private fun RecordCompactSelector(
     modifier: Modifier = Modifier,
     description: String,
     enabled: Boolean = true,
+    required: Boolean = false,
 ) {
+    val requiredDescription = if (required) stringResource(R.string.ui_required_field) else null
     Row(
         modifier.height(24.dp).clip(LedgerStyle.shapes.field).background(MaterialTheme.colorScheme.surface)
-            .semantics { contentDescription = description }
+            .semantics {
+                contentDescription = description
+                if (requiredDescription != null) stateDescription = requiredDescription
+            }
             .clickable(enabled = enabled, interactionSource = remember { MutableInteractionSource() }, indication = LocalIndication.current, onClick = onClick)
             .padding(horizontal = LedgerStyle.spacing.medium),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.extraSmall),
     ) {
         if (icon != null) Icon(icon, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(label, Modifier.weight(1f, fill = false), fontSize = LedgerStyle.typography.label.fontSize, maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (required) RequiredAccountMark()
     }
+}
+
+/** Uses the theme error color to mark a mandatory account selection. */
+@Composable
+private fun RequiredAccountMark() {
+    Text("*", style = LedgerStyle.typography.label, color = MaterialTheme.colorScheme.error)
 }
 
 @Composable
@@ -628,9 +643,13 @@ private fun TransferAccountSelector(
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val colors = MaterialTheme.colorScheme
+    val requiredDescription = stringResource(R.string.ui_required_field)
     Column(
         modifier.clip(LedgerStyle.shapes.card)
-            .semantics(mergeDescendants = true) { contentDescription = "选择${label}账户" }
+            .semantics(mergeDescendants = true) {
+                contentDescription = "选择${label}账户"
+                stateDescription = requiredDescription
+            }
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = LocalIndication.current,
@@ -640,7 +659,13 @@ private fun TransferAccountSelector(
         verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.extraSmall),
         horizontalAlignment = alignment,
     ) {
-        Text(label, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.tiny),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(label, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+            RequiredAccountMark()
+        }
         Text(
             accountName ?: textResources.getString(cn.turingzy.ledger.R.string.ui_select_account),
             style = MaterialTheme.typography.bodyMedium,

@@ -2,7 +2,8 @@
   <string name="ui_source_code_on_github">Source code on GitHub</string>
   <string name="ui_hex_color">HEX color</string>
   <string name="ui_ledger_app_icon">Ledger app icon</string>
-  <string name="ui_ledger_is_a_local_first_personal_finance_app">Ledger is a local-first personal finance app for tracking income, expenses and accounts. Your data stays on your device.</string>
+  <string name="ui_about_tagline">Clear records, down to the essentials</string>
+  <string name="ui_about_version_updates">Version updates</string>
   <string name="ui_mon">Mon</string>
   <string name="ui_wed">Wed</string>
   <string name="ui_previous_period">Previous period</string>
@@ -154,7 +155,6 @@
   <string name="ui_no_matching_transactions">No matching transactions</string>
   <string name="ui_no_transactions_for_this_period_tap_to_add">No transactions for this period. Tap + to add one.</string>
   <string name="ui_view_app_source_code">View app source code</string>
-  <string name="ui_check_for_updates">Check for updates</string>
   <string name="ui_could_not_check_updates_please_try_again">Could not check updates. Please try again.</string>
   <string name="ui_loading_transactions">Loading transactions</string>
   <string name="ui_spending_calendar">Spending calendar</string>
@@ -215,6 +215,7 @@
   <string name="ui_select_time">Select time</string>
   <string name="ui_select_month">Select month</string>
   <string name="ui_select_account">Select account</string>
+  <string name="ui_required_field">Required</string>
   <string name="ui_select_ledger_period">Select ledger period</string>
   <string name="ui_select_destination_account">Select destination account</string>
   <string name="ui_select_source_account">Select source account</string>

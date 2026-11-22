@@ -2,6 +2,10 @@ package cn.turingzy.ledger.ui.feature.analytics.calendar
 
 import cn.turingzy.ledger.ui.feature.analytics.AnalyticsDashboardState
 import cn.turingzy.ledger.ui.feature.analytics.AnalyticsDashboardViewModel
+import cn.turingzy.ledger.ui.feature.analytics.AnalyticsTransactionRows
+import cn.turingzy.ledger.ui.feature.bill.BillViewModel
+import cn.turingzy.ledger.ui.feature.bill.detail.TransactionDetailsViewModel
+import cn.turingzy.ledger.ui.component.navigation.LocalBottomBarContentPadding
 import cn.turingzy.ledger.ui.feature.analytics.component.analyticsChartInfoColor
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -10,7 +14,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -43,7 +46,6 @@ import cn.turingzy.ledger.ui.component.biz.currencySymbolBiz
 import cn.turingzy.ledger.ui.component.base.*
 import cn.turingzy.ledger.ui.component.biz.AmountSizeBiz
 import cn.turingzy.ledger.ui.component.biz.AmountTextBiz
-import cn.turingzy.ledger.ui.component.biz.TransactionItemBiz
 import cn.turingzy.ledger.ui.interaction.UiInteractionKind
 import cn.turingzy.ledger.ui.interaction.rememberUiEvent
 import cn.turingzy.ledger.ui.interaction.uiSelectable
@@ -61,7 +63,7 @@ import java.time.format.DateTimeFormatter
  * @param modifier 修饰符。
  * @param onRecordTransaction 在选中日期点击记账时的回调。
  * @param viewModel 统计看板 ViewModel。
- * @param onTransactionClick 点击单笔交易明细时的回调。
+ * @param transactionViewModel 交易详情与编辑状态。
  * @param snackbarHostState 用于展示 Snackbar 消息的状态持有者。
  */
 @Composable
@@ -71,19 +73,21 @@ internal fun ConsumptionCalendarScreen(
     modifier: Modifier = Modifier,
     onRecordTransaction: (LocalDate) -> Unit = {},
     viewModel: AnalyticsDashboardViewModel = hiltViewModel(),
-    onTransactionClick: (Long) -> Unit = {},
-    snackbarHostState: SnackbarHostState? = null,
+    transactionViewModel: TransactionDetailsViewModel,
+    snackbarHostState: SnackbarHostState,
+    billViewModel: BillViewModel = hiltViewModel(),
 ) {
     val dashboard by viewModel.uiState.collectAsStateWithLifecycle()
     CompositionLocalProvider(LocalCurrencyBiz provides dashboard.currency) {
         Box(modifier.fillMaxSize()) {
             ConsumptionCalendarContent(
                 dashboard, initialMonth, onBack,
-                onRecordTransaction = onRecordTransaction, onTransactionClick = onTransactionClick,
+                onRecordTransaction = onRecordTransaction,
+                billViewModel = billViewModel,
+                transactionViewModel = transactionViewModel,
+                snackbarHostState = snackbarHostState,
             )
-            snackbarHostState?.let { host ->
-                SnackbarHost(host, Modifier.align(Alignment.BottomCenter).navigationBarsPadding())
-            }
+            SnackbarHost(snackbarHostState, Modifier.align(Alignment.BottomCenter).navigationBarsPadding())
         }
     }
 }
@@ -97,7 +101,10 @@ internal fun ConsumptionCalendarScreen(
  * @param modifier 修饰符。
  * @param today 今日日期。
  * @param onRecordTransaction 在选中日期记账的回调。
- * @param onTransactionClick 点击单笔交易明细的回调。
+ * @param onTransactionClick 点击未绑定账单操作的交易行时的回调。
+ * @param billViewModel 处理批量账单操作的状态。
+ * @param transactionViewModel 交易详情与编辑状态。
+ * @param snackbarHostState 账单操作失败时的消息状态。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -109,6 +116,9 @@ internal fun ConsumptionCalendarContent(
     today: LocalDate = LocalDate.now(),
     onRecordTransaction: (LocalDate) -> Unit = {},
     onTransactionClick: (Long) -> Unit = {},
+    billViewModel: BillViewModel? = null,
+    transactionViewModel: TransactionDetailsViewModel? = null,
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
@@ -126,102 +136,95 @@ internal fun ConsumptionCalendarContent(
     val dayFormatter = remember(configuration) { DateTimeFormatter.ofPattern(if (configuration.locales[0].language == "en") "MMM d" else "M月d日", configuration.locales[0]) }
     val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
     val listState = rememberLazyListState()
-    PageScaffoldBase(
-        title = textResources.getString(R.string.ui_spending_calendar),
-        modifier = modifier,
-        onBack = onBack,
-        titleStyle = LedgerStyle.typography.detailPageTitle,
-        closeInsteadOfBack = true,
-        scrolled = listState.canScrollBackward,
-    ) { headerPadding ->
-        LazyColumn(
-            Modifier.fillMaxSize().testTag("consumptionCalendarList"),
-            state = listState,
-            contentPadding = PaddingValues(
-                start = LedgerStyle.spacing.pageHorizontal,
-                end = LedgerStyle.spacing.pageHorizontal,
-                top = headerPadding.calculateTopPadding() + LedgerStyle.spacing.sectionGap,
-                bottom = LedgerStyle.spacing.block,
-            ),
-        ) {
-            if (!dashboard.amountsAvailable) {
-                item(key = "missing_rates") {
-                    EmptyStateBase(title = textResources.getString(R.string.ui_exchange_rate_needed_refresh_or_enter_a_rate))
-                }
-            } else {
-                item(key = "calendar") {
-                    CardBase(
-                        shape = LedgerStyle.shapes.summaryCard,
-                        outlined = true,
-                        contentPadding = PaddingValues(horizontal = LedgerStyle.spacing.calendarCardHorizontal, vertical = LedgerStyle.spacing.calendarCardVertical),
-                        contentSpacing = LedgerStyle.spacing.inlineGap,
-                    ) {
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            PeriodPickerPill(
-                                text = month.format(DateTimeFormatter.ofPattern(if (configuration.locales[0].language == "en") "MMM yyyy" else "yyyy年M月", configuration.locales[0])),
-                                onClick = { showPicker = true },
-                                background = colors.background,
-                            )
-                            Spacer(Modifier.weight(1f))
-                            Column(horizontalAlignment = Alignment.End) {
-                                Text(
-                                    textResources.getString(R.string.calendar_month_expense, month.monthValue).trim(),
-                                    style = LedgerStyle.typography.calendarMonthLabel, color = colors.textSecondary,
-                                )
-                                AmountTextBiz(data.totalExpense, dashboard.currency, textStyle = LedgerStyle.typography.calendarMonthAmount)
-                            }
-                        }
-                        ConsumptionMonthGrid(data, selectedDate, today, { selectedEpoch = it.toEpochDay() })
-                        Row(
-                            Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.extraSmall, Alignment.End),
-                            verticalAlignment = Alignment.CenterVertically,
+    AnalyticsTransactionRows(
+        transactions = entries,
+        timeText = { it.time?.format(timeFormatter).orEmpty() },
+        viewModel = billViewModel,
+        transactionViewModel = transactionViewModel,
+        snackbarHostState = snackbarHostState,
+        onTransactionClick = onTransactionClick,
+    ) { transactionRow ->
+        PageScaffoldBase(
+            title = textResources.getString(R.string.ui_spending_calendar),
+            modifier = modifier,
+            onBack = onBack,
+            titleStyle = LedgerStyle.typography.detailPageTitle,
+            closeInsteadOfBack = true,
+            scrolled = listState.canScrollBackward,
+        ) { headerPadding ->
+            LazyColumn(
+                Modifier.fillMaxSize().testTag("consumptionCalendarList"),
+                state = listState,
+                contentPadding = PaddingValues(
+                    start = LedgerStyle.spacing.pageHorizontal,
+                    end = LedgerStyle.spacing.pageHorizontal,
+                    top = headerPadding.calculateTopPadding() + LedgerStyle.spacing.sectionGap,
+                    bottom = LedgerStyle.spacing.block + LocalBottomBarContentPadding.current,
+                ),
+            ) {
+                if (!dashboard.amountsAvailable) {
+                    item(key = "missing_rates") {
+                        EmptyStateBase(title = textResources.getString(R.string.ui_exchange_rate_needed_refresh_or_enter_a_rate))
+                    }
+                } else {
+                    item(key = "calendar") {
+                        CardBase(
+                            shape = LedgerStyle.shapes.summaryCard,
+                            outlined = true,
+                            contentPadding = PaddingValues(horizontal = LedgerStyle.spacing.calendarCardHorizontal, vertical = LedgerStyle.spacing.calendarCardVertical),
+                            contentSpacing = LedgerStyle.spacing.inlineGap,
                         ) {
-                            Text(textResources.getString(R.string.ui_less), style = LedgerStyle.typography.chartLabel, color = colors.textSecondary)
-                            (0..4).forEach { level ->
-                                Box(Modifier.size(LedgerStyle.spacing.medium).background(calendarHeatColor(level), LedgerStyle.shapes.indicator))
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                PeriodPickerPill(
+                                    text = month.format(DateTimeFormatter.ofPattern(if (configuration.locales[0].language == "en") "MMM yyyy" else "yyyy年M月", configuration.locales[0])),
+                                    onClick = { showPicker = true },
+                                    background = colors.background,
+                                )
+                                Spacer(Modifier.weight(1f))
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text(
+                                        textResources.getString(R.string.calendar_month_expense, month.monthValue).trim(),
+                                        style = LedgerStyle.typography.calendarMonthLabel, color = colors.textSecondary,
+                                    )
+                                    AmountTextBiz(data.totalExpense, dashboard.currency, textStyle = LedgerStyle.typography.calendarMonthAmount)
+                                }
                             }
-                            Text(textResources.getString(R.string.ui_more), style = LedgerStyle.typography.chartLabel, color = colors.textSecondary)
+                            ConsumptionMonthGrid(data, selectedDate, today, { selectedEpoch = it.toEpochDay() })
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.extraSmall, Alignment.End),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(textResources.getString(R.string.ui_less), style = LedgerStyle.typography.chartLabel, color = colors.textSecondary)
+                                (0..4).forEach { level ->
+                                    Box(Modifier.size(LedgerStyle.spacing.medium).background(calendarHeatColor(level), LedgerStyle.shapes.indicator))
+                                }
+                                Text(textResources.getString(R.string.ui_more), style = LedgerStyle.typography.chartLabel, color = colors.textSecondary)
+                            }
                         }
                     }
-                }
-                item(key = "day") {
-                    SectionHeaderBase(
-                        title = textResources.getString(R.string.calendar_day_count, selectedDate.format(dayFormatter), entries.size),
-                        variant = SectionHeaderVariantBase.Supporting,
-                        modifier = Modifier.padding(top = LedgerStyle.spacing.section, bottom = LedgerStyle.spacing.medium),
-                        actions = { AmountTextBiz(data.expenses[selectedDate] ?: 0L, dashboard.currency, size = AmountSizeBiz.Small) },
-                    )
-                }
-                if (entries.isEmpty()) item(key = "empty") {
-                    when {
-                        dashboard.loading -> EmptyStateBase(title = textResources.getString(R.string.ui_loading_transactions))
-                        else -> ConsumptionCalendarEmptyState(onRecord = { onRecordTransaction(selectedDate) })
-                    }
-                }
-                itemsIndexed(entries, key = { _, entry -> entry.id }) { index, entry ->
-                    val corners = LedgerStyle.shapes.summaryCard
-                    val square = CornerSize(LedgerStyle.spacing.none)
-                    CardBase(
-                        shape = corners.copy(
-                            topStart = if (index == 0) corners.topStart else square,
-                            topEnd = if (index == 0) corners.topEnd else square,
-                            bottomStart = if (index == entries.lastIndex) corners.bottomStart else square,
-                            bottomEnd = if (index == entries.lastIndex) corners.bottomEnd else square,
-                        ),
-                        contentPadding = PaddingValues(LedgerStyle.spacing.none),
-                        contentSpacing = LedgerStyle.spacing.none,
-                    ) {
-                        if (index > 0) DividerBase(Modifier.padding(
-                            start = LedgerStyle.dimensions.compactIconButton + LedgerStyle.spacing.rowHorizontal + LedgerStyle.spacing.sectionGap,
-                            end = LedgerStyle.spacing.rowHorizontal,
-                        ))
-                        TransactionItemBiz(
-                            amount = entry.amount, currency = entry.currency, type = entry.type,
-                            category = entry.category, accountName = entry.accountName,
-                            timeText = entry.time?.format(timeFormatter).orEmpty(), note = entry.note,
-                            onClick = { onTransactionClick(entry.id) },
+                    item(key = "day") {
+                        SectionHeaderBase(
+                            title = textResources.getString(R.string.calendar_day_count, selectedDate.format(dayFormatter), entries.size),
+                            variant = SectionHeaderVariantBase.Supporting,
+                            modifier = Modifier.padding(top = LedgerStyle.spacing.section, bottom = LedgerStyle.spacing.medium),
+                            actions = { AmountTextBiz(data.expenses[selectedDate] ?: 0L, dashboard.currency, size = AmountSizeBiz.Small) },
                         )
+                    }
+                    if (entries.isEmpty()) item(key = "empty") {
+                        when {
+                            dashboard.loading -> EmptyStateBase(title = textResources.getString(R.string.ui_loading_transactions))
+                            else -> ConsumptionCalendarEmptyState(onRecord = { onRecordTransaction(selectedDate) })
+                        }
+                    }
+                    itemsIndexed(entries, key = { _, entry -> entry.id }) { index, entry ->
+                        Column {
+                            if (index > 0) DividerBase(Modifier.padding(
+                                start = LedgerStyle.dimensions.compactIconButton + LedgerStyle.spacing.rowHorizontal + LedgerStyle.spacing.sectionGap,
+                                end = LedgerStyle.spacing.rowHorizontal,
+                            ))
+                            transactionRow(entry, index == 0, index == entries.lastIndex)
+                        }
                     }
                 }
             }

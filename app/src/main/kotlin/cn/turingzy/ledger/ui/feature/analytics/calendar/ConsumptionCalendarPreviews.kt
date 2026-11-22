@@ -30,7 +30,7 @@ internal class ConsumptionCalendarPreviewProvider : PreviewParameterProvider<Ana
             Category(id = 1L, name = "餐饮", type = CategoryType.EXPENSE, iconId = 1L),
             Icon(id = 1L, keyName = "ic_food", displayName = "餐饮", iconUri = ""),
         )
-        val entry = AnalyticsTransaction(1L, previewDay, "午餐", "银行卡", 12345L, category = category, time = LocalTime.NOON)
+        val entry = AnalyticsTransaction(1L, previewDay, "午餐", 12345L, category = category, time = LocalTime.NOON)
         yield(AnalyticsDashboardState(days = mapOf(previewDay to AnalyticsDay(12345L, 0L)), transactions = listOf(entry), loading = false))
         yield(AnalyticsDashboardState(days = mapOf(previewDay to AnalyticsDay(7200L, 0L)), transactions = listOf(
             entry.copy(currency = "USD", amount = 1000L, primaryAmount = 7200L),

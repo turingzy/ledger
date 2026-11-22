@@ -6,7 +6,7 @@
   <string name="preference_theme">Theme</string>
   <string name="light_theme">Light</string>
   <string name="dark_theme">Dark</string>
-  <string name="primary_currency">Primary currency</string>
+  <string name="display_currency">Display currency</string>
   <string name="account_currency">Account currency</string>
   <string name="save">Save</string>
   <string name="exchange_rates">Exchange rates</string>

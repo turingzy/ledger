@@ -102,8 +102,8 @@ private fun MonthlyCashflow(days: Map<LocalDate, AnalyticsDay>, month: YearMonth
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val currencySymbol = currencySymbolBiz(LocalCurrencyBiz.current)
     val months = remember(days, month) { monthlyAnalytics(days, month) }
-    var selectedMonth by remember(month, months) { mutableStateOf<YearMonth?>(null) }
-    var showDetails by remember(month, months) { mutableStateOf(false) }
+    var selectedMonth by remember(month) { mutableStateOf<YearMonth?>(null) }
+    var showDetails by remember(month) { mutableStateOf(false) }
     val focus = months.map { item -> animateFloatAsState(if (selectedMonth == null || selectedMonth == item.month) 1f else 0.22f, label = "month focus").value }
     val colors = MaterialTheme.colorScheme
     val selected = months.firstOrNull { it.month == selectedMonth }

@@ -315,6 +315,7 @@ class RecordTransactionSheetTest {
     @Test
     fun accountPickerCentersItsTitleAndClosesFromTheLeft() {
         showSheet {}
+        compose.onNodeWithText("*").assertIsDisplayed()
         compose.onNodeWithContentDescription("选择账户").performClick()
         val drawer = compose.onNodeWithTag("recordAccountDrawer")
         val title = compose.onNode(hasText("选择账户") and hasAnyAncestor(hasTestTag("recordAccountDrawer")))

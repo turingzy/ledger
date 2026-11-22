@@ -1,25 +1,23 @@
 package cn.turingzy.ledger.ui.feature.settings.screen
 
-import cn.turingzy.ledger.ui.feature.settings.component.SettingsActionRow
-import cn.turingzy.ledger.ui.feature.settings.component.SettingsSubpageScaffold
-import cn.turingzy.ledger.ui.feature.settings.component.settingsPageScroll
-import cn.turingzy.ledger.ui.theme.LedgerStyle
-import cn.turingzy.ledger.ui.component.base.SurfaceBase
-import cn.turingzy.ledger.ui.component.base.BaseAlertDialog
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,17 +28,28 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.R
-import kotlinx.coroutines.CancellationException
 import cn.turingzy.ledger.data.repository.settings.AppUpdateRepository
+import cn.turingzy.ledger.ui.component.MaterialSymbols
+import cn.turingzy.ledger.ui.component.base.BaseAlertDialog
+import cn.turingzy.ledger.ui.component.base.CardBase
+import cn.turingzy.ledger.ui.component.base.ListRowBase
+import cn.turingzy.ledger.ui.component.base.SurfaceBase
+import cn.turingzy.ledger.ui.feature.settings.component.SettingsActionRow
+import cn.turingzy.ledger.ui.feature.settings.component.SettingsSubpageScaffold
+import cn.turingzy.ledger.ui.feature.settings.component.settingsPageScroll
+import cn.turingzy.ledger.ui.theme.LedgerStyle
+import cn.turingzy.ledger.ui.theme.LedgerTheme
+import kotlinx.coroutines.CancellationException
 import timber.log.Timber
 
 /**
@@ -53,6 +62,8 @@ private enum class UpdateCheckState {
     CHECKING,
     /** 检测到有新版本可用。 */
     AVAILABLE,
+    /** 已确认当前版本是最新版本。 */
+    UP_TO_DATE,
 }
 
 /**
@@ -75,7 +86,7 @@ fun AboutScreen(
     onOpenSourceClick: () -> Unit = {},
     onCheckLatest: suspend () -> String? = { null },
 ) {
-    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
+    val textResources = LocalResources.current
     var updateState by remember { mutableStateOf(UpdateCheckState.IDLE) }
     val uriHandler = LocalUriHandler.current
     var latestVersion by remember { mutableStateOf<String?>(null) }
@@ -86,16 +97,19 @@ fun AboutScreen(
             try {
                 val latest = onCheckLatest()
                 latestVersion = latest
-                if (latest != null && AppUpdateRepository.isNewer(latest, versionName)) updateState = UpdateCheckState.AVAILABLE
-                else {
-                    updateState = UpdateCheckState.IDLE
-                    updateMessage = if (latest == null) textResources.getString(cn.turingzy.ledger.R.string.ui_no_release_available) else textResources.getString(cn.turingzy.ledger.R.string.ui_you_are_up_to_date)
+                updateState = when {
+                    latest == null -> {
+                        updateMessage = textResources.getString(R.string.ui_no_release_available)
+                        UpdateCheckState.IDLE
+                    }
+                    AppUpdateRepository.isNewer(latest, versionName) -> UpdateCheckState.AVAILABLE
+                    else -> UpdateCheckState.UP_TO_DATE
                 }
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (error: Exception) {
                 Timber.e(error, "Update check failed")
                 updateState = UpdateCheckState.IDLE
-                updateMessage = error.message ?: textResources.getString(cn.turingzy.ledger.R.string.ui_could_not_check_updates_please_try_again)
+                updateMessage = error.message ?: textResources.getString(R.string.ui_could_not_check_updates_please_try_again)
             }
         }
     }
@@ -104,10 +118,10 @@ fun AboutScreen(
         onDismissRequest = { updateMessage = null }, text = { Text(updateMessage.orEmpty()) },
         onConfirm = { updateMessage = null },
         showCancel = false,
-        confirmLabel = textResources.getString(cn.turingzy.ledger.R.string.ui_ok),
+        confirmLabel = textResources.getString(R.string.ui_ok),
     )
     SettingsSubpageScaffold(
-        title = textResources.getString(cn.turingzy.ledger.R.string.ui_about),
+        title = textResources.getString(R.string.ui_about),
         onBack = onDismissRequest,
         modifier = modifier,
     ) {
@@ -149,66 +163,156 @@ private fun AboutContent(
     modifier: Modifier = Modifier,
     latestVersion: String? = null,
 ) {
-    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
-    val colors = MaterialTheme.colorScheme
-    Column(modifier.fillMaxWidth().settingsPageScroll()) {
-        SurfaceBase(
-            onClick = onCheckUpdate,
-            enabled = updateState != UpdateCheckState.CHECKING,
-            modifier = Modifier.semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_check_for_updates) },
-            shape = LedgerStyle.shapes.card,
-            color = colors.surface,
-            border = BorderStroke(0.5.dp, colors.onSurface.copy(alpha = 0.28f)),
+    Column(
+        modifier.fillMaxWidth().settingsPageScroll(),
+        verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.rowVertical),
+    ) {
+        AboutHero()
+        Column(
+            Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+            verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.rowVertical),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(LedgerStyle.spacing.large),
-                horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.section),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Box(Modifier.size(80.dp).clip(CircleShape)) {
-                    Image(painterResource(R.drawable.ic_launcher_background), null, Modifier.fillMaxSize())
-                    Image(painterResource(R.drawable.ic_launcher_foreground), textResources.getString(cn.turingzy.ledger.R.string.ui_ledger_app_icon), Modifier.fillMaxSize())
-                }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.extraSmall)) {
-                    Text("Ledger", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            versionName,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = colors.onSurfaceVariant.copy(alpha = 0.65f),
-                        )
-                        when (updateState) {
-                            UpdateCheckState.CHECKING -> CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 1.5.dp)
-                            UpdateCheckState.AVAILABLE -> Text(latestVersion.orEmpty(), style = MaterialTheme.typography.bodySmall, color = colors.primary)
-                            UpdateCheckState.IDLE -> Unit
-                        }
-                    }
-                    Text("TuringZY", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-                }
+            AboutUpdateRow(
+                versionName = versionName,
+                state = updateState,
+                latestVersion = latestVersion,
+                onCheckUpdate = onCheckUpdate,
+                modifier = Modifier.weight(1f),
+            )
+            SettingsActionRow(
+                stringResource(R.string.ui_open_source_licenses),
+                onOpenSourceClick,
+                modifier = Modifier.weight(1f),
+                subtitle = stringResource(R.string.ui_open_source_libraries),
+            )
+        }
+        SettingsActionRow(stringResource(R.string.ui_license), onLicenseClick, subtitle = "MIT License", externalLink = true)
+        SettingsActionRow(
+            stringResource(R.string.ui_source_code_on_github),
+            onSourceClick,
+            subtitle = stringResource(R.string.ui_view_app_source_code),
+            externalLink = true,
+        )
+        Text(
+            stringResource(R.string.ui_about_credit) + "\n" + stringResource(R.string.ui_about_copyright),
+            Modifier.fillMaxWidth().padding(top = LedgerStyle.spacing.medium),
+            style = LedgerStyle.typography.bodySmall,
+            color = LedgerStyle.colors.textSecondary,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+/** Centers the project artwork and tagline above the settings actions. */
+@Composable
+private fun AboutHero() {
+    val colors = LedgerStyle.colors
+    Column(
+        Modifier.fillMaxWidth().padding(bottom = LedgerStyle.spacing.page),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        SurfaceBase(
+            modifier = Modifier.size(100.dp),
+            shape = RoundedCornerShape(25.dp),
+            color = colors.surface,
+            shadowElevation = 8.dp,
+        ) {
+            Box {
+                Image(
+                    painter = painterResource(R.mipmap.ic_launcher_background),
+                    contentDescription = null,
+                    modifier = Modifier.matchParentSize(),
+                )
+                // Adaptive icon layers include a 25% inset on each side of the visible viewport.
+                Image(
+                    painter = painterResource(R.mipmap.ic_launcher_foreground),
+                    contentDescription = stringResource(R.string.ui_ledger_app_icon),
+                    modifier = Modifier.matchParentSize().scale(1.5f),
+                )
             }
         }
-        Spacer(Modifier.height(24.dp))
         Text(
-            textResources.getString(cn.turingzy.ledger.R.string.ui_ledger_is_a_local_first_personal_finance_app),
-            style = MaterialTheme.typography.bodyMedium,
-            color = colors.onSurfaceVariant,
+            stringResource(R.string.app_name),
+            Modifier.padding(top = LedgerStyle.spacing.large),
+            style = LedgerStyle.typography.screenTitle,
+            color = colors.textPrimary,
         )
-        Spacer(Modifier.height(24.dp))
-        SettingsActionRow(textResources.getString(cn.turingzy.ledger.R.string.ui_open_source_licenses), onOpenSourceClick, subtitle = textResources.getString(cn.turingzy.ledger.R.string.ui_open_source_libraries))
-        Spacer(Modifier.height(8.dp))
-        SettingsActionRow(textResources.getString(cn.turingzy.ledger.R.string.ui_license), onLicenseClick, subtitle = "MIT License", externalLink = true)
-        Spacer(Modifier.height(8.dp))
-        SettingsActionRow(textResources.getString(cn.turingzy.ledger.R.string.ui_source_code_on_github), onSourceClick, subtitle = textResources.getString(cn.turingzy.ledger.R.string.ui_view_app_source_code), externalLink = true)
+        Text(
+            stringResource(R.string.ui_about_tagline),
+            Modifier.padding(top = LedgerStyle.spacing.large),
+            style = LedgerStyle.typography.bodyMedium,
+            color = colors.textSecondary,
+            textAlign = TextAlign.Center,
+        )
     }
+}
+
+/** Shows the installed version and displays the release status after a check. */
+@Composable
+private fun AboutUpdateRow(
+    versionName: String,
+    state: UpdateCheckState,
+    latestVersion: String?,
+    onCheckUpdate: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = LedgerStyle.colors
+    val status = when (state) {
+        UpdateCheckState.UP_TO_DATE -> stringResource(R.string.ui_you_are_up_to_date)
+        UpdateCheckState.AVAILABLE -> latestVersion?.let(::aboutVersionLabel)
+        UpdateCheckState.IDLE, UpdateCheckState.CHECKING -> null
+    }
+    CardBase(modifier, contentPadding = PaddingValues(LedgerStyle.spacing.none)) {
+        ListRowBase(
+            headline = { Text(stringResource(R.string.ui_about_version_updates), style = MaterialTheme.typography.bodyLarge) },
+            supportingText = {
+                Text(
+                    stringResource(R.string.ui_about_installed_version, aboutVersionLabel(versionName)),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.textSecondary,
+                )
+            },
+            supportingSpacing = LedgerStyle.spacing.tiny,
+            modifier = Modifier.fillMaxHeight().heightIn(min = LedgerStyle.dimensions.supportingRowMinHeight),
+            trailing = {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.small),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (state == UpdateCheckState.CHECKING) {
+                        CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                    } else if (status != null) {
+                        Text(
+                            status,
+                            Modifier.widthIn(max = 128.dp)
+                                .background(colors.fieldBackground, LedgerStyle.shapes.pill)
+                                .padding(horizontal = LedgerStyle.spacing.medium, vertical = LedgerStyle.spacing.extraSmall),
+                            style = LedgerStyle.typography.label,
+                            color = colors.textSecondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    Icon(MaterialSymbols.ChevronRight, null, Modifier.size(LedgerStyle.icons.default), tint = colors.textSecondary)
+                }
+            },
+            enabled = state != UpdateCheckState.CHECKING,
+            onClick = onCheckUpdate,
+        )
+    }
+}
+
+/** Pads legacy numeric versions such as 1.0 for display without changing their release comparison. */
+private fun aboutVersionLabel(version: String): String {
+    val parts = version.removePrefix("v").removePrefix("V").split('.')
+    if (parts.any { it.isEmpty() || !it.all(Char::isDigit) }) return version
+    return (parts + List((3 - parts.size).coerceAtLeast(0)) { "0" }).joinToString(".")
 }
 
 @Preview(showBackground = true)
 @Composable
 private fun AboutContentPreview() {
-    MaterialTheme {
-        AboutContent("1.0.0", UpdateCheckState.AVAILABLE, onOpenSourceClick = {}, onLicenseClick = {}, onSourceClick = {}, onCheckUpdate = {})
+    LedgerTheme {
+        AboutContent("1.0.0", UpdateCheckState.UP_TO_DATE, onOpenSourceClick = {}, onLicenseClick = {}, onSourceClick = {}, onCheckUpdate = {})
     }
 }

@@ -29,9 +29,9 @@ internal class AnalyticsPreviewProvider : PreviewParameterProvider<AnalyticsPrev
         yield(AnalyticsPreviewCase(empty, ready))
         yield(AnalyticsPreviewCase(empty.copy(amountsAvailable = false), ready))
         val transactions = listOf(
-            AnalyticsTransaction(1L, start.plusDays(2), "午餐", "银行卡", 12500L),
-            AnalyticsTransaction(2L, start.plusDays(3), "工资", "银行卡", 600000L, TransactionType.INCOME),
-            AnalyticsTransaction(3L, start.plusDays(4), "外币消费", "银行卡", 1000L, currency = "USD", primaryAmount = 7200L),
+            AnalyticsTransaction(1L, start.plusDays(2), "午餐", 12500L),
+            AnalyticsTransaction(2L, start.plusDays(3), "工资", 600000L, TransactionType.INCOME),
+            AnalyticsTransaction(3L, start.plusDays(4), "外币消费", 1000L, currency = "USD", primaryAmount = 7200L),
         )
         val dashboard = ready.copy(
             days = mapOf(

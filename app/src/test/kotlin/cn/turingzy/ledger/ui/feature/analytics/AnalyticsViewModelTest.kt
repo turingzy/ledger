@@ -146,8 +146,8 @@ class AnalyticsViewModelTest {
             assertEquals(6000L, topRanking.totalAmount)
             assertEquals(1, topRanking.transactions.size)
             assertEquals(6000L, topRanking.transactions.single().amount)
-            assertEquals("Food", topRanking.transactions.single().note)
-            assertEquals("Card", topRanking.transactions.single().accountName)
+            assertEquals("", topRanking.transactions.single().note)
+            assertEquals(testTx1, topRanking.transactions.single().detail)
             assertEquals(0.6f, topRanking.percentage, 0.01f)
         }
     }

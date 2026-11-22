@@ -128,7 +128,7 @@ fun LedgerNavHost(
                                 initialMonth = YearMonth.parse(route.month),
                                 onBack = { navController.popBackStack() },
                                 onRecordTransaction = { recordDate = it.toEpochDay() },
-                                onTransactionClick = detailsViewModel::selectTransaction,
+                                transactionViewModel = detailsViewModel,
                                 snackbarHostState = snackbar,
                             )
                         }

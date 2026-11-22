@@ -48,7 +48,6 @@ class ForeignTransactionAmountBizTest {
                 CompositionLocalProvider(LocalCurrencyBiz provides primary) {
                     TransactionRowBiz(
                         categoryName = "餐饮",
-                        supportingText = "外币账户",
                         timeText = "12:00",
                         amount = 1100L,
                         type = type,

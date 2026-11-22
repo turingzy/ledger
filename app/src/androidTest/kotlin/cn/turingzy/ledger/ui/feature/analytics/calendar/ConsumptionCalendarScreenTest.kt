@@ -44,8 +44,8 @@ class ConsumptionCalendarScreenTest {
         val dashboard = AnalyticsDashboardState(
             days = mapOf(day to AnalyticsDay(12345L, 99900L)), loading = false,
             transactions = listOf(
-                AnalyticsTransaction(1L, day, "午餐", "银行卡", 12345L, category = category, time = LocalTime.NOON),
-                AnalyticsTransaction(2L, day, "工资", "银行卡", 99900L, TransactionType.INCOME),
+                AnalyticsTransaction(1L, day, "午餐", 12345L, category = category, time = LocalTime.NOON),
+                AnalyticsTransaction(2L, day, "工资", 99900L, TransactionType.INCOME),
             ),
         )
         var openedTransaction: Long? = null
@@ -67,11 +67,10 @@ class ConsumptionCalendarScreenTest {
         compose.onNodeWithText("二").assertIsNotSelected()
         compose.onNodeWithText("11月10日 共1笔消费").assertExists()
         compose.onNodeWithContentDescription("${today.plusDays(1)}，支出¥0.00").assertIsNotEnabled()
-        compose.onNode(hasScrollAction()).performScrollToNode(hasText("银行卡 · 午餐"))
-        compose.onNodeWithText("银行卡 · 午餐").assertIsDisplayed().performClick()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("12:00 · 午餐"))
+        compose.onNodeWithText("12:00 · 午餐").assertIsDisplayed().performClick()
         compose.runOnIdle { assertEquals(1L, openedTransaction) }
         compose.onNodeWithText("−¥123.45").assertIsDisplayed()
-        compose.onNodeWithText("12:00").assertIsDisplayed()
         compose.onNodeWithText("工资").assertDoesNotExist()
     }
 

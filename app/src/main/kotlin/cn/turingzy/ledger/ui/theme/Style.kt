@@ -117,6 +117,7 @@ object AppDimensions {
     val compactToolbarHeight = 44.dp
     val supportingRowMinHeight = 58.dp
     val dropdownWidth = 160.dp
+    val currencyDropdownWidth = 240.dp
     val dropdownMaxHeight = 200.dp
     val dropdownItemHeight = 36.dp
     val dropdownShadow = 6.dp

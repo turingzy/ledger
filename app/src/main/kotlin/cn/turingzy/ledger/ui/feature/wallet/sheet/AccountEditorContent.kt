@@ -6,6 +6,7 @@ import cn.turingzy.ledger.ui.component.base.ButtonVariantBase
 import cn.turingzy.ledger.ui.component.base.ActionButtonBase
 import cn.turingzy.ledger.ui.component.input.FormTextField
 import cn.turingzy.ledger.ui.theme.LedgerStyle
+import cn.turingzy.ledger.ui.component.biz.currencyOptionsBiz
 import cn.turingzy.ledger.ui.component.input.FormDropdown as AccountFormDropdown
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.height
@@ -82,7 +83,6 @@ internal fun AccountEditorContent(
     val cardFaceName = if (account == null && templateId == null) {
         textResources.getString(cn.turingzy.ledger.R.string.ui_choose_card_design)
     } else selectedTemplate.resolveBuiltInAppearance(activeTemplates).titaniumTitle()
-    val currencies = accountCurrencyOptions
     val focusManager = LocalFocusManager.current
     val colors = MaterialTheme.colorScheme
 
@@ -133,8 +133,11 @@ internal fun AccountEditorContent(
             )
             if (account == null) {
                 AccountFormDropdown(
-                    label = textResources.getString(cn.turingzy.ledger.R.string.ui_currency), value = currency, options = currencies,
-                    optionLabel = { it }, onSelect = { currency = it }, modifier = Modifier.weight(0.8f),
+                    label = textResources.getString(cn.turingzy.ledger.R.string.ui_currency), value = currency,
+                    options = currencyOptionsBiz(accountCurrencyOptions),
+                    optionLabel = { it.second }, isSelected = { it.first == currency },
+                    onSelect = { currency = it.first }, modifier = Modifier.weight(0.8f),
+                    menuWidth = LedgerStyle.dimensions.currencyDropdownWidth,
                     alignMenuToStart = false,
                 )
             } else {

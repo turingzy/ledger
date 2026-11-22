@@ -1,6 +1,9 @@
 package cn.turingzy.ledger.ui.component.biz
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.platform.LocalConfiguration
 import cn.turingzy.ledger.util.AmountFormatter
 import cn.turingzy.ledger.model.settings.supportedCurrencyCodes
 import java.util.Currency
@@ -41,3 +44,15 @@ internal fun currencySymbolBiz(currency: String): String = when (currency) {
 internal fun transactionAmountBiz(amount: Long, currency: String, primary: String): String =
     if (currency == primary) AmountFormatter.formatCents(amount, true, currencySymbolBiz(currency))
     else "$currency " + AmountFormatter.formatCents(amount)
+
+/** Formats currency names in the active app language while keeping the ISO code as the selection key. */
+@Composable
+internal fun currencyOptionsBiz(codes: List<String>): List<Pair<String, String>> {
+    val locale = if (LocalConfiguration.current.locales[0].language == "en") Locale.ENGLISH else Locale.SIMPLIFIED_CHINESE
+    return remember(codes, locale) {
+        codes.map { code ->
+            val name = if (code in supportedCurrencyCodes) Currency.getInstance(code).getDisplayName(locale) else code
+            code to if (name == code) code else "$name $code"
+        }
+    }
+}

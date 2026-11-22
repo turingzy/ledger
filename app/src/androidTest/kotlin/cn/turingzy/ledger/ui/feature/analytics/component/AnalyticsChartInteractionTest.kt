@@ -20,7 +20,7 @@ class AnalyticsChartInteractionTest {
 
     @Test
     fun barSelectsCategoryInlineAndLegendOpensMatchingTransactions() {
-        val transaction = AnalyticsTransaction(1L, start, "午餐", "现金", 1200L)
+        val transaction = AnalyticsTransaction(1L, start, "午餐", 1200L)
         val state = AnalyticsUiState.Success(
             AnalyticsTimeScope.MONTH, CategoryType.EXPENSE, "", 3000L, 0L, -3000L,
             listOf(CategoryExpenseRanking(1L, "餐饮", 1200L, 0.4f, listOf(transaction)),

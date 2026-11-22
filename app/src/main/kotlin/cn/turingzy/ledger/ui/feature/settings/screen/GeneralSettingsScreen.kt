@@ -37,6 +37,7 @@ import cn.turingzy.ledger.ui.RateRefreshStatus
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.input.GeneralPreferencesForm
 import cn.turingzy.ledger.ui.component.input.PreferenceChoice
+import cn.turingzy.ledger.ui.component.biz.currencyOptionsBiz
 
 /**
  * 通用设置界面屏幕。
@@ -73,7 +74,7 @@ internal fun GeneralSettingsScreen(onBack: () -> Unit, viewModel: AppStateViewMo
     GeneralSettingsContent(
         draft = initial, busy = busy,
         from = from, rate = rate, rateDate = rateDate, message = message,
-        currencies = (accounts.map { it.account.currency } + listOf("USD", "CNY", "HKD", "EUR")).distinct().filter { it != primary }.map { it to it },
+        currencies = (accounts.map { it.account.currency } + listOf("USD", "CNY", "HKD", "EUR")).distinct().filter { it != primary },
         onPreferencesChange = { if (it != initial) viewModel.save(it) },
         onFromChange = { from = it },
         onRateChange = {
@@ -118,7 +119,7 @@ internal fun GeneralSettingsContent(
     rate: String,
     rateDate: String?,
     message: String?,
-    currencies: List<Pair<String, String>>,
+    currencies: List<String>,
     onPreferencesChange: (AppPreferences) -> Unit,
     onFromChange: (String) -> Unit,
     onRateChange: (String) -> Unit,
@@ -139,7 +140,15 @@ internal fun GeneralSettingsContent(
             GeneralPreferencesForm(draft, onPreferencesChange, !busy)
             Text(stringResource(R.string.exchange_rates), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
             CardBase(contentPadding = PaddingValues(LedgerStyle.spacing.none), contentSpacing = LedgerStyle.spacing.none) {
-                PreferenceChoice(stringResource(R.string.account_currency), from, currencies, !busy, onFromChange)
+                PreferenceChoice(
+                    title = stringResource(R.string.account_currency),
+                    selected = from,
+                    options = currencyOptionsBiz(currencies),
+                    enabled = !busy,
+                    selectedLabel = from,
+                    menuWidth = LedgerStyle.dimensions.currencyDropdownWidth,
+                    onSelect = onFromChange,
+                )
                 DividerBase(Modifier.padding(horizontal = LedgerStyle.spacing.large))
                 ExchangeRateField(from, draft.primaryCurrency, rate, !busy, onRateChange)
             }

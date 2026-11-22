@@ -113,13 +113,13 @@ internal fun analyticsTransaction(detail: TransactionDetail, zone: ZoneId): Anal
     return AnalyticsTransaction(
         id = detail.transaction.id,
         date = time.toLocalDate(),
-        note = detail.transaction.note.orEmpty().ifBlank { detail.category.category.name },
-        accountName = detail.account.name,
+        note = detail.transaction.note.orEmpty(),
         amount = detail.transaction.amount,
         primaryAmount = detail.transaction.baseAmount ?: detail.transaction.amount,
         currency = detail.account.currency,
         type = detail.transaction.type,
         category = detail.category,
         time = time.toLocalTime(),
+        detail = detail,
     )
 }

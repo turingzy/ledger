@@ -50,6 +50,7 @@ import timber.log.Timber
  * @param transactionViewModel 交易详情与编辑 ViewModel。
  * @param snackbarHostState 用于提示操作失败等信息的 [SnackbarHostState]。
  * @param onSelectionVisibleChange 批量多选状态（显示/隐藏底栏）变更回调。
+ * @param timeText 自定义行内时间文本，例如分析弹窗的日期和时间。
  * @param content 内容插槽，接收包装好的自定义交易行渲染组件。
  */
 @Composable
@@ -59,7 +60,8 @@ internal fun BillTransactionActions(
     viewModel: BillViewModel,
     transactionViewModel: TransactionDetailsViewModel,
     snackbarHostState: SnackbarHostState,
-    onSelectionVisibleChange: (Boolean) -> Unit,
+    onSelectionVisibleChange: (Boolean) -> Unit = {},
+    timeText: ((TransactionDetail) -> String)? = null,
     content: @Composable (@Composable (detail: TransactionDetail, roundTop: Boolean, roundBottom: Boolean) -> Unit) -> Unit,
 ) {
     var selection by remember { mutableStateOf<Set<Long>?>(null) }
@@ -118,6 +120,7 @@ internal fun BillTransactionActions(
                 BillSwipeRow(
                     detail = detail,
                     showDate = ungroupedRows.isNotEmpty(),
+                    timeText = timeText?.invoke(detail),
                     roundTop = roundTop,
                     roundBottom = roundBottom,
                     selecting = selecting,

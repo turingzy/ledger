@@ -37,6 +37,7 @@ import cn.turingzy.ledger.ui.component.base.CardBase
 import cn.turingzy.ledger.ui.component.base.DividerBase
 import cn.turingzy.ledger.ui.component.base.EmptyStateBase
 import cn.turingzy.ledger.ui.component.biz.TransactionRowBiz
+import cn.turingzy.ledger.ui.component.biz.currencySymbolBiz
 import cn.turingzy.ledger.ui.interaction.rememberUiAction
 import cn.turingzy.ledger.ui.interaction.UiInteractionKind
 import cn.turingzy.ledger.ui.theme.LedgerStyle
@@ -321,10 +322,17 @@ fun DayGroupSection(
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
+    val currencySymbol = currencySymbolBiz(currency)
     val summary = buildList {
         if (dayGroup.transactions.any { it.transaction.type != TransactionType.TRANSFER && it.primaryAmount(currency) == null }) return@buildList
-        if (dayGroup.totalExpense != 0L) add(textResources.getString(cn.turingzy.ledger.R.string.ui_expense) + ": ${dayGroup.totalExpense.toFormattedAmount()}")
-        if (dayGroup.totalIncome != 0L) add(textResources.getString(cn.turingzy.ledger.R.string.ui_income) + ": ${dayGroup.totalIncome.toFormattedAmount()}")
+        if (dayGroup.totalExpense != 0L) {
+            val amount = dayGroup.totalExpense.toFormattedAmount(showSymbol = true, symbol = currencySymbol)
+            add(textResources.getString(cn.turingzy.ledger.R.string.ui_expense) + ": $amount")
+        }
+        if (dayGroup.totalIncome != 0L) {
+            val amount = dayGroup.totalIncome.toFormattedAmount(showSymbol = true, symbol = currencySymbol)
+            add(textResources.getString(cn.turingzy.ledger.R.string.ui_income) + ": $amount")
+        }
     }.joinToString("  ")
     val colors = MaterialTheme.colorScheme
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.tiny)) {
@@ -385,7 +393,8 @@ fun DayGroupSection(
  * @param detail 交易详情数据 [TransactionDetail]。
  * @param modifier 外部修饰符。
  * @param onClick 点击事件回调。
- * @param showDate 时间显示是否包含月份和日期（例如跨日搜索结果中展示），为 true 时显示 MM/dd HH:mm，否则仅显示 HH:mm。
+ * @param showDate 时间显示是否包含月份和日期（例如跨日搜索结果中展示）。
+ * @param timeText 调用方提供的时间文本，用于保留分析列表的日期格式。
  */
 @Composable
 fun DayTransactionRowItem(
@@ -393,16 +402,17 @@ fun DayTransactionRowItem(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = {},
     showDate: Boolean = false,
+    timeText: String? = null,
 ) {
     val tx = detail.transaction
     val timeFormatter = remember(showDate) { DateTimeFormatter.ofPattern(if (showDate) "MM/dd HH:mm" else "HH:mm") }
-    val timeStr = remember(tx.transactionTime, timeFormatter) {
+    val timeStr = timeText ?: remember(tx.transactionTime, timeFormatter) {
         Instant.ofEpochMilli(tx.transactionTime).atZone(ZoneId.systemDefault()).format(timeFormatter)
     }
     TransactionRowBiz(
         categoryName = detail.category.category.name,
-        supportingText = listOfNotNull(detail.account.name, tx.note?.takeIf { it.isNotBlank() }).joinToString(" · "),
         timeText = timeStr,
+        note = tx.note,
         amount = tx.amount,
         currency = detail.account.currency,
         type = tx.type,

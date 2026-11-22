@@ -41,6 +41,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import cn.turingzy.ledger.ui.feature.bill.BillViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cn.turingzy.ledger.model.transaction.DateFilterType
 import cn.turingzy.ledger.ui.component.picker.LedgerDatePickerDialog
@@ -77,17 +78,20 @@ fun AnalyticsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val dashboard by dashboardViewModel.uiState.collectAsStateWithLifecycle()
-    AnalyticsContent(
-        uiState = uiState,
-        onTimeScopeChange = viewModel::setTimeScope,
-        onNavigatePeriod = viewModel::navigatePeriod,
-        onSelectPeriod = viewModel::selectPeriod,
-        onSelectRange = viewModel::selectRange,
-        onCategoryTypeChange = viewModel::setCategoryType,
-        modifier = modifier,
-        dashboard = dashboard,
-        onOpenCalendar = onOpenCalendar,
-    )
+    val billViewModel: BillViewModel = hiltViewModel()
+    androidx.compose.runtime.CompositionLocalProvider(LocalAnalyticsBillViewModel provides billViewModel) {
+        AnalyticsContent(
+            uiState = uiState,
+            onTimeScopeChange = viewModel::setTimeScope,
+            onNavigatePeriod = viewModel::navigatePeriod,
+            onSelectPeriod = viewModel::selectPeriod,
+            onSelectRange = viewModel::selectRange,
+            onCategoryTypeChange = viewModel::setCategoryType,
+            modifier = modifier,
+            dashboard = dashboard,
+            onOpenCalendar = onOpenCalendar,
+        )
+    }
 }
 
 /**

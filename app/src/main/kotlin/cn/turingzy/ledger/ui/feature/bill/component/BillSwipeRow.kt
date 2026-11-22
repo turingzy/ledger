@@ -79,6 +79,7 @@ private val SwipeActionsWidth = SwipeActionWidth * 3
  * @param onEdit 点击编辑操作回调。
  * @param onDelete 点击删除操作回调。
  * @param showDate 时间显示是否包含日期（跨天搜索展示时为 true）。
+ * @param timeText 调用方提供的时间文本。
  * @param roundTop 当前行是否需要裁剪顶部圆角（例如列表首项）。
  * @param roundBottom 当前行是否需要裁剪底部圆角（例如列表尾项）。
  */
@@ -98,6 +99,7 @@ internal fun BillSwipeRow(
     showDate: Boolean = false,
     roundTop: Boolean = false,
     roundBottom: Boolean = false,
+    timeText: String? = null,
 ) {
     val colors = LedgerStyle.colors
     val width = with(LocalDensity.current) { SwipeActionsWidth.toPx() }
@@ -179,7 +181,7 @@ internal fun BillSwipeRow(
             ) {
                 BillSelectionIndicator(selected, Modifier.padding(start = LedgerStyle.dimensions.transactionRowHorizontal))
             }
-            DayTransactionRowItem(detail, Modifier.weight(1f), onClick = null, showDate = showDate)
+            DayTransactionRowItem(detail, Modifier.weight(1f), onClick = null, showDate = showDate, timeText = timeText)
         }
     }
 }

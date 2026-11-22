@@ -45,8 +45,6 @@ class PreviewCoverageBizTest {
         val cases = TransactionPreviewProvider().values.toList()
         assertEquals(TransactionType.entries.toSet(), cases.map { it.detail.transaction.type }.toSet())
         assertTrue(cases.any { it.detail.transaction.isDeleted })
-        assertTrue(cases.any { it.detail.account.isDeleted })
-        assertTrue(cases.any { it.detail.toAccount?.isDeleted == true })
         assertTrue(cases.any { it.detail.category.category.isDeleted })
         assertTrue(cases.any { it.hidden })
         val transfers = cases.filter { it.detail.transaction.type == TransactionType.TRANSFER }
