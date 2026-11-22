@@ -22,7 +22,18 @@ import cn.turingzy.ledger.ui.interaction.UiInteractionKind
 import cn.turingzy.ledger.ui.interaction.uiClickable
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 
-/** Shares the date entry's size and typography between the bill and calendar pages. */
+/**
+ * 周期/日期筛选胶囊按钮。
+ *
+ * 在账单、日历及统计页面共享该胶囊按钮的尺寸与排版样式，展示当前选中的时间周期文案，并支持点击调出时间选择弹窗。
+ *
+ * @param text 胶囊内展示的周期或日期文案。
+ * @param onClick 点击胶囊时的回调函数。
+ * @param modifier 应用于该组件的修饰符。
+ * @param background 胶囊背景颜色，默认为 [LedgerStyle.colors.surface]。
+ * @param description 无障碍语义描述文案。
+ * @param trailingIcon 尾部图标（例如下拉小箭头），为空时不展示。
+ */
 @Composable
 internal fun PeriodPickerPill(
     text: String,

@@ -35,6 +35,19 @@ import cn.turingzy.ledger.R
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 
+/**
+ * 表单字段外框容器。
+ *
+ * 提供浮动标签、状态边框（正常、聚焦、只读、错误）及底部错误文案展示。
+ *
+ * @param label 浮动显示在上边框的标签文本。
+ * @param modifier 应用于整个表单字段容器的修饰符。
+ * @param focused 是否处于聚焦状态。
+ * @param readOnly 是否为只读状态。
+ * @param error 错误提示文本，为 null 时不显示。
+ * @param onClick 可选的点击事件回调，传入时使整个外框可点击。
+ * @param content 字段内部行内容插槽。
+ */
 @Composable
 fun FormFieldFrameBase(
     label: String,
@@ -79,6 +92,22 @@ fun FormFieldFrameBase(
     }
 }
 
+/**
+ * 基础下拉菜单组件。
+ *
+ * 在独立弹窗 ([Popup]) 中以列表形式展示选项，支持自定义定位、选中状态勾选标识以及自动滚动至初始选中项。
+ *
+ * @param T 选项数据类型。
+ * @param options 待展示的选项列表。
+ * @param optionLabel 获取选项显示文本的转换函数。
+ * @param isSelected 判断某选项是否处于选中状态的判断函数。
+ * @param onSelect 点击选中某个选项时的回调。
+ * @param onDismissRequest 请求关闭下拉菜单时的回调。
+ * @param positionProvider 决定弹窗相对锚点显示位置的 [PopupPositionProvider]。
+ * @param modifier 应用于内部滚动列表的修饰符。
+ * @param maxHeight 下拉菜单的最大允许高度。
+ * @param optionTextColor 选项文字颜色。
+ */
 @Composable
 fun <T> DropdownMenuBase(
     options: List<T>,
@@ -129,7 +158,16 @@ fun <T> DropdownMenuBase(
     }
 }
 
-/** Shows a chevron when closed and points toward the menu when open. */
+/**
+ * 下拉展开状态指示图标。
+ *
+ * 折叠时显示向右箭头，展开时显示下拉箭头（并根据是否向上弹出进行旋转指示），并附带无障碍语义状态描述。
+ *
+ * @param expanded 是否处于展开状态。
+ * @param modifier 应用于指示图标的修饰符。
+ * @param opensUp 菜单展开时是否朝上方弹出（朝上弹出时箭头翻转 180 度）。
+ * @param contentColor 图标颜色。
+ */
 @Composable
 fun DropdownIndicatorBase(
     expanded: Boolean,

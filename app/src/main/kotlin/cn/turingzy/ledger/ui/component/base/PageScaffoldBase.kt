@@ -36,6 +36,25 @@ import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.interaction.UiInteractionKind
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 
+/**
+ * 基础页面脚手架组件。
+ *
+ * 包含沉浸式毛玻璃效果顶部栏、页面标题、返回/关闭操作按钮和自定义操作插槽，
+ * 并在顶部栏高度变化时自动向内容区传递顶部内边距（[PaddingValues]）。
+ *
+ * @param title 页面顶部标题文本。
+ * @param modifier 应用于脚手架的修饰符。
+ * @param onBack 可选的返回按钮点击回调；为 null 时不显示返回按钮。
+ * @param scrolled 页面内容是否已发生滚动（滚动时可改变顶部栏透明度）。
+ * @param windowInsets 页面适配的窗口边距，默认为 [WindowInsets.safeDrawing]。
+ * @param titleStyle 标题文本样式。
+ * @param titlePadding 标题水平方向内边距。
+ * @param backButtonSize 返回按钮的尺寸。
+ * @param closeInsteadOfBack 返回按钮是否显示为“关闭（叉号）”图标而非“返回（箭头）”图标。
+ * @param headerOpacity 顶部栏背景的不透明度。
+ * @param actions 顶部栏右侧操作项布局插槽。
+ * @param content 页面主内容区域，提供包含顶部导航栏高度的 [PaddingValues]。
+ */
 @Composable
 fun PageScaffoldBase(
     title: String,
@@ -88,7 +107,16 @@ fun PageScaffoldBase(
     }
 }
 
-/** Applies press feedback to the back glyph while preserving its touch target. */
+/**
+ * 页面返回或关闭按钮。
+ *
+ * 在保持触控目标区域大小的同时，为图标应用按压透明度变化与导航触觉反馈。
+ *
+ * @param description 无障碍文本描述。
+ * @param size 触控按钮尺寸。
+ * @param closeInsteadOfBack 是否显示为叉号关闭图标。
+ * @param onBack 点击回调。
+ */
 @Composable
 private fun PageBackButton(description: String, size: Dp, closeInsteadOfBack: Boolean, onBack: () -> Unit) {
     val source = remember { MutableInteractionSource() }
@@ -110,6 +138,15 @@ private fun PageBackButton(description: String, size: Dp, closeInsteadOfBack: Bo
     }
 }
 
+/**
+ * 基础页面框架容器。
+ *
+ * 填充整个屏幕并统一应用背景色、文字颜色和窗口安全区避让。
+ *
+ * @param modifier 应用于页面的修饰符。
+ * @param windowInsets 需要避让的窗口系统内边距。
+ * @param content 页面容器内容插槽。
+ */
 @Composable
 fun PageFrameBase(
     modifier: Modifier = Modifier,

@@ -21,6 +21,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import java.time.LocalDate
 
+/**
+ * 记账应用通用日期选择弹窗。
+ *
+ * 包装 [LedgerDatePicker] 于通用弹窗外框 [DialogWindowBase] 中，提供单日选择以及取消/确定操作按钮。
+ *
+ * @param initialDate 弹窗打开时的初始选中日期。
+ * @param onDismiss 点击遮罩层或取消按钮时的关闭回调。
+ * @param onConfirm 点击确认按钮时的回调，参数为最终选中的 [LocalDate]。
+ * @param modifier 应用于弹窗主体表面 [SurfaceBase] 的修饰符。
+ */
 @Composable
 internal fun LedgerDatePickerDialog(
     initialDate: LocalDate,

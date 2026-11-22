@@ -8,7 +8,15 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-/** Builds bill date groups from the supplied rows and totals only those rows. */
+/**
+ * 将交易记录列表按天进行分组，并计算每日在主币种及各币种下的收支汇总。
+ *
+ * @param transactions 待分组的交易详情列表。
+ * @param zone 时区信息，用于转换交易时间戳为本地日期。
+ * @param primary 主货币代码，用于折算每日汇总收支。
+ * @param newestFirst 是否按时间倒序排列（日期及组内交易），默认为 true（最新日期排在前面）。
+ * @return 按日期分组后的 [DayTransactionGroup] 列表。
+ */
 internal fun groupTransactionsByDay(
     transactions: List<TransactionDetail>,
     zone: ZoneId,

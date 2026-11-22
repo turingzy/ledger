@@ -26,6 +26,25 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cn.turingzy.ledger.util.toFormattedAmount
 
+/**
+ * 摘要卡片正面内容展示组件。
+ *
+ * 布局分为上下两个区域：
+ * - 上部：展示卡片主标题、金额明文/密文切换按钮以及核心汇总金额。
+ * - 底部毛玻璃区域：左右两侧分别展示子项标签与对应金额（例如支出与收入）。
+ * 文字均附加阴影效果以保证在各类明暗背景图片下的清晰可读性。
+ *
+ * @param title 卡片主标题（例如“本月结余”或“总资产”）。
+ * @param amount 核心主金额（以“分”为单位）。
+ * @param leftAmount 左侧子项金额（以“分”为单位，例如支出金额）。
+ * @param rightAmount 右侧子项金额（以“分”为单位，例如收入金额）。
+ * @param amountsHidden 当前金额是否处于脱敏隐藏状态。
+ * @param onToggleAmounts 点击显隐切换按钮时的回调。
+ * @param modifier 修饰符。
+ * @param leftLabel 左侧子项标签文本（默认为“支出”）。
+ * @param rightLabel 右侧子项标签文本（默认为“收入”）。
+ * @param currency 货币代号（默认为 "CNY"），用于确定货币符号。
+ */
 @Composable
 fun SummaryCardContent(
     title: String,

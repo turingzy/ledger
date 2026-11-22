@@ -5,6 +5,19 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
+/**
+ * 系统图标数据库实体，对应表 `tb_icon`。
+ *
+ * 存储 Material Symbols 或自定义图标资源映射信息。
+ *
+ * @property iconId 图标唯一标识，自增主键
+ * @property keyName 唯一图标标识键（如 "restaurant", "shopping_cart"）
+ * @property displayName 图标展示名称（如“餐饮”、“购物”）
+ * @property iconUri 图标资源定位 URI 或符号名称
+ * @property isSystem 是否为系统内置图标
+ * @property sortOrder 图标选择器中的展示排序权重
+ * @property isDeleted 软删除标记，true 表示已被软删除
+ */
 @Entity(
     tableName = "tb_icon",
     indices = [

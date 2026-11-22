@@ -32,6 +32,21 @@ import cn.turingzy.ledger.ui.theme.LedgerStyle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 
+/**
+ * 摘要卡片专用的紧凑型圆形图标按钮。
+ *
+ * 具有半透明圆形背景容器，常用于摘要卡片上的金额显隐切换或翻转等操作。
+ *
+ * @param imageVector 图标矢量图。
+ * @param contentDescription 辅助功能描述。
+ * @param onClick 点击事件回调。
+ * @param modifier 修饰符。
+ * @param enabled 是否可点击交互。
+ * @param containerColor 圆形背景填充颜色。
+ * @param contentColor 图标颜色。
+ * @param showPressFeedback 是否展示水波纹点击反馈。
+ * @param iconSize 图标显示尺寸。
+ */
 @Composable
 internal fun SummaryCardIconButton(
     imageVector: ImageVector,
@@ -65,6 +80,18 @@ internal fun SummaryCardIconButton(
     }
 }
 
+/**
+ * 顶部工具栏使用的轻量级圆形图标按钮。
+ *
+ * 采用自定义的非侵入式按压高光背景动效替代默认的水波纹反馈。
+ *
+ * @param imageVector 图标矢量图。
+ * @param contentDescription 辅助功能描述。
+ * @param onClick 点击事件回调。
+ * @param modifier 修饰符。
+ * @param showPressFeedback 是否启用按下淡入淡出反馈。
+ * @param iconSize 图标显示尺寸。
+ */
 @Composable
 internal fun TopBarIconButton(
     imageVector: ImageVector,
@@ -90,6 +117,15 @@ internal fun TopBarIconButton(
     }
 }
 
+/**
+ * 为顶部工具栏按钮添加细腻的快速按压高光背景动效。
+ *
+ * 监听 [PointerEventPass.Initial] 通道捕获手势事件，确保不阻断点击或滑动事件的分发。
+ *
+ * @param interactionSource 手势交互数据源。
+ * @param enabled 是否开启反馈效果。
+ * @param color 按压时的高光填充色。
+ */
 @Composable
 private fun Modifier.topBarPressFeedback(
     interactionSource: MutableInteractionSource,

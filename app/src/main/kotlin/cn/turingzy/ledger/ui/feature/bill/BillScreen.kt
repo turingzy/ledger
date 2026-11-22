@@ -70,6 +70,20 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
+/**
+ * 账单功能主页面入口组件。
+ *
+ * 整合账单月度/周期统计汇总卡片、按天分组的账单明细列表、交易滑动与批量操作、
+ * 交易详情抽屉以及新建记账弹窗等。
+ *
+ * @param showRecordSheet 是否显示记账底部抽屉。
+ * @param onRecordSheetDismiss 关闭记账抽屉的回调。
+ * @param modifier 外部修饰符。
+ * @param viewModel 账单业务逻辑 ViewModel。
+ * @param onNavigateToRecord 跳转到记账的回调。
+ * @param onSelectionVisibleChange 批量选择条可见性变化回调。
+ * @param onOpenSearch 打开搜索页面的回调。
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BillScreen(
@@ -140,6 +154,24 @@ fun BillScreen(
     }
 }
 
+/**
+ * 账单列表内容区视图。
+ *
+ * 包含滚动标题容器、顶部周期选择药丸与搜索入口、汇总卡片以及按日分组的交易列表。
+ *
+ * @param uiState 当前账单界面状态 [BillUiState]。
+ * @param modifier 外部修饰符。
+ * @param onOpenSearch 打开搜索页面的回调。
+ * @param onTransactionClick 点击单条交易的回调（传入交易 ID）。
+ * @param onSelectPeriod 变更统计周期筛选的回调。
+ * @param cardAppearance 汇总卡片的外观配置。
+ * @param cardBackground 汇总卡片自定义背景图。
+ * @param cardSettingsEnabled 是否允许修改卡片设置。
+ * @param onUploadCardBackground 上传/更换卡片背景图的回调。
+ * @param onCardTransparencyChange 调整卡片透明度百分比的回调。
+ * @param snackbarHostState 用于展示轻量提示的 [SnackbarHostState]。
+ * @param transactionRow 自定义交易行项渲染插槽，通常用于注入带滑动操作或多选状态的行项。
+ */
 @Composable
 fun BillContent(
     uiState: BillUiState,
@@ -268,6 +300,17 @@ fun BillContent(
 
 }
 
+/**
+ * 单日账单分组组件。
+ *
+ * 渲染某一日期的分组标题（日期和该日主币种收支汇总）及该日对应的交易记录卡片列表。
+ *
+ * @param dayGroup 当前日期的分组数据对象 [DayTransactionGroup]。
+ * @param modifier 外部修饰符。
+ * @param onTransactionClick 点击单条交易的回调（传入交易 ID）。
+ * @param currency 用于展示每日收支汇总的主货币代码。
+ * @param transactionRow 可选的自定义交易行项渲染函数；为空时使用默认的 [DayTransactionRowItem]。
+ */
 @Composable
 fun DayGroupSection(
     dayGroup: DayTransactionGroup,
@@ -334,6 +377,16 @@ fun DayGroupSection(
     }
 }
 
+/**
+ * 单条交易记录行组件。
+ *
+ * 展示交易分类图标与名称、账户名称、备注、格式化时间以及交易金额与正负符号。
+ *
+ * @param detail 交易详情数据 [TransactionDetail]。
+ * @param modifier 外部修饰符。
+ * @param onClick 点击事件回调。
+ * @param showDate 时间显示是否包含月份和日期（例如跨日搜索结果中展示），为 true 时显示 MM/dd HH:mm，否则仅显示 HH:mm。
+ */
 @Composable
 fun DayTransactionRowItem(
     detail: TransactionDetail,

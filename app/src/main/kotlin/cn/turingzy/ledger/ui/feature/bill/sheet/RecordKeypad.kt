@@ -29,7 +29,25 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-/** Lays out the numeric keys, arithmetic operators, and the record action. */
+/**
+ * 记账内置数字键盘组件。
+ *
+ * 采用 4 列 4 行自定义网格布局，包含数字 0-9、小数点、加/乘连击键、减/除连击键、
+ * 退格删除键、AC 全清键，以及右下角的“完成/=”操作按钮。
+ *
+ * @param hasPendingCalculation 是否存在未求值的运算符表达式（为 true 时右下角按钮显示 "="，否则显示“完成”）。
+ * @param onNumberClick 点击数字键回调（传入数字字符）。
+ * @param onDotClick 点击小数点键回调。
+ * @param onOperatorClick 点击运算符键回调（传入 "+" 或 "-"）。
+ * @param onBackspaceClick 点击退格删除键回调。
+ * @param onClearClick 点击 AC 清空键回调。
+ * @param onActionClick 点击操作按钮（"=" 求值或“完成”提交）回调。
+ * @param modifier 外部修饰符。
+ * @param actionEnabled 操作按钮是否可用。
+ * @param keyHeight 单个按键的高度。
+ * @param actionColor 操作按钮背景色。
+ * @param actionContentColor 操作按钮内容文字颜色。
+ */
 @Composable
 fun BuiltInKeypad(
     hasPendingCalculation: Boolean,
@@ -90,6 +108,13 @@ fun BuiltInKeypad(
     }
 }
 
+/**
+ * 键盘文本按键组件。
+ *
+ * @param text 按键上展示的字符（如数字、运算符、AC 等）。
+ * @param onClick 点击事件回调。
+ * @param modifier 外部修饰符。
+ */
 @Composable
 fun KeypadButton(
     text: String,
@@ -112,6 +137,13 @@ fun KeypadButton(
     }
 }
 
+/**
+ * 键盘图标按键组件（例如退格删除）。
+ *
+ * @param icon 按键图标矢量图 [ImageVector]。
+ * @param onClick 点击事件回调。
+ * @param modifier 外部修饰符。
+ */
 @Composable
 fun KeypadIconButton(
     icon: ImageVector,

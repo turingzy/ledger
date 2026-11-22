@@ -35,6 +35,26 @@ import cn.turingzy.ledger.model.transaction.TransactionType
 import cn.turingzy.ledger.model.account.AccountWithTemplate
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 
+/**
+ * 记账与账单筛选中的账户选择底部抽屉组件。
+ *
+ * 以列表形式展示可用账户及其当前余额、货币代码，支持选中状态高亮标记、
+ * 批量操作兼容数量提示、自定义头部及“全部账户”选项。
+ *
+ * @param title 抽屉标题文本。
+ * @param accounts 候选账户列表 [AccountWithTemplate]。
+ * @param selectedId 当前选中的账户 ID。
+ * @param transactionType 当前交易类型（用于决定默认选中色）。
+ * @param height 抽屉高度。
+ * @param onDismiss 关闭抽屉回调。
+ * @param onSelect 选定某个账户的回调（传入账户 ID）。
+ * @param emptyMessage 账户列表为空时的提示文案。
+ * @param optionHint 针对每个账户自定义显示的提示文本（例如批量操作时显示匹配数量）。
+ * @param header 自定义抽屉头部组件；若为 null 则使用默认带关闭按钮的标题栏。
+ * @param selectionColor 选中勾选标记的高亮颜色。
+ * @param selectionCheckOnNameRow 勾选标记是否放置在账户名称同行右侧。
+ * @param onSelectAll 可选的“全部账户”选项点击回调。
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun RecordAccountSheet(

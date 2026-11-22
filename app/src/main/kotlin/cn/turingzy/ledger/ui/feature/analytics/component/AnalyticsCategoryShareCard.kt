@@ -55,6 +55,16 @@ import cn.turingzy.ledger.ui.theme.LedgerStyle
 import java.math.BigDecimal
 import java.math.RoundingMode
 
+/**
+ * 分类占比卡片。
+ *
+ * 展示当前周期的分类收支占比情况，包含支出/收入切换器、交互式分段占比进度条、
+ * 分类图例流动标签，以及点击分类弹出查看其明细账单列表的功能。
+ *
+ * @param state 统计分析成功状态数据。
+ * @param onCategoryTypeChange 切换分类类型（支出/收入）回调。
+ * @param modifier 修饰符。
+ */
 @Composable
 internal fun AnalyticsCategoryShareCard(
     state: AnalyticsUiState.Success,
@@ -175,6 +185,12 @@ internal fun AnalyticsCategoryShareCard(
     }
 }
 
+/**
+ * 自定义流式换行的分类图例布局组件。
+ *
+ * @param modifier 修饰符。
+ * @param content 子可组合组件项。
+ */
 @Composable
 private fun CategoryLegendLayout(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     Layout(content = content, modifier = modifier) { measurables, constraints ->
@@ -202,10 +218,28 @@ private fun CategoryLegendLayout(modifier: Modifier = Modifier, content: @Compos
     }
 }
 
+/**
+ * 格式化分类金额在总额中的百分比显示文本。
+ *
+ * @param amount 分类金额（分）。
+ * @param total 总金额（分）。
+ * @return 格式化后的百分比字符串（如 "25%" 或 "12.34%"）。
+ */
 internal fun categorySharePercentage(amount: Long, total: Long): String =
     if (total <= 0L) "0%" else BigDecimal.valueOf(amount).multiply(BigDecimal.valueOf(100))
         .divide(BigDecimal.valueOf(total), 2, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString() + "%"
 
+/**
+ * 为多个分类动态生成辨识度高的图表配色序列。
+ *
+ * 采用黄金分割角度分布 HSV 色相，并在靠后分类中采用柔和中性色过渡。
+ *
+ * @param count 分类数量。
+ * @param seed 主题种子基准色。
+ * @param surface 界面表面背景色（用于明暗适配）。
+ * @param neutral 中性色基准。
+ * @return 颜色列表。
+ */
 internal fun categoryShareColors(
     count: Int, seed: Color, surface: Color,
     neutral: Color = Color(seed.luminance(), seed.luminance(), seed.luminance()),

@@ -43,8 +43,30 @@ import kotlinx.coroutines.CancellationException
 import cn.turingzy.ledger.data.repository.settings.AppUpdateRepository
 import timber.log.Timber
 
-private enum class UpdateCheckState { IDLE, CHECKING, AVAILABLE }
+/**
+ * 版本更新检测状态枚举。
+ */
+private enum class UpdateCheckState {
+    /** 空闲状态。 */
+    IDLE,
+    /** 正在检测更新。 */
+    CHECKING,
+    /** 检测到有新版本可用。 */
+    AVAILABLE,
+}
 
+/**
+ * “关于”页面屏幕组件。
+ *
+ * 展示应用名称、图标、当前安装版本、作者信息、应用简介，
+ * 并支持在线检测 GitHub 最新版本以及跳转查看开源协议与源代码仓库。
+ *
+ * @param versionName 当前应用版本名称
+ * @param onDismissRequest 返回或退出页面的回调
+ * @param modifier 修饰符
+ * @param onOpenSourceClick 跳转至开源库许可列表的回调
+ * @param onCheckLatest 异步查询最新发布版本的挂起函数
+ */
 @Composable
 fun AboutScreen(
     versionName: String,
@@ -104,6 +126,18 @@ fun AboutScreen(
     }
 }
 
+/**
+ * 关于页面的主体内容展示组件。
+ *
+ * @param versionName 当前安装的应用版本号
+ * @param updateState 当前更新检测状态
+ * @param onOpenSourceClick 点击进入开源许可列表回调
+ * @param onLicenseClick 点击查看开源许可证协议回调
+ * @param onSourceClick 点击查看 GitHub 源代码仓库回调
+ * @param onCheckUpdate 点击检查更新或跳转下载更新回调
+ * @param modifier 修饰符
+ * @param latestVersion 检测到的远端最新版本号
+ */
 @Composable
 private fun AboutContent(
     versionName: String,

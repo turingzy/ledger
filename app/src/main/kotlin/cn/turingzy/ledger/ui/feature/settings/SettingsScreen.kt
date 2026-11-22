@@ -46,6 +46,16 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import cn.turingzy.ledger.ui.AppStateViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
+/**
+ * 设置功能的主入口屏幕。
+ *
+ * 负责协调设置根列表与各子页面（通用设置、解析规则、卡片模板、账单导入导出、关于等）之间的导航切换，
+ * 并处理全局消息对话框的展示与消除。
+ *
+ * @param modifier 修饰符
+ * @param viewModel 设置界面的 ViewModel
+ * @param onSubpageChange 进入或离开子页面时的回调，用于通知外层控制底部导航栏显隐等
+ */
 @Composable
 fun SettingsScreen(
     modifier: Modifier = Modifier,
@@ -111,6 +121,19 @@ fun SettingsScreen(
     }
 }
 
+/**
+ * 设置主页的内容展示组件。
+ *
+ * 呈现分组式的设置项列表，包括通用设置、卡片模板、解析规则、账单导入导出以及关于软件等功能入口。
+ *
+ * @param uiState 当前设置界面的 UI 状态
+ * @param onParseRulesClick 点击解析规则入口的回调
+ * @param onCardManagementClick 点击卡片模板管理入口的回调
+ * @param onBillTransferClick 点击账单导入导出入口的回调
+ * @param onAboutClick 点击关于页面入口的回调
+ * @param modifier 修饰符
+ * @param onGeneralSettingsClick 点击通用设置入口的回调
+ */
 @Composable
 fun SettingsContent(
     uiState: SettingsUiState,
@@ -215,6 +238,13 @@ fun SettingsContent(
     }
 }
 
+/**
+ * 设置项分组卡片容器。
+ *
+ * 为内部的一组设置行提供带有微弱阴影和圆角效果的卡片底板。
+ *
+ * @param content 卡片内承载的列表项内容
+ */
 @Composable
 private fun SettingsGroup(content: @Composable ColumnScope.() -> Unit) {
     val shadow = MaterialTheme.colorScheme.scrim.copy(alpha = LedgerStyle.opacity.subtleCardShadow)
@@ -230,6 +260,17 @@ private fun SettingsGroup(content: @Composable ColumnScope.() -> Unit) {
     )
 }
 
+/**
+ * 设置列表中的行项目组件。
+ *
+ * 显示左侧图标、设置项标题以及右侧的导航箭头。
+ *
+ * @param icon 设置项图标矢量图
+ * @param iconColor 图标颜色
+ * @param title 设置项标题文字
+ * @param onClick 点击事件回调
+ * @param modifier 修饰符
+ */
 @Composable
 fun SettingsRowItem(
     icon: ImageVector,

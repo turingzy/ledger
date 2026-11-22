@@ -16,11 +16,24 @@ import cn.turingzy.ledger.ui.theme.LedgerStyle
 import java.time.LocalDate
 import java.time.YearMonth
 
+/** 统计卡片顶部外边距。 */
 internal val AnalyticsCardTopSpacing = 3.dp
+/** 统计图表数据节点圆点半径。 */
 internal val AnalyticsChartNodeRadius = 3.dp
+/** 统计图表绘图区标准高度。 */
 internal val AnalyticsChartPlotHeight = 170.dp
+/** 统计图表网格间隔数。 */
 internal const val AnalyticsChartGridIntervals = 8
 
+/**
+ * 统计看板卡片列表容器。
+ *
+ * 聚合渲染统计概览卡片、分类占比卡片、支出进度趋势卡片以及月度收支现金流卡片。
+ *
+ * @param state 当前周期的统计分析状态。
+ * @param dashboard 全局统计看板数据状态。
+ * @param onCategoryTypeChange 分类收支类型变更回调。
+ */
 @Composable
 internal fun AnalyticsDashboardCards(state: AnalyticsUiState.Success, dashboard: AnalyticsDashboardState, onCategoryTypeChange: (cn.turingzy.ledger.model.category.CategoryType) -> Unit = {}) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
@@ -39,6 +52,12 @@ internal fun AnalyticsDashboardCards(state: AnalyticsUiState.Success, dashboard:
     MonthlyCashflowCard(dashboard.days, YearMonth.from(anchor), transactions = dashboard.transactions)
 }
 
+/**
+ * 带标题的统计看板卡片容器。
+ *
+ * @param title 卡片标题。
+ * @param content 卡片内部内容。
+ */
 @Composable
 internal fun DashboardCard(title: String, content: @Composable ColumnScope.() -> Unit) {
     DashboardCard {
@@ -47,6 +66,13 @@ internal fun DashboardCard(title: String, content: @Composable ColumnScope.() ->
     }
 }
 
+/**
+ * 统计看板通用卡片容器。
+ *
+ * @param modifier 修饰符。
+ * @param contentSpacing 内容纵向间距。
+ * @param content 卡片内部内容。
+ */
 @Composable
 internal fun DashboardCard(
     modifier: Modifier = Modifier,
@@ -63,6 +89,12 @@ internal fun DashboardCard(
     )
 }
 
+/**
+ * 统计卡片统一标题组件。
+ *
+ * @param title 标题文案。
+ * @param modifier 修饰符。
+ */
 @Composable
 internal fun AnalyticsCardTitle(title: String, modifier: Modifier = Modifier) {
     Text(title, modifier, style = MaterialTheme.typography.titleMedium.copy(
@@ -70,6 +102,11 @@ internal fun AnalyticsCardTitle(title: String, modifier: Modifier = Modifier) {
     ), maxLines = 1, overflow = TextOverflow.Ellipsis)
 }
 
+/**
+ * 获取统计图表中信息提示浮层或高亮气泡的背景颜色。
+ *
+ * @return 对应的背景 [Color]。
+ */
 @Composable
 internal fun analyticsChartInfoColor(): Color {
     return LedgerStyle.colors.chartInfoBackground

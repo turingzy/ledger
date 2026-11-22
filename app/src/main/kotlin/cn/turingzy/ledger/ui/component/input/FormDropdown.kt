@@ -30,6 +30,21 @@ import androidx.compose.ui.window.PopupPositionProvider
 import cn.turingzy.ledger.ui.component.base.DropdownMenuBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 
+/**
+ * 表单下拉选择框组件。
+ *
+ * 将标准表单字段外框 [FormFieldFrameBase] 与下拉弹窗 [LedgerDropdown] 结合，展示选中的文本与下拉指示器。
+ *
+ * @param label 表单项的标题标签。
+ * @param value 当前选中的显示文本。
+ * @param options 待选选项列表。
+ * @param optionLabel 将选项转换为显示文案的映射函数。
+ * @param onSelect 选中某选项时的回调。
+ * @param modifier 应用于该组件的修饰符。
+ * @param alignMenuToStart 菜单弹出时是否与锚点左侧（Start）对齐；为 false 时与右侧（End）对齐。
+ * @param menuTestTag 菜单的测试标签。
+ * @param isSelected 判断某选项是否处于选中状态的函数，默认根据文本匹配。
+ */
 @Composable
 internal fun <T> FormDropdown(
     label: String,
@@ -63,7 +78,21 @@ internal fun <T> FormDropdown(
     }
 }
 
-/** Positions the menu and supplies its direction to the anchor indicator. */
+/**
+ * 通用下拉选择器弹窗容器。
+ *
+ * 负责定位菜单位置、根据屏幕可用空间计算菜单最大高度，并将展开状态及切换函数透传给 [anchor] 锚点组件。
+ *
+ * @param options 待选选项列表。
+ * @param optionLabel 将选项转换为文本的回调。
+ * @param isSelected 判断选项是否被选中的回调。
+ * @param onSelect 选项选中回调。
+ * @param modifier 外部修饰符。
+ * @param alignMenuToStart 是否将弹窗菜单左对齐。
+ * @param menuTestTag 菜单测试标签。
+ * @param direction 菜单展开方向（向上或向下）。
+ * @param anchor 锚点组件插槽，接收锚点修饰符、展开状态、是否向上展开以及切换展开状态的回调。
+ */
 @Composable
 internal fun <T> LedgerDropdown(
     options: List<T>,
@@ -122,12 +151,29 @@ internal fun <T> LedgerDropdown(
     }
 }
 
+/**
+ * 保存表单下拉框锚点在窗口中布局坐标的持有类。
+ */
 private class FormDropdownAnchor {
     var coordinates: LayoutCoordinates? = null
 }
 
-internal enum class DropdownDirection { UP, DOWN }
+/**
+ * 下拉菜单的展开方向。
+ */
+internal enum class DropdownDirection {
+    /** 向上弹出 */
+    UP,
+    /** 向下弹出 */
+    DOWN
+}
 
+/**
+ * 表单下拉菜单的弹窗位置计算器。
+ *
+ * @property alignToStart 是否与锚点起始边对齐。
+ * @property direction 菜单展开方向。
+ */
 internal class FormMenuPositionProvider(
     private val alignToStart: Boolean,
     private val direction: DropdownDirection = DropdownDirection.UP,

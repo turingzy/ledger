@@ -24,6 +24,19 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
+/**
+ * 账户操作底部弹窗的基础骨架布局。
+ *
+ * 包含顶部标题栏（取消按钮、居中标题、保存勾选按钮）、键盘与导航栏避让间距以及可滚动的表单内容容器。
+ *
+ * @param title 弹窗标题文本
+ * @param saveEnabled 保存按钮是否启用
+ * @param onSave 点击保存回调
+ * @param onDismiss 点击取消/关闭回调
+ * @param modifier 外部修饰符
+ * @param contentSpacing 内容项垂直间距
+ * @param content 弹窗主体内容插槽
+ */
 @Composable
 internal fun AccountSheetContent(
     title: String,

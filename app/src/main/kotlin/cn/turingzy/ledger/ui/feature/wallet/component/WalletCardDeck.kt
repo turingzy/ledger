@@ -28,6 +28,18 @@ import cn.turingzy.ledger.model.account.AccountWithTemplate
 import cn.turingzy.ledger.model.account.CardTemplate
 import cn.turingzy.ledger.model.account.resolveBuiltInAppearance
 
+/**
+ * 可左右滑动的银行卡卡叠组件。
+ *
+ * 支持循环无限滑动切换账户卡片、当前卡片陀螺仪/光影动效以及卡片指示器展示。
+ *
+ * @param accounts 账户及其模板列表
+ * @param onAdjustClick 点击卡片回调（传递被点击的账户）
+ * @param modifier 外部修饰符
+ * @param selectedAccountId 当前选中的账户 ID
+ * @param onSelectedAccountChange 选中账户变更回调
+ * @param templates 预置或自定义卡面模板列表
+ */
 @Composable
 fun SwipeableBankCardDeck(
     accounts: List<AccountWithTemplate>,
@@ -72,6 +84,13 @@ fun SwipeableBankCardDeck(
     }
 }
 
+/**
+ * 银行卡卡叠为空时的占位展示组件。
+ *
+ * 保持与银行卡相同的宽高比并显示空状态文案。
+ *
+ * @param modifier 外部修饰符
+ */
 @Composable
 private fun EmptyCardDeck(modifier: Modifier = Modifier) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources

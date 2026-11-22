@@ -16,8 +16,20 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 
+/**
+ * 银行卡标准宽高比（符合 ISO/IEC 7810 ID-1 标准，约 85.60mm / 53.98mm）。
+ */
 internal const val BankCardAspectRatio = 1.586f
 
+/**
+ * 卡片分页指示器组件。
+ *
+ * 用于在多张银行卡横向切换时展示当前页码及总页数圆点。
+ *
+ * @param pageCount 总页数（卡片总数）。
+ * @param currentPage 当前选中的页码索引（从 0 开始）。
+ * @param modifier 修饰符。
+ */
 @Composable
 internal fun CardPageIndicator(
     pageCount: Int,

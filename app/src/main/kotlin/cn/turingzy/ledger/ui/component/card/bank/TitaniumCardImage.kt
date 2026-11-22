@@ -22,8 +22,21 @@ import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+/**
+ * 钛金属卡片自定义背景图片信息包装类。
+ *
+ * @property bitmap 裁剪及缩放处理后的卡片位图。
+ * @property luminance 卡面可见区域的相对亮度加权平均值（0.0 到 1.0 之间），用于自适应文字前景色；若无法分析则为 `null`。
+ */
 internal data class TitaniumCardImage(val bitmap: ImageBitmap, val luminance: Double?)
 
+/**
+ * 记忆并异步加载银行卡背景图片及亮度分析结果。
+ *
+ * @param uri 背景图片 URI，可为 content URI、android resource URI 或本地文件路径。
+ * @param background 底色 ARGB 值，用于在分析半透明图片时合成有效背景色。
+ * @return 加载完成的 [TitaniumCardImage]，加载中或失败时返回 `null`。
+ */
 @Composable
 internal fun rememberTitaniumCardImage(uri: Uri?, background: Int): TitaniumCardImage? {
     val resolver = LocalContext.current.contentResolver
@@ -34,6 +47,14 @@ internal fun rememberTitaniumCardImage(uri: Uri?, background: Int): TitaniumCard
     }
 }
 
+/**
+ * 从给定的 [Uri] 解码并缩放卡片图片，并分析其相对亮度。
+ *
+ * @param resolver [ContentResolver] 实例。
+ * @param uri 待解码的图片 URI。
+ * @param background 背景填充色 ARGB 值。
+ * @return 构造的 [TitaniumCardImage]，若读取失败或无权限则返回 `null`。
+ */
 private fun loadCardImage(resolver: ContentResolver, uri: Uri, background: Int): TitaniumCardImage? = try {
     val source = when (uri.scheme) {
         ContentResolver.SCHEME_CONTENT, ContentResolver.SCHEME_ANDROID_RESOURCE -> ImageDecoder.createSource(resolver, uri)
@@ -62,6 +83,14 @@ private fun loadCardImage(resolver: ContentResolver, uri: Uri, background: Int):
     null
 }
 
+/**
+ * 分析位图按卡片比例裁剪后的可见区域相对亮度。
+ *
+ * 采用低分辨率重采样，并使用 [Palette] 色板按像素占比加权计算平均相对亮度。
+ *
+ * @param background 背景填充色 ARGB 值。
+ * @return 相对亮度（0.0 ~ 1.0），若无有效像素则返回 `null`。
+ */
 private fun Bitmap.cardLuminance(background: Int): Double? {
     // Analyze only the visible crop, including the card color behind transparent pixels.
     val cropWidth = minOf(width, (height * BankCardAspectRatio).toInt().coerceAtLeast(1))

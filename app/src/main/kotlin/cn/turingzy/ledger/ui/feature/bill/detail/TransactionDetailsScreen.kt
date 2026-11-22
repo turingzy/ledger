@@ -18,6 +18,17 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cn.turingzy.ledger.model.currency.CurrencyAmountOverride
 import cn.turingzy.ledger.model.transaction.Transaction
 
+/**
+ * 交易详情及编辑弹窗页面。
+ *
+ * 监听 [TransactionDetailsViewModel] 中选中的交易 ID，加载交易详情；
+ * 若交易不存在或加载失败则回调提示，加载成功时展示可编辑的底部抽屉。
+ *
+ * @param onLoadFailure 加载失败时的提示文案回调。
+ * @param modifier 外部修饰符。
+ * @param viewModel 交易详情 ViewModel。
+ * @param sheetHeight 底部抽屉的固定高度，默认屏幕高度的 80%。
+ */
 @Composable
 internal fun TransactionDetailsScreen(
     onLoadFailure: (String) -> Unit,
@@ -56,6 +67,19 @@ internal fun TransactionDetailsScreen(
     }
 }
 
+/**
+ * 交易详情编辑抽屉内容组件。
+ *
+ * 包装 [RecordTransactionSheet]，展示单条交易的全部字段（金额、类型、分类、账户、转账信息、时间、备注等）并支持修改保存。
+ *
+ * @param uiState 加载成功的交易详情与候选数据 [TransactionDetailsUiState.Success]。
+ * @param onBack 关闭或返回回调。
+ * @param modifier 外部修饰符。
+ * @param saveState 保存状态（保存中、失败错误等）。
+ * @param onSave 提交修改后的交易数据及汇率覆盖。
+ * @param sheetHeight 抽屉高度。
+ * @param onLoadExchangeRate 跨币种动态汇率加载回调。
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun TransactionDetailsContent(

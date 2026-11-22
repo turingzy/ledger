@@ -26,6 +26,17 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
+/**
+ * 日期与时间联合选择弹窗组件。
+ *
+ * 包装 [LedgerDateTimePicker]，支持用户同时选择年月日以及具体时分，并支持通过 [isTimeAllowed] 进行时间合法性校验。
+ *
+ * @param initialTime 初始时间戳（毫秒）。
+ * @param onDismiss 关闭或取消弹窗的回调。
+ * @param onConfirm 确认选中时间的回调，参数为最终选中的毫秒时间戳。
+ * @param isTimeAllowed 判断所选时间是否合法的校验函数（例如禁止选择未来时间），默认为始终允许。
+ * @param invalidTimeMessage 当用户选择的时间不合法时展示的错误提示文本。
+ */
 @Composable
 internal fun LedgerDateTimeDialog(
     initialTime: Long,
@@ -64,6 +75,15 @@ internal fun LedgerDateTimeDialog(
     }
 }
 
+/**
+ * 将给定的日期、小时字符串与分钟字符串转换为指定时区的毫秒时间戳。
+ *
+ * @param date 目标日期 [LocalDate]。
+ * @param hour 小时字符串（0-23）。
+ * @param minute 分钟字符串（0-59）。
+ * @param zone 时区 [ZoneId]。
+ * @return 若输入的时间格式合法且在有效范围内，返回对应时间戳毫秒数；否则返回 null。
+ */
 internal fun recordTimeMillis(date: LocalDate, hour: String, minute: String, zone: ZoneId): Long? {
     val validHour = hour.toIntOrNull()?.takeIf { it in 0..23 } ?: return null
     val validMinute = minute.toIntOrNull()?.takeIf { it in 0..59 } ?: return null

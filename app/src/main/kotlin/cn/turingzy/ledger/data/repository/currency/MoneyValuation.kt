@@ -21,8 +21,28 @@ import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
 import timber.log.Timber
 
+/**
+ * 货币估值计算与转换服务。
+ *
+ * 负责在主币种变化或多币种交易/转账发生时，计算并持久化对应的基准金额、汇率快照及转账目标金额。
+ *
+ * @property database 账本本地数据库
+ * @property rates 汇率数据仓库，用于获取各币种对主币种的汇率报价
+ */
 @Singleton
 class MoneyValuation @Inject constructor(private val database: LedgerDatabase, private val rates: ExchangeRateRepository) {
+    /**
+     * 对单个交易进行货币估值并生成或更新其基准金额与货币快照。
+     *
+     * 支持用户手动指定的币种金额覆盖，以及跨币种转账时的转入金额换算。
+     *
+     * @param value 原始交易数据
+     * @param source 交易源账户
+     * @param target 转账目标账户（转账类型时必填，其它类型为 null）
+     * @param primary 当前主币种代码
+     * @param amountOverride 可选的手动币种金额覆盖
+     * @return 填充了估值信息、币种快照及转账折算信息的交易对象
+     */
     suspend fun transaction(
         value: Transaction,
         source: Account,
@@ -60,6 +80,15 @@ class MoneyValuation @Inject constructor(private val database: LedgerDatabase, p
         )
     }
 
+    /**
+     * 批量评估并补齐交易列表的基准币种估值。
+     *
+     * 针对缺少当前主币种快照或转入金额的交易，预拉取所需汇率并批量更新数据库。
+     *
+     * @param entries 包含交易详情和账户信息的列表
+     * @param primary 当前主币种代码
+     * @return 估值计算更新后的交易详情列表
+     */
     suspend fun transactions(entries: List<TransactionDetail>, primary: String): List<TransactionDetail> {
         val pending = entries.filter { it.transaction.baseCurrency != primary || it.transaction.baseAmount == null || it.transaction.currencySnapshots.none { snapshot -> snapshot.currency == primary } ||
             it.transaction.type == TransactionType.TRANSFER && it.transaction.toAmount == null }
@@ -95,6 +124,15 @@ class MoneyValuation @Inject constructor(private val database: LedgerDatabase, p
         return valued
     }
 
+    /**
+     * 评估账户列表在指定主币种下的基准余额。
+     *
+     * 针对当前余额非零的账户拉取当日汇率折算基准余额，并持久化更新到数据库中。
+     *
+     * @param entries 账户及其卡片模板信息列表
+     * @param primary 当前主币种代码
+     * @return 更新了基准余额与估值状态的账户列表
+     */
     suspend fun accounts(entries: List<AccountWithTemplate>, primary: String): List<AccountWithTemplate> {
         val today = LocalDate.now()
         if (entries.any { it.account.currentBalance != 0L && it.account.currency != primary }) rates.prepare(setOf(today), (entries.filter { it.account.currentBalance != 0L }.map { it.account.currency } + primary).toSet())

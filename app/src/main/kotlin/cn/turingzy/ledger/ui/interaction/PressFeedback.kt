@@ -20,15 +20,36 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 
+/**
+ * 记住并创建一个具有应用统一样式的高性能按压视觉反馈指示器（[IndicationNodeFactory]）。
+ *
+ * 针对短促点击进行了防丢优化，确保即便是极短的轻触也能呈现完整的按压动效。
+ *
+ * @param color 按压时覆盖的遮罩颜色，默认使用主文本色叠加按下透明度
+ * @return 对应的按压指示器节点工厂
+ */
 @Composable
 fun rememberUiIndication(
     color: Color = LedgerStyle.colors.textPrimary.copy(alpha = LedgerStyle.colors.textPrimary.alpha * LedgerStyle.opacity.pressed),
 ): IndicationNodeFactory = remember(color) { UiPressFeedback(color) }
 
+/**
+ * 自定义按压反馈指示器节点工厂实现类。
+ *
+ * @property color 遮罩颜色
+ */
 private data class UiPressFeedback(val color: Color) : IndicationNodeFactory {
     override fun create(interactionSource: InteractionSource): DelegatableNode = FeedbackNode(interactionSource, color)
 }
 
+/**
+ * 绘制按压高亮遮罩的 Modifier 节点。
+ *
+ * 监听 [InteractionSource] 中的按压事件（按下、释放、取消），并通过透明度动画驱动视觉反馈。
+ *
+ * @property source 交互事件流源
+ * @property color 遮罩基准颜色
+ */
 private class FeedbackNode(private val source: InteractionSource, private val color: Color) : Modifier.Node(), DrawModifierNode {
     private val alpha = Animatable(0f)
 

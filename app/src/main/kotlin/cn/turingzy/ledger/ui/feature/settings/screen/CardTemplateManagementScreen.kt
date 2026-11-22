@@ -81,6 +81,19 @@ import androidx.compose.ui.unit.sp
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.card.bank.rememberCircularCardPagerState
 
+/**
+ * 卡片背景模板管理页面屏幕组件。
+ *
+ * 提供卡片外观轮播预览、名称与文字颜色实时修改、封面图片替换、删除模板，
+ * 以及新增自定义卡片模板的完整管理流程。
+ *
+ * @param templates 当前已有的卡片模板列表
+ * @param onDismissRequest 返回或退出回调
+ * @param onCreate 新建卡片模板的挂起函数，返回生成的新模板 ID
+ * @param onUpdate 更新卡片模板的回调
+ * @param onDelete 删除卡片模板的回调
+ * @param onCopyImage 将外部选择的图片拷贝至内部存储的挂起函数
+ */
 @Composable
 internal fun CardTemplateManagementScreen(
     templates: List<CardTemplate>,
@@ -222,7 +235,18 @@ internal fun CardTemplateManagementScreen(
     }
 }
 
-/** Edits a new card face independently of the management pager. */
+/**
+ * 新增卡片模板页面组件。
+ *
+ * 独立于轮播管理页全屏打开，提供选择封面图片、输入模板名称及设置卡片文字颜色的完整表单。
+ *
+ * @param pending 正在创建的卡片模板草稿数据
+ * @param onChange 模板数据变更时的回调
+ * @param onChooseImage 点击选择封面图片的回调
+ * @param onClose 点击关闭或返回的回调
+ * @param onSave 点击确认保存的回调
+ * @param saving 是否正在执行保存操作
+ */
 @Composable
 internal fun NewCardTemplatePage(
     pending: CardTemplate,
@@ -258,7 +282,16 @@ internal fun NewCardTemplatePage(
     }
 }
 
-/** Keeps delete confirmation in the trailing action slot for the selected card. */
+/**
+ * 卡片模板的操作操作栏组件。
+ *
+ * 提供更换卡片封面按钮，以及右侧带二次确认的删除模板操作。
+ *
+ * @param templateId 模板唯一标识 ID
+ * @param onChooseImage 点击更换封面图片回调
+ * @param enabled 是否允许操作交互
+ * @param onDelete 点击删除模板回调，为 null 时不显示删除按钮
+ */
 @Composable
 private fun CardFaceActions(
     templateId: Long,
@@ -275,6 +308,14 @@ private fun CardFaceActions(
     }
 }
 
+/**
+ * 卡片模板属性编辑表单组件。
+ *
+ * 包含模板名称的输入框以及文字颜色的拾色器。
+ *
+ * @param template 当前编辑的卡片模板
+ * @param onChange 模板属性变更回调
+ */
 @Composable
 private fun CardFaceProperties(
     template: CardTemplate,
@@ -318,7 +359,16 @@ private fun CardFaceProperties(
     }
 }
 
-/** Shows an upload target for a new cover, then previews the saved card appearance. */
+/**
+ * 卡片模板封面预览组件。
+ *
+ * 当未配置封面图片且支持选图时，展示虚线边框的上传占位区域；
+ * 否则渲染带有真实 3D 倾斜和高光动效的钛金属质感卡片预览。
+ *
+ * @param template 待预览的卡片模板
+ * @param onChooseImage 点击选择封面图片的回调（为 null 表示只读预览）
+ * @param motionEnabled 是否开启触摸拖拽和倾斜动画
+ */
 @Composable
 private fun TemplateCoverPreview(
     template: CardTemplate,

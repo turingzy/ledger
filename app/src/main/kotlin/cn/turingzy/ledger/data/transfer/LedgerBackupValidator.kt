@@ -7,7 +7,31 @@ import cn.turingzy.ledger.model.currency.convertCents
 import cn.turingzy.ledger.model.settings.supportedCurrencyCodes
 import kotlinx.serialization.json.Json
 
+/**
+ * 账本备份数据校验器。
+ *
+ * 负责在导入或恢复备份时，严格核验备份格式标识、数据版本、实体关联完整性（账户、分类、图标、模板引用的有效性）
+ * 以及金额、汇率快照、偏好配置等业务规则约束。
+ */
 object LedgerBackupValidator {
+    /**
+     * 校验账本备份对象的完整性与合法性。
+     *
+     * 检查项包括：
+     * - 备份格式标识（`cn.turingzy.ledger.backup`）与版本号（当前固定为 1）。
+     * - 账单数据存在性及其内部实体 ID 的非零与唯一性。
+     * - 账户关联卡面模板引用的存在性。
+     * - 分类关联图标引用的存在性。
+     * - 交易记录中账户、目标转账账户（自转禁止且不能相同）、分类引用的有效性。
+     * - 交易货币快照的币种支持、金额非负与汇率换算一致性。
+     * - 偏好设置中的主要货币、主题及语言取值有效性。
+     * - 汇率历史数据的合法性。
+     * - 导入解析规则的有效性及其默认关联账户/分类的外键引用。
+     * - 卡片外观透明度取值范围（0..100）及目标唯一性。
+     *
+     * @param backup 待验证的账本备份数据对象 [LedgerBackup]。
+     * @throws IllegalArgumentException 当数据存在结构错误、孤立引用或违反约束条件时抛出。
+     */
     fun validate(backup: LedgerBackup) {
         require(backup.format == "cn.turingzy.ledger.backup" && backup.version == 1) { "不支持的备份格式或版本" }
         require(backup.bills != null || backup.settings != null) { "备份中没有数据" }
@@ -54,6 +78,9 @@ object LedgerBackupValidator {
         }
     }
 
+    /**
+     * 校验实体 ID 列表，确保所有 ID 均非零且无重复值，返回唯一的 ID 集合。
+     */
     private fun ids(values: List<Long>): Set<Long> {
         require(values.all { it != 0L } && values.distinct().size == values.size) { "备份包含无效或重复编号" }
         return values.toSet()

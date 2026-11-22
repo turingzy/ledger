@@ -36,6 +36,23 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+/**
+ * 分段选择控制器（胶囊式分段切换器）。
+ *
+ * 在水平排列的分段标签之间切换，选中项带有平滑平移的高亮滑块背景。
+ *
+ * @param labels 各分段的文本标签列表。
+ * @param selectedIndex 当前选中的分段索引。
+ * @param onSelect 点击分段项时的回调，参数为选中的索引。
+ * @param modifier 应用于控件的修饰符。
+ * @param enabled 是否允许交互。
+ * @param height 控件高度，默认为 36.dp，整体外形为高度一半的圆角胶囊形。
+ * @param fontSize 标签文字大小，默认为 14.sp。
+ * @param emphasizeSelection 选中时是否加粗文字（在未显式传入 [fontWeight] 时生效）。
+ * @param containerColor 控件底层背景色。
+ * @param selectedContainerColor 选中项指示器滑块的背景色。
+ * @param fontWeight 统一指定的字重；若为空则根据选中状态和 [emphasizeSelection] 自动判断。
+ */
 @Composable
 internal fun SegmentedControl(
     labels: List<String>,

@@ -25,21 +25,37 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 
-// Make the overlay the hit target while leaving its own buttons and parent gestures active.
+/**
+ * 拦截背后的触摸事件，使当前组件成为点击目标，同时保持自身内容与父级手势有效。
+ */
 internal fun Modifier.blockTouchesBehind(): Modifier = pointerInput(Unit) {
     awaitPointerEventScope { while (true) awaitPointerEvent() }
 }
 
+/**
+ * 背景图层状态，持有录制的绘制图层及在根布局中的全局坐标。
+ *
+ * @property layer 用于捕获背景绘制内容的图形图层。
+ */
 internal class BackdropStateBase(val layer: GraphicsLayer) {
+    /** 组件在根布局中的全局坐标原点。 */
     var origin by mutableStateOf(Offset.Zero)
 }
 
+/**
+ * 记住并创建一个 [BackdropStateBase] 实例。
+ */
 @Composable
 internal fun rememberBackdropStateBaseBase(): BackdropStateBase {
     val layer = rememberGraphicsLayer()
     return remember(layer) { BackdropStateBase(layer) }
 }
 
+/**
+ * 将当前组件的内容录制到 [BackdropStateBase] 的图形图层中，以供背景模糊组件使用。
+ *
+ * @param state 用于保存录制内容的背景状态。
+ */
 internal fun Modifier.recordBackdropBase(state: BackdropStateBase): Modifier =
     onGloballyPositioned { state.origin = it.positionInRoot() }
         .drawWithContent {
@@ -47,6 +63,16 @@ internal fun Modifier.recordBackdropBase(state: BackdropStateBase): Modifier =
             drawLayer(state.layer)
         }
 
+/**
+ * 绘制磨砂玻璃（毛玻璃）背景效果的修饰符。
+ *
+ * 将 [BackdropStateBase] 录制的背景图层进行模糊处理并平移对齐，同时叠加半透明底色，支持可选的底部渐隐淡出效果。
+ *
+ * @param state 录制了背景内容的背景状态；如果为 null 则只绘制底色。
+ * @param tint 叠加在模糊层之上的背景色调。
+ * @param blurRadius 模糊半径。
+ * @param fadeBottom 底部渐变透明淡出的高度；默认值为 0.dp（不淡出）。
+ */
 @Composable
 internal fun Modifier.frostedBackdropBase(
     state: BackdropStateBase?,

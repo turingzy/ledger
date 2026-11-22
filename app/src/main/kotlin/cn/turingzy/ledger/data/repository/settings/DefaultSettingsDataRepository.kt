@@ -47,6 +47,21 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
+/**
+ * [SettingsDataRepository] 的默认实现。
+ *
+ * 结合 Room 数据库、文件系统、偏好设置和多币种估值服务，
+ * 负责系统默认规则填充、卡面模板图片管理、账单导出（CSV/Excel）、
+ * 账单导入规划与执行、以及完整/部分备份与恢复（含故障回滚）。
+ *
+ * @param context 应用程序上下文
+ * @param database 账本本地数据库
+ * @param appearances 卡片外观仓库
+ * @param preferences 用户偏好设置仓库
+ * @param valuation 货币估值计算服务
+ * @param exchangeRates 汇率仓库
+ * @param ioDispatcher 用于执行 IO、编解码与数据库操作的协程调度器
+ */
 @Singleton
 class DefaultSettingsDataRepository @Inject constructor(
     @param:ApplicationContext private val context: Context,
@@ -59,6 +74,9 @@ class DefaultSettingsDataRepository @Inject constructor(
 ) : SettingsDataRepository {
     private val json = Json { encodeDefaults = true; ignoreUnknownKeys = true }
 
+    /**
+     * 若数据库中尚无任何导入规则，则在事务中插入内置的默认账单解析规则。
+     */
     override suspend fun ensureDefaultRules() = withContext(ioDispatcher) {
         database.withTransaction {
             if (database.parseRuleDao().backupRows().isNotEmpty()) return@withTransaction
@@ -69,6 +87,14 @@ class DefaultSettingsDataRepository @Inject constructor(
         }
     }
 
+    /**
+     * 保存卡面模板。
+     *
+     * 如果模板图片尚未本地化，则会先将其拷贝并压缩至应用私有目录，随后持久化到数据库。
+     *
+     * @param template 待保存的卡面模板
+     * @return 模板 ID
+     */
     override suspend fun saveTemplate(template: CardTemplate): Long = withContext(ioDispatcher) {
         require(template.name.isNotBlank() && template.coverUri.isNotBlank()) { "请填写卡面名称并选择图片" }
         val normalized = BuiltInCardFace.byId(template.id)?.asTemplate(template)
@@ -78,6 +104,12 @@ class DefaultSettingsDataRepository @Inject constructor(
         else { database.cardTemplateDao().updateTemplate(stable.asEntity()); stable.id }
     }
 
+    /**
+     * 将指定 URI 的图片转存至应用私有目录并返回文件路径 URI。
+     *
+     * @param uri 图片源 URI
+     * @return 私有存储中的文件 URI 字符串
+     */
     override suspend fun copyImage(uri: Uri): String = withContext(ioDispatcher) { storeImage(uri.toString()) }
 
     private fun storeImage(value: String): String {
@@ -110,6 +142,15 @@ class DefaultSettingsDataRepository @Inject constructor(
         return Uri.fromFile(file).toString()
     }
 
+    /**
+     * 将指定时间范围内的交易导出为 CSV 或 Excel 文件并写入目标 URI。
+     *
+     * @param uri 目标写入 URI
+     * @param excel 为 true 导出为 Excel 格式，否则导出为 CSV 格式
+     * @param start 导出区间开始时间戳（毫秒）
+     * @param end 导出区间结束时间戳（毫秒）
+     * @return 导出的交易笔数
+     */
     override suspend fun exportBills(uri: Uri, excel: Boolean, start: Long, end: Long): Int = withContext(ioDispatcher) {
         val details = database.transactionDao().getPopulatedTransactionsBetween(start, end).first().map { it.asExternalModel() }
         val header = listOf("交易时间", "金额", "收支类型", "分类", "备注", "账户", "转入账户", "币种", "来源交易号", "转入金额", "主要货币", "主要货币金额", "主要货币汇率", "汇率日期")
@@ -136,11 +177,28 @@ class DefaultSettingsDataRepository @Inject constructor(
         return cn.turingzy.ledger.data.transfer.BillImportPlanner.plan(rows, rule, selectedAccountId, accounts, categories)
     }
 
+    /**
+     * 预解析账单并生成导入规划，返回有效条数、确定重复条数与疑似重复条数，不写入数据库。
+     *
+     * @param uri 账单文件 URI
+     * @param rule 账单解析规则
+     * @param selectedAccountId 默认目标账户 ID（可选）
+     */
     override suspend fun previewImport(uri: Uri, rule: BillParseRule, selectedAccountId: Long?): BillImportResult = withContext(ioDispatcher) {
         val plan = planBillImport(readImport(uri, rule, selectedAccountId), database.transactionDao().backupRows().map { it.asExternalModel() }, false)
         BillImportResult(plan.transactions.size, plan.duplicates, plan.possibleDuplicates)
     }
 
+    /**
+     * 解析账单并将其正式导入数据库。
+     *
+     * 在事务中执行去重、多币种交易估值、原子更新账户余额及插入交易记录。
+     *
+     * @param uri 账单文件 URI
+     * @param rule 账单解析规则
+     * @param selectedAccountId 默认目标账户 ID（可选）
+     * @param includePossibleDuplicates 是否导入疑似重复项
+     */
     override suspend fun importBills(uri: Uri, rule: BillParseRule, selectedAccountId: Long?, includePossibleDuplicates: Boolean): BillImportResult = withContext(ioDispatcher) {
         val prepared = planBillImport(readImport(uri, rule, selectedAccountId), database.transactionDao().backupRows().map { it.asExternalModel() }, includePossibleDuplicates)
         val primary = preferences.preferences.first().primaryCurrency
@@ -172,6 +230,13 @@ class DefaultSettingsDataRepository @Inject constructor(
         }
     }
 
+    /**
+     * 导出账单与/或设置的完整快照，包含图片 Base64 编码、汇率、偏好设置等，写入指定 URI。
+     *
+     * @param uri 备份目标 URI
+     * @param includeBills 是否包含账单数据
+     * @param includeSettings 是否包含偏好与外观设置
+     */
     override suspend fun backup(uri: Uri, includeBills: Boolean, includeSettings: Boolean) = withContext(ioDispatcher) {
         require(includeBills || includeSettings)
         val snapshot = database.withTransaction {
@@ -204,6 +269,14 @@ class DefaultSettingsDataRepository @Inject constructor(
         write(uri, bytes)
     }
 
+    /**
+     * 从指定 URI 恢复备份数据。
+     *
+     * 解码 Base64 图片资源、重建数据库表数据、恢复卡片外观和通用偏好，
+     * 并在发生异常时提供外观和偏好设置的回滚机制。
+     *
+     * @param uri 备份文件源 URI
+     */
     override suspend fun restore(uri: Uri): Unit = withContext(ioDispatcher) {
         val backup = json.decodeFromString<LedgerBackup>(read(uri, MAX_BACKUP_BYTES).toString(Charsets.UTF_8))
         LedgerBackupValidator.validate(backup)

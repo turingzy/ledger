@@ -28,6 +28,16 @@ import androidx.compose.ui.unit.sp
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import java.time.LocalDate
 
+/**
+ * 统计概览卡片组件。
+ *
+ * 以 2x2 网格形式展示当前周期的总支出、总收入、结余以及平均支出（日均/月均/年均），
+ * 并展示平均支出相对上期的环比变动率与趋势图标。
+ *
+ * @param state 统计成功状态。
+ * @param days 按日统计数据映射。
+ * @param modifier 修饰符。
+ */
 @Composable
 internal fun AnalyticsStatisticsCard(state: AnalyticsUiState.Success, days: Map<LocalDate, AnalyticsDay>, modifier: Modifier = Modifier) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
@@ -54,6 +64,14 @@ internal fun AnalyticsStatisticsCard(state: AnalyticsUiState.Success, days: Map<
     }
 }
 
+/**
+ * 单个统计指标展示块。
+ *
+ * @param label 指标标签名（如“支出”、“收入”、“结余”、“日均支出”）。
+ * @param amount 金额数值（分）。
+ * @param modifier 修饰符。
+ * @param average 平均支出指标扩展信息（用于展示环比变动与图标）。
+ */
 @Composable
 private fun StatisticsMetric(label: String, amount: Long, modifier: Modifier = Modifier, average: AnalyticsExpenseAverage? = null) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources

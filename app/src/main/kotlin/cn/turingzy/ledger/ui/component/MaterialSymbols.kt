@@ -8,7 +8,21 @@ import androidx.compose.ui.unit.dp
 
 // Generated from Google Material Symbols Rounded by scripts/sync_material_symbols.py.
 // Weight 400, grade 0, optical size 24. Apache-2.0; see assets/licenses/material-symbols.txt.
+/**
+ * 共享的 Material Symbols Rounded 矢量图标集合。
+ *
+ * 集中管理应用内统一使用的 Google 官方 Material Symbols 图标资源（规格为 Weight 400、Grade 0、Optical Size 24dp）。
+ * 所有图标均通过 [lazy] 委托按需延迟加载解析为 [ImageVector]。
+ */
 internal object MaterialSymbols {
+    /**
+     * 根据 SVG 路径字符串构造 [ImageVector] 矢量图。
+     *
+     * @param name 图标名称，用于无障碍或调试标识。
+     * @param path SVG 路径字符串数据。
+     * @param autoMirror 在从右到左 (RTL) 布局环境中是否自动镜像翻转。
+     * @return 构造完成的 [ImageVector] 实例。
+     */
     private fun symbol(name: String, path: String, autoMirror: Boolean = false): ImageVector =
         ImageVector.Builder(
             name = name,

@@ -66,8 +66,23 @@ import cn.turingzy.ledger.ui.interaction.rememberUiIndication
 import cn.turingzy.ledger.ui.interaction.uiClickable
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 
+/** 批量选择底栏的底部预留间距。 */
 internal val BillSelectionBarPadding = BottomBarContentPadding
 
+/**
+ * 账单多选操作底栏组件。
+ *
+ * 悬浮于屏幕底部，展示全选勾选框、当前已选计数，并提供批量修改账户、批量修改分类及批量删除的操作入口。
+ *
+ * @param selectedCount 当前选中的交易总数。
+ * @param allSelected 是否已全选当前列表的所有交易。
+ * @param enabled 是否允许操作（异步提交中时为 false）。
+ * @param onSelectAll 全选/取消全选回调。
+ * @param onSelectAccount 点击批量修改账户的回调。
+ * @param onSelectCategory 点击批量修改分类的回调。
+ * @param onDelete 点击批量删除的回调。
+ * @param modifier 外部修饰符。
+ */
 @Composable
 internal fun BillSelectionBar(
     selectedCount: Int,
@@ -125,9 +140,27 @@ private fun BillSelectionAction(label: String, tint: Color, enabled: Boolean, on
     )
 }
 
+/**
+ * 账单批量操作选择器目标类型。
+ */
 internal enum class BillActionPicker {
-    Account, Category;
+    /** 批量修改交易账户。 */
+    Account,
+    /** 批量修改交易分类。 */
+    Category;
 
+    /**
+     * 弹出用于选择批量目标账户或分类的底部抽屉。
+     *
+     * @param accounts 候选账户列表。
+     * @param categories 候选分类列表。
+     * @param accountCount 计算指定账户匹配可迁移的交易数量。
+     * @param categoryCount 计算指定分类匹配可迁移的交易数量。
+     * @param selectedCount 当前多选的交易总数。
+     * @param type 当前交易的基准类型（支出/收入/转账）。
+     * @param onDismiss 关闭抽屉回调。
+     * @param onSelect 选定目标并确认的回调，携带变更参数 [TransactionBatchChange]。
+     */
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun Sheet(
@@ -264,6 +297,13 @@ private fun BillPickerHeader(
 private fun batchOptionHint(compatible: Int, selected: Int): String? =
     if (compatible < selected) stringResource(R.string.bill_partial_batch_hint, compatible, selected) else null
 
+/**
+ * 批量删除交易确认对话框。
+ *
+ * @param count 待删除的交易数量。
+ * @param onDismiss 取消/关闭对话框回调。
+ * @param onConfirm 确认删除回调。
+ */
 @Composable
 internal fun BillDeleteDialog(count: Int, onDismiss: () -> Unit, onConfirm: () -> Unit) {
     BaseAlertDialog(

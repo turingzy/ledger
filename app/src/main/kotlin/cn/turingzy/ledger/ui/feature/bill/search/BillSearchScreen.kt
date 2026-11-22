@@ -51,7 +51,16 @@ import cn.turingzy.ledger.ui.interaction.uiClickable
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import kotlinx.coroutines.launch
 
-/** Searches all bills while reusing the bill list's transaction actions. */
+/**
+ * 账单全局搜索主页面。
+ *
+ * 支持按关键词（备注、分类、账户名）搜索、基于近期高频分类的快捷推荐、
+ * 高级条件过滤（时间、金额、账户与排序），并完整复用账单列表的滑动操作、批量操作与详情编辑能力。
+ *
+ * @param onBack 返回上级页面的回调。
+ * @param viewModel 账单 ViewModel。
+ * @param transactionViewModel 交易详情及编辑 ViewModel。
+ */
 @Composable
 internal fun BillSearchScreen(
     onBack: () -> Unit,
@@ -165,7 +174,18 @@ internal fun BillSearchScreen(
     )
 }
 
-/** Places the close action inside the search field without changing its focus behavior. */
+/**
+ * 搜索输入框头部栏组件。
+ *
+ * 封装胶囊样式搜索栏、搜索图标、输入文本框、键盘回车操作以及右侧关闭/返回按钮。
+ *
+ * @param input 当前输入的文本内容。
+ * @param onInputChange 文本变更回调。
+ * @param onSubmit 键盘按下搜索或回车时的提交回调。
+ * @param onClose 点击关闭按钮的回调。
+ * @param focusRequester 可选的焦点请求器，用于进入页面时自动弹出软键盘。
+ * @param onFocusRequested 自动请求焦点完成的回调。
+ */
 @Composable
 internal fun BillSearchHeader(
     input: String,

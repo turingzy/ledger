@@ -27,6 +27,19 @@ import cn.turingzy.ledger.ui.component.card.bank.CardPageIndicator
 import cn.turingzy.ledger.ui.component.card.bank.titaniumTitle
 import cn.turingzy.ledger.ui.feature.wallet.component.BankCardItem
 
+/**
+ * 账户卡面设计选择弹窗。
+ *
+ * 允许用户通过左右滑动预览并挑选内置或自定义的银行卡卡面样式。
+ *
+ * @param templates 可用的卡面模板列表
+ * @param selectedId 当前已选中的模板 ID
+ * @param accountName 预览显示的账户名称
+ * @param accountType 预览显示的账户类型
+ * @param tailNumber 预览显示的卡号后四位或账号
+ * @param onDismiss 关闭弹窗回调
+ * @param onConfirm 确认选择卡面回调，传回所选模板 ID
+ */
 @Composable
 internal fun AccountCardFaceDialog(
     templates: List<CardTemplate>,

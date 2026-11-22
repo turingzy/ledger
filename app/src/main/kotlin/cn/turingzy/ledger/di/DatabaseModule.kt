@@ -28,12 +28,29 @@ import kotlinx.coroutines.SupervisorJob
 import javax.inject.Provider
 import javax.inject.Singleton
 
+/**
+ * 数据库依赖注入模块。
+ *
+ * 负责构建并提供 Room 数据库单例 [LedgerDatabase]，注册版本迁移与初始化种子数据回调，
+ * 并对外暴露各个实体的 DAO 接口。
+ */
 @Module
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
 
+    /** 数据库文件名。 */
     private const val DATABASE_NAME = "ledger.db"
 
+    /**
+     * 构建并提供 [LedgerDatabase] 数据库单例。
+     *
+     * 注册数据库迁移配置（1->2, 2->3, 3->4, 4->5）以及在初次创建数据库时的异步种子数据播种回调。
+     *
+     * @param context 应用程序全局上下文。
+     * @param ioDispatcher IO 密集型协程调度器。
+     * @param databaseProvider 用于延迟获取数据库实例以供种子播种使用的 Provider。
+     * @return 构建完成的 [LedgerDatabase] 实例。
+     */
     @Provides
     @Singleton
     fun providesLedgerDatabase(
@@ -57,24 +74,45 @@ object DatabaseModule {
         ).build()
     }
 
+    /**
+     * 提供图标数据访问对象 [IconDao]。
+     */
     @Provides
     fun providesIconDao(database: LedgerDatabase): IconDao = database.iconDao()
 
+    /**
+     * 提供卡面模板数据访问对象 [CardTemplateDao]。
+     */
     @Provides
     fun providesCardTemplateDao(database: LedgerDatabase): CardTemplateDao = database.cardTemplateDao()
 
+    /**
+     * 提供分类数据访问对象 [CategoryDao]。
+     */
     @Provides
     fun providesCategoryDao(database: LedgerDatabase): CategoryDao = database.categoryDao()
 
+    /**
+     * 提供账户数据访问对象 [AccountDao]。
+     */
     @Provides
     fun providesAccountDao(database: LedgerDatabase): AccountDao = database.accountDao()
 
+    /**
+     * 提供交易数据访问对象 [TransactionDao]。
+     */
     @Provides
     fun providesTransactionDao(database: LedgerDatabase): TransactionDao = database.transactionDao()
 
+    /**
+     * 提供账单解析规则数据访问对象 [ParseRuleDao]。
+     */
     @Provides
     fun providesParseRuleDao(database: LedgerDatabase): ParseRuleDao = database.parseRuleDao()
 
+    /**
+     * 提供备份配置数据访问对象 [BackupConfigDao]。
+     */
     @Provides
     fun providesBackupConfigDao(database: LedgerDatabase): BackupConfigDao = database.backupConfigDao()
 }

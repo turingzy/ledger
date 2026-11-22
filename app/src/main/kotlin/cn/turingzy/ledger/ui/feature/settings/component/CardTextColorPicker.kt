@@ -54,11 +54,23 @@ import cn.turingzy.ledger.ui.component.input.CompactSlider
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.card.bank.asCardTextColor
 
+/**
+ * 将 [Color] 对象转换为十六进制颜色字符串（如 "#FFFFFF" 或 "#AARRGGBB"）。
+ */
 private fun Color.asHex(): String {
     val hex = toArgb().toUInt().toString(16).uppercase().padStart(8, '0')
     return "#${if (hex.startsWith("FF")) hex.drop(2) else hex}"
 }
 
+/**
+ * 卡片文字颜色选择器组件。
+ *
+ * 提供预设色板快速点击选择，并支持打开高级颜色调节对话框进行精细化配色。
+ *
+ * @param value 当前选中的颜色十六进制字符串
+ * @param onChange 颜色发生改变时的回调
+ * @param automatic 是否启用自适应/自动配色；若为 true 则预设色板不显示选中高亮
+ */
 @Composable
 internal fun CardTextColorPicker(
     value: String,
@@ -101,6 +113,15 @@ internal fun CardTextColorPicker(
     )
 }
 
+/**
+ * 高级自定义颜色选择对话框。
+ *
+ * 包含色盘二维取色器、亮度调节滑块以及支持 Hex 字符串直接编辑的文本框。
+ *
+ * @param initialColor 打开对话框时的初始颜色
+ * @param onDismiss 对话框请求关闭或取消时的回调
+ * @param onConfirm 确认选中新颜色时的回调
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CardTextColorDialog(initialColor: Color, onDismiss: () -> Unit, onConfirm: (Color) -> Unit) {
@@ -171,6 +192,17 @@ private fun CardTextColorDialog(initialColor: Color, onDismiss: () -> Unit, onCo
     }
 }
 
+/**
+ * 基于 Canvas 绘制的二维色相-饱和度拾色板。
+ *
+ * 水平方向代表色相（Hue: 0°~360°），垂直方向代表饱和度（Saturation: 0~1），
+ * 支持点击与拖拽手势交互并实时绘制指示圆环。
+ *
+ * @param hue 当前色相值 (0f..360f)
+ * @param saturation 当前饱和度值 (0f..1f)
+ * @param brightness 当前明度值 (0f..1f)
+ * @param onSelect 选取的色相与饱和度变更回调 `(hue, saturation) -> Unit`
+ */
 @Composable
 private fun ColorSquare(hue: Float, saturation: Float, brightness: Float, onSelect: (Float, Float) -> Unit) {
     val textResources = androidx.compose.ui.platform.LocalResources.current

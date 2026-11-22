@@ -55,8 +55,19 @@ import cn.turingzy.ledger.ui.theme.LedgerStyle
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
+/**
+ * 自定义日期区间选择时的端点类型。
+ */
 private enum class AnalyticsDateEndpoint { START, END }
 
+/**
+ * 统计分析屏幕。
+ *
+ * @param modifier 修饰符。
+ * @param viewModel 统计分析主 ViewModel。
+ * @param dashboardViewModel 统计看板 ViewModel。
+ * @param onOpenCalendar 打开消费日历画面的回调，传入当前周期的结束日期。
+ */
 @Composable
 fun AnalyticsScreen(
     modifier: Modifier = Modifier,
@@ -79,6 +90,19 @@ fun AnalyticsScreen(
     )
 }
 
+/**
+ * 统计分析界面的内容布局。
+ *
+ * @param uiState 当前统计分析状态。
+ * @param onTimeScopeChange 时间范围粒度改变回调。
+ * @param onNavigatePeriod 前后周期导航步进回调（如 -1 表示上一期，1 表示下一期）。
+ * @param modifier 修饰符。
+ * @param onSelectPeriod 选中特定周期起始日期的回调。
+ * @param onSelectRange 自定义区间选中的回调（起始日期与结束日期）。
+ * @param dashboard 看板数据状态。
+ * @param onCategoryTypeChange 收支类别类型切换回调（支出/收入）。
+ * @param onOpenCalendar 打开消费日历回调。
+ */
 @Composable
 fun AnalyticsContent(
     uiState: AnalyticsUiState,
@@ -198,6 +222,14 @@ fun AnalyticsContent(
     }
 }
 
+/**
+ * 自定义区间模式下的日期点击文本。
+ *
+ * @param date 展示的日期。
+ * @param description 无障碍语义描述。
+ * @param onClick 点击事件回调。
+ * @param modifier 修饰符。
+ */
 @Composable
 private fun AnalyticsRangeDate(
     date: LocalDate,
@@ -217,6 +249,13 @@ private fun AnalyticsRangeDate(
     )
 }
 
+/**
+ * 统计时间粒度分段选择器（周、月、年、全部）。
+ *
+ * @param currentScope 当前选中的时间粒度。
+ * @param onScopeSelected 选择时间粒度时的回调。
+ * @param modifier 修饰符。
+ */
 @Composable
 fun AnalyticsTimeScopeSelector(
     currentScope: AnalyticsTimeScope,
@@ -234,6 +273,13 @@ fun AnalyticsTimeScopeSelector(
     )
 }
 
+/**
+ * 周期前后切换的圆形导航箭头按钮。
+ *
+ * @param forward 是否为前进（下一周期），true 表示下一周期，false 表示上一周期。
+ * @param onClick 点击事件回调。
+ * @param modifier 修饰符。
+ */
 @Composable
 private fun PeriodNavigationArrow(
     forward: Boolean,

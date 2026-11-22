@@ -50,6 +50,18 @@ import java.time.LocalDate
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+/**
+ * 周期筛选底部抽屉弹窗（BottomSheet）。
+ *
+ * 供用户选择按“周”、“月”或“年”筛选账单或统计数据，顶部提供快捷返回当前周期的“撤销/回到今天”按钮及分段切换器。
+ *
+ * @param type 当前初始筛选类型 [DateFilterType]。
+ * @param initialDate 初始选中的基准日期。
+ * @param onDismiss 关闭或取消抽屉的回调。
+ * @param onSelect 选定周期类型与起始日期时的回调。
+ * @param modifier 应用于抽屉组件的修饰符。
+ * @param showViewSelector 是否显示顶部的分段视图切换器（周/月/年），默认为 true。
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun PeriodPickerSheet(
@@ -126,6 +138,15 @@ internal fun PeriodPickerSheet(
     }
 }
 
+/**
+ * 周期选项垂直滚动列表。
+ *
+ * @param type 当前查看的周期类型（周、月或年）。
+ * @param initialDate 初始选中日期。
+ * @param today 当前真实日期。
+ * @param onSelect 选中某个周期起始日期时的回调。
+ * @param modifier 外部修饰符。
+ */
 @Composable
 private fun PeriodList(
     type: DateFilterType,
@@ -169,6 +190,16 @@ private fun PeriodList(
     }
 }
 
+/**
+ * 周选择项视图。
+ *
+ * 展示该周的日期范围标签与周一至周日的7日数字横向排布。
+ *
+ * @param date 该周周一对应的日期。
+ * @param chosen 是否为当前选中的周。
+ * @param today 今天日期。
+ * @param onSelect 选中该周时的回调。
+ */
 @Composable
 private fun LedgerWeekOption(date: LocalDate, chosen: Boolean, today: LocalDate, onSelect: (LocalDate) -> Unit) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
@@ -201,6 +232,13 @@ private fun LedgerWeekOption(date: LocalDate, chosen: Boolean, today: LocalDate,
     }
 }
 
+/**
+ * 年份包含的月份网格视图。
+ *
+ * @param year 所属年份。
+ * @param chosen 当前选中的日期。
+ * @param onSelect 选中具体月份1日时的回调。
+ */
 @Composable
 private fun LedgerMonthOptions(year: Int, chosen: LocalDate, onSelect: (LocalDate) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium)) {
@@ -220,6 +258,15 @@ private fun LedgerMonthOptions(year: Int, chosen: LocalDate, onSelect: (LocalDat
     }
 }
 
+/**
+ * 单个周期选项按钮（用于年份按钮或月份按钮）。
+ *
+ * @param date 选项关联的日期。
+ * @param label 显示文案。
+ * @param chosen 是否被选中。
+ * @param onSelect 点击回调。
+ * @param modifier 外部修饰符。
+ */
 @Composable
 private fun PeriodOption(
     date: LocalDate,
@@ -238,6 +285,13 @@ private fun PeriodOption(
     }
 }
 
+/**
+ * 周期选项通用的点击与无障碍语义扩展修饰符。
+ *
+ * @param date 关联日期。
+ * @param chosen 是否处于选中态。
+ * @param onSelect 点击回调。
+ */
 @Composable
 private fun Modifier.periodSelection(date: LocalDate, chosen: Boolean, onSelect: (LocalDate) -> Unit): Modifier =
     testTag("ledgerPeriod-${date.toEpochDay()}")

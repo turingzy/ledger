@@ -13,6 +13,15 @@ import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+/**
+ * 异步加载并生成经过快速模糊处理的背景位图。
+ *
+ * 位图缩放与箱式模糊计算在后台分发器 ([Dispatchers.Default]) 中执行，避免阻塞主线程和页面切换动画。
+ *
+ * @param resourceId 用于兜底加载的图片资源 ID。
+ * @param source 可选的源图片位图，若提供则优先使用。
+ * @return 模糊后的 [ImageBitmap]，加载未完成或失败时返回 null。
+ */
 @Composable
 internal fun rememberBlurredBackdropBase(@DrawableRes resourceId: Int, source: ImageBitmap? = null): ImageBitmap? {
     val resources = LocalContext.current.resources
@@ -36,6 +45,13 @@ internal fun rememberBlurredBackdropBase(@DrawableRes resourceId: Int, source: I
     return backdrop
 }
 
+/**
+ * 对位图进行两趟（水平和垂直）快速均值模糊。
+ *
+ * @param source 源位图。
+ * @param radius 模糊核半径。
+ * @return 模糊后的新位图。
+ */
 private fun fastBlurBitmap(source: Bitmap, radius: Int): Bitmap {
     val width = source.width
     val height = source.height

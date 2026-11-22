@@ -38,6 +38,20 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
+/**
+ * 账单交互操作协调组件。
+ *
+ * 统一管理账单记录的侧滑操作（复制、编辑、删除）、多选批量操作（批量修改账户、分类、批量删除）、
+ * 复制生成的预填记账草稿以及确认对话框。
+ *
+ * @param dayGroups 按天分组的交易数据列表。
+ * @param ungroupedRows 未分组的交易列表（例如搜索结果中），默认空列表。
+ * @param viewModel 账单 ViewModel。
+ * @param transactionViewModel 交易详情与编辑 ViewModel。
+ * @param snackbarHostState 用于提示操作失败等信息的 [SnackbarHostState]。
+ * @param onSelectionVisibleChange 批量多选状态（显示/隐藏底栏）变更回调。
+ * @param content 内容插槽，接收包装好的自定义交易行渲染组件。
+ */
 @Composable
 internal fun BillTransactionActions(
     dayGroups: List<DayTransactionGroup>,

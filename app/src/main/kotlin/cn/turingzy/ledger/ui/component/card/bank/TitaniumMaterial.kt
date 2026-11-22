@@ -20,13 +20,34 @@ import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalInspectionMode
 
+/**
+ * 钛金属材质预设枚举。
+ *
+ * @property dark 卡面是否为暗色调（影响文字前景与边框的反差反色）。
+ * @property base 材质的基础底色。
+ */
 internal enum class TitaniumPreset(val dark: Boolean, val base: Color) {
+    /** 浅色彩虹钛：明亮钛金底色，伴随柔和的彩虹色泽衍射。 */
     IridescentLight(false, Color(0xFFF2EDE5)),
+
+    /** 深色彩虹钛：深灰黑钛金底色，伴随多色暗调光斑。 */
     IridescentDark(true, Color(0xFF1A1B1E)),
+
+    /** 浅色珍珠钛：柔和珍珠米白钛质感，带有微细拉丝光泽。 */
     PearlLight(false, Color(0xFFD1CEC6)),
+
+    /** 深色珍珠钛：深海蓝黑珍珠钛质感，带有同心各向异性径向拉丝光芒。 */
     PearlDark(true, Color(0xFF0C1417)),
 }
 
+/**
+ * 材质内部彩色高光斑点描述。
+ *
+ * @property color 光斑颜色。
+ * @property x 归一化横向中心坐标。
+ * @property y 归一化纵向中心坐标。
+ * @property radius 相对卡片宽度的归一化半径（保持纵横比下为正圆）。
+ */
 private data class Glow(val color: Color, val x: Float, val y: Float, val radius: Float)
 
 // Radius is expressed in card widths so the highlights stay round at the card aspect ratio.
@@ -61,6 +82,17 @@ private val titaniumGlows = mapOf(
     ),
 )
 
+/**
+ * 钛金属材质绘制层。
+ *
+ * 在 Android 13 (API 33)+ 且非预览模式下，使用 AGSL [RuntimeShader] 绘制各向异性金属噪点、光泽与动态光斑；
+ * 在低版本或预览模式下退化为纯 Compose Canvas 径向渐变模拟。
+ *
+ * @param preset 钛金属预设类型。
+ * @param motion 包含物理倾斜角度与拖拽强度的动效状态。
+ * @param tuning 钛金属物理参数。
+ * @param modifier 修饰符。
+ */
 @Composable
 internal fun TitaniumMaterial(
     preset: TitaniumPreset,
@@ -98,6 +130,9 @@ internal fun TitaniumMaterial(
     }
 }
 
+/**
+ * Android 13+ 高精度 AGSL 运行时着色器材质渲染表面。
+ */
 @RequiresApi(33)
 @Composable
 private fun TitaniumShaderSurface(
@@ -136,6 +171,12 @@ private fun TitaniumShaderSurface(
 
 private fun Color.toAndroidColor() = android.graphics.Color.valueOf(red, green, blue)
 
+/**
+ * 为自定义背景图片添加物理光照反射 [RenderEffect] 的修饰符。
+ *
+ * @param motion 倾斜与拖拽动效状态。
+ * @param tuning 物理调节参数。
+ */
 @RequiresApi(33)
 @Composable
 internal fun Modifier.titaniumImageReflection(
@@ -153,6 +194,15 @@ internal fun Modifier.titaniumImageReflection(
     }
 }
 
+/**
+ * 适用于 API < 33 或 Compose 预览环境的降级光带反射层。
+ *
+ * 使用线性渐变矩形跟随倾斜角度平移，模拟金属光泽滑过的视觉反馈。
+ *
+ * @param motion 倾斜动效状态。
+ * @param tuning 调节参数。
+ * @param modifier 修饰符。
+ */
 @Composable
 internal fun TitaniumFallbackReflection(
     motion: State<TitaniumMotion>,
@@ -185,12 +235,18 @@ internal fun TitaniumFallbackReflection(
     }) {}
 }
 
+/**
+ * 创建并配置光照计算所需的 [RuntimeShader]。
+ */
 @RequiresApi(33)
 private fun titaniumLightingShader(source: String, tuning: TitaniumCardTuning): RuntimeShader =
     RuntimeShader(source).apply {
         setFloatUniform("dragHighlight", tuning.shaderDragBandStrength, tuning.shaderDragCoreStrength)
     }
 
+/**
+ * 将当前视口尺寸与动态倾斜物理数据更新至着色器 uniform 变量中。
+ */
 @RequiresApi(33)
 private fun RuntimeShader.updateLighting(width: Float, height: Float, motion: TitaniumMotion) {
     setFloatUniform("resolution", width, height)

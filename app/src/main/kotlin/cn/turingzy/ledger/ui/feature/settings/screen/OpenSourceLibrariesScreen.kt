@@ -23,8 +23,15 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 
+/**
+ * 开源库条目数据模型。
+ *
+ * @property name 开源类库或框架名称
+ * @property url 项目官方网站或代码仓库 URL
+ */
 private data class OpenSourceLibrary(val name: String, val url: String)
 
+/** 应用所依赖的核心开源库与组件列表。 */
 private val openSourceLibraries = listOf(
     OpenSourceLibrary("Kotlin", "https://github.com/JetBrains/kotlin"),
     OpenSourceLibrary("Jetpack Compose", "https://developer.android.com/jetpack/androidx/releases/compose"),
@@ -42,6 +49,14 @@ private val openSourceLibraries = listOf(
     OpenSourceLibrary("Material Symbols", "https://github.com/google/material-design-icons"),
 )
 
+/**
+ * 开源软件许可证与类库展示页面屏幕组件。
+ *
+ * 罗列应用采用的所有关键开源项目及许可协议类型，点击每个条目可跳转至对应的官方代码仓库或发布主页。
+ *
+ * @param onBack 返回上一级页面的回调
+ * @param modifier 修饰符
+ */
 @Composable
 internal fun OpenSourceLibrariesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources

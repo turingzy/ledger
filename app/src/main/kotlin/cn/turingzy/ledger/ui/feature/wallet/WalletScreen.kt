@@ -52,6 +52,14 @@ import cn.turingzy.ledger.ui.component.card.summary.SummaryCardContent
 import cn.turingzy.ledger.R
 import cn.turingzy.ledger.model.account.Account
 
+/**
+ * 钱包页面根 Composable。
+ *
+ * 负责收集钱包数据状态及卡片外观状态，并协调账户新增、详情/修改、删除及背景设置等操作。
+ *
+ * @param modifier 外部修饰符
+ * @param viewModel 钱包业务逻辑 ViewModel
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WalletScreen(
@@ -104,27 +112,49 @@ fun WalletScreen(
     )
 }
 
+/**
+ * 钱包页面账户底部弹窗（新增账户 / 账户详情）状态控制器。
+ */
 @Stable
 private class WalletAccountSheetController {
+    /** 是否正在展示新增账户弹窗 */
     var adding by mutableStateOf(false)
         private set
+    /** 当前选中的账户，非空时展示账户详情弹窗 */
     var selected by mutableStateOf<Account?>(null)
         private set
 
+    /** 显示新增账户弹窗 */
     fun showAdd() {
         selected = null
         adding = true
     }
 
+    /**
+     * 显示指定账户的详情与编辑弹窗
+     *
+     * @param account 目标账户
+     */
     fun showDetails(account: Account) {
         adding = false
         selected = account
     }
 
+    /** 关闭新增账户弹窗 */
     fun dismissAdd() { adding = false }
+    /** 关闭账户详情弹窗 */
     fun dismissDetails() { selected = null }
 }
 
+/**
+ * 钱包账户底部弹窗容器，根据控制器状态渲染新增账户或账户详情弹窗。
+ *
+ * @param controller 弹窗状态控制器
+ * @param uiState 当前钱包 UI 状态
+ * @param onCreate 创建新账户回调
+ * @param onSave 保存账户修改回调
+ * @param onDelete 删除账户回调
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun WalletAccountSheets(
@@ -170,6 +200,23 @@ private fun WalletAccountSheets(
     }
 }
 
+/**
+ * 钱包页面主内容区域。
+ *
+ * 展示顶部标题、新增账户入口、资产汇总卡片以及账户卡片叠放列表。
+ *
+ * @param uiState 钱包页面状态
+ * @param onAddAccountClick 点击新增账户回调
+ * @param onAdjustBalanceClick 点击调整账户余额/查看账户详情回调
+ * @param modifier 外部修饰符
+ * @param onDeleteAccountClick 删除账户回调（保留参数）
+ * @param cardAppearance 汇总卡片外观样式
+ * @param cardBackground 汇总卡片自定义背景图
+ * @param cardSettingsEnabled 是否允许修改卡片设置
+ * @param onUploadCardBackground 上传卡片背景图片回调
+ * @param onCardTransparencyChange 调整卡片透明度回调
+ * @param snackbarHostState 轻量消息提示状态
+ */
 @Composable
 fun WalletContent(
     uiState: WalletUiState,
@@ -299,6 +346,22 @@ fun WalletContent(
     }
 }
 
+/**
+ * 钱包顶部总资产概览卡片。
+ *
+ * 显示总资产、总支出与总收入，支持隐藏金额以及卡片背景与透明度自定义。
+ *
+ * @param totalAsset 总资产金额（单位：分）
+ * @param totalExpense 总支出金额（单位：分）
+ * @param totalIncome 总收入金额（单位：分）
+ * @param modifier 外部修饰符
+ * @param appearance 卡片外观样式
+ * @param background 卡片自定义背景位图
+ * @param settingsEnabled 是否启用卡片背景及外观设置
+ * @param onUploadBackground 触发背景图片选择回调
+ * @param onTransparencyChange 修改背景透明度百分比回调
+ * @param currency 币种代码，默认为 "CNY"
+ */
 @Composable
 fun WalletHeroCard(
     totalAsset: Long,

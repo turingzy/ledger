@@ -43,10 +43,17 @@ import java.time.YearMonth
 import java.time.ZoneId
 import javax.inject.Inject
 
+/**
+ * 账单日期过滤条件定义。
+ */
 sealed interface BillDateFilter {
+    /** 按周筛选，[anchorDate] 为该周内的任意基准日期。 */
     data class Week(val anchorDate: LocalDate) : BillDateFilter
+    /** 按月份筛选，[yearMonth] 为目标年月。 */
     data class Month(val yearMonth: YearMonth) : BillDateFilter
+    /** 按年份筛选，[year] 为目标年份。 */
     data class Year(val year: Int) : BillDateFilter
+    /** 按起止日期闭区间筛选。 */
     data class Range(val startDate: LocalDate, val endDate: LocalDate) : BillDateFilter
 }
 
@@ -62,6 +69,12 @@ private data class FilterCalcResult(
     val endDate: LocalDate,
 )
 
+/**
+ * 账单功能的主业务 ViewModel。
+ *
+ * 负责维护当前选中的统计周期、加载并聚合周期内的交易明细与收支总结、
+ * 处理快捷记账、批量操作、快速搜索以及分类使用建议。
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class BillViewModel @Inject constructor(
@@ -74,6 +87,7 @@ class BillViewModel @Inject constructor(
 
     private val dateFilter = MutableStateFlow<BillDateFilter>(BillDateFilter.Month(YearMonth.now()))
 
+    /** 当前所有分类列表（带图标）的状态流。 */
     val categories: StateFlow<List<CategoryWithIcon>> = categoryRepository.getCategoriesStream()
         .stateIn(
             scope = viewModelScope,
@@ -81,6 +95,7 @@ class BillViewModel @Inject constructor(
             initialValue = emptyList(),
         )
 
+    /** 当前所有账户列表（带模板外观）的状态流。 */
     val accounts: StateFlow<List<AccountWithTemplate>> = accountRepository.getAccountsStream()
         .stateIn(
             scope = viewModelScope,
@@ -89,9 +104,12 @@ class BillViewModel @Inject constructor(
         )
 
     private val _saveState = MutableStateFlow(TransactionSaveState())
+    /** 快捷记账的保存状态流。 */
     internal val saveState = _saveState.asStateFlow()
+    /** 重置快捷记账保存状态。 */
     internal fun resetSaveState() { if (!_saveState.value.saving) _saveState.value = TransactionSaveState() }
 
+    /** 账单主页面的 UI 状态流，根据日期过滤与主货币动态计算收支、结余与按天分组。 */
     val uiState: StateFlow<BillUiState> = combine(dateFilter, currencies.selection, ::Pair).flatMapLatest { (filter, currency) ->
         val zone = ZoneId.systemDefault()
         val calc = when (filter) {
@@ -158,7 +176,7 @@ class BillViewModel @Inject constructor(
         initialValue = BillUiState.Loading,
     )
 
-    /** Uses the most recent transactions to rank selectable categories by frequency. */
+    /** 根据近期使用频次推荐最多 6 个常用分类供搜索筛选。 */
     internal val searchSuggestions = combine(categories, flow { emitAll(transactionRepository.recentCategoryIds(100)) }) { available, recent ->
         val counts = recent.groupingBy { it }.eachCount()
         available.asSequence()
@@ -167,7 +185,12 @@ class BillViewModel @Inject constructor(
             .take(6).toList()
     }.flowOn(defaultDispatcher)
 
-    /** Searches independently of the date filter on the bill page. */
+    /**
+     * 执行账单搜索，不受当前主页日期周期限制。
+     *
+     * @param request 搜索请求参数（包含关键词、分类、类型、日期及金额区间）。
+     * @return 过滤并排序后的搜索结果 Flow。
+     */
     internal fun search(request: BillSearchRequest) = combine(
         currencies.selection,
         request.categoryId?.let(transactionRepository::getTransactionsByCategory)
@@ -176,18 +199,27 @@ class BillViewModel @Inject constructor(
         buildBillSearchResults(rows, request, currency.currency, ZoneId.systemDefault())
     }.flowOn(defaultDispatcher)
 
+    /** 切换统计周期为指定月份。 */
     fun setMonth(year: Int, month: Int) {
         dateFilter.value = BillDateFilter.Month(YearMonth.of(year, month))
     }
 
+    /** 切换统计周期为指定基准日期所在的周。 */
     fun setWeek(anchorDate: LocalDate) {
         dateFilter.value = BillDateFilter.Week(anchorDate)
     }
 
+    /** 切换统计周期为指定年份。 */
     fun setYear(year: Int) {
         dateFilter.value = BillDateFilter.Year(year)
     }
 
+    /**
+     * 响应通用周期选择器的选择结果。
+     *
+     * @param type 周期类型（周、月、年等）。
+     * @param date 选中的基准日期。
+     */
     fun selectPeriod(type: DateFilterType, date: LocalDate) {
         when (type) {
             DateFilterType.WEEK -> setWeek(date)
@@ -197,6 +229,19 @@ class BillViewModel @Inject constructor(
         }
     }
 
+    /**
+     * 创建一条新交易记录。
+     *
+     * @param type 交易类型（支出、收入、转账）。
+     * @param amount 交易金额（分）。
+     * @param accountId 支出账户或转出账户 ID。
+     * @param toAccountId 转入账户 ID（仅转账交易生效）。
+     * @param categoryId 交易分类 ID。
+     * @param note 交易备注。
+     * @param transactionTime 交易发生时间戳（毫秒）。
+     * @param toAmount 跨币种转账时的转入金额（分）。
+     * @param amountOverride 自定义金额汇率折算覆盖。
+     */
     fun createTransaction(
         type: TransactionType,
         amount: Long,
@@ -234,9 +279,20 @@ class BillViewModel @Inject constructor(
         }
     }
 
+    /**
+     * 对选中的交易批量应用修改。
+     *
+     * @param ids 目标交易 ID 集合。
+     * @param change 批量变更指令（换账户、换分类或删除）。
+     */
     internal suspend fun applyBatch(ids: Set<Long>, change: TransactionBatchChange) =
         transactionRepository.applyBatch(ids, change)
 
+    /**
+     * 删除指定 ID 的单条交易。
+     *
+     * @param id 待删除的交易 ID。
+     */
     fun deleteTransaction(id: Long) {
         viewModelScope.launch {
             transactionRepository.deleteTransaction(id)

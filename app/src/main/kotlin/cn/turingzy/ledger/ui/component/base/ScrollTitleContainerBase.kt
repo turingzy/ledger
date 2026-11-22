@@ -27,6 +27,18 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+/**
+ * 伴随页面滚动的吸顶标题容器组件。
+ *
+ * 当内容垂直滚动超过指定阈值时，平滑淡入展示半透明磨砂毛玻璃样式的固定标题栏，
+ * 动态调整标题字体大小并提供点击返回顶部的快捷操作。
+ *
+ * @param title 顶部标题文本。
+ * @param scrollOffset 获取当前垂直滚动偏移量（像素）的函数。
+ * @param onScrollToTop 点击返回顶部按钮时执行的挂起动作。
+ * @param modifier 应用于根容器的修饰符。
+ * @param content 页面主体内容插槽，接收需要附加到可滚动内容上的 [Modifier]（用于录制毛玻璃背景图层）。
+ */
 @Composable
 internal fun ScrollTitleContainerBase(
     title: String,

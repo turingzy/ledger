@@ -64,15 +64,45 @@ import androidx.compose.ui.text.style.TextAlign
 import cn.turingzy.ledger.model.account.AccountWithTemplate
 import cn.turingzy.ledger.model.category.CategoryWithIcon
 
+/** 账单解析规则的类型别名。 */
 internal typealias ParseRulePreview = cn.turingzy.ledger.model.transfer.BillParseRule
 
+/**
+ * 获取系统内置预设的账单解析规则列表。
+ *
+ * @return 预设的解析规则列表
+ */
 internal fun defaultParseRulePreviews(): List<ParseRulePreview> = ParseRulePreview.defaults()
 
+/**
+ * 规则详情页面的导航路由参数。
+ *
+ * @property id 待查看或编辑的规则唯一 ID
+ */
 @Serializable
 private data class RuleDetail(val id: Long)
 
+/**
+ * 规则配置项（如默认账户、默认分类）的下拉选择数据项。
+ *
+ * @property id 关联实体的唯一 ID，为 null 表示未指定或导入时选择
+ * @property label 显示在界面的文本标签
+ */
 private data class RuleOption(val id: Long?, val label: String)
 
+/**
+ * 账单解析规则管理页面屏幕组件。
+ *
+ * 托管规则列表、新建规则及规则详情编辑的二级导航状态流，
+ * 协调规则的增删改查。
+ *
+ * @param accounts 现有账户列表，供配置默认账户使用
+ * @param categories 现有分类列表，供配置默认分类使用
+ * @param rules 现有账单解析规则列表
+ * @param onSaveRule 保存或更新解析规则的回调
+ * @param onDeleteRule 删除解析规则的回调
+ * @param onDismissRequest 退出或返回上一级界面的回调
+ */
 @Composable
 internal fun ParseRulesScreen(
     accounts: List<AccountWithTemplate>,
@@ -124,7 +154,16 @@ internal fun ParseRulesScreen(
     }
 }
 
-/** Opens existing rules as details and keeps creation behind the Add action. */
+/**
+ * 账单解析规则列表展示页面。
+ *
+ * 罗列所有现存解析规则的名称与起始解析行号，并提供添加新规则的操作入口。
+ *
+ * @param rules 规则列表
+ * @param onBack 返回回调
+ * @param onCreate 点击新建规则回调
+ * @param onOpenRule 点击查看或编辑指定规则详情的回调
+ */
 @Composable
 private fun ParseRuleList(
     rules: List<ParseRulePreview>,
@@ -156,7 +195,20 @@ private fun ParseRuleList(
     }
 }
 
-/** Saves valid detail edits immediately and commits a new rule only on confirmation. */
+/**
+ * 账单解析规则编辑器页面。
+ *
+ * 用于创建新规则或编辑现有规则。支持配置基础信息（名称、数据起始行）、
+ * 列名映射（交易时间、金额、类型、分类、备注）以及默认账户与默认分类。
+ * 编辑现有规则时对有效修改即时自动保存，新建规则时需通过保存按钮提交。
+ *
+ * @param initialDraft 初始规则草稿数据
+ * @param accounts 账户列表
+ * @param categories 分类列表
+ * @param onSaveRule 保存规则回调
+ * @param onClose 关闭编辑器回调
+ * @param onDelete 删除规则回调，新建规则时为 null
+ */
 @Composable
 internal fun ParseRuleEditor(
     initialDraft: ParseRulePreview,
@@ -261,6 +313,11 @@ internal fun ParseRuleEditor(
     }
 }
 
+/**
+ * 临时设置窗口输入法模式为 [WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING]，
+ * 避免在弹出软键盘时系统平移整个窗口导致背景位移，改由 Compose 自身响应输入法内边距。
+ * 离开界面时自动恢复原模式。
+ */
 @Composable
 private fun KeepRuleEditorWindowStationary() {
     val window = LocalActivity.current?.window ?: return
@@ -274,16 +331,34 @@ private fun KeepRuleEditorWindowStationary() {
     }
 }
 
+/**
+ * 规则表单字段分组卡片容器。
+ *
+ * @param modifier 修饰符
+ * @param content 卡片内承载的字段内容
+ */
 @Composable
 private fun RuleFieldGroup(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     CardBase(modifier, contentPadding = PaddingValues(LedgerStyle.spacing.none), contentSpacing = LedgerStyle.spacing.none, content = content)
 }
 
+/**
+ * 规则表单字段之间的分割线。
+ */
 @Composable
 private fun RuleDivider() {
     DividerBase(Modifier.padding(horizontal = LedgerStyle.spacing.large))
 }
 
+/**
+ * 规则表单文本输入行组件。
+ *
+ * @param label 左侧字段标签
+ * @param value 当前输入的文本值
+ * @param placeholder 无内容时的占位提示文本
+ * @param onChange 文本输入修改时的回调
+ * @param keyboardType 弹出的软键盘类型，默认为 [KeyboardType.Text]
+ */
 @Composable
 private fun RuleTextField(
     label: String,
@@ -313,6 +388,16 @@ private fun RuleTextField(
     }
 }
 
+/**
+ * 规则表单下拉选择行组件。
+ *
+ * @param label 左侧配置标签
+ * @param value 当前选定项的展示文案
+ * @param options 可选的条目列表
+ * @param selectedId 当前选定项的唯一标识
+ * @param onSelect 选定某个条目时的回调
+ * @param menuTestTag 测试标签
+ */
 @Composable
 private fun RuleChoiceDropdown(
     label: String,

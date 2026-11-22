@@ -38,7 +38,15 @@ import cn.turingzy.ledger.ui.component.navigation.LedgerFloatingActionButton
 import cn.turingzy.ledger.ui.interaction.LocalSystemClickFeedback
 import cn.turingzy.ledger.ui.interaction.rememberSystemClickFeedback
 
-/** Hosts the top-level bar and hides it while a subpage owns the screen. */
+/**
+ * 账本应用主框架界面。
+ *
+ * 托管顶级底部导航栏 [LedgerBottomBar]、全局记账悬浮按钮 [LedgerFloatingActionButton]，
+ * 以及主导航宿主 [LedgerNavHost]。管理顶级目的地切换、子页面与多选操作下的底部栏显隐，
+ * 并处理全屏任务转场时的遮罩与裁剪联动。
+ *
+ * @param modifier 应用于根容器的修饰符。
+ */
 @Composable
 fun LedgerApp(
     modifier: Modifier = Modifier,
@@ -115,7 +123,13 @@ fun LedgerApp(
     }
 }
 
-/** Clips bottom controls to the area above a full-screen task's moving top edge. */
+/**
+ * 动态裁剪形状，用于将底部控制条等界面元素裁剪至全屏任务动态顶边之上。
+ *
+ * 当全屏任务向上滑动展开时，保证底部栏视觉上保持在其下方并被精准遮挡。
+ *
+ * @property bottom 裁剪矩形的下边界纵坐标（像素）。
+ */
 private data class RevealedChromeShape(val bottom: Float) : Shape {
     override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline =
         Outline.Rectangle(Rect(0f, 0f, size.width, bottom.coerceIn(0f, size.height)))

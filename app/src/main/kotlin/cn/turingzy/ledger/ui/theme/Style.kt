@@ -8,24 +8,41 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.dp
 
+/**
+ * 应用全局设计系统样式总入口对象。
+ *
+ * 聚合颜色、排版、形状、间距、尺寸、透明度、图标规范及交互样式等设计规范令牌。
+ */
 object AppStyle {
+    /** 当前主题下的业务语义颜色 [SemanticColors] */
     val colors: SemanticColors
         @Composable get() {
             val scheme = MaterialTheme.colorScheme
             return remember(scheme) { semanticColors(scheme) }
         }
 
+    /** 应用排版规范 */
     val typography = AppTypography
+    /** 应用圆角与形状规范 */
     val shapes = AppShapes
+    /** 应用间距规范 */
     val spacing = AppSpacing
+    /** 应用尺寸规范 */
     val dimensions = AppDimensions
+    /** 应用透明度规范 */
     val opacity = AppOpacity
+    /** 应用图标规格规范 */
     val icons = AppIconStyle
+    /** 装饰与品牌固定颜色规范 */
     val decorationColors = DecorationColors
 }
 
+/** [AppStyle] 的别名 */
 typealias LedgerStyle = AppStyle
 
+/**
+ * 图标尺寸与字体规范。
+ */
 object AppIconStyle {
     const val family = "Material Symbols"
     const val variant = "Rounded"
@@ -33,19 +50,32 @@ object AppIconStyle {
     const val grade = 0
     const val opticalSize = 24
 
+    /** 下拉菜单选中对勾图标尺寸 (18dp) */
     val dropdownCheck = 18.dp
+    /** 默认图标尺寸 (24dp) */
     val default = 24.dp
+    /** 行内内联图标尺寸 (20dp) */
     val inline = 20.dp
+    /** 小型图标尺寸 (16dp) */
     val small = 16.dp
+    /** 外链图标尺寸 (14dp) */
     val externalLink = 14.dp
+    /** 趋势变化微型图标尺寸 (10dp) */
     val trend = 10.dp
+    /** 导航栏图标尺寸 (25dp) */
     val navigation = 25.dp
+    /** 返回导航图标尺寸 (32dp) */
     val back = 32.dp
+    /** 图片占位图图标尺寸 (40dp) */
     val imagePlaceholder = 40.dp
 }
 
+/** [AppIconStyle] 的别名 */
 typealias LedgerIconStyle = AppIconStyle
 
+/**
+ * 间距与间隙规范标尺。
+ */
 object AppSpacing {
     val none = 0.dp
     val hairline = 1.dp
@@ -71,8 +101,12 @@ object AppSpacing {
     val calendarCardVertical = 10.dp
 }
 
+/** [AppSpacing] 的别名 */
 typealias LedgerSpacing = AppSpacing
 
+/**
+ * 控件尺寸、行高与边界尺寸规范。
+ */
 object AppDimensions {
     val formBorderThickness = 1.dp
     val fieldLabelOffset = 10.dp
@@ -104,8 +138,12 @@ object AppDimensions {
     val calendarEmptyIllustrationHeight = 105.dp
 }
 
+/** [AppDimensions] 的别名 */
 typealias LedgerDimensions = AppDimensions
 
+/**
+ * 透明度与遮罩 Alpha 常量规范。
+ */
 object AppOpacity {
     const val readOnlyBorder = 0.12f
     const val subtleCardShadow = 0.04f
@@ -118,8 +156,12 @@ object AppOpacity {
     const val topBarScrolled = 0.55f
 }
 
+/** [AppOpacity] 的别名 */
 typealias LedgerOpacity = AppOpacity
 
+/**
+ * 形状与圆角曲率规范。
+ */
 object AppShapes {
     val indicator = RoundedCornerShape(3.dp)
     val chartTooltip = RoundedCornerShape(5.dp)
@@ -143,15 +185,26 @@ object AppShapes {
     )
 }
 
+/** [AppShapes] 的别名 */
 typealias LedgerShapes = AppShapes
 
+/**
+ * 交互动画时长与防抖时间参数。
+ */
 object AppInteractionStyle {
+    /** 点击防抖时间间隔（毫秒） */
     const val clickDebounceMillis = 350L
+    /** 按下动画淡入时长（毫秒） */
     const val pressEnterMillis = 70
+    /** 短按快速轻触动画淡入时长（毫秒） */
     const val quickTapEnterMillis = 40
+    /** 短按快速轻触保持时长（毫秒） */
     const val quickTapHoldMillis = 40L
+    /** 松开动画淡出时长（毫秒） */
     const val pressExitMillis = 140
+    /** 按压取消动画淡出时长（毫秒） */
     const val pressCancelMillis = 100
 }
 
+/** [AppInteractionStyle] 的别名 */
 typealias LedgerInteractionStyle = AppInteractionStyle

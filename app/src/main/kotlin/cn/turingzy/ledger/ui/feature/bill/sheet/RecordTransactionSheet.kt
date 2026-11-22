@@ -99,6 +99,31 @@ import java.time.format.DateTimeFormatter
 
 private enum class RecordPanel { ENTRY, ACCOUNT, DESTINATION, DATE_TIME }
 
+/**
+ * 记账与交易编辑的核心底部抽屉组件。
+ *
+ * 完整承载单条交易的新增或编辑流程：
+ * - 顶部支出/收入/转账类型切换
+ * - 分类选择 5 列自适应网格（转账模式下为转出与转入账户卡片及互换）
+ * - 账户与交易发生时间快捷修改
+ * - 跨币种转账汇率动态拉取与自定义调整
+ * - 外币交易主币种折算金额查看与手动覆盖
+ * - 金额四则运算表达式输入、备注录入以及内置数字键盘
+ *
+ * @param sheetState 控制抽屉展开收起的 [SheetState]。
+ * @param categories 可选分类列表。
+ * @param accounts 可选账户列表。
+ * @param onDismissRequest 关闭抽屉请求回调。
+ * @param onConfirm 提交交易记录的回调，包含类型、金额、账户、转账信息、分类、备注、时间、折算金额及汇率覆盖。
+ * @param modifier 外部修饰符。
+ * @param initialTransaction 编辑模式下的初始交易数据，为空表示新增。
+ * @param initialTransactionTime 新增模式下的初始交易时间戳。
+ * @param title 抽屉标题文本。
+ * @param saving 是否正在提交保存中。
+ * @param error 错误提示文案。
+ * @param sheetHeight 抽屉整体高度。
+ * @param onLoadExchangeRate 跨币种汇率异步加载方法。
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecordTransactionSheet(
@@ -293,6 +318,42 @@ fun RecordTransactionSheet(
     }
 }
 
+/**
+ * 记账抽屉主体内容区布局。
+ *
+ * @param expression 当前金额表达式输入字符串。
+ * @param note 交易备注。
+ * @param type 交易类型（支出、收入、转账）。
+ * @param categories 当前类型下匹配的分类列表。
+ * @param selectedCategoryId 当前选中的分类 ID。
+ * @param accountName 当前选中的账户名称。
+ * @param destinationName 转账模式下的目标账户名称。
+ * @param timeLabel 格式化后的时间文案。
+ * @param hasCalculation 当前金额表达式是否包含待运算的四则运算符号。
+ * @param actionEnabled 键盘操作按钮（完成或等号）是否可用。
+ * @param onTypeChange 切换交易类型回调。
+ * @param onCategorySelect 选中分类回调。
+ * @param onExpressionChange 金额表达式变更回调。
+ * @param onNoteChange 备注变更回调。
+ * @param onAccountClick 点击选择账户回调。
+ * @param onDestinationClick 点击选择转入账户回调。
+ * @param onTimeClick 点击修改时间回调。
+ * @param onSwapAccounts 转账模式下互换转出与转入账户回调。
+ * @param onConfirm 点击完成或等号回调。
+ * @param modifier 外部修饰符。
+ * @param error 错误提示信息。
+ * @param keyHeight 键盘按键高度。
+ * @param currency 当前账户币种代码。
+ * @param transferRate 跨币种转账汇率。
+ * @param transferLabel 汇率说明标签。
+ * @param transferredAmount 折算后的目标账户金额。
+ * @param onTransferRateChange 修改转账汇率回调。
+ * @param primaryAmountLabel 折算为主币种的金额文本。
+ * @param onEditPrimaryAmount 点击编辑主币种折算金额回调。
+ * @param onDismiss 关闭抽屉回调。
+ * @param closeDescription 关闭按钮无障碍描述。
+ * @param actionsEnabled 操作是否可用。
+ */
 @Composable
 internal fun RecordTransactionContent(
     expression: String,
@@ -591,6 +652,16 @@ private fun TransferAccountSelector(
     }
 }
 
+/**
+ * 格式化交易时间戳为紧凑的展示标签。
+ *
+ * 格式规则：当天展示 "HH:mm"；当年非当天展示 "MM.dd HH:mm"；跨年展示 "yyyy.MM.dd HH:mm"。
+ *
+ * @param timestamp 交易时间戳（毫秒）。
+ * @param zone 当前系统时区。
+ * @param today 今天日期（默认根据时区获取）。
+ * @return 格式化后的时间字符串。
+ */
 internal fun recordTimeLabel(timestamp: Long, zone: ZoneId, today: LocalDate = LocalDate.now(zone)): String {
     val value = Instant.ofEpochMilli(timestamp).atZone(zone)
     val date = value.toLocalDate()

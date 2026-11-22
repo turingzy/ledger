@@ -6,6 +6,11 @@ import cn.turingzy.ledger.ui.component.card.summary.SummaryCardViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
+/**
+ * 钱包页面汇总卡片外观设置 ViewModel。
+ *
+ * 继承自 [SummaryCardViewModel]，针对 [SummaryCardTarget.WALLET] 目标配置外观属性。
+ */
 @HiltViewModel
 internal class WalletCardViewModel @Inject constructor(
     repository: LedgerCardAppearanceRepository,

@@ -25,7 +25,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cn.turingzy.ledger.model.settings.LedgerCardAppearance
 
-/** Edits the background and transparency of a summary card. */
+/**
+ * 摘要卡片背面设置面板组件。
+ *
+ * 位于卡片背面，提供以下外观调节功能：
+ * - 毛玻璃透明度百分比滑动条（带当前百分比动态跟随浮标）。
+ * - 更换/上传背景图片按钮。
+ * - 底部空白区域继承水平滑动手势修饰符，便于用户滑动切回卡片正面。
+ *
+ * @param appearance 当前卡片外观配置。
+ * @param enabled 设置控件是否处于可交互状态。
+ * @param onUploadBackground 点击上传/更换背景图回调。
+ * @param onTransparencyChange 滑动透明度滑块时的实时更新回调。
+ * @param onTransparencyChangeFinished 停止拖动滑块后的落盘保存回调。
+ * @param modifier 修饰符。
+ * @param swipeModifier 供空白区域接收水平滑动手势以翻转卡片的修饰符。
+ */
 @Composable
 internal fun SummaryCardSettings(
     appearance: LedgerCardAppearance,

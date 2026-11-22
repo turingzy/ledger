@@ -7,6 +7,19 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import cn.turingzy.ledger.model.category.CategoryType
 
+/**
+ * 交易分类数据库实体，对应表 `tb_category`。
+ *
+ * 存储账单收支分类定义及其绑定的展示图标。
+ *
+ * @property categoryId 分类唯一标识，自增主键
+ * @property name 分类名称（如“餐饮”、“购物”、“工资”）
+ * @property type 分类所属类型（支出/收入）[CategoryType]
+ * @property iconId 关联的系统图标 ID
+ * @property sortOrder 展示排序权重，值越小越靠前
+ * @property isSystem 是否为系统内置分类
+ * @property isDeleted 软删除标记，true 表示已被软删除
+ */
 @Entity(
     tableName = "tb_category",
     foreignKeys = [

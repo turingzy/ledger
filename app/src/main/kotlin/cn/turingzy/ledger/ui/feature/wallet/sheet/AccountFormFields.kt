@@ -24,6 +24,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 
+/**
+ * 账户表单保存按钮（勾选图标）。
+ *
+ * @param enabled 是否可点击保存
+ * @param onClick 点击保存回调
+ * @param modifier 外部修饰符
+ * @param contentDescription 无障碍辅助功能说明
+ */
 @Composable
 internal fun AccountSaveButton(
     enabled: Boolean,
@@ -42,6 +50,17 @@ internal fun AccountSaveButton(
     }
 }
 
+/**
+ * 账户卡面样式选择入口字段。
+ *
+ * 显示当前卡面名称及右箭头，未启用时显示置灰状态及引导提示文本。
+ *
+ * @param value 当前选中的卡面名称或占位文案
+ * @param onClick 点击打开卡面选择弹窗回调
+ * @param modifier 外部修饰符
+ * @param enabled 是否允许点击选择
+ * @param disabledHint 禁用状态下的提示文案
+ */
 @Composable
 internal fun AccountCardFaceField(
     value: String,
@@ -68,6 +87,15 @@ internal fun AccountCardFaceField(
     }
 }
 
+/**
+ * 银行卡卡号尾号（后四位）输入框字段。
+ *
+ * 限制仅允许输入最多 4 位数字。
+ *
+ * @param value 当前输入的尾号字符
+ * @param onValueChange 尾号变更回调
+ * @param modifier 外部修饰符
+ */
 @Composable
 internal fun AccountTailNumberField(value: String, onValueChange: (String) -> Unit, modifier: Modifier = Modifier) {
     FormTextField(

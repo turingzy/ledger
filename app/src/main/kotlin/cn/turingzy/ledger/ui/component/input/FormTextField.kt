@@ -23,7 +23,22 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import cn.turingzy.ledger.ui.component.base.FormFieldFrameBase
 
-/** Edits a single value using the shared account-form field frame. */
+/**
+ * 表单单行文本输入框组件。
+ *
+ * 基于通用表单边框 [FormFieldFrameBase]，支持输入焦点跟踪、占位文本、后缀文案、只读状态及软键盘行为配置。
+ *
+ * @param label 表单项的标题标签。
+ * @param value 当前输入的文本内容。
+ * @param onValueChange 文本变化时的回调函数。
+ * @param modifier 应用于该组件的修饰符。
+ * @param placeholder 当文本为空时显示的占位符。
+ * @param suffix 文本框右侧显示的后缀文案（如单位、币种等）。
+ * @param error 错误提示信息，非空时边框展示错误样式。
+ * @param readOnly 是否为只读状态。只读时不可聚焦输入且呈半透明禁用文本色。
+ * @param keyboardType 软键盘类型，默认为 [KeyboardType.Text]。
+ * @param imeAction 软键盘动作键类型，默认为 [ImeAction.Next]（切换到下一个焦点）。
+ */
 @Composable
 internal fun FormTextField(
     label: String,

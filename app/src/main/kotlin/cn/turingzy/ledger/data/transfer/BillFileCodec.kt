@@ -12,10 +12,26 @@ import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 import javax.xml.parsers.DocumentBuilderFactory
 
+/**
+ * 账单文件编解码工具。
+ *
+ * 负责 CSV 与 XLSX 格式账单文件的解析和导出，以及账单数据中金额与时间戳的规范化解析。
+ */
 object BillFileCodec {
+    /** 支持解析的最大文件大小限制（32 MB）。 */
     const val MAX_BYTES = 32 * 1024 * 1024
+    /** 单个账单文件支持的最大行数限制。 */
     private const val MAX_ROWS = 100_000
 
+    /**
+     * 从原始字节数组中解析表格数据。
+     *
+     * 根据文件头魔数自动区分 XLSX（ZIP 容器）或 CSV 格式。对于 CSV，会优先尝试 UTF-8 编码，
+     * 若包含乱码字符则回退到 GB18030 编码进行解析。
+     *
+     * @param bytes 文件的原始字节数据。
+     * @return 按行和单元格组织的二维字符串列表。
+     */
     fun read(bytes: ByteArray): List<List<String>> {
         require(bytes.size <= MAX_BYTES) { "文件不能超过 32 MB" }
         return if (bytes.take(2) == listOf(80.toByte(), 75.toByte())) readWorkbook(bytes) else {
@@ -25,6 +41,14 @@ object BillFileCodec {
         }
     }
 
+    /**
+     * 解析 CSV 格式文本。
+     *
+     * 支持标准 RFC 4180 引号包围、双引号转义及包含换行符的字段，自动剥除 UTF-8 BOM。
+     *
+     * @param text CSV 文本内容。
+     * @return 解析后的二维字符串列表。
+     */
     fun readCsv(text: String): List<List<String>> {
         val rows = mutableListOf<List<String>>()
         var row = mutableListOf<String>()
@@ -52,10 +76,24 @@ object BillFileCodec {
         return rows
     }
 
+    /**
+     * 将表格数据编码为带 UTF-8 BOM 的 CSV 字节数组。
+     *
+     * @param rows 待导出的二维字符串列表。
+     * @return CSV 格式的 UTF-8 字节数组。
+     */
     fun csv(rows: List<List<String>>): ByteArray = ("\uFEFF" + rows.joinToString("\r\n") { row ->
         row.joinToString(",") { "\"${it.replace("\"", "\"\"")}\"" }
     }).toByteArray(Charsets.UTF_8)
 
+    /**
+     * 将表格数据编码为基础 XLSX（OpenXML）工作簿字节数组。
+     *
+     * 生成包含单一工作表的最小结构 XLSX 文件，单元格统一作为 inlineStr 写入。
+     *
+     * @param rows 待导出的二维字符串列表。
+     * @return XLSX 格式的压缩包字节数组。
+     */
     fun workbook(rows: List<List<String>>): ByteArray {
         val output = ByteArrayOutputStream()
         ZipOutputStream(output).use { zip ->
@@ -79,9 +117,15 @@ object BillFileCodec {
         return output.toByteArray()
     }
 
+    /**
+     * XML 字符转义与无效控制字符清理。
+     */
     private fun xml(value: String) = value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         .filter { it >= ' ' || it == '\n' || it == '\r' || it == '\t' }
 
+    /**
+     * 解包并解析 XLSX 文件的第一个工作表内容。
+     */
     private fun readWorkbook(bytes: ByteArray): List<List<String>> {
         val parts = mutableMapOf<String, ByteArray>()
         var total = 0
@@ -150,9 +194,25 @@ object BillFileCodec {
         return rows
     }
 
+    /**
+     * 将文本表示的金额解析为以“分”为单位的长整型金额。
+     *
+     * 自动去除货币符号（¥、￥）、千分位逗号并修剪空格。
+     *
+     * @param value 待解析的金额字符串。
+     * @return 以“分”为单位的长整型金额。
+     */
     fun amount(value: String): Long = value.trim().replace(",", "").removePrefix("¥").removePrefix("￥")
         .toBigDecimal().movePointRight(2).longValueExact()
 
+    /**
+     * 将日期时间文本解析为毫秒级时间戳。
+     *
+     * 支持多种常见格式（如 `uuuu-MM-dd HH:mm:ss`、`uuuu/MM/dd`、ISO 格式以及 Excel 日期序列号）。
+     *
+     * @param value 待解析的日期时间文本。
+     * @return 对应的纪元毫秒时间戳（Epoch Millis）。
+     */
     fun timestamp(value: String): Long {
         val text = value.trim()
         val patterns = listOf("uuuu-MM-dd HH:mm:ss", "uuuu-MM-dd HH:mm", "uuuu/MM/dd HH:mm:ss", "uuuu/MM/dd HH:mm", "uuuu.MM.dd HH:mm:ss")
@@ -171,6 +231,13 @@ object BillFileCodec {
     }
 }
 
+/**
+ * 从输入流中读取字节并施加最大读取上限。
+ *
+ * @param limit 最大允许读取的字节数。
+ * @return 读取得到的字节数组。
+ * @throws IllegalArgumentException 当读取大小超出 [limit] 时抛出。
+ */
 internal fun java.io.InputStream.readBytesLimited(limit: Int): ByteArray {
     val output = ByteArrayOutputStream()
     val buffer = ByteArray(8192)

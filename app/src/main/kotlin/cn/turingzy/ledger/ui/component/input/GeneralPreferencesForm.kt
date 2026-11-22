@@ -19,6 +19,15 @@ import cn.turingzy.ledger.R
 import cn.turingzy.ledger.model.settings.AppPreferences
 import cn.turingzy.ledger.model.settings.supportedCurrencyCodes
 
+/**
+ * 通用偏好设置表单卡片。
+ *
+ * 聚合语言（跟随系统/简体中文/英文）、主题模式（跟随系统/浅色/深色）以及本位币（主货币）的选择配置项。
+ *
+ * @param value 当前偏好设置配置 [AppPreferences]。
+ * @param onChange 偏好设置变更时的回调。
+ * @param enabled 是否允许用户交互，默认为 true。
+ */
 @Composable
 internal fun GeneralPreferencesForm(value: AppPreferences, onChange: (AppPreferences) -> Unit, enabled: Boolean = true) {
     val currencies = remember(value.primaryCurrency) {
@@ -39,6 +48,17 @@ internal fun GeneralPreferencesForm(value: AppPreferences, onChange: (AppPrefere
     }
 }
 
+/**
+ * 偏好设置单项选择行组件。
+ *
+ * 点击后以向下弹出的下拉菜单（[LedgerDropdown]）形式展示候选选项。
+ *
+ * @param title 设置项标题。
+ * @param selected 当前选中项的 key。
+ * @param options 待选选项列表，每个元素为 (key, 显示文本) 二元组。
+ * @param enabled 是否允许交互。
+ * @param onSelect 选中某个选项 key 时的回调。
+ */
 @Composable
 internal fun PreferenceChoice(title: String, selected: String, options: List<Pair<String, String>>, enabled: Boolean = true, onSelect: (String) -> Unit) {
     val colors = MaterialTheme.colorScheme

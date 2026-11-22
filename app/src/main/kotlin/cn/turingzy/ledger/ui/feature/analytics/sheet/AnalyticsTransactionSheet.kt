@@ -36,7 +36,18 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import cn.turingzy.ledger.R
 
-/** Shows the transaction rows behind an analytics selection using its grouping and totals. */
+/**
+ * 统计分析交易明细底部抽屉。
+ *
+ * 用于在点击统计卡片中的分类或月份时，弹出展示对应筛选条件下的交易列表及分组汇总。
+ *
+ * @param title 抽屉标题（如分类名称或月份）。
+ * @param subtitle 抽屉副标题（如统计日期范围）。
+ * @param transactions 关联的交易列表。
+ * @param onDismiss 关闭抽屉时的回调。
+ * @param groupByDate 是否按日期分组展示（默认为 true；为 false 时按金额降序单组展示）。
+ * @param summaryType 仅汇总展示特定交易类型（支出/收入）；传 null 则自动展示有金额的类型。
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun AnalyticsTransactionSheet(
@@ -120,6 +131,14 @@ internal fun AnalyticsTransactionSheet(
     }
 }
 
+/**
+ * 统计交易列表的收支总额汇总文本。
+ *
+ * @param transactions 交易列表。
+ * @param summaryType 指定过滤汇总的交易类型。
+ * @param modifier 修饰符。
+ * @param showTotalLabel 是否在标签前追加“总”（例如“总支出” vs “支出”）。
+ */
 @Composable
 private fun AnalyticsTransactionTotals(
     transactions: List<AnalyticsTransaction>,

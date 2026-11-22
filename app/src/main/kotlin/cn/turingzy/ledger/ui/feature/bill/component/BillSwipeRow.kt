@@ -61,6 +61,27 @@ import kotlin.math.roundToInt
 private val SwipeActionWidth = 48.dp
 private val SwipeActionsWidth = SwipeActionWidth * 3
 
+/**
+ * 带有手势侧滑操作及多选状态的账单交易行组件。
+ *
+ * 在非多选模式下支持向左滑动显露“复制”、“编辑”、“删除”操作按钮，支持长按触发多选模式；
+ * 在多选模式下显示左侧选择指示圈，点击切换选中状态。
+ *
+ * @param detail 交易详情数据 [TransactionDetail]。
+ * @param selecting 是否处于多选编辑模式。
+ * @param selected 当前项是否被选中。
+ * @param enabled 是否允许用户交互。
+ * @param revealed 侧滑操作区当前是否展开露出。
+ * @param onRevealChange 侧滑展开状态变化回调。
+ * @param onClick 单击事件回调（多选时切换选中，非多选且展开时收起，否则查看详情）。
+ * @param onLongClick 长按事件回调（非多选模式下长按进入多选）。
+ * @param onCopy 点击复制操作回调。
+ * @param onEdit 点击编辑操作回调。
+ * @param onDelete 点击删除操作回调。
+ * @param showDate 时间显示是否包含日期（跨天搜索展示时为 true）。
+ * @param roundTop 当前行是否需要裁剪顶部圆角（例如列表首项）。
+ * @param roundBottom 当前行是否需要裁剪底部圆角（例如列表尾项）。
+ */
 @Composable
 internal fun BillSwipeRow(
     detail: TransactionDetail,
@@ -183,6 +204,12 @@ private fun BillSwipeAction(icon: ImageVector, label: Int, description: Int, tin
     }
 }
 
+/**
+ * 账单多选状态单选指示器图标。
+ *
+ * @param checked 当前项是否选中。
+ * @param modifier 外部修饰符。
+ */
 @Composable
 internal fun BillSelectionIndicator(checked: Boolean, modifier: Modifier = Modifier) {
     Icon(

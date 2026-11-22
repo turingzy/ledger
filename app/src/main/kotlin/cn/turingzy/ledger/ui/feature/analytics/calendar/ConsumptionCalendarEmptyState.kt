@@ -17,6 +17,14 @@ import cn.turingzy.ledger.ui.component.base.EmptyStateBase
 import cn.turingzy.ledger.ui.interaction.UiInteractionKind
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 
+/**
+ * 消费日历在选中日期无支出交易时的空状态组件。
+ *
+ * 展示空状态插画、提示文案以及记账快捷操作按钮。
+ *
+ * @param onRecord 点击“记一笔”按钮时的回调。
+ * @param modifier 修饰符。
+ */
 @Composable
 internal fun ConsumptionCalendarEmptyState(onRecord: () -> Unit, modifier: Modifier = Modifier) {
     CardBase(

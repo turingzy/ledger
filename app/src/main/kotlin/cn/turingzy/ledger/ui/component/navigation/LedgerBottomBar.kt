@@ -44,6 +44,19 @@ import androidx.compose.ui.text.font.FontWeight
 import cn.turingzy.ledger.navigation.TopLevelDestination
 import cn.turingzy.ledger.ui.interaction.rememberSystemClickFeedback
 
+/**
+ * 应用主底部导航栏组件。
+ *
+ * 采用悬浮胶囊形态与磨砂玻璃背景特效（Frosted Backdrop），展示一级页面导航选项卡，
+ * 支持选中过渡动画、按压交互反馈及触觉反馈。
+ *
+ * @param destinations 一级导航目标项列表 [TopLevelDestination]。
+ * @param currentDestination 当前处于激活状态的一级导航目标。
+ * @param onNavigateToDestination 切换导航目标时的回调。
+ * @param modifier 应用于底栏外层容器的修饰符。
+ * @param backdrop 磨砂玻璃背景状态持有者 [BackdropStateBase]，为空时采用静态半透明表面色。
+ * @param visible 底栏是否可见，支持淡入淡出动画及无障碍隐藏。
+ */
 @Composable
 internal fun LedgerBottomBar(
     destinations: List<TopLevelDestination>,

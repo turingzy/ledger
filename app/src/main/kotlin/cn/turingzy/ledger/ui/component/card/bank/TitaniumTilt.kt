@@ -24,12 +24,40 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalView
 import androidx.lifecycle.compose.LifecycleResumeEffect
 
-internal enum class TitaniumDrag { Immediate, AfterLongPress, Disabled }
+/**
+ * 钛金属卡片手势拖拽倾斜模式。
+ */
+internal enum class TitaniumDrag {
+    /** 立即响应单指滑动拖拽。 */
+    Immediate,
 
+    /** 长按后才响应拖拽倾斜，避免与横向滑动翻页手势冲突。 */
+    AfterLongPress,
+
+    /** 禁用手势拖拽倾斜。 */
+    Disabled,
+}
+
+/**
+ * 钛金属物理动效状态。
+ *
+ * @property tilt 归一化倾斜偏移量，限制在单位圆半径内（-1.0 到 1.0）。
+ * @property dragStrength 当前拖拽高光增强系数（0.0 表示静止或纯陀螺仪，1.0 表示手势拖拽中）。
+ */
 internal data class TitaniumMotion(val tilt: Offset, val dragStrength: Float)
 
 private val restingMotion = mutableStateOf(TitaniumMotion(Offset.Zero, 0f))
 
+/**
+ * 记忆并计算钛金属卡片的动态倾斜与光照动效。
+ *
+ * 结合设备重力感应器（陀螺仪）和用户触摸拖拽手势，通过弹性物理动画（Spring）平滑插值倾斜偏移量与高光强度。
+ *
+ * @param enabled 是否开启物理倾斜动效。
+ * @param drag 触摸拖拽触发策略。
+ * @param tuning 物理调节参数。
+ * @return 包含动画状态 [TitaniumMotion] 和手势捕获 [Modifier] 的键值对。
+ */
 @Composable
 internal fun rememberTitaniumTilt(
     enabled: Boolean,
@@ -95,6 +123,12 @@ internal fun rememberTitaniumTilt(
     return motion to gesture
 }
 
+/**
+ * 监听设备重力感应器以提供倾斜向量。
+ *
+ * 在 Activity 处于活跃状态（Resumed）时注册系统重力传感器监听，自动根据当前屏幕旋转方向
+ * （0°/90°/180°/270°）校准重力向量，并在页面暂停或销毁时注销监听并重置倾斜量。
+ */
 @Composable
 private fun rememberGravityTilt(): State<Offset> {
     val view = LocalView.current
@@ -127,4 +161,7 @@ private fun rememberGravityTilt(): State<Offset> {
     return tilt
 }
 
+/**
+ * 将二维偏移向量的模长限制在单位圆内（最大长度为 1.0）。
+ */
 private fun Offset.limitToUnitCircle(): Offset = this / getDistance().coerceAtLeast(1f)

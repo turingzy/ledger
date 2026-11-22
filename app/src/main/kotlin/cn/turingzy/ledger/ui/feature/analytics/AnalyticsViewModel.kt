@@ -33,6 +33,12 @@ import java.time.temporal.ChronoUnit
 import cn.turingzy.ledger.ui.component.picker.CalendarSelection
 import javax.inject.Inject
 
+/**
+ * 统计分析 ViewModel。
+ *
+ * 负责管理统计时间范围（周/月/季/年/全部）、收支类型（支出/收入）以及币种选择，
+ * 并基于数据库中的交易明细计算指定周期及其对比周期的汇总金额、分类排行榜与收支明细。
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class AnalyticsViewModel @Inject constructor(
@@ -118,21 +124,39 @@ class AnalyticsViewModel @Inject constructor(
         }
     }.flowOn(defaultDispatcher)
 
+    /**
+     * 统计分析页面的只读 UI 状态流。
+     */
     val uiState: StateFlow<AnalyticsUiState> = analyticsState.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = AnalyticsUiState.Loading,
     )
 
+    /**
+     * 切换统计时间粒度（周、月、季、年、全部）。
+     *
+     * @param scope 目标时间粒度。
+     */
     fun setTimeScope(scope: AnalyticsTimeScope) {
         if (period.value.scope == scope && period.value.customSelection == null) return
         period.value = AnalyticsPeriod(scope, LocalDate.now())
     }
 
+    /**
+     * 切换分类收支统计类型（支出或收入）。
+     *
+     * @param type 目标分类类型。
+     */
     fun setCategoryType(type: CategoryType) {
         categoryType.value = type
     }
 
+    /**
+     * 按当前时间跨度向前或向后移动周期。
+     *
+     * @param delta 偏移量，正数表示向未来方向移动，负数表示向过去方向移动。
+     */
     fun navigatePeriod(delta: Int) {
         val selected = period.value
         if (selected.scope == AnalyticsTimeScope.ALL) return
@@ -150,10 +174,21 @@ class AnalyticsViewModel @Inject constructor(
         period.value = selected.copy(anchor = anchor, customSelection = custom)
     }
 
+    /**
+     * 选择指定日期作为统计周期的基准锚点。
+     *
+     * @param date 选中的基准日期。
+     */
     fun selectPeriod(date: LocalDate) {
         period.value = period.value.copy(anchor = date, customSelection = null)
     }
 
+    /**
+     * 选择自定义日期范围。
+     *
+     * @param start 起始日期。
+     * @param end 结束日期。
+     */
     fun selectRange(start: LocalDate, end: LocalDate) {
         val selection = CalendarSelection(start, end)
         if (period.value.scope == AnalyticsTimeScope.ALL) {
@@ -174,6 +209,13 @@ class AnalyticsViewModel @Inject constructor(
         period.value = selected.copy(customSelection = selection.takeUnless { it == selected.selection })
     }
 
+    /**
+     * 内部记录的统计周期配置。
+     *
+     * @property scope 时间跨度粒度。
+     * @property anchor 周期锚点日期。
+     * @property customSelection 显式指定的自定义日历选择范围（若存在）。
+     */
     private data class AnalyticsPeriod(
         val scope: AnalyticsTimeScope,
         val anchor: LocalDate,
@@ -192,6 +234,13 @@ class AnalyticsViewModel @Inject constructor(
             }
     }
 
+    /**
+     * 计算并生成指定收支类型的分类排行榜。
+     *
+     * @param transactions 当前周期内的交易明细列表。
+     * @param targetCatType 目标分类类型（支出/收入）。
+     * @return 按总金额降序排列的分类排行榜列表。
+     */
     private fun calculateCategoryRankings(
         transactions: List<TransactionDetail>,
         targetCatType: CategoryType,

@@ -41,6 +41,19 @@ import cn.turingzy.ledger.model.account.CardTemplate
 import cn.turingzy.ledger.model.account.resolveBuiltInAppearance
 import cn.turingzy.ledger.util.toFormattedAmount
 
+/**
+ * 账户表单编辑器核心内容组件。
+ *
+ * 统一处理账户的新建与编辑流程，包含名称、类型、期初余额/负债、币种、卡号尾号、卡面样式及计入总资产开关等字段的输入与校验。
+ *
+ * @param account 待编辑的账户；为 null 时表示处于新增账户模式
+ * @param templates 可用的卡面模板列表
+ * @param onSave 校验通过后的保存回调，传回构建或更新后的 [Account] 对象
+ * @param modifier 外部修饰符
+ * @param onDelete 删除账户回调（编辑已有账户时有效）
+ * @param onDismiss 取消或关闭回调
+ * @param assignedTemplate 当前账户初始关联的模板
+ */
 @Composable
 internal fun AccountEditorContent(
     account: Account?,

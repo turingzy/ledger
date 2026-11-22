@@ -44,6 +44,16 @@ import java.math.BigDecimal
 import java.math.RoundingMode
 import kotlin.math.roundToInt
 
+/**
+ * 月度现金流走势卡片。
+ *
+ * 包含卡片标题、图例说明（收入/支出双柱状图与结余折线图）以及横向滑动的月度现金流混合图表。
+ *
+ * @param days 按日统计数据映射。
+ * @param month 当前选中的基准年月。
+ * @param modifier 修饰符。
+ * @param transactions 全量分析交易列表（用于弹出查看月份账单明细）。
+ */
 @Composable
 internal fun MonthlyCashflowCard(days: Map<LocalDate, AnalyticsDay>, month: YearMonth, modifier: Modifier = Modifier, transactions: List<AnalyticsTransaction> = emptyList()) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
@@ -59,6 +69,13 @@ internal fun MonthlyCashflowCard(days: Map<LocalDate, AnalyticsDay>, month: Year
     }
 }
 
+/**
+ * 现金流图例项组件。
+ *
+ * @param label 图例文案。
+ * @param color 图例标识颜色。
+ * @param line 是否绘制折线节点样式（默认 false 绘制方块色块）。
+ */
 @Composable
 private fun CashflowLegend(label: String, color: Color, line: Boolean = false) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -70,6 +87,16 @@ private fun CashflowLegend(label: String, color: Color, line: Boolean = false) {
     }
 }
 
+/**
+ * 月度现金流混合图表视图组件。
+ *
+ * 渲染连续月份的收入与支出双柱状图，并在上方绘制结余走势折线。
+ * 支持横向滚动、点击/拖动月份高亮并显示月度汇总信息卡，点击信息卡可打开该月交易明细。
+ *
+ * @param days 按日统计数据。
+ * @param month 目标基准月份。
+ * @param transactions 交易明细列表。
+ */
 @Composable
 private fun MonthlyCashflow(days: Map<LocalDate, AnalyticsDay>, month: YearMonth, transactions: List<AnalyticsTransaction>) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
@@ -196,6 +223,16 @@ private fun MonthlyCashflow(days: Map<LocalDate, AnalyticsDay>, month: YearMonth
     }
 }
 
+/**
+ * 根据横向滚动偏移量计算当前聚焦的月份索引。
+ *
+ * @param offset 当前滚动偏移量像素值。
+ * @param maximumOffset 最大可滚动偏移量像素值。
+ * @param viewportWidth 可见视口宽度。
+ * @param slotWidth 每个月份槽位的宽度。
+ * @param monthCount 月份总数量。
+ * @return 当前聚焦的月份索引，若参数不合法则返回 null。
+ */
 internal fun monthlyCashflowFocusIndex(offset: Int, maximumOffset: Int, viewportWidth: Float, slotWidth: Float, monthCount: Int): Int? {
     if (slotWidth <= 0f || monthCount <= 0) return null
     if (maximumOffset > 0) {
@@ -204,6 +241,13 @@ internal fun monthlyCashflowFocusIndex(offset: Int, maximumOffset: Int, viewport
     return ((offset + viewportWidth / 2) / slotWidth).toInt().coerceIn(0, monthCount - 1)
 }
 
+/**
+ * 月度现金流汇总卡片中的单项数值条目。
+ *
+ * @param label 标签名称（如“收入”、“支出”、“结余”）。
+ * @param value 格式化后的金额文本。
+ * @param modifier 修饰符。
+ */
 @Composable
 private fun CashflowSummary(label: String, value: String, modifier: Modifier = Modifier) {
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium)) {

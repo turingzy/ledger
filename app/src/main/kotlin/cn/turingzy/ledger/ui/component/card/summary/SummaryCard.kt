@@ -54,6 +54,21 @@ import cn.turingzy.ledger.ui.theme.LedgerStyle
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
+/**
+ * 账本首页摘要卡片容器组件。
+ *
+ * 具有毛玻璃质感底栏、背景图阴影与边框，支持通过横向滑动手势或无障碍动作在卡片正面（数据内容插槽）
+ * 与卡片背面（卡片外观设置：背景图上传与毛玻璃透明度调节）之间进行滑动翻转切换。
+ *
+ * @param modifier 修饰符。
+ * @param appearance 卡片外观配置（包含透明度等）。
+ * @param background 自定义卡片背景位图；为 `null` 时使用默认资源。
+ * @param defaultBackgroundRes 默认背景 Drawable 资源 ID。
+ * @param settingsEnabled 是否允许滑动切换至背面设置面板。
+ * @param onUploadBackground 点击上传/更换背景图回调。
+ * @param onTransparencyChange 毛玻璃透明度百分比调节完成回调。
+ * @param content 卡片正面内容插槽（通常为 [SummaryCardContent]）。
+ */
 @Composable
 fun SummaryCard(
     modifier: Modifier = Modifier,
@@ -163,7 +178,14 @@ fun SummaryCard(
 }
 
 
-/** Opens the system image picker for either summary card. */
+/**
+ * 记住并返回用于选择摘要卡自定义背景图片的启动器回调。
+ *
+ * 封装了系统照片选择器 [ActivityResultContracts.PickVisualMedia]，仅筛选图片类型。
+ *
+ * @param onImage 选中图片后的 URI 回调。
+ * @return 触发图片选择器的无参函数。
+ */
 @Composable
 internal fun rememberSummaryBackgroundPicker(onImage: (Uri) -> Unit): () -> Unit {
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->

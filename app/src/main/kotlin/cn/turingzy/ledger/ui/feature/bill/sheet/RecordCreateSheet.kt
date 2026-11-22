@@ -21,6 +21,19 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 
+/**
+ * 新建记账底部抽屉组件。
+ *
+ * 包装 [RecordTransactionSheet]，注入可用的分类与账户列表，
+ * 支持基于传入的初始基准日期或预填交易草稿（例如复制记账）快速录入新交易并提交持久化。
+ *
+ * @param date 记账默认发生的基准日期。
+ * @param onDismiss 关闭或取消抽屉的回调。
+ * @param modifier 外部修饰符。
+ * @param viewModel 账单 ViewModel，负责创建交易与维护保存状态。
+ * @param transactionViewModel 交易详情 ViewModel，用于查询汇率。
+ * @param draft 可选的预填交易草稿（例如复制现有交易时传入）。
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun RecordCreateSheet(

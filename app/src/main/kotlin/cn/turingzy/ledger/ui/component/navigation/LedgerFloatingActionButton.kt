@@ -31,6 +31,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+/**
+ * 应用主悬浮操作按钮（FAB）。
+ *
+ * 用于在主界面快速发起记账（新增交易），采用带阴影边框的圆角胶囊形态与强调色背景，
+ * 支持渐变显隐和缩放动画。
+ *
+ * @param visible 按钮是否可见，控制出入场过渡动画。
+ * @param onClick 点击按钮时的回调。
+ * @param modifier 应用于该组件的修饰符。
+ */
 @Composable
 fun LedgerFloatingActionButton(
     visible: Boolean,

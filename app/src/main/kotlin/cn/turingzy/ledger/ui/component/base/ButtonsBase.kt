@@ -40,10 +40,49 @@ import cn.turingzy.ledger.ui.interaction.rememberUiAction
 import cn.turingzy.ledger.ui.interaction.rememberUiIndication
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 
-enum class ButtonVariantBase { Filled, Outlined, Text }
+/**
+ * 按钮变体样式。
+ */
+enum class ButtonVariantBase {
+    /** 实心填充样式。 */
+    Filled,
+    /** 描边轮廓样式。 */
+    Outlined,
+    /** 纯文本无边框样式。 */
+    Text,
+}
 
-enum class ButtonToneBase { Default, Destructive, Neutral }
+/**
+ * 按钮语义色调。
+ */
+enum class ButtonToneBase {
+    /** 默认主色调。 */
+    Default,
+    /** 破坏性/危险操作色调（红色）。 */
+    Destructive,
+    /** 中性次要色调。 */
+    Neutral,
+}
 
+/**
+ * 基础操作按钮组件。
+ *
+ * 支持文字标签、前置与后置图标、不同变体（填充、描边、文本）和色调（默认、破坏性、中性），
+ * 并集成了全局触觉与按下动效反馈。
+ *
+ * @param label 按钮显示的文本内容。
+ * @param onClick 点击事件回调。
+ * @param modifier 应用于按钮的修饰符。
+ * @param enabled 是否启用按钮。
+ * @param variant 按钮外观变体，参见 [ButtonVariantBase]。
+ * @param tone 按钮语义色调，参见 [ButtonToneBase]。
+ * @param leadingIcon 可选的前置图标矢量图。
+ * @param interaction 交互反馈类型（如触觉效果），参见 [UiInteractionKind]。
+ * @param trailingIcon 可选的后置图标矢量图。
+ * @param iconSize 图标显示尺寸。
+ * @param shape 按钮的形状裁剪。
+ * @param showPressFeedback 是否展示按压指示反馈。
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ButtonBase(
@@ -109,6 +148,26 @@ fun ButtonBase(
     )
 }
 
+/**
+ * 底层通用操作按钮。
+ *
+ * 包装了 Material3 的 [Button]、[OutlinedButton] 和 [TextButton]，统一禁用默认涟漪并注入自定义交互动效与触觉反馈。
+ *
+ * @param onClick 点击事件回调。
+ * @param modifier 应用于按钮的修饰符。
+ * @param enabled 按钮是否可用。
+ * @param variant 按钮样式变体。
+ * @param shape 按钮的形状裁剪。
+ * @param colors 按钮的颜色配置。
+ * @param elevation 按钮阴影高程。
+ * @param border 按钮描边样式。
+ * @param contentPadding 内部内容的内边距。
+ * @param interactionSource 交互事件源。
+ * @param interaction 触觉/操作交互类型。
+ * @param showPressFeedback 是否展示按压指示反馈。
+ * @param actionKey 用于重置 action 记忆的键。
+ * @param content 按钮内容插槽。
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ActionButtonBase(
@@ -144,6 +203,21 @@ fun ActionButtonBase(
     }
 }
 
+/**
+ * 基础图标按钮。
+ *
+ * 包装图标并提供标准触控尺寸与交互动效。
+ *
+ * @param imageVector 图标矢量图。
+ * @param contentDescription 图标无障碍描述。
+ * @param onClick 点击事件回调。
+ * @param modifier 应用于按钮的修饰符。
+ * @param enabled 按钮是否可用。
+ * @param contentColor 图标颜色。
+ * @param iconSize 图标显示尺寸。
+ * @param interaction 触觉/操作交互类型。
+ * @param showPressFeedback 是否展示按压指示反馈。
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun IconButtonBase(
@@ -167,6 +241,20 @@ fun IconButtonBase(
     ) { Icon(imageVector, contentDescription, Modifier.size(iconSize)) }
 }
 
+/**
+ * 基础图标按钮内容容器。
+ *
+ * 保证最小触控区域（48dp）与药丸状形状裁剪，支持自定义内容。
+ *
+ * @param onClick 点击事件回调。
+ * @param modifier 应用于按钮的修饰符。
+ * @param enabled 按钮是否可用。
+ * @param colors 图标按钮的颜色配置。
+ * @param interactionSource 交互事件源。
+ * @param interaction 触觉/操作交互类型。
+ * @param showPressFeedback 是否展示按压指示反馈。
+ * @param content 按钮内部自定义内容。
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun IconButtonContentBase(

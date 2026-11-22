@@ -22,6 +22,15 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
+/**
+ * 统计看板的 UI 状态。
+ *
+ * @property days 按日期映射的每日统计明细。
+ * @property loading 是否处于数据加载中状态。
+ * @property transactions 转换后的分析用账单交易列表。
+ * @property currency 当前主币种代码。
+ * @property amountsAvailable 是否所有非转账交易的主币种金额都可用（即汇率估值是否完备）。
+ */
 data class AnalyticsDashboardState(
     val days: Map<LocalDate, AnalyticsDay> = emptyMap(),
     val loading: Boolean = true,
@@ -30,6 +39,11 @@ data class AnalyticsDashboardState(
     val amountsAvailable: Boolean = true,
 )
 
+/**
+ * 统计看板 ViewModel。
+ *
+ * 监听主币种设置和全量交易数据变更，在后台派生并提供统计看板所需的每日数据聚合与交易列表。
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class AnalyticsDashboardViewModel @Inject constructor(

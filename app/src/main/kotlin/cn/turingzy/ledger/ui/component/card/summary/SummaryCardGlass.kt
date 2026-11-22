@@ -19,6 +19,20 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.model.settings.LedgerCardAppearance
 
+/**
+ * 摘要卡片毛玻璃质感底栏背景组件。
+ *
+ * 在卡片底部区域渲染半透明磨砂玻璃视觉效果：
+ * - 优先采用预模糊的高质量位图 [blurredBackdrop]；若不存在则使用 [Modifier.blur] 降级模糊 [background]。
+ * - 叠加动态渐变暗色蒙层以提升上层文字可读性。
+ * - 透明度由 [appearance] 中的覆盖层不透明度实时驱动。
+ *
+ * @param appearance 卡片外观配置，决定毛玻璃不透明度。
+ * @param background 原始背景图绘制器（作为动态模糊降级源）。
+ * @param blurredBackdrop 预模糊背景位图；若有效则跳过昂贵的实时模糊计算。
+ * @param modifier 修饰符。
+ * @param showDivider 是否在毛玻璃顶缘绘制微弱的浅色分割线。
+ */
 @Composable
 internal fun SummaryCardGlass(
     appearance: LedgerCardAppearance,

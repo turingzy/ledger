@@ -14,9 +14,22 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
+/**
+ * [AppUpdateRepository] 的默认实现。
+ *
+ * 通过 GitHub REST API 查询项目的最新 Release 标签信息。
+ *
+ * @property ioDispatcher 用于执行网络请求的 IO 协程调度器
+ */
 class DefaultAppUpdateRepository @Inject constructor(
     @param:Dispatcher(LedgerDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
 ) : AppUpdateRepository {
+    /**
+     * 发送网络请求获取 GitHub 仓库最新 Release 的 tag_name。
+     *
+     * @return 最新版本标签；若不存在发布版本则返回 null
+     * @throws IllegalStateException 当触发 GitHub API 限流或发生请求错误时抛出
+     */
     override suspend fun latestVersion(): String? = withContext(ioDispatcher) {
         val connection = URL("https://api.github.com/repos/turingzy/ledger/releases/latest").openConnection() as HttpURLConnection
         try {

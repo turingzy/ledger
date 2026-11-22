@@ -38,6 +38,15 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 
+/**
+ * 弹窗窗口基础容器。
+ *
+ * 封装 Material [Dialog]，禁用系统默认边距以便接管安全区域与软键盘避让，并通过 [Modifier.dialogBounds] 控制最大宽度与水平外边距。
+ *
+ * @param onDismissRequest 请求关闭弹窗时的回调。
+ * @param modifier 应用于弹窗内部内容容器的修饰符。
+ * @param content 弹窗内容插槽。
+ */
 @Composable
 fun DialogWindowBase(
     onDismissRequest: () -> Unit,
@@ -56,7 +65,20 @@ fun DialogWindowBase(
     }
 }
 
-/** Applies the shared sheet surface and scrim while Material handles gestures and motion. */
+/**
+ * 基础模态底部抽屉组件。
+ *
+ * 应用统一的圆角形状、半透明遮罩背景与明暗状态栏配置，手势和动效由 Material3 底层驱动。
+ *
+ * @param onDismissRequest 请求关闭底部抽屉时的回调。
+ * @param sheetState 底部抽屉的状态 [SheetState]。
+ * @param modifier 应用于抽屉的修饰符。
+ * @param containerColor 抽屉背景颜色。
+ * @param contentColor 抽屉内部内容主色。
+ * @param dragHandle 顶部拖动手柄插槽，为 null 时不显示。
+ * @param contentHandlesInsets 内容是否自行处理窗口安全区边距（为 true 时禁用安全区内边距）。
+ * @param content 抽屉垂直内容插槽。
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ModalBottomSheetBase(
@@ -89,7 +111,17 @@ fun ModalBottomSheetBase(
     )
 }
 
-/** Centers a drawer title independently of its close button and optional action. */
+/**
+ * 底部抽屉顶部标题栏组件。
+ *
+ * 标题在水平方向独立居中，左侧放置关闭按钮，右侧放置可选的操作项。
+ *
+ * @param closeDescription 关闭按钮的无障碍描述。
+ * @param onClose 点击关闭按钮时的回调。
+ * @param modifier 应用于标题栏的修饰符。
+ * @param action 可选的右侧操作插槽。
+ * @param title 居中标题内容插槽。
+ */
 @Composable
 internal fun BottomSheetHeaderBase(
     closeDescription: String,
@@ -114,6 +146,21 @@ internal fun BottomSheetHeaderBase(
     }
 }
 
+/**
+ * 基础警报/确认对话框。
+ *
+ * 包含可选标题、支持滚动的正文内容以及底部操作按钮（取消、确认、次要操作）。
+ *
+ * @param onDismissRequest 请求关闭对话框时的回调。
+ * @param onConfirm 点击确认按钮时的回调。
+ * @param confirmLabel 确认按钮的显示文本。
+ * @param confirmEnabled 确认按钮是否可用。
+ * @param destructive 确认操作是否具有破坏性（为 true 时确认按钮呈警告红色）。
+ * @param showCancel 是否显示取消按钮。
+ * @param secondaryAction 可选的次要操作按钮插槽。
+ * @param title 对话框标题内容插槽。
+ * @param text 对话框正文说明内容插槽。
+ */
 @Composable
 internal fun BaseAlertDialog(
     onDismissRequest: () -> Unit,
@@ -147,11 +194,27 @@ internal fun BaseAlertDialog(
     }
 }
 
-/** Keeps the usual content insets and tucks the action row closer to the bottom edge. */
+/**
+ * 设置对话框内容的内边距，保持四周留白并微调底部边距以更贴近操作按钮。
+ *
+ * @param inset 顶部与水平方向的内边距大小。
+ */
 internal fun Modifier.dialogContentPadding(inset: Dp): Modifier =
     padding(start = inset, top = inset, end = inset, bottom = LedgerStyle.spacing.medium)
 
-/** Lays out dialog actions and wraps long localized labels on narrow screens. */
+/**
+ * 对话框底部操作按钮排版组件。
+ *
+ * 使用 [FlowRow] 布局按钮，自动折行以适配窄屏或过长的多语言文案。
+ *
+ * @param onCancel 点击取消时的回调，为 null 时不显示取消按钮。
+ * @param onConfirm 点击确认时的回调。
+ * @param confirmLabel 确认按钮的显示文本。
+ * @param cancelEnabled 取消按钮是否可用。
+ * @param confirmEnabled 确认按钮是否可用。
+ * @param destructive 确认操作是否具有破坏性。
+ * @param secondaryAction 可选的次要操作按钮插槽。
+ */
 @Composable
 internal fun DialogActions(
     onCancel: (() -> Unit)?,
@@ -180,6 +243,9 @@ internal fun DialogActions(
     }
 }
 
+/**
+ * 在输入法（软键盘）弹出期间保持底部抽屉锚点稳定的布局修饰符。
+ */
 internal fun Modifier.keepSheetAnchorDuringIme(): Modifier = composed {
     val imeInsets = WindowInsets.ime
     Modifier.layout { measurable, constraints ->
@@ -191,6 +257,9 @@ internal fun Modifier.keepSheetAnchorDuringIme(): Modifier = composed {
     }
 }
 
+/**
+ * 约束对话框最大宽度并适配安全区域与软键盘避让的修饰符。
+ */
 @Composable
 private fun Modifier.dialogBounds(): Modifier =
     widthIn(max = LedgerStyle.dimensions.wideDialogMaxWidth).fillMaxWidth()

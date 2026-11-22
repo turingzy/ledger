@@ -38,6 +38,15 @@ import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.input.GeneralPreferencesForm
 import cn.turingzy.ledger.ui.component.input.PreferenceChoice
 
+/**
+ * 通用设置界面屏幕。
+ *
+ * 负责绑定全局 [AppStateViewModel]，提供应用通用偏好配置（如本位币选择等）
+ * 以及多币种汇率管理（汇率查看、手动录入与远程拉取最新汇率）等交互。
+ *
+ * @param onBack 返回上一级页面的回调
+ * @param viewModel 全局应用状态 ViewModel
+ */
 @Composable
 internal fun GeneralSettingsScreen(onBack: () -> Unit, viewModel: AppStateViewModel) {
     val settings by viewModel.preferences.collectAsStateWithLifecycle()
@@ -81,6 +90,26 @@ internal fun GeneralSettingsScreen(onBack: () -> Unit, viewModel: AppStateViewMo
     )
 }
 
+/**
+ * 通用设置的内容布局组件。
+ *
+ * 包含基础偏好设置表单区域和多币种汇率查询/维护区域。
+ *
+ * @param draft 当前的偏好设置草稿
+ * @param busy 是否处于全局忙碌状态
+ * @param from 正在查看汇率的源货币代码
+ * @param rate 汇率转换比例字符串
+ * @param rateDate 汇率生效或更新日期文字
+ * @param message 界面底部错误或反馈提示
+ * @param currencies 可选的汇率换算源货币列表
+ * @param onPreferencesChange 偏好设置变更回调
+ * @param onFromChange 选中的源货币变更回调
+ * @param onRateChange 汇率数值修改回调
+ * @param onRefresh 点击在线刷新汇率回调
+ * @param onBack 返回回调
+ * @param modifier 修饰符
+ * @param refreshStatus 当前汇率在线刷新的状态
+ */
 @Composable
 internal fun GeneralSettingsContent(
     draft: AppPreferences,
@@ -141,6 +170,17 @@ internal fun GeneralSettingsContent(
     }
 }
 
+/**
+ * 汇率输入字段组件。
+ *
+ * 呈现 `1 [from] = [输入框] [primary]` 的换算布局，支持输入十进制数值。
+ *
+ * @param from 源货币代码
+ * @param primary 主本位币代码
+ * @param value 当前汇率文本
+ * @param enabled 是否允许输入编辑
+ * @param onChange 汇率数值修改回调
+ */
 @Composable
 private fun ExchangeRateField(from: String, primary: String, value: String, enabled: Boolean, onChange: (String) -> Unit) {
     val colors = MaterialTheme.colorScheme
@@ -165,7 +205,11 @@ private fun ExchangeRateField(from: String, primary: String, value: String, enab
     }
 }
 
-/** Shows actual local update time when known, otherwise the provider's date. */
+/**
+ * 格式化并展示汇率的更新时间。
+ *
+ * 若记录了本地更新时间戳则转换为本地日期时间字符串，否则展示提供商的日期。
+ */
 private fun ExchangeQuote.displayUpdateTime(): String = updatedAtMillis?.let {
     DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")
         .format(Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()))

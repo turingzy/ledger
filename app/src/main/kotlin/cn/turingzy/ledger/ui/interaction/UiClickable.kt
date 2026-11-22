@@ -11,8 +11,25 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 
-enum class UiInteractionKind { Action, Navigation, Selection }
+/**
+ * UI 交互类型枚举。
+ */
+enum class UiInteractionKind {
+    /** 普通操作（如确认、取消、提交） */
+    Action,
+    /** 导航跳转（如页面切换、打开详情页） */
+    Navigation,
+    /** 选中切换（如单选框、标签页切换），触发触感震动反馈 */
+    Selection,
+}
 
+/**
+ * 记住并返回一个经过防抖处理的无参 UI 操作回调。
+ *
+ * @param onAction 实际执行的业务逻辑回调
+ * @param kind 交互行为类型，默认为 [UiInteractionKind.Action]
+ * @return 防抖包装后的点击回调函数
+ */
 @Composable
 fun rememberUiAction(
     onAction: () -> Unit,
@@ -22,6 +39,16 @@ fun rememberUiAction(
     return remember(event) { { event(Unit) } }
 }
 
+/**
+ * 记住并返回一个经过防抖处理的单参数 UI 事件回调。
+ *
+ * 当交互类型为 [UiInteractionKind.Selection] 时会自动触发短促的触感反馈。
+ *
+ * @param T 事件参数类型
+ * @param onEvent 实际执行的带参事件回调
+ * @param kind 交互行为类型，默认为 [UiInteractionKind.Action]
+ * @return 防抖包装后的事件回调函数
+ */
 @Composable
 fun <T> rememberUiEvent(
     onEvent: (T) -> Unit,
@@ -44,6 +71,16 @@ fun <T> rememberUiEvent(
     }
 }
 
+/**
+ * 应用统一的可选中修饰符。
+ *
+ * 集成 [rememberUiIndication] 按压视觉效果、点击防抖门限以及选中态切换时的震动反馈。
+ *
+ * @param selected 当前是否处于选中状态
+ * @param enabled 是否允许交互
+ * @param onClick 点击事件回调
+ * @return 带有统一选中特性的 Modifier
+ */
 @Composable
 fun Modifier.uiSelectable(
     selected: Boolean,
@@ -57,6 +94,17 @@ fun Modifier.uiSelectable(
     onClick = rememberUiAction(onClick, if (selected) UiInteractionKind.Action else UiInteractionKind.Selection),
 )
 
+/**
+ * 应用统一的可点击修饰符。
+ *
+ * 预设 [Role.Button] 无障碍角色、统一的按压反馈 [rememberUiIndication] 以及基于时间的点击防抖处理。
+ *
+ * @param enabled 是否允许点击
+ * @param kind 交互类型（操作、导航或选中）
+ * @param showPressFeedback 是否展示按压高亮视觉反馈
+ * @param onClick 点击回调函数
+ * @return 带有统一点按特性的 Modifier
+ */
 @Composable
 fun Modifier.uiClickable(
     enabled: Boolean = true,

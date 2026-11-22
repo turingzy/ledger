@@ -29,8 +29,24 @@ import cn.turingzy.ledger.ui.component.base.ListRowBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 
+/** 设置项条目的默认最小行高。 */
 internal val SettingsItemHeight = LedgerStyle.dimensions.rowMinHeight
 
+/**
+ * 设置页面中的通用操作行组件。
+ *
+ * 包装在卡片底板中，支持展示主标题、副标题、外链标识图标以及右侧导航箭头，
+ * 并支持启用/禁用状态控制。
+ *
+ * @param title 操作行主标题
+ * @param onClick 点击事件回调
+ * @param modifier 修饰符
+ * @param subtitle 可选的副标题说明文字
+ * @param contentColor 标题文字颜色
+ * @param externalLink 是否指向外部链接；若为 true 则在标题右侧显示外链图标并隐藏尾部导航箭头
+ * @param showChevron 是否在右侧显示导航箭头（在 [externalLink] 为 false 时生效）
+ * @param enabled 是否允许交互
+ */
 @Composable
 internal fun SettingsActionRow(
     title: String,
@@ -66,7 +82,17 @@ internal fun SettingsActionRow(
     }
 }
 
-/** Replaces the delete text with inline confirmation for the current item. */
+/**
+ * 带有行内二次确认交互的删除操作组件。
+ *
+ * 点击初始删除按钮后，会在当前位置替换显示取消与确认图标按钮，防止用户误触删除。
+ *
+ * @param itemId 关联项的唯一标识，ID 改变时重置确认状态
+ * @param title 初始状态下的删除按钮文案
+ * @param onDelete 确认删除时的回调
+ * @param modifier 修饰符
+ * @param enabled 是否允许交互
+ */
 @Composable
 internal fun SettingsDeleteAction(
     itemId: Long,

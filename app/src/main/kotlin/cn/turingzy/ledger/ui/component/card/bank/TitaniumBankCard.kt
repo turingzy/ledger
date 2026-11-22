@@ -35,6 +35,23 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
 import cn.turingzy.ledger.ui.theme.LedgerShapes
 
+/**
+ * 钛金属质感银行卡组件。
+ *
+ * 结合 AGSL 物理着色器或图形渐变模拟金属拉丝、各向异性反光以及重力感应倾斜效果。
+ * 卡片上展示银行/账户名称与尾号信息。
+ *
+ * @param name 卡片/账户名称。
+ * @param modifier 修饰符。
+ * @param preset 钛金属材质预设，定义底色、彩虹色谱及金属拉丝纹理参数。
+ * @param tailNumber 银行卡号，自动提取后四位数字展示在卡片右下角。
+ * @param imageUri 自定义背景图片 URI，若提供则优先作为卡面背景并叠加反光。
+ * @param textColor 卡面文字颜色，为 `null` 时根据背景明暗度自动计算高对比度颜色。
+ * @param motionEnabled 是否启用物理感应倾斜效果（重力陀螺仪及手势拖拽）。
+ * @param drag 手势拖拽交互模式。
+ * @param tuning 钛金属材质与动效物理调节参数。
+ * @param onClick 卡片点击回调。
+ */
 @Composable
 internal fun TitaniumBankCard(
     name: String,
@@ -88,6 +105,22 @@ internal fun TitaniumBankCard(
     }
 }
 
+/**
+ * 钛金属质感卡片容器表面（Surface）。
+ *
+ * 封装了卡片的比例裁剪、3D 倾斜阴影变换、AGSL/降级反光材质渲染以及边缘高光描边，
+ * 并将根据卡面亮度计算得到的自适应前景色 `ink` 传递给子内容构建块。
+ *
+ * @param preset 钛金属材质预设。
+ * @param imageUri 自定义背景图片 URI。
+ * @param modifier 修饰符。
+ * @param textColor 强制指定的文字前景色；若为 `null` 则根据背景自适应计算。
+ * @param motionEnabled 是否启用物理感应倾斜效果。
+ * @param drag 手势拖拽交互模式。
+ * @param tuning 钛金属材质与动效物理调节参数。
+ * @param onClick 点击事件回调。
+ * @param content 卡片内部内容布局插槽，接收计算出的合适文字颜色。
+ */
 @Composable
 internal fun TitaniumCardSurface(
     preset: TitaniumPreset,
@@ -145,6 +178,11 @@ internal fun TitaniumCardSurface(
     }
 }
 
+/**
+ * 为钛金属卡片边缘绘制微斜切的高光金属边框。
+ *
+ * @param dark 卡片背景是否偏暗，用于调整边框白反光与暗部阴影的透明度。
+ */
 private fun Modifier.titaniumEdge(dark: Boolean): Modifier = drawWithCache {
     val stroke = .75.dp.toPx()
     val inset = stroke / 2f

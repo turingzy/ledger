@@ -40,6 +40,22 @@ import cn.turingzy.ledger.ui.interaction.rememberUiIndication
 import cn.turingzy.ledger.ui.interaction.uiClickable
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 
+/**
+ * 基础表面（Surface）容器组件。
+ *
+ * 包装 Material3 [Surface]，在提供背景色、形状和高程的基础上，统一处理按压动效与触觉反馈。
+ *
+ * @param modifier 应用于表面容器的修饰符。
+ * @param shape 表面形状。
+ * @param color 背景颜色。
+ * @param contentColor 内部内容默认颜色。
+ * @param tonalElevation 色调高程。
+ * @param shadowElevation 阴影高程。
+ * @param border 可选的边框样式。
+ * @param onClick 可选的点击事件回调；不为 null 时容器支持点击与按压动效。
+ * @param enabled 是否启用交互。
+ * @param content 内部内容插槽。
+ */
 @Composable
 fun SurfaceBase(
     modifier: Modifier = Modifier,
@@ -67,6 +83,18 @@ fun SurfaceBase(
     )
 }
 
+/**
+ * 基础卡片组件。
+ *
+ * 基于 [SurfaceBase] 构建，提供符合应用规范的圆角形状、内边距、行间距及可选描边。
+ *
+ * @param modifier 应用于卡片的修饰符。
+ * @param shape 卡片形状。
+ * @param outlined 是否显示细描边。
+ * @param contentPadding 卡片内部内边距。
+ * @param contentSpacing 垂直子项之间的间距。
+ * @param content 卡片垂直布局内容插槽。
+ */
 @Composable
 fun CardBase(
     modifier: Modifier = Modifier,
@@ -93,6 +121,23 @@ fun CardBase(
     }
 }
 
+/**
+ * 基础列表行组件。
+ *
+ * 采用三段式结构：前缀（leading）、主体标题与辅助文本（headline / supportingText）、尾部（trailing）。
+ *
+ * @param headline 主标题内容插槽。
+ * @param modifier 应用于列表行的修饰符。
+ * @param supportingText 可选的下方辅助说明文本插槽。
+ * @param leading 可选的左侧前缀插槽（如小图标或标识）。
+ * @param trailing 可选的右侧尾部插槽（如操作按键、数值或辅助信息）。
+ * @param enabled 是否处于可用交互状态。
+ * @param contentPadding 列表行内边距。
+ * @param leadingSpacing 前缀与主体之间的间距。
+ * @param trailingSpacing 主体与尾部之间的间距。
+ * @param supportingSpacing 主标题与辅助文本之间的垂直间距。
+ * @param onClick 可选的整行点击回调。
+ */
 @Composable
 fun ListRowBase(
     headline: @Composable () -> Unit,
@@ -145,8 +190,27 @@ fun ListRowBase(
     }
 }
 
-enum class SectionHeaderVariantBase { Section, Supporting }
+/**
+ * 分组标题样式变体。
+ */
+enum class SectionHeaderVariantBase {
+    /** 主要章节标题样式。 */
+    Section,
+    /** 次要辅助标题样式。 */
+    Supporting,
+}
 
+/**
+ * 分组标题栏组件。
+ *
+ * 包含左侧标题与副标题，以及右侧操作区域。
+ *
+ * @param title 标题文本。
+ * @param modifier 应用于分组标题栏的修饰符。
+ * @param subtitle 可选的副标题文本。
+ * @param variant 标题样式变体，参见 [SectionHeaderVariantBase]。
+ * @param actions 可选的右侧操作项布局插槽。
+ */
 @Composable
 fun SectionHeaderBase(
     title: String,
@@ -184,6 +248,20 @@ fun SectionHeaderBase(
     }
 }
 
+/**
+ * 空状态展示组件。
+ *
+ * 用于数据列表为空或未配置时的占位展示，支持展示插画/图标、标题、解释文案和操作按钮。
+ *
+ * @param title 空状态标题文本。
+ * @param modifier 应用于空状态容器的修饰符。
+ * @param message 可选的空状态补充说明文本。
+ * @param illustration 可选的插画或图标内容插槽。
+ * @param actions 可选的操作按钮区插槽。
+ * @param contentPadding 容器内边距。
+ * @param titleStyle 标题文字样式。
+ * @param titleColor 标题文字颜色。
+ */
 @Composable
 fun EmptyStateBase(
     title: String,
@@ -219,6 +297,13 @@ fun EmptyStateBase(
     }
 }
 
+/**
+ * 基础水平分割线。
+ *
+ * 采用全局统一的分割线粗细与颜色。
+ *
+ * @param modifier 应用于分割线的修饰符。
+ */
 @Composable
 fun DividerBase(modifier: Modifier = Modifier) {
     HorizontalDivider(

@@ -8,6 +8,15 @@ import java.math.RoundingMode
 private const val RECORD_OPERATORS = "+-×÷"
 private val recordNumber = Regex("[+-]?[0-9]+(?:\\.[0-9]{0,2})?")
 
+/**
+ * 计算记账金额四则运算表达式的结果。
+ *
+ * 支持加（+）、减（-）、乘（× 或 *）、除（÷ 或 /），并按标准优先级（先乘除后加减）以精确金额（分）进行运算。
+ * 若表达式不完整（如以运算符结尾），会先去除末尾运算符再行计算；若存在非法字符或除以零则返回空字符串。
+ *
+ * @param expr 待求值的数学表达式字符串。
+ * @return 运算后的格式化金额字符串（如 "12.5" 或 "100"），计算失败时返回空字符串。
+ */
 fun evaluateMathExpression(expr: String): String {
     val expression = expr.trim().replace('*', '×').replace('/', '÷').replace('−', '-')
         .trimEnd { it in RECORD_OPERATORS }
@@ -47,6 +56,16 @@ fun evaluateMathExpression(expr: String): String {
     }
 }
 
+/**
+ * 向记账金额表达式追加运算符。
+ *
+ * 处理连击转换逻辑：连续输入两个 `+` 会自动升级为乘号 `×`；连续输入两个 `-` 会升级为除号 `÷`；
+ * 若末尾已存在其他运算符，则替换为新的运算符。
+ *
+ * @param expression 当前输入的表达式。
+ * @param operator 待追加的基础运算符（"+" 或 "-"）。
+ * @return 追加或转换后的新表达式。
+ */
 internal fun appendRecordOperator(expression: String, operator: String): String {
     if (expression.isEmpty() || expression.length >= 80) return expression
     val last = expression.last()
@@ -58,4 +77,10 @@ internal fun appendRecordOperator(expression: String, operator: String): String 
     return if (last in RECORD_OPERATORS) expression.dropLast(1) + next else expression + next
 }
 
+/**
+ * 提取表达式中的最后一个操作数。
+ *
+ * @param expression 当前运算表达式。
+ * @return 最右侧未闭合的数字操作数字符串。
+ */
 internal fun recordLastOperand(expression: String): String = expression.split('+', '-', '×', '÷').last()

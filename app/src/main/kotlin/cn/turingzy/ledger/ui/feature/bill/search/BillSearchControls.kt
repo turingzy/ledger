@@ -55,7 +55,17 @@ import kotlinx.coroutines.launch
 
 private enum class SearchPanel { TIME, AMOUNT, SORT, ACCOUNT }
 
-/** Opens the search controls as drawers, keeping changes local until an option is applied. */
+/**
+ * 账单搜索筛选控件栏。
+ *
+ * 以横向滚动胶囊按钮的形式展示“时间”、“金额”、“排序方式”以及“账户”快捷筛选选项，
+ * 点击时打开对应的底部筛选抽屉，用户确认后更新搜索请求参数。
+ *
+ * @param request 当前搜索请求参数 [BillSearchRequest]。
+ * @param accounts 可选账户列表。
+ * @param currency 当前计算的主货币代码。
+ * @param onChange 筛选条件变更回调。
+ */
 @Composable
 internal fun BillSearchControls(
     request: BillSearchRequest,
@@ -128,7 +138,16 @@ internal fun BillSearchControls(
     }
 }
 
-/** Tints the capsule itself on press and uses no separate indication. */
+/**
+ * 搜索筛选胶囊小按钮。
+ *
+ * @param label 显示的文本标签。
+ * @param onClick 点击事件回调。
+ * @param modifier 外部修饰符。
+ * @param background 背景填充色。
+ * @param active 是否处于激活/选中状态（激活时以主题高亮色显示文字）。
+ * @param expanded 是否展开（为 true 时显示向下展开箭头，false 显示向右箭头，null 不显示图标）。
+ */
 @Composable
 internal fun SearchPill(
     label: String,

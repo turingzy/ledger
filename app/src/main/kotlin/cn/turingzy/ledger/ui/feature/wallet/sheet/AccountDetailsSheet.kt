@@ -28,6 +28,20 @@ import cn.turingzy.ledger.model.account.CardTemplate
 import cn.turingzy.ledger.ui.theme.LedgerTheme
 import kotlinx.coroutines.launch
 
+/**
+ * 账户详情与编辑底部弹窗。
+ *
+ * 包装 [AccountDetailsContent]，提供平滑收起动画及键盘弹起锚定处理。
+ *
+ * @param account 待查看或编辑的账户
+ * @param onDismissRequest 关闭弹窗请求回调
+ * @param onSave 保存账户修改回调
+ * @param onDelete 删除账户回调，传回账户 ID
+ * @param modifier 外部修饰符
+ * @param templates 可用的卡面模板列表
+ * @param sheetState 底部弹窗状态
+ * @param assignedTemplate 当前账户关联的卡面模板
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountDetailsSheet(
@@ -68,6 +82,19 @@ fun AccountDetailsSheet(
     }
 }
 
+/**
+ * 账户详情与编辑弹窗主体内容组件。
+ *
+ * 包含账户属性表单、修改保存、卡面替换入口以及删除确认弹窗交互。
+ *
+ * @param account 待查看或编辑的账户
+ * @param onSave 保存账户修改回调
+ * @param onDelete 确认删除账户回调
+ * @param modifier 外部修饰符
+ * @param templates 可用的卡面模板列表
+ * @param onDismiss 关闭或取消回调
+ * @param assignedTemplate 当前账户关联的卡面模板
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountDetailsContent(

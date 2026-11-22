@@ -35,6 +35,18 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CancellationException
 import timber.log.Timber
 
+/**
+ * 账单传输（导入或导出）的操作控制行组件。
+ *
+ * 包含状态进度指示器（支持不确定循环进度与确定百分比进度展示）和操作触发按钮。
+ *
+ * @param title 操作按钮文本（例如“开始导入”、“导出账单”）
+ * @param running 是否当前正在执行传输任务
+ * @param progress 当前传输进度百分比（0..100），为 null 时若 [running] 为 true 则展示循环进度条
+ * @param onClick 按钮点击回调
+ * @param modifier 修饰符
+ * @param enabled 按钮是否允许交互
+ */
 @Composable
 internal fun SettingsTransferAction(
     title: String,
@@ -79,6 +91,16 @@ internal fun SettingsTransferAction(
     }
 }
 
+/**
+ * 账单传输文件选择项展示行。
+ *
+ * 显示“交易文件”标签及当前选中的文件名，点击可调用外部文件选择器。
+ *
+ * @param fileName 当前已选中的文件名，为 null 时显示“选择文件”提示
+ * @param enabled 是否允许点击选择
+ * @param modifier 修饰符
+ * @param onClick 点击事件回调
+ */
 @Composable
 internal fun SettingsTransferFileRow(
     fileName: String?,
@@ -106,6 +128,13 @@ internal fun SettingsTransferFileRow(
     }
 }
 
+/**
+ * 根据给定的内容 URI 查询并解析出文件在系统中的显示名称。
+ *
+ * @param context Android 上下文环境
+ * @param uri 选定文件的 [Uri]
+ * @return 解析到的文件名称，若无法读取则返回默认兜底名称
+ */
 internal fun selectedTransferFileName(context: Context, uri: Uri): String = try {
     context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
         val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)

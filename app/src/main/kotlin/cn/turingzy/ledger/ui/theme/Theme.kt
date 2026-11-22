@@ -13,6 +13,9 @@ import cn.turingzy.ledger.ui.interaction.rememberUiIndication
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
+/**
+ * 应用深色模式 Material 3 配色方案。
+ */
 private val DarkColorScheme = darkColorScheme(
     tertiary = IosGreen,
     primary = Color(0xFF0A84FF),
@@ -32,6 +35,9 @@ private val DarkColorScheme = darkColorScheme(
     error = Color(0xFFFF453A),
 )
 
+/**
+ * 应用浅色模式 Material 3 配色方案。
+ */
 private val LightColorScheme = lightColorScheme(
     tertiary = IosGreen,
     primary = IosBlue,
@@ -51,6 +57,14 @@ private val LightColorScheme = lightColorScheme(
     error = IosRed,
 )
 
+/**
+ * 应用核心主题提供组件。
+ *
+ * 应用深色或浅色 Material 3 配色方案与排版规范，并将默认波纹（Ripple）替换为自定义按压反馈 [rememberUiIndication]。
+ *
+ * @param darkTheme 是否启用深色模式，默认跟随系统
+ * @param content 子 Composable 内容插槽
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppTheme(
@@ -68,6 +82,12 @@ fun AppTheme(
     }
 }
 
+/**
+ * 应用主题 Composable 入口（[AppTheme] 的便捷别名）。
+ *
+ * @param darkTheme 是否启用深色模式，默认跟随系统
+ * @param content 子 Composable 内容插槽
+ */
 @Composable
 fun LedgerTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),

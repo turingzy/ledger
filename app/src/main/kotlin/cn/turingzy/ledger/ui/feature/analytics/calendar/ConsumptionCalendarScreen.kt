@@ -53,6 +53,17 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 
+/**
+ * 消费日历屏幕。
+ *
+ * @param initialMonth 初始进入时展示的年月。
+ * @param onBack 返回回调。
+ * @param modifier 修饰符。
+ * @param onRecordTransaction 在选中日期点击记账时的回调。
+ * @param viewModel 统计看板 ViewModel。
+ * @param onTransactionClick 点击单笔交易明细时的回调。
+ * @param snackbarHostState 用于展示 Snackbar 消息的状态持有者。
+ */
 @Composable
 internal fun ConsumptionCalendarScreen(
     initialMonth: YearMonth,
@@ -77,6 +88,17 @@ internal fun ConsumptionCalendarScreen(
     }
 }
 
+/**
+ * 消费日历界面的内容布局。
+ *
+ * @param dashboard 看板统计数据状态。
+ * @param initialMonth 初始展示年月。
+ * @param onBack 返回回调。
+ * @param modifier 修饰符。
+ * @param today 今日日期。
+ * @param onRecordTransaction 在选中日期记账的回调。
+ * @param onTransactionClick 点击单笔交易明细的回调。
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ConsumptionCalendarContent(
@@ -217,6 +239,14 @@ internal fun ConsumptionCalendarContent(
     }
 }
 
+/**
+ * 消费日历的月度网格组件。
+ *
+ * @param data 消费日历计算数据（单元格、金额、等级）。
+ * @param selectedDate 当前选中的日期。
+ * @param today 今日日期。
+ * @param onSelect 点击选中日期时的回调。
+ */
 @Composable
 private fun ConsumptionMonthGrid(
     data: ConsumptionCalendarData,
@@ -265,6 +295,12 @@ private fun ConsumptionMonthGrid(
     }
 }
 
+/**
+ * 根据消费热力等级获取对应的单元格背景色彩。
+ *
+ * @param level 消费等级（0~4，0 为无消费，4 为最高档）。
+ * @return 对应的背景 [Color]。
+ */
 @Composable
 private fun calendarHeatColor(level: Int): Color {
     val colors = MaterialTheme.colorScheme

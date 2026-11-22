@@ -9,7 +9,30 @@ import cn.turingzy.ledger.model.transaction.TransactionType
 import cn.turingzy.ledger.model.currency.convertCents
 import cn.turingzy.ledger.model.settings.supportedCurrencyCodes
 
+/**
+ * 账单导入规划器。
+ *
+ * 负责依据解析规则（[BillParseRule]）对原始表格数据进行表头定位、字段映射、数据转换和完整性校验，
+ * 将文本行构建为合法的 [Transaction] 交易列表。
+ */
 object BillImportPlanner {
+    /**
+     * 根据解析规则将表格行数据转换为待导入的交易记录列表。
+     *
+     * 处理逻辑包括：
+     * 1. 校验规则有效性并定位表头行（包含交易时间列与金额列）。
+     * 2. 逐行解析收支类型、金额、账户、分类、转账信息及多币种汇率换算数据。
+     * 3. 提取来源交易流水号生成用于去重的导入键（`importKey`）。
+     * 4. 捕获格式错误或非法行并包装为带明确行号的异常信息。
+     *
+     * @param rows 原始账单二维文本数据。
+     * @param rule 账单解析映射规则。
+     * @param selectedAccountId 用户在界面上指定的兜底账户 ID（当规则中未显式指定且账单无“账户”列时使用）。
+     * @param accounts 当前系统内的账户列表，用于账户查找与币种核验。
+     * @param categories 当前系统内的分类列表，用于收支分类匹配。
+     * @return 解析完成的 [Transaction] 列表。
+     * @throws IllegalArgumentException 当规则无效、缺少必要表头、数据行内容不合法或未匹配到有效账单时抛出。
+     */
     fun plan(rows: List<List<String>>, rule: BillParseRule, selectedAccountId: Long?, accounts: List<Account>, categories: List<Category>): List<Transaction> {
         require(rule.valid) { "解析规则无效" }
         val start = requireNotNull(rule.startRow.toIntOrNull()) - 1

@@ -27,6 +27,18 @@ import java.util.Locale
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
 
+/**
+ * 账本应用 Compose 根组件。
+ *
+ * 负责收集全局偏好设置并配置应用的基础环境：
+ * 1. 根据偏好设置覆写应用语言和区域（[Locale]），并提供本地化的 [Context] 和 [Configuration]；
+ * 2. 计算深浅色主题模式并同步系统状态栏与导航栏的高亮外观；
+ * 3. 在应用处于 [Lifecycle.State.RESUMED] 状态时，定时（每小时）自动刷新汇率；
+ * 4. 向下注入本位币 [LocalCurrencyBiz]，并在偏好数据加载完成前展示全屏加载指示器。
+ *
+ * @param window 当前宿主 Activity 的窗口对象，用于控制系统栏外观样式。
+ * @param viewModel 全局应用状态 ViewModel，默认通过 Hilt 获取。
+ */
 @Composable
 internal fun LedgerRoot(window: Window, viewModel: AppStateViewModel = hiltViewModel()) {
     val preferences by viewModel.preferences.collectAsStateWithLifecycle()
@@ -64,6 +76,15 @@ internal fun LedgerRoot(window: Window, viewModel: AppStateViewModel = hiltViewM
     }
 }
 
+/**
+ * 创建应用了指定语言和区域配置的包装 Context。
+ *
+ * 通过 [ContextThemeWrapper] 覆写当前配置，确保在不重启 Activity 的情况下动态生效语言偏好。
+ *
+ * @param context 当前上下文。
+ * @param configuration 包含了目标语言区域的配置对象。
+ * @return 覆写了指定配置的 [ContextThemeWrapper]。
+ */
 internal fun localizedActivityContext(context: Context, configuration: Configuration): ContextThemeWrapper =
     ContextThemeWrapper(context, context.theme).apply { applyOverrideConfiguration(configuration) }
 

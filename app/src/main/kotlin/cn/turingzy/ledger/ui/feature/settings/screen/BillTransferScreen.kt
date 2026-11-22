@@ -63,10 +63,50 @@ import timber.log.Timber
 import java.time.ZoneId
 import kotlinx.coroutines.launch
 
+/**
+ * 账单导出的文件格式枚举。
+ *
+ * @property label 格式的显示名称（如 "Excel", "CSV"）
+ */
 private enum class ExportFormat(val label: String) { EXCEL("Excel"), CSV("CSV") }
-private enum class BillTransferPicker { START, END }
-private enum class BillTransferStatus { IDLE, RUNNING, COMPLETED, CANCELLED }
 
+/**
+ * 账单导出时间范围选择的目标枚举。
+ */
+private enum class BillTransferPicker {
+    /** 编辑开始时间。 */
+    START,
+    /** 编辑结束时间。 */
+    END,
+}
+
+/**
+ * 账单导入导出操作的运行状态。
+ */
+private enum class BillTransferStatus {
+    /** 空闲或就绪状态。 */
+    IDLE,
+    /** 正在执行导入或导出任务。 */
+    RUNNING,
+    /** 任务执行完毕。 */
+    COMPLETED,
+    /** 任务已被取消。 */
+    CANCELLED,
+}
+
+/**
+ * 账单导入与导出屏幕组件。
+ *
+ * 提供账单导入（选择文件、绑定解析规则与关联账户、重复账单检测与跳过）
+ * 和账单导出（全部交易或指定时间区间、Excel 或 CSV 格式）的核心交互功能。
+ *
+ * @param rules 账单解析规则列表
+ * @param onDismissRequest 退出或返回上一级页面的回调
+ * @param accounts 现有账户列表，用于导入时指定目标归属账户
+ * @param onPreviewImport 预导入校验挂起函数，返回可能重复记录及校验结果
+ * @param onImport 执行账单文件正式导入的挂起函数
+ * @param onExport 执行账单导出的挂起函数，返回成功导出的条数
+ */
 @Composable
 internal fun BillTransferScreen(
     rules: List<ParseRulePreview>, onDismissRequest: () -> Unit,
@@ -296,8 +336,14 @@ internal fun BillTransferScreen(
     }
 }
 
+/** 账单时间范围展示的日期格式化器。 */
 private val billDateFormat = DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm")
 
+/**
+ * 账单传输界面的分组卡片容器。
+ *
+ * @param content 卡片内承载的列表内容
+ */
 @Composable
 private fun BillTransferCard(content: @Composable ColumnScope.() -> Unit) {
     SurfaceBase(shape = LedgerStyle.shapes.card, color = MaterialTheme.colorScheme.surface) {
@@ -305,6 +351,15 @@ private fun BillTransferCard(content: @Composable ColumnScope.() -> Unit) {
     }
 }
 
+/**
+ * 账单传输界面中的单选卡片项组件。
+ *
+ * @param title 选项标题文本
+ * @param selected 是否被选中
+ * @param enabled 是否允许交互
+ * @param modifier 修饰符
+ * @param onClick 点击事件回调
+ */
 @Composable
 private fun BillTransferOption(
     title: String,
@@ -326,11 +381,22 @@ private fun BillTransferOption(
     }
 }
 
+/**
+ * 账单传输卡片内部的分隔线组件。
+ */
 @Composable
 private fun BillTransferDivider() {
     DividerBase()
 }
 
+/**
+ * 账单导入导出中的点击导航行（如日期时间选择行）。
+ *
+ * @param label 左侧说明文本
+ * @param value 右侧当前选值展示
+ * @param enabled 是否允许点击
+ * @param onClick 点击事件回调
+ */
 @Composable
 private fun BillImportRow(
     label: String,

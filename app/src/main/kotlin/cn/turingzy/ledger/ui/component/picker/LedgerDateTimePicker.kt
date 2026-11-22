@@ -54,6 +54,18 @@ import java.time.LocalDate
 import java.time.YearMonth
 import kotlin.math.abs
 
+/**
+ * 日期与时间复合选择器组件。
+ *
+ * 整合上方的日期日历视图 [LedgerDatePicker] 与下方的时/分滚轮选择器 [RecordTimeWheel]。
+ *
+ * @param date 当前选中的日期。
+ * @param hour 当前选中的小时字符串（两位数字）。
+ * @param minute 当前选中的分钟字符串（两位数字）。
+ * @param onDateChange 日期变更回调。
+ * @param onHourChange 小时变更回调。
+ * @param onMinuteChange 分钟变更回调。
+ */
 @Composable
 internal fun LedgerDateTimePicker(
     date: LocalDate,
@@ -74,8 +86,26 @@ internal fun LedgerDateTimePicker(
     }
 }
 
-private enum class RecordCalendarPanel { DAYS, MONTHS, YEARS }
+/**
+ * 记账日历选择面板视图类型。
+ */
+private enum class RecordCalendarPanel {
+    /** 日期网格视图 */
+    DAYS,
+    /** 月份选择视图 */
+    MONTHS,
+    /** 年份选择视图 */
+    YEARS
+}
 
+/**
+ * 单日日历选择器。
+ *
+ * 提供日期网格展示，并支持点击年月标题快速切换到年份列表或月份列表选择面板。
+ *
+ * @param selectedDate 当前选中的日期。
+ * @param onSelect 选中某日时的回调。
+ */
 @Composable
 internal fun LedgerDatePicker(selectedDate: LocalDate, onSelect: (LocalDate) -> Unit) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
@@ -161,6 +191,14 @@ internal fun LedgerDatePicker(selectedDate: LocalDate, onSelect: (LocalDate) -> 
     }
 }
 
+/**
+ * 日历顶部的年/月可点击标题项。
+ *
+ * @param text 标题文案（如 "2024年" 或 "5月"）。
+ * @param description 无障碍语义描述。
+ * @param expanded 当前标题对应的展开选择面板是否处于打开状态。
+ * @param onClick 点击事件回调。
+ */
 @Composable
 private fun RecordCalendarHeading(text: String, description: String, expanded: Boolean, onClick: () -> Unit) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
@@ -180,8 +218,26 @@ private fun RecordCalendarHeading(text: String, description: String, expanded: B
     }
 }
 
+/**
+ * 将 [date] 的日（dayOfMonth）限制在目标 [month] 的有效天数内并生成新的 [LocalDate]。
+ *
+ * 避免如 1 月 31 日切换到 2 月时产生非法日期的越界异常。
+ *
+ * @param date 原始日期。
+ * @param month 目标年月。
+ * @return 目标年月中对应日（不超过当月末日）的日期对象。
+ */
 internal fun recordDateInMonth(date: LocalDate, month: YearMonth): LocalDate = month.atDay(minOf(date.dayOfMonth, month.lengthOfMonth()))
 
+/**
+ * 年份或月份网格选择面板。
+ *
+ * @param values 待选项数值列表（如 1..12 或年份列表）。
+ * @param selected 当前选中的数值。
+ * @param tag 布局测试标签。
+ * @param description 获取无障碍描述文案的函数。
+ * @param onSelect 选中数值时的回调。
+ */
 @Composable
 private fun RecordPeriodChoices(values: List<Int>, selected: Int, tag: String, description: (Int) -> String, onSelect: (Int) -> Unit) {
     val state = rememberLazyGridState(initialFirstVisibleItemIndex = (values.indexOf(selected) - 8).coerceAtLeast(0) / 4 * 4)
@@ -207,6 +263,16 @@ private fun RecordPeriodChoices(values: List<Int>, selected: Int, tag: String, d
     }
 }
 
+/**
+ * 时间数字滚轮组件（用于小时或分钟）。
+ *
+ * 带有居中指示条和吸附滚动效果（Snap fling behavior）。
+ *
+ * @param label 无障碍标签（如 "小时"、"分钟"）。
+ * @param value 当前选中的数值字符串。
+ * @param count 选项总数（例如小时为 24，分钟为 60）。
+ * @param onChange 滚动选中数值变更时的回调。
+ */
 @Composable
 private fun RecordTimeWheel(label: String, value: String, count: Int, onChange: (String) -> Unit) {
     val state = rememberLazyListState(initialFirstVisibleItemIndex = value.toIntOrNull()?.coerceIn(0, count - 1) ?: 0)

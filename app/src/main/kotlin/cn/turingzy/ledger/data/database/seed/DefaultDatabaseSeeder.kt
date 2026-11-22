@@ -12,8 +12,19 @@ import cn.turingzy.ledger.model.category.CategoryType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
+/**
+ * 数据库初始种子数据填充器。
+ *
+ * 在初次创建数据库或初始化时，填充默认的系统图标、卡片模板、基础收支与转账分类以及预置账单解析规则。
+ */
 object DefaultDatabaseSeeder {
 
+    /**
+     * 异步填充数据库初始种子数据。
+     *
+     * @param database 数据库实例
+     * @param scope 协程作用域
+     */
     fun seedInitialData(database: LedgerDatabase, scope: CoroutineScope) {
         scope.launch {
             val defaultIcons = listOf(
@@ -55,6 +66,9 @@ object DefaultDatabaseSeeder {
     }
 }
 
+/**
+ * 确保内置的卡面预设模板全部写入数据库（如果已存在则忽略）。
+ */
 internal suspend fun CardTemplateDao.ensureBuiltInCardFaces() {
     insertTemplates(BuiltInCardFace.entries.map { it.asTemplate().asEntity() })
 }

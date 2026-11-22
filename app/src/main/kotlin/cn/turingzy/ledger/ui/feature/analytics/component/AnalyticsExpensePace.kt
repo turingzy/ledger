@@ -43,6 +43,18 @@ import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.LocalDate
 
+/**
+ * 累计支出进度趋势折线图组件。
+ *
+ * 绘制本期累计支出（红色实线带浅色渐变投影）与上期累计支出（虚线）的对比走势，
+ * 支持点击与长按拖拽交互查看各时点的明细读数对比。
+ *
+ * @param days 按日统计数据映射。
+ * @param scope 统计时间粒度。
+ * @param start 当期起始日期。
+ * @param end 当期结束日期。
+ * @param today 今日日期。
+ */
 @Composable
 internal fun ExpensePace(days: Map<LocalDate, AnalyticsDay>, scope: AnalyticsTimeScope, start: LocalDate, end: LocalDate, today: LocalDate) {
     val data = remember(days, scope, start, end, today) { expensePaceData(days, scope, start, end, today) }
@@ -149,6 +161,14 @@ internal fun ExpensePace(days: Map<LocalDate, AnalyticsDay>, scope: AnalyticsTim
 
 }
 
+/**
+ * 支出进度图表上方的数据读数胶囊指示条。
+ *
+ * @param dateLabel 日期文案。
+ * @param current 本期金额（分）。
+ * @param previous 上期金额（分）。
+ * @param modifier 修饰符。
+ */
 @Composable
 private fun ExpensePaceReadout(dateLabel: String, current: Long, previous: Long, modifier: Modifier = Modifier) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
@@ -186,7 +206,12 @@ private fun ExpensePaceReadout(dateLabel: String, current: Long, previous: Long,
     }
 }
 
-
+/**
+ * 将一组坐标点转换为平滑的三次贝塞尔曲线路径。
+ *
+ * @param points 坐标点列表。
+ * @return 构造好的贝塞尔曲线 [Path]。
+ */
 internal fun smoothChartPath(points: List<Offset>): Path = Path().apply {
     if (points.isNotEmpty()) moveTo(points.first().x, points.first().y)
     points.zipWithNext().forEach { (from, to) ->
@@ -195,12 +220,26 @@ internal fun smoothChartPath(points: List<Offset>): Path = Path().apply {
     }
 }
 
+/**
+ * 格式化支出 Y 轴刻度标签金额。
+ *
+ * @param cents 金额（分）。
+ * @param currencySymbol 货币符号。
+ * @return 刻度文本（如 "¥100" 或 "¥2.5k"）。
+ */
 internal fun expenseAxisLabel(cents: Long, currencySymbol: String = "¥"): String {
     if (cents < 100_000L) return cents.toFormattedAmount(showSymbol = true, symbol = currencySymbol).removeSuffix(".00")
     val thousands = BigDecimal.valueOf(cents).divide(BigDecimal.valueOf(100_000L), 2, RoundingMode.HALF_UP)
     return "$currencySymbol${thousands.stripTrailingZeros().toPlainString()}k"
 }
 
+/**
+ * 计算支出进度图表 X 轴刻度标签展示的索引列表，避免密集重叠。
+ *
+ * @param count 总点数。
+ * @param scope 统计时间粒度。
+ * @return 抽样后的索引列表。
+ */
 internal fun expensePaceTickIndices(count: Int, scope: AnalyticsTimeScope? = null): List<Int> {
     if (count <= 0) return emptyList()
     if (scope == AnalyticsTimeScope.YEAR || count <= 7) return (0 until count).toList()
@@ -209,11 +248,25 @@ internal fun expensePaceTickIndices(count: Int, scope: AnalyticsTimeScope? = nul
     return (0 until count step step).toList()
 }
 
+/**
+ * 获取支出进度读数提示框中的日期文本。
+ *
+ * @param scope 统计时间粒度。
+ * @param date 目标日期。
+ * @return 格式化后的日期文本。
+ */
 internal fun expensePaceReadoutDate(scope: AnalyticsTimeScope, date: LocalDate): String = when (scope) {
     AnalyticsTimeScope.YEAR, AnalyticsTimeScope.ALL -> expensePaceDateLabel(scope, date)
     else -> "${date.monthValue}.${date.dayOfMonth}"
 }
 
+/**
+ * 获取支出进度图表 X 轴上展示的日期标签文本。
+ *
+ * @param scope 统计时间粒度。
+ * @param date 目标日期。
+ * @return 对应的轴标签文案（如 "周一"、"1月"、"2026"、"11.22"）。
+ */
 internal fun expensePaceDateLabel(scope: AnalyticsTimeScope, date: LocalDate): String = when (scope) {
     AnalyticsTimeScope.WEEK -> listOf("周一", "周二", "周三", "周四", "周五", "周六", "周日")[date.dayOfWeek.value - 1]
     AnalyticsTimeScope.YEAR -> "${date.monthValue}月"

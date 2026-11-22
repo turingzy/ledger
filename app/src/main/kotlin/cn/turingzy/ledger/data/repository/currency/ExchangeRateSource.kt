@@ -14,13 +14,38 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.*
 
+/**
+ * 远程汇率数据源接口。
+ */
 interface ExchangeRateSource {
+    /**
+     * 获取指定日期范围及币种集合的汇率实体列表。
+     *
+     * @param start 起始日期（含）
+     * @param end 截止日期（含）
+     * @param currencies 需要查询的币种代码集合
+     * @return 汇率实体列表
+     */
     suspend fun fetch(start: LocalDate, end: LocalDate, currencies: Set<String>): List<ExchangeRateEntity>
 }
 
+/**
+ * 基于 Frankfurter API 的汇率数据源实现。
+ *
+ * 通过 Frankfurter 开放 API 获取以 USD 为基准的历史汇率。
+ *
+ * @param dispatcher 用于网络请求的 IO 调度器
+ */
 class FrankfurterExchangeRateSource @Inject constructor(
     @param:Dispatcher(LedgerDispatchers.IO) private val dispatcher: CoroutineDispatcher,
 ) : ExchangeRateSource {
+    /**
+     * 发送 HTTP 请求从 Frankfurter API 拉取汇率数据，并解析为 [ExchangeRateEntity] 列表。
+     *
+     * @param start 起始日期
+     * @param end 截止日期
+     * @param currencies 货币代码集合
+     */
     override suspend fun fetch(start: LocalDate, end: LocalDate, currencies: Set<String>): List<ExchangeRateEntity> = withContext(dispatcher) {
         require(currencies.all { it.matches(Regex("[A-Z]{3}")) })
         val quotes = (currencies - "USD").sorted().joinToString(",")
