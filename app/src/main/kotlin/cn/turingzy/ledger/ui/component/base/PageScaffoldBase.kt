@@ -1,6 +1,5 @@
 package cn.turingzy.ledger.ui.component.base
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
@@ -42,12 +41,12 @@ fun PageScaffoldBase(
     title: String,
     modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
-    backDescription: String = stringResource(R.string.ui_back),
     scrolled: Boolean = false,
     windowInsets: WindowInsets = WindowInsets.safeDrawing,
     titleStyle: TextStyle = LedgerStyle.typography.sectionTitle,
     titlePadding: Dp = LedgerStyle.spacing.labelGap,
     backButtonSize: Dp = LedgerStyle.dimensions.touchTarget,
+    closeInsteadOfBack: Boolean = false,
     headerOpacity: Float = if (scrolled) LedgerStyle.opacity.topBarScrolled else 1f,
     actions: @Composable RowScope.() -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
@@ -56,7 +55,6 @@ fun PageScaffoldBase(
     val backdrop = rememberBackdropStateBaseBase()
     val density = LocalDensity.current
     var barHeight by remember { mutableStateOf(LedgerStyle.dimensions.toolbarHeight) }
-    BackHandler(enabled = onBack != null) { onBack?.invoke() }
     PageFrameBase(modifier, windowInsets) {
         Box(Modifier.fillMaxSize().recordBackdropBase(backdrop)) {
             content(PaddingValues(top = barHeight))
@@ -73,7 +71,12 @@ fun PageScaffoldBase(
                     .onSizeChanged { barHeight = with(density) { it.height.toDp() } },
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                if (onBack != null) PageBackButton(backDescription, backButtonSize, onBack)
+                if (onBack != null) PageBackButton(
+                    stringResource(if (closeInsteadOfBack) R.string.ui_cancel else R.string.ui_back),
+                    backButtonSize,
+                    closeInsteadOfBack,
+                    onBack,
+                )
                 Text(
                     title, Modifier.weight(1f).padding(horizontal = titlePadding),
                     style = titleStyle,
@@ -87,7 +90,7 @@ fun PageScaffoldBase(
 
 /** Applies press feedback to the back glyph while preserving its touch target. */
 @Composable
-private fun PageBackButton(description: String, size: Dp, onBack: () -> Unit) {
+private fun PageBackButton(description: String, size: Dp, closeInsteadOfBack: Boolean, onBack: () -> Unit) {
     val source = remember { MutableInteractionSource() }
     val pressed by source.collectIsPressedAsState()
     val tint = LedgerStyle.colors.textPrimary
@@ -99,7 +102,9 @@ private fun PageBackButton(description: String, size: Dp, onBack: () -> Unit) {
         showPressFeedback = false,
     ) {
         Icon(
-            MaterialSymbols.ChevronLeft, description, Modifier.size(LedgerStyle.icons.back),
+            if (closeInsteadOfBack) MaterialSymbols.Close else MaterialSymbols.ChevronLeft,
+            description,
+            Modifier.size(if (closeInsteadOfBack) LedgerStyle.icons.default else LedgerStyle.icons.back),
             tint = if (pressed) tint.copy(alpha = tint.alpha * 0.55f) else tint,
         )
     }

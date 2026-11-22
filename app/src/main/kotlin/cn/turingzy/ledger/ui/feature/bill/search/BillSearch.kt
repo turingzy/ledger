@@ -20,9 +20,7 @@ internal data class BillSearchFilters(
     val end: LocalDate? = null,
     val minimum: Long? = null,
     val maximum: Long? = null,
-) : Serializable {
-    val active: Boolean get() = start != null || end != null || minimum != null || maximum != null
-}
+) : Serializable
 
 internal data class BillSearchRequest(
     val query: String = "",
@@ -33,8 +31,7 @@ internal data class BillSearchRequest(
     val datePreset: SearchDatePreset? = SearchDatePreset.ALL,
     val amountPreset: SearchAmountPreset? = SearchAmountPreset.ALL,
 ) : Serializable {
-    val active: Boolean get() = query.isNotBlank() || categoryId != null || filters.active ||
-        sort != BillSearchSort.DEFAULT || accountId != null
+    val hasSearchTarget: Boolean get() = query.isNotBlank() || categoryId != null
 }
 
 internal data class BillSearchResults(

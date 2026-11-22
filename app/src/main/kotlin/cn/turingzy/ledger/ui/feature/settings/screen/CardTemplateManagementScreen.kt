@@ -3,12 +3,12 @@ package cn.turingzy.ledger.ui.feature.settings.screen
 import cn.turingzy.ledger.ui.feature.settings.component.CardTextColorPicker
 import cn.turingzy.ledger.ui.feature.settings.component.SettingsItemHeight
 import cn.turingzy.ledger.ui.feature.settings.component.SettingsSubpageScaffold
+import cn.turingzy.ledger.ui.feature.settings.component.SettingsDeleteAction
 import cn.turingzy.ledger.ui.feature.settings.component.settingsPageScroll
 import cn.turingzy.ledger.R
 import cn.turingzy.ledger.ui.component.base.IconButtonContentBase
 import cn.turingzy.ledger.ui.component.base.IconButtonBase
 import cn.turingzy.ledger.ui.component.base.ButtonBase
-import cn.turingzy.ledger.ui.component.base.ButtonToneBase
 import cn.turingzy.ledger.ui.component.base.ButtonVariantBase
 import androidx.compose.ui.res.stringResource
 import cn.turingzy.ledger.ui.interaction.uiClickable
@@ -42,6 +42,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -57,7 +58,13 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import cn.turingzy.ledger.navigation.SettingsSubpageTransition
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import cn.turingzy.ledger.navigation.SettingsEditorCreate
+import cn.turingzy.ledger.navigation.SettingsEditorList
+import cn.turingzy.ledger.navigation.SettingsEditorNavHost
+import cn.turingzy.ledger.navigation.openSettingsCreatePage
+import cn.turingzy.ledger.navigation.settingsCreatePage
 import cn.turingzy.ledger.model.account.CardTemplate
 import cn.turingzy.ledger.model.account.selectableCardTemplates
 import cn.turingzy.ledger.ui.component.card.bank.BankCardAspectRatio
@@ -85,34 +92,39 @@ internal fun CardTemplateManagementScreen(
 ) {
     val textResources = androidx.compose.ui.platform.LocalResources.current
     val scope = rememberCoroutineScope()
-    var saving by remember { mutableStateOf(false) }
+    val controller = rememberNavController()
+    val create by rememberUpdatedState(onCreate)
+    val update by rememberUpdatedState(onUpdate)
+    val delete by rememberUpdatedState(onDelete)
+    val dismiss by rememberUpdatedState(onDismissRequest)
     val drafts = remember { mutableStateListOf<CardTemplate>().apply { addAll(templates.selectableCardTemplates()) } }
     var selectedId by remember { mutableStateOf(drafts.firstOrNull()?.id) }
     val pagerState = rememberCircularCardPagerState(drafts.map { it.id }, selectedId)
-    val selectedIndex = if (drafts.isEmpty()) -1 else Math.floorMod(pagerState.currentPage, drafts.size)
-    val selected = drafts.getOrNull(selectedIndex)
     LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.settledPage }.collect { page ->
             if (drafts.isNotEmpty()) selectedId = drafts[Math.floorMod(page, drafts.size)].id
         }
     }
     var newFace by remember { mutableStateOf(CardTemplate(id = -1L, name = "", coverUri = "")) }
-    var creating by remember { mutableStateOf(false) }
     var uploadTarget by remember { mutableStateOf<Long?>(null) }
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         val target = uploadTarget
+        val entry = controller.currentBackStackEntry
         if (uri != null) scope.launch {
             val image = onCopyImage(uri) ?: return@launch
             val index = drafts.indexOfFirst { it.id == target }
-            if ((creating || drafts.isEmpty()) && newFace.id == target) newFace = newFace.copy(coverUri = image)
-            else if (index >= 0) {
+            if (entry?.destination?.route == SettingsEditorCreate &&
+                controller.currentBackStackEntry == entry && newFace.id == target
+            ) {
+                newFace = newFace.copy(coverUri = image)
+            } else if (index >= 0) {
                 val current = drafts[index]
                 val updated = current.copy(
                     coverUri = image,
                     textColor = if (current.titaniumInkOverride() == null) AutomaticCardTextColor else current.textColor,
                 )
                 drafts[index] = updated
-                onUpdate(updated)
+                update(updated)
             }
         }
         uploadTarget = null
@@ -123,57 +135,44 @@ internal fun CardTemplateManagementScreen(
         imagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
     }
 
-    SettingsSubpageTransition(
-        targetState = creating || drafts.isEmpty(),
-        depth = { if (it) 1 else 0 },
-    ) { adding ->
-        if (adding) {
-            val pending = newFace
-            val canSave = !saving && pending.name.isNotBlank() && pending.coverUri.isNotBlank()
-            SettingsSubpageScaffold(
-                title = textResources.getString(cn.turingzy.ledger.R.string.ui_new_card_design),
-                onBack = { if (drafts.isEmpty()) onDismissRequest() else creating = false },
-                actions = {
-                    IconButtonContentBase(enabled = canSave, onClick = {
-                        saving = true
-                        scope.launch {
-                            try {
-                                val id = onCreate(pending.copy(name = pending.name.trim())) ?: return@launch
-                                drafts.add(pending.copy(id = id, name = pending.name.trim()))
-                                selectedId = id
-                                creating = false
-                            } finally { saving = false }
+    SettingsEditorNavHost(controller) {
+        settingsCreatePage { entry ->
+            var saving by remember { mutableStateOf(false) }
+            NewCardTemplatePage(
+                pending = newFace,
+                onChange = { newFace = it },
+                onChooseImage = { replaceImage(newFace) },
+                onClose = { controller.popBackStack() },
+                onSave = {
+                    val pending = newFace.copy(name = newFace.name.trim())
+                    saving = true
+                    scope.launch {
+                        try {
+                            val id = create(pending) ?: return@launch
+                            drafts.add(pending.copy(id = id))
+                            selectedId = id
+                            if (controller.currentBackStackEntry == entry) controller.popBackStack()
+                        } finally {
+                            saving = false
                         }
-                    }) {
-                        Icon(MaterialSymbols.Check, textResources.getString(cn.turingzy.ledger.R.string.ui_add_card_design), tint = MaterialTheme.colorScheme.tertiary.copy(alpha = if (canSave) 1f else LedgerStyle.opacity.disabled))
                     }
                 },
-            ) {
-                Column(
-                    Modifier.fillMaxWidth().settingsPageScroll(),
-                    verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large),
-                ) {
-                    TemplateCoverPreview(pending, onChooseImage = { replaceImage(pending) })
-                    CardFaceProperties(
-                        template = pending,
-                        onChange = { newFace = it },
-                    )
-                    if (pending.coverUri.isNotBlank()) {
-                        CardFaceActions(pending.id, onChooseImage = { replaceImage(pending) })
-                    }
-                }
-            }
-        } else {
+                saving = saving,
+            )
+        }
+        composable(SettingsEditorList) {
+            val selectedIndex = if (drafts.isEmpty()) -1 else Math.floorMod(pagerState.currentPage, drafts.size)
+            val selected = drafts.getOrNull(selectedIndex)
             SettingsSubpageScaffold(
                 title = textResources.getString(cn.turingzy.ledger.R.string.ui_card_designs),
-                onBack = onDismissRequest,
+                onBack = dismiss,
                 actions = {
                     IconButtonBase(
                         MaterialSymbols.Add,
                         textResources.getString(R.string.ui_new_card_design),
                         onClick = {
                             newFace = CardTemplate(id = minOf(drafts.minOfOrNull { it.id } ?: 0L, 0L) - 1L, name = "", coverUri = "")
-                            creating = true
+                            controller.openSettingsCreatePage()
                         },
                     )
                 },
@@ -195,7 +194,7 @@ internal fun CardTemplateManagementScreen(
                                 val index = drafts.indexOfFirst { it.id == updated.id }
                                 if (index >= 0) {
                                     drafts[index] = updated
-                                    if (updated.name.isNotBlank()) onUpdate(updated)
+                                    if (updated.name.isNotBlank()) update(updated)
                                 }
                             },
                         )
@@ -206,17 +205,55 @@ internal fun CardTemplateManagementScreen(
                             onDelete = {
                                 val index = drafts.indexOfFirst { it.id == selected.id }
                                 if (index >= 0) {
-                                    onDelete(selected.id)
+                                    delete(selected.id)
                                     drafts.removeAt(index)
-                                    if (drafts.isEmpty()) newFace = CardTemplate(id = -1L, name = "", coverUri = "")
+                                    if (drafts.isEmpty()) {
+                                        newFace = CardTemplate(id = -1L, name = "", coverUri = "")
+                                        controller.openSettingsCreatePage()
+                                    }
                                     selectedId = drafts.getOrNull(index.coerceAtMost(drafts.lastIndex))?.id
                                 }
                             },
                         )
                     }
-
                 }
             }
+        }
+    }
+}
+
+/** Edits a new card face independently of the management pager. */
+@Composable
+internal fun NewCardTemplatePage(
+    pending: CardTemplate,
+    onChange: (CardTemplate) -> Unit,
+    onChooseImage: () -> Unit,
+    onClose: () -> Unit,
+    onSave: () -> Unit,
+    saving: Boolean,
+) {
+    val canSave = !saving && pending.name.isNotBlank() && pending.coverUri.isNotBlank()
+    SettingsSubpageScaffold(
+        title = stringResource(R.string.ui_new_card_design),
+        onBack = onClose,
+        closeInsteadOfBack = true,
+        actions = {
+            IconButtonContentBase(enabled = canSave, onClick = onSave) {
+                Icon(
+                    MaterialSymbols.Check,
+                    stringResource(R.string.ui_add_card_design),
+                    tint = MaterialTheme.colorScheme.tertiary.copy(alpha = if (canSave) 1f else LedgerStyle.opacity.disabled),
+                )
+            }
+        },
+    ) {
+        Column(
+            Modifier.fillMaxWidth().settingsPageScroll(),
+            verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large),
+        ) {
+            TemplateCoverPreview(pending, onChooseImage = onChooseImage)
+            CardFaceProperties(pending, onChange = onChange)
+            if (pending.coverUri.isNotBlank()) CardFaceActions(pending.id, onChooseImage = onChooseImage)
         }
     }
 }
@@ -229,22 +266,11 @@ private fun CardFaceActions(
     enabled: Boolean = true,
     onDelete: (() -> Unit)? = null,
 ) {
-    var confirming by remember(templateId) { mutableStateOf(false) }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         ButtonBase(stringResource(R.string.ui_change_card_design), onChooseImage,
             enabled = enabled, variant = ButtonVariantBase.Text)
         if (onDelete != null) {
-            if (confirming) Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButtonBase(MaterialSymbols.Close, stringResource(R.string.ui_cancel), onClick = { confirming = false })
-                IconButtonBase(MaterialSymbols.Check, stringResource(R.string.ui_confirm),
-                    onClick = { confirming = false; onDelete() }, enabled = enabled,
-                    contentColor = LedgerStyle.colors.success)
-            } else {
-                ButtonBase(
-                    stringResource(R.string.ui_delete_card_design), onClick = { confirming = true },
-                    enabled = enabled, variant = ButtonVariantBase.Text, tone = ButtonToneBase.Destructive,
-                )
-            }
+            SettingsDeleteAction(templateId, stringResource(R.string.ui_delete_card_design), onDelete, enabled = enabled)
         }
     }
 }

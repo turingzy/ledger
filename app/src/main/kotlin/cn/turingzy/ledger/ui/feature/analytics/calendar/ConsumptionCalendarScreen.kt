@@ -47,7 +47,6 @@ import cn.turingzy.ledger.ui.component.biz.TransactionItemBiz
 import cn.turingzy.ledger.ui.interaction.UiInteractionKind
 import cn.turingzy.ledger.ui.interaction.rememberUiEvent
 import cn.turingzy.ledger.ui.interaction.uiSelectable
-import cn.turingzy.ledger.ui.interaction.uiClickable
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.util.toFormattedAmount
 import java.time.LocalDate
@@ -110,7 +109,7 @@ internal fun ConsumptionCalendarContent(
         modifier = modifier,
         onBack = onBack,
         titleStyle = LedgerStyle.typography.detailPageTitle,
-        backDescription = textResources.getString(R.string.ui_back_to_analytics),
+        closeInsteadOfBack = true,
         scrolled = listState.canScrollBackward,
     ) { headerPadding ->
         LazyColumn(

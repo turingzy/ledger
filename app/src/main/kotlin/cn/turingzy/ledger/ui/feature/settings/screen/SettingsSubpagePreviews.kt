@@ -28,8 +28,9 @@ private fun SettingsSubpagePreview(@PreviewParameter(SettingsSubpagePreviewProvi
     val templates = listOf(CardTemplate(1L, "示例卡面", ""))
     LedgerTheme {
         when (case) {
-            SettingsSubpagePreviewCase.CardDesigns, SettingsSubpagePreviewCase.NewCardDesign -> CardTemplateManagementScreen(
-                if (case == SettingsSubpagePreviewCase.NewCardDesign) emptyList() else templates, {}, { 1L }, {}, {}, { null },
+            SettingsSubpagePreviewCase.CardDesigns -> CardTemplateManagementScreen(templates, {}, { 1L }, {}, {}, { null })
+            SettingsSubpagePreviewCase.NewCardDesign -> NewCardTemplatePage(
+                CardTemplate(-1L, "", ""), {}, {}, {}, {}, saving = false,
             )
             SettingsSubpagePreviewCase.ImportExport -> BillTransferScreen(defaultParseRulePreviews(), {}, accounts)
             SettingsSubpagePreviewCase.About -> AboutScreen("1.0.0", {})

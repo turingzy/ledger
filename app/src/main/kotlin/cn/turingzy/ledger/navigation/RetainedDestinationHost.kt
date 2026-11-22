@@ -1,22 +1,37 @@
 package cn.turingzy.ledger.navigation
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.updateTransition
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.semantics.hideFromAccessibility
+import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import cn.turingzy.ledger.ui.theme.LedgerStyle
 
+private const val TabMinScale = 0.96f
+private val TabTransitionSpec = tween<Float>(150, easing = FastOutSlowInEasing)
+
+/** Animates changes between retained tabs while keeping their navigation and scroll state. */
 @Composable
 internal fun RetainedDestinationHost(
     currentDestination: TopLevelDestination,
@@ -29,22 +44,53 @@ internal fun RetainedDestinationHost(
         if (currentDestination !in visited) visited.add(currentDestination)
     }
 
-    // Keep tab compositions alive without measuring or drawing the hidden pages.
+    // Tab selection happens outside the per-tab NavHosts so route pushes can keep their own motion.
+    val transition = updateTransition(currentDestination, label = "Main tab")
+    val progress = destinations.map { destination ->
+        key(destination) {
+            transition.animateFloat(
+                transitionSpec = { TabTransitionSpec },
+                label = destination.name,
+            ) { if (it == destination) 1f else 0f }
+        }
+    }
+    val visible = progress.map { progressState ->
+        remember(progressState) { derivedStateOf { progressState.value > 0f } }
+    }
     Layout(
-        modifier = modifier,
+        modifier = modifier.clipToBounds(),
         content = {
-            destinations.forEach { destination ->
+            destinations.forEachIndexed { index, destination ->
                 key(destination) {
-                    val owner = rememberDestinationLifecycleOwner(destination == currentDestination)
+                    val active = destination == currentDestination
+                    val owner = rememberDestinationLifecycleOwner(active)
                     CompositionLocalProvider(LocalLifecycleOwner provides owner) {
-                        Box(Modifier.fillMaxSize()) { content(destination) }
+                        val inactiveSemantics = if (active) Modifier else Modifier.semantics { hideFromAccessibility() }
+                        Box(
+                            Modifier.fillMaxSize()
+                                .graphicsLayer {
+                                    alpha = progress[index].value
+                                    val scale = TabMinScale + (1f - TabMinScale) * alpha
+                                    scaleX = scale
+                                    scaleY = scale
+                                }
+                                .then(inactiveSemantics)
+                                .background(LedgerStyle.colors.background),
+                        ) { content(destination) }
                     }
                 }
             }
         },
     ) { measurables, constraints ->
-        val selected = measurables[destinations.indexOf(currentDestination)].measure(constraints)
-        layout(selected.width, selected.height) { selected.placeRelative(0, 0) }
+        val selectedIndex = destinations.indexOf(currentDestination)
+        val selected = measurables[selectedIndex].measure(constraints)
+        val outgoing = measurables.mapIndexedNotNull { index, measurable ->
+            measurable.takeIf { index != selectedIndex && visible[index].value }?.measure(constraints)
+        }
+        layout(selected.width, selected.height) {
+            outgoing.forEach { it.placeRelative(0, 0) }
+            selected.placeRelative(0, 0, zIndex = 1f)
+        }
     }
 }
 

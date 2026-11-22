@@ -30,7 +30,7 @@ class BillMigrationTest {
         compose.onNode(hasSetTextAction()).assertDoesNotExist()
     }
 
-    @Test fun searchSubpageHasAnExternalBackButtonAndSubmitsOnIme() {
+    @Test fun searchFieldContainsItsCloseButtonAndSubmitsOnIme() {
         var submitted = ""
         var closed = false
         compose.setContent { LedgerTheme {
@@ -38,12 +38,16 @@ class BillMigrationTest {
             BillSearchHeader(input, { input = it }, { submitted = input }, { closed = true })
         } }
         val field = compose.onNode(hasSetTextAction())
-        val back = compose.onNodeWithContentDescription("返回")
-        assertTrue(back.fetchSemanticsNode().boundsInRoot.right < field.fetchSemanticsNode().boundsInRoot.left)
+        val close = compose.onNodeWithContentDescription("关闭搜索")
+        compose.onNodeWithContentDescription("返回").assertDoesNotExist()
+        val insideField = hasAnyAncestor(hasTestTag("billSearchField"))
+        compose.onNode(hasContentDescription("关闭搜索") and insideField, useUnmergedTree = true)
+            .assertWidthIsEqualTo(LedgerStyle.icons.default)
+        assertTrue(field.fetchSemanticsNode().boundsInRoot.right < close.fetchSemanticsNode().boundsInRoot.left)
         field.performTextInput("午餐")
         field.performImeAction()
         compose.runOnIdle { assertEquals("午餐", submitted) }
-        back.performClick()
+        close.performClick()
         compose.runOnIdle { assertTrue(closed) }
     }
 

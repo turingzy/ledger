@@ -16,8 +16,9 @@ class ParseRulesMigrationTest {
         val initial = rule.copy(accountId = 7L, categoryId = 9L)
         var saved: ParseRulePreview? = null
         compose.setContent { LedgerTheme {
-            ParseRulesScreen(emptyList(), emptyList(), listOf(rule), { saved = it }, {}, {}, initialDraft = initial)
+            ParseRulesScreen(emptyList(), emptyList(), listOf(initial), { saved = it }, {}, {})
         } }
+        compose.onNodeWithText(rule.name).performClick()
         compose.onNodeWithContentDescription("规则名称").performTextReplacement("  更新规则  ")
         compose.runOnIdle { assertEquals(initial.copy(name = "更新规则"), saved) }
         compose.onNodeWithText("规则详情").assertIsDisplayed()
@@ -27,9 +28,9 @@ class ParseRulesMigrationTest {
         var saved: ParseRulePreview? = null
         var dismissed = false
         compose.setContent { LedgerTheme {
-            ParseRulesScreen(emptyList(), emptyList(), listOf(rule), { saved = it }, {}, { dismissed = true },
-                initialDraft = rule.copy(name = ""))
+            ParseRulesScreen(emptyList(), emptyList(), listOf(rule), { saved = it }, {}, { dismissed = true })
         } }
+        compose.onNodeWithText(rule.name).performClick()
         compose.onNodeWithContentDescription("规则名称").performTextReplacement(" ")
         compose.onNodeWithContentDescription("返回").performClick()
         compose.onNodeWithText(rule.name).assertIsDisplayed()
@@ -39,9 +40,10 @@ class ParseRulesMigrationTest {
     @Test fun deleteKeepsTheOriginalRuleIdAndReturnsToTheList() {
         var deleted: Long? = null
         compose.setContent { LedgerTheme {
-            ParseRulesScreen(emptyList(), emptyList(), listOf(rule), {}, { deleted = it }, {}, initialDraft = rule)
+            ParseRulesScreen(emptyList(), emptyList(), listOf(rule), {}, { deleted = it }, {})
         } }
-        compose.onNodeWithContentDescription("删除规则").performClick()
+        compose.onNodeWithText(rule.name).performClick()
+        compose.onNodeWithText("删除规则").performScrollTo().performClick()
         compose.runOnIdle { assertNull(deleted) }
         compose.onNodeWithContentDescription("确认").performClick()
         compose.runOnIdle { assertEquals(rule.id, deleted) }

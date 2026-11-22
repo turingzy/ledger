@@ -131,7 +131,7 @@ object AppShapes {
     val summaryCard = RoundedCornerShape(20.dp)
     val dialog = RoundedCornerShape(24.dp)
     val confirmationDialog = RoundedCornerShape(28.dp)
-    val bottomSheet = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+    val bottomSheet = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
     val pill = CircleShape
 
     val material = Shapes(

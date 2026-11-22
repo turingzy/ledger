@@ -23,5 +23,8 @@ internal class ParseRulesPreviewProvider : PreviewParameterProvider<ParseRulesPr
 @Preview(name = "Parse Rules Dark", showBackground = true, showSystemUi = true, widthDp = 420, heightDp = 900, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun ParseRulesPreview(@PreviewParameter(ParseRulesPreviewProvider::class) case: ParseRulesPreviewCase) {
-    LedgerTheme { ParseRulesScreen(emptyList(), emptyList(), case.rules, {}, {}, {}, initialDraft = case.draft) }
+    LedgerTheme {
+        if (case.draft == null) ParseRulesScreen(emptyList(), emptyList(), case.rules, {}, {}, {})
+        else ParseRuleEditor(case.draft, emptyList(), emptyList(), {}, {}, onDelete = {})
+    }
 }

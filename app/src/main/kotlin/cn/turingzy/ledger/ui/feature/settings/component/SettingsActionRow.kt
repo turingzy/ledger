@@ -14,11 +14,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import cn.turingzy.ledger.R
+import cn.turingzy.ledger.ui.component.base.ButtonBase
+import cn.turingzy.ledger.ui.component.base.ButtonToneBase
+import cn.turingzy.ledger.ui.component.base.ButtonVariantBase
 import cn.turingzy.ledger.ui.component.base.IconButtonBase
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.PaddingValues
@@ -26,7 +28,6 @@ import cn.turingzy.ledger.ui.component.base.CardBase
 import cn.turingzy.ledger.ui.component.base.ListRowBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.ui.component.MaterialSymbols
-import cn.turingzy.ledger.ui.component.card.summary.SummaryCardIconButton
 
 internal val SettingsItemHeight = LedgerStyle.dimensions.rowMinHeight
 
@@ -65,32 +66,43 @@ internal fun SettingsActionRow(
     }
 }
 
+/** Replaces the delete text with inline confirmation for the current item. */
 @Composable
 internal fun SettingsDeleteAction(
     itemId: Long,
-    description: String,
+    title: String,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
-    compact: Boolean = false,
+    enabled: Boolean = true,
 ) {
     var confirming by remember(itemId) { mutableStateOf(false) }
-    val colors = MaterialTheme.colorScheme
-    val action: @Composable (ImageVector, String, Color, () -> Unit) -> Unit = { icon, label, tint, onClick ->
-        if (compact) SummaryCardIconButton(icon, label, onClick, contentColor = tint)
-        else IconButtonBase(icon, label, onClick, contentColor = tint)
-    }
-    Row(modifier, horizontalArrangement = Arrangement.spacedBy(if (compact) LedgerStyle.spacing.small else LedgerStyle.spacing.none),
-        verticalAlignment = Alignment.CenterVertically) {
-        if (confirming) {
-            action(MaterialSymbols.Close, stringResource(R.string.ui_cancel), if (compact) colors.onPrimary else colors.onSurfaceVariant) {
-                confirming = false
-            }
-            action(MaterialSymbols.Check, stringResource(R.string.ui_confirm), colors.tertiary) {
-                confirming = false
-                onDelete()
-            }
-        } else {
-            action(MaterialSymbols.Delete, description, colors.error) { confirming = true }
+    if (confirming) {
+        Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+            IconButtonBase(
+                MaterialSymbols.Close,
+                stringResource(R.string.ui_cancel),
+                onClick = { confirming = false },
+                iconSize = LedgerStyle.icons.inline,
+            )
+            IconButtonBase(
+                MaterialSymbols.Check,
+                stringResource(R.string.ui_confirm),
+                onClick = {
+                    confirming = false
+                    onDelete()
+                },
+                enabled = enabled,
+                contentColor = LedgerStyle.colors.success,
+            )
         }
+    } else {
+        ButtonBase(
+            title,
+            onClick = { confirming = true },
+            modifier = modifier,
+            enabled = enabled,
+            variant = ButtonVariantBase.Text,
+            tone = ButtonToneBase.Destructive,
+        )
     }
 }

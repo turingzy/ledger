@@ -1,37 +1,43 @@
 package cn.turingzy.ledger.navigation
 
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.LaunchedEffect
-import androidx.navigation.NavDestination.Companion.hasRoute
-import androidx.navigation.toRoute
-import cn.turingzy.ledger.ui.feature.analytics.calendar.ConsumptionCalendarScreen
-import java.time.YearMonth
-import java.time.LocalDate
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.saveable.rememberSaveable
-import cn.turingzy.ledger.ui.feature.bill.sheet.RecordCreateSheet
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.navigation.NavDestination
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.toRoute
+import androidx.compose.ui.draw.clipToBounds
 import androidx.hilt.navigation.compose.hiltViewModel
-import cn.turingzy.ledger.ui.feature.bill.detail.TransactionDetailsScreen
-import cn.turingzy.ledger.ui.feature.bill.detail.TransactionDetailsViewModel
-import kotlinx.coroutines.launch
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onLayoutRectChanged
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import cn.turingzy.ledger.ui.feature.analytics.AnalyticsScreen
+import cn.turingzy.ledger.ui.feature.analytics.calendar.ConsumptionCalendarScreen
 import cn.turingzy.ledger.ui.feature.bill.BillScreen
+import cn.turingzy.ledger.ui.feature.bill.detail.TransactionDetailsScreen
+import cn.turingzy.ledger.ui.feature.bill.detail.TransactionDetailsViewModel
+import cn.turingzy.ledger.ui.feature.bill.sheet.RecordCreateSheet
 import cn.turingzy.ledger.ui.feature.bill.search.BillSearchScreen
 import cn.turingzy.ledger.ui.feature.settings.SettingsScreen
 import cn.turingzy.ledger.ui.feature.wallet.WalletScreen
+import java.time.LocalDate
+import java.time.YearMonth
+import kotlinx.coroutines.launch
 
 @Composable
 fun LedgerNavHost(
@@ -42,21 +48,28 @@ fun LedgerNavHost(
     modifier: Modifier = Modifier,
     onBillSelectionVisibleChange: (Boolean) -> Unit = {},
     onSubpageChange: (TopLevelDestination, Boolean) -> Unit = { _, _ -> },
+    onTaskTopChange: (TopLevelDestination, String, Int?) -> Unit = { _, _, _ -> },
 ) {
     RetainedDestinationHost(currentDestination, modifier) { destination ->
         val navController = rememberNavController()
-        if (destination == TopLevelDestination.ANALYTICS || destination == TopLevelDestination.BILL) {
+        if (destination == TopLevelDestination.BILL || destination == TopLevelDestination.ANALYTICS) {
             val entry by navController.currentBackStackEntryAsState()
-            val isSubpage = entry?.destination?.let { it.hasRoute<Route.BillSearch>() || it.hasRoute<Route.ConsumptionCalendar>() } == true
+            val isSubpage = entry?.destination?.isTemporaryTask() == true
             LaunchedEffect(isSubpage) { onSubpageChange(destination, isSubpage) }
         }
         NavHost(
             navController = navController,
             startDestination = destination.route,
-            enterTransition = { slideInHorizontally(tween(240)) { it } },
-            exitTransition = { slideOutHorizontally(tween(240)) { -it / 4 } },
-            popEnterTransition = { slideInHorizontally(tween(240)) { -it / 4 } },
-            popExitTransition = { slideOutHorizontally(tween(240)) { it } },
+            modifier = Modifier.clipToBounds(),
+            enterTransition = { PageTransitions.enter },
+            exitTransition = {
+                if (targetState.destination.isTemporaryTask()) ExitTransition.KeepUntilTransitionsFinished
+                else PageTransitions.exit
+            },
+            popEnterTransition = {
+                if (initialState.destination.isTemporaryTask()) EnterTransition.None else PageTransitions.popEnter
+            },
+            popExitTransition = { PageTransitions.popExit },
         ) {
             when (destination) {
                 TopLevelDestination.BILL -> {
@@ -69,34 +82,49 @@ fun LedgerNavHost(
                             onOpenSearch = { navController.navigate(Route.BillSearch) { launchSingleTop = true } },
                         )
                     }
-                    composable<Route.BillSearch> {
-                        BillSearchScreen(onBack = { navController.popBackStack() })
+                    composable<Route.BillSearch>(
+                        enterTransition = { PageTransitions.taskEnter },
+                        popExitTransition = { PageTransitions.taskPopExit },
+                    ) { searchEntry ->
+                        TemporaryTaskContent(searchEntry.id, { onTaskTopChange(destination, searchEntry.id, it) }) {
+                            BillSearchScreen(onBack = { navController.popBackStack() })
+                        }
                     }
                 }
                 TopLevelDestination.ANALYTICS -> {
                     composable<Route.Analytics> {
                         AnalyticsScreen(onOpenCalendar = { date ->
-                            navController.navigate(Route.ConsumptionCalendar(YearMonth.from(date).toString())) { launchSingleTop = true }
+                            navController.navigate(Route.ConsumptionCalendar(YearMonth.from(date).toString())) {
+                                launchSingleTop = true
+                            }
                         })
                     }
-                    composable<Route.ConsumptionCalendar> { calendarEntry ->
+                    composable<Route.ConsumptionCalendar>(
+                        enterTransition = { PageTransitions.taskEnter },
+                        popExitTransition = { PageTransitions.taskPopExit },
+                    ) { calendarEntry ->
                         val route = calendarEntry.toRoute<Route.ConsumptionCalendar>()
-                        val transactionViewModel: TransactionDetailsViewModel = hiltViewModel()
+                        val detailsViewModel: TransactionDetailsViewModel = hiltViewModel()
                         val snackbar = remember { SnackbarHostState() }
                         val scope = rememberCoroutineScope()
                         var recordDate by rememberSaveable { mutableStateOf<Long?>(null) }
-                        ConsumptionCalendarScreen(
-                            YearMonth.parse(route.month), { navController.popBackStack() },
-                            onRecordTransaction = { recordDate = it.toEpochDay() },
-                            onTransactionClick = transactionViewModel::selectTransaction,
-                            snackbarHostState = snackbar,
-                        )
-                        if (recordDate == null) TransactionDetailsScreen(
-                            onLoadFailure = { message -> scope.launch { snackbar.showSnackbar(message) } },
-                            viewModel = transactionViewModel,
-                        )
-                        recordDate?.let { epochDay ->
-                            RecordCreateSheet(LocalDate.ofEpochDay(epochDay), onDismiss = { recordDate = null })
+                        TemporaryTaskContent(calendarEntry.id, { onTaskTopChange(destination, calendarEntry.id, it) }) {
+                            ConsumptionCalendarScreen(
+                                initialMonth = YearMonth.parse(route.month),
+                                onBack = { navController.popBackStack() },
+                                onRecordTransaction = { recordDate = it.toEpochDay() },
+                                onTransactionClick = detailsViewModel::selectTransaction,
+                                snackbarHostState = snackbar,
+                            )
+                        }
+                        val recording = recordDate
+                        if (recording == null) {
+                            TransactionDetailsScreen(
+                                onLoadFailure = { message -> scope.launch { snackbar.showSnackbar(message) } },
+                                viewModel = detailsViewModel,
+                            )
+                        } else {
+                            RecordCreateSheet(LocalDate.ofEpochDay(recording), onDismiss = { recordDate = null })
                         }
                     }
                 }
@@ -107,4 +135,20 @@ fun LedgerNavHost(
             }
         }
     }
+}
+
+/** Search and the calendar cover their parent pages with a vertical transition. */
+private fun NavDestination.isTemporaryTask(): Boolean =
+    hasRoute<Route.BillSearch>() || hasRoute<Route.ConsumptionCalendar>()
+
+/** Reports the moving top edge until the full-screen task leaves composition. */
+@Composable
+private fun TemporaryTaskContent(entryId: String, onTopChange: (Int?) -> Unit, content: @Composable () -> Unit) {
+    val reportTop by rememberUpdatedState(onTopChange)
+    DisposableEffect(entryId) {
+        onDispose { reportTop(null) }
+    }
+    Box(Modifier.fillMaxSize().onLayoutRectChanged(debounceMillis = 0) {
+        reportTop(it.boundsInRoot.top)
+    }) { content() }
 }

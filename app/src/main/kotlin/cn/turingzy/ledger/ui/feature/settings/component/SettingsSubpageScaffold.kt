@@ -46,6 +46,7 @@ internal fun SettingsSubpageScaffold(
     title: String,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    closeInsteadOfBack: Boolean = false,
     actions: @Composable RowScope.() -> Unit = { Box(Modifier.size(LedgerStyle.dimensions.touchTarget)) },
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -69,6 +70,7 @@ internal fun SettingsSubpageScaffold(
         titlePadding = LedgerStyle.spacing.none,
         backButtonSize = LedgerStyle.dimensions.backButton,
         headerOpacity = opacity,
+        closeInsteadOfBack = closeInsteadOfBack,
         actions = actions,
     ) {
         Column(

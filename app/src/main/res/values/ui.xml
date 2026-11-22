@@ -189,6 +189,7 @@
   <string name="ui_transactions_and_accounts">账单数据</string>
   <string name="ui_transaction_file">账单文件</string>
   <string name="ui_import_rules">账单解析规则</string>
+  <string name="ui_no_import_rules">暂无解析规则，点击右上角添加</string>
   <string name="ui_account">账户</string>
   <string name="ui_account_name">账户名称</string>
   <string name="ui_account_type">账户类型</string>
@@ -200,7 +201,6 @@
   <string name="ui_from">转出</string>
   <string name="ui_transfer">转账</string>
   <string name="ui_back">返回</string>
-  <string name="ui_back_to_analytics">返回分析</string>
   <string name="ui_no_expenses_on_this_day">这一天没有支出</string>
   <string name="ui_optional">选填</string>
   <string name="ui_select_analytics_start_date">选择分析开始日期</string>

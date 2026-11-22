@@ -70,7 +70,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.constrainHeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cn.turingzy.ledger.model.account.AccountWithTemplate
@@ -200,7 +199,6 @@ fun RecordTransactionSheet(
         onDismissRequest = onDismissRequest, sheetState = sheetState,
         modifier = modifier.keepSheetAnchorDuringIme(),
         containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        shape = LedgerStyle.shapes.bottomSheet,
         dragHandle = null,
         contentHandlesInsets = true,
     ) {

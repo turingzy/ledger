@@ -1,6 +1,5 @@
 package cn.turingzy.ledger.ui.feature.bill.search
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -25,6 +24,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -68,9 +68,8 @@ internal fun BillSearchScreen(
         keyboard?.hide()
         onBack()
     }
-    BackHandler(onBack = ::closeSearch)
 
-    val searching = input.isNotBlank() && request.active
+    val searching = request.hasSearchTarget
     val results = if (searching) key(request) {
         val stream = remember { viewModel.search(request) }
         stream.collectAsStateWithLifecycle(initialValue = null).value
@@ -115,22 +114,24 @@ internal fun BillSearchScreen(
                                 input = input,
                                 onInputChange = { value ->
                                     input = value
-                                    if (value.isBlank()) request = request.copy(query = "", categoryId = null)
+                                    request = request.copy(query = "", categoryId = null)
                                 },
                                 onSubmit = {
                                     request = request.copy(query = input.trim(), categoryId = null)
                                     focusManager.clearFocus()
                                     keyboard?.hide()
                                 },
-                                onBack = ::closeSearch,
+                                onClose = ::closeSearch,
                                 focusRequester = focusRequester.takeIf { focusPending },
                                 onFocusRequested = { focusPending = false },
                             )
                         }
-                        if (input.isNotBlank()) item(key = "searchControls") {
-                            BillSearchControls(request, accounts, currency, onChange = { request = it })
-                        }
-                        if (!searching && suggestions.isNotEmpty()) item(key = "searchSuggestions") {
+                        if (searching) {
+                            item(key = "searchControls") {
+                                BillSearchControls(request, accounts, currency, onChange = { request = it })
+                            }
+                            if (results != null) searchResults(results, transactionRow)
+                        } else if (suggestions.isNotEmpty()) item(key = "searchSuggestions") {
                             Column(
                                 Modifier.padding(top = LedgerStyle.spacing.extraLarge),
                                 verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium),
@@ -151,7 +152,6 @@ internal fun BillSearchScreen(
                                 }
                             }
                         }
-                        if (results != null) searchResults(results, transactionRow)
                     }
                 }
                 SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter)
@@ -165,13 +165,13 @@ internal fun BillSearchScreen(
     )
 }
 
-/** Places the back action beside the search field, using the same background. */
+/** Places the close action inside the search field without changing its focus behavior. */
 @Composable
 internal fun BillSearchHeader(
     input: String,
     onInputChange: (String) -> Unit,
     onSubmit: () -> Unit,
-    onBack: () -> Unit,
+    onClose: () -> Unit,
     focusRequester: FocusRequester? = null,
     onFocusRequested: () -> Unit = {},
 ) {
@@ -179,55 +179,51 @@ internal fun BillSearchHeader(
     val fieldShape = LedgerStyle.shapes.pill
     val searchLabel = stringResource(R.string.ui_search)
     Row(
-        Modifier.fillMaxWidth().padding(vertical = LedgerStyle.spacing.medium),
-        horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium),
+        Modifier.fillMaxWidth().padding(vertical = LedgerStyle.spacing.medium)
+            .heightIn(min = 44.dp).clip(fieldShape).background(colors.fieldBackground)
+            .padding(start = LedgerStyle.spacing.large, end = LedgerStyle.spacing.extraSmall)
+            .testTag("billSearchField"),
+        horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.extraSmall),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        val keyboard = LocalSoftwareKeyboardController.current
+        LaunchedEffect(focusRequester) {
+            if (focusRequester != null) {
+                withFrameNanos {}
+                focusRequester.requestFocus()
+                keyboard?.show()
+                onFocusRequested()
+            }
+        }
+        Icon(MaterialSymbols.Search, null, Modifier.size(LedgerStyle.icons.default), tint = colors.textSecondary)
+        BasicTextField(
+            value = input,
+            onValueChange = onInputChange,
+            modifier = Modifier.weight(1f)
+                .then(if (focusRequester == null) Modifier else Modifier.focusRequester(focusRequester))
+                .semantics { contentDescription = searchLabel },
+            textStyle = LedgerStyle.typography.searchInput.copy(color = colors.textPrimary),
+            cursorBrush = SolidColor(colors.textPrimary),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = { onSubmit() }),
+            decorationBox = { field ->
+                Box(contentAlignment = Alignment.CenterStart) {
+                    if (input.isEmpty()) Text(
+                        stringResource(R.string.ui_search_notes_categories_accounts),
+                        style = LedgerStyle.typography.searchInput, color = colors.textSecondary, maxLines = 1,
+                    )
+                    field()
+                }
+            },
+        )
         Box(
-            Modifier.size(44.dp).clip(fieldShape).background(colors.fieldBackground)
-                .uiClickable(kind = UiInteractionKind.Navigation, onClick = onBack),
+            Modifier.size(44.dp).clip(fieldShape)
+                .uiClickable(kind = UiInteractionKind.Navigation, onClick = onClose),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(MaterialSymbols.ArrowBack, stringResource(R.string.ui_back),
-                Modifier.size(LedgerStyle.icons.default), tint = colors.textPrimary)
-        }
-        Row(
-            Modifier.weight(1f).heightIn(min = 44.dp).clip(fieldShape).background(colors.fieldBackground)
-                .padding(horizontal = LedgerStyle.spacing.large),
-            horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.extraSmall),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            val keyboard = LocalSoftwareKeyboardController.current
-            LaunchedEffect(focusRequester) {
-                if (focusRequester != null) {
-                    withFrameNanos {}
-                    focusRequester.requestFocus()
-                    keyboard?.show()
-                    onFocusRequested()
-                }
-            }
-            Icon(MaterialSymbols.Search, null, Modifier.size(LedgerStyle.icons.default), tint = colors.textSecondary)
-            BasicTextField(
-                value = input,
-                onValueChange = onInputChange,
-                modifier = Modifier.weight(1f)
-                    .then(if (focusRequester == null) Modifier else Modifier.focusRequester(focusRequester))
-                    .semantics { contentDescription = searchLabel },
-                textStyle = LedgerStyle.typography.searchInput.copy(color = colors.textPrimary),
-                cursorBrush = SolidColor(colors.textPrimary),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { onSubmit() }),
-                decorationBox = { field ->
-                    Box(contentAlignment = Alignment.CenterStart) {
-                        if (input.isEmpty()) Text(
-                            stringResource(R.string.ui_search_notes_categories_accounts),
-                            style = LedgerStyle.typography.searchInput, color = colors.textSecondary, maxLines = 1,
-                        )
-                        field()
-                    }
-                },
-            )
+            Icon(MaterialSymbols.Close, stringResource(R.string.ui_close_search),
+                Modifier.size(LedgerStyle.icons.default), tint = colors.textSecondary)
         }
     }
 }

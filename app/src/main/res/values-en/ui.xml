@@ -189,6 +189,7 @@
   <string name="ui_transactions_and_accounts">Transactions and accounts</string>
   <string name="ui_transaction_file">Transaction file</string>
   <string name="ui_import_rules">Import rules</string>
+  <string name="ui_no_import_rules">No import rules. Tap Add in the top right.</string>
   <string name="ui_account">Account</string>
   <string name="ui_account_name">Account name</string>
   <string name="ui_account_type">Account type</string>
@@ -200,7 +201,6 @@
   <string name="ui_from">From</string>
   <string name="ui_transfer">Transfer</string>
   <string name="ui_back">Back</string>
-  <string name="ui_back_to_analytics">Back to analytics</string>
   <string name="ui_no_expenses_on_this_day">No expenses on this day</string>
   <string name="ui_optional">Optional</string>
   <string name="ui_select_analytics_start_date">Select analytics start date</string>

@@ -23,7 +23,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toPixelMap
@@ -174,7 +173,7 @@ class SettingsInteractionTest {
         pressBack()
         compose.onNodeWithText("暂无解析规则，点击右上角添加").assertIsDisplayed()
         compose.runOnIdle { assertEquals(false, dismissed) }
-        pressBack()
+        compose.onNodeWithContentDescription("返回").performClick()
         compose.runOnIdle { assertEquals(true, dismissed) }
     }
 
@@ -225,11 +224,11 @@ class SettingsInteractionTest {
             }
         }
         compose.onNodeWithText(rules.first().name).performClick()
-        compose.onNodeWithContentDescription("删除规则").performClick()
+        compose.onNodeWithText("删除规则").performScrollTo().performClick()
         compose.runOnIdle { assertEquals(null, deleted) }
         compose.onNodeWithContentDescription("取消").performClick()
         compose.onNodeWithContentDescription("确认").assertDoesNotExist()
-        compose.onNodeWithContentDescription("删除规则").performClick()
+        compose.onNodeWithText("删除规则").performScrollTo().performClick()
         compose.onNodeWithContentDescription("确认").performClick()
         compose.runOnIdle { assertEquals(rules.first().id, deleted) }
     }
@@ -262,7 +261,8 @@ class SettingsInteractionTest {
         val title = if (existing) "规则详情" else "新增规则"
         val pageBounds = compose.onNodeWithTag("parseRulePage").fetchSemanticsNode().boundsInRoot
         val titleBounds = compose.onNodeWithText(title).fetchSemanticsNode().boundsInRoot
-        val backBounds = compose.onNodeWithContentDescription("返回").fetchSemanticsNode().boundsInRoot
+        val back = compose.onNodeWithContentDescription(if (existing) "返回" else "取消")
+        val backBounds = back.fetchSemanticsNode().boundsInRoot
         compose.onNodeWithContentDescription("备注").performScrollTo().performClick()
         compose.waitUntil(timeoutMillis = 5_000) {
             compose.runOnIdle {
@@ -278,9 +278,9 @@ class SettingsInteractionTest {
         }
         assertEquals(pageBounds, compose.onNodeWithTag("parseRulePage").fetchSemanticsNode().boundsInRoot)
         assertEquals(titleBounds, compose.onNodeWithText(title).fetchSemanticsNode().boundsInRoot)
-        assertEquals(backBounds, compose.onNodeWithContentDescription("返回").fetchSemanticsNode().boundsInRoot)
+        assertEquals(backBounds, back.fetchSemanticsNode().boundsInRoot)
         closeSoftKeyboard()
-        compose.onNodeWithContentDescription("返回").performClick()
+        back.performClick()
         compose.onNodeWithText("账单解析规则").assertIsDisplayed()
         compose.runOnIdle { assertEquals(originalMode, checkNotNull(hostWindow).attributes.softInputMode) }
     }
@@ -297,12 +297,12 @@ class SettingsInteractionTest {
             }
         }
         compose.onNodeWithContentDescription("新增卡面").performClick()
-        compose.onNodeWithText("新增").assertIsDisplayed()
-        val titleTop = compose.onNodeWithText("新增").fetchSemanticsNode().boundsInRoot.top
+        compose.onNodeWithText("新增卡面").assertIsDisplayed()
+        val titleTop = compose.onNodeWithText("新增卡面").fetchSemanticsNode().boundsInRoot.top
         compose.onNodeWithContentDescription("卡面名称").performClick().performTextInput("新卡面")
         compose.onNodeWithContentDescription("卡面名称").assertTextEquals("新卡面")
         compose.onAllNodesWithText("新卡面").assertCountEquals(2)
-        assertEquals(titleTop, compose.onNodeWithText("新增").fetchSemanticsNode().boundsInRoot.top, 0.5f)
+        assertEquals(titleTop, compose.onNodeWithText("新增卡面").fetchSemanticsNode().boundsInRoot.top, 0.5f)
         compose.onNodeWithContentDescription("更多颜色").performScrollTo().performClick()
         compose.onNodeWithText("自定义颜色").assertIsDisplayed()
         compose.onNodeWithContentDescription("方形色板").assertIsDisplayed()
@@ -310,14 +310,14 @@ class SettingsInteractionTest {
         compose.onNodeWithText("取消").performClick()
         compose.onNodeWithContentDescription("确认新增卡面").assertIsDisplayed()
         compose.onNodeWithText("文字颜色").assertIsDisplayed()
-        compose.onNodeWithContentDescription("返回").performClick()
+        compose.onNodeWithContentDescription("取消").performClick()
         compose.onNodeWithContentDescription("卡面名称").assertTextEquals("原有卡面")
         compose.onNodeWithText("更换卡面").performScrollTo().assertIsDisplayed()
         compose.onAllNodesWithText("新卡面").assertCountEquals(0)
         compose.onNodeWithText("删除卡面").performScrollTo().performClick()
         compose.onNodeWithContentDescription("卡面名称").assertTextEquals("原有卡面")
         compose.onNodeWithContentDescription("确认").performClick()
-        compose.onNodeWithText("新增").assertIsDisplayed()
+        compose.onNodeWithText("新增卡面").assertIsDisplayed()
         compose.onNodeWithText("上传卡面图片").assertIsDisplayed()
         compose.onNodeWithText("自动").assertDoesNotExist()
     }

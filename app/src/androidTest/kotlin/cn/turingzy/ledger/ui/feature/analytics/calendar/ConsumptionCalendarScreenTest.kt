@@ -75,7 +75,7 @@ class ConsumptionCalendarScreenTest {
         compose.onNodeWithText("工资").assertDoesNotExist()
     }
 
-    @Test fun monthPickerAndBackWorkWithoutArrowsOrTodayButton() {
+    @Test fun monthPickerAndCloseWorkWithoutArrowsOrTodayButton() {
         var back = false
         compose.setContent { LedgerTheme {
             ConsumptionCalendarContent(AnalyticsDashboardState(loading = false), YearMonth.of(2024, 2), { back = true }, today = today)
@@ -88,7 +88,7 @@ class ConsumptionCalendarScreenTest {
         compose.onNodeWithTag("ledgerPeriodPicker").assertIsDisplayed()
         compose.onNodeWithTag("ledgerPeriod-${LocalDate.of(2024, 3, 1).toEpochDay()}").performClick()
         compose.onNodeWithText("2024年3月").assertIsDisplayed()
-        compose.onNodeWithContentDescription("返回分析").performClick()
+        compose.onNodeWithContentDescription("取消").performClick()
         compose.runOnIdle { assertTrue(back) }
     }
 

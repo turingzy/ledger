@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -57,6 +56,7 @@ fun DialogWindowBase(
     }
 }
 
+/** Applies the shared sheet surface and scrim while Material handles gestures and motion. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ModalBottomSheetBase(
@@ -65,7 +65,6 @@ fun ModalBottomSheetBase(
     modifier: Modifier = Modifier,
     containerColor: Color = LedgerStyle.colors.surface,
     contentColor: Color = LedgerStyle.colors.textPrimary,
-    shape: Shape = LedgerStyle.shapes.bottomSheet,
     dragHandle: (@Composable () -> Unit)? = null,
     contentHandlesInsets: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
@@ -78,7 +77,8 @@ fun ModalBottomSheetBase(
         modifier = modifier,
         containerColor = containerColor,
         contentColor = contentColor,
-        shape = shape,
+        shape = LedgerStyle.shapes.bottomSheet,
+        scrimColor = Color.Black.copy(alpha = 0.45f),
         dragHandle = dragHandle,
         properties = ModalBottomSheetProperties(
             isAppearanceLightStatusBars = lightBars,

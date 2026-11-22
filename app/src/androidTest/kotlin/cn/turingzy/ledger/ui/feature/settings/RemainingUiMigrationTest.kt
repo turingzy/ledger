@@ -26,6 +26,7 @@ class RemainingUiMigrationTest {
 
     @Test fun ruleIndicatorAlsoTracksTheOpenMenu() {
         compose.setContent { LedgerTheme { ParseRulesScreen(emptyList(), emptyList(), emptyList(), {}, {}, {}) } }
+        compose.onNodeWithContentDescription("新增解析规则").performClick()
         compose.onNodeWithContentDescription("默认账户").performScrollTo().assert(hasStateDescription("已折叠")).performClick()
         compose.onNodeWithTag("ruleAccountOptions").assertIsDisplayed()
         compose.onNodeWithContentDescription("默认账户").assert(hasStateDescription("已展开"))
