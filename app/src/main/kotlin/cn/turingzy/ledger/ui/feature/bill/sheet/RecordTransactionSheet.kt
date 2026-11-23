@@ -57,6 +57,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -99,6 +100,12 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 private enum class RecordPanel { ENTRY, ACCOUNT, DESTINATION, DATE_TIME }
+
+/** Common light backdrop behind the categories, amount card, and keypad. */
+private val RecordSurfaceLight = Color(0xFFF4F4F4)
+
+/** Light fill for small controls and unselected category icons. */
+private val RecordControlLight = Color(0xFFECECEE)
 
 /**
  * 记账与交易编辑的核心底部抽屉组件。
@@ -221,16 +228,19 @@ fun RecordTransactionSheet(
         panel = target
     }
 
+    val colors = MaterialTheme.colorScheme
+    val sheetBackground = if (colors.surface.luminance() > 0.5f) RecordSurfaceLight else colors.surfaceVariant
     ModalBottomSheetBase(
         onDismissRequest = onDismissRequest, sheetState = sheetState,
         modifier = modifier.keepSheetAnchorDuringIme(),
-        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        containerColor = sheetBackground,
         dragHandle = null,
         contentHandlesInsets = true,
     ) {
         RecordTransactionContent(
             modifier = Modifier.height(fixedHeight).testTag("recordDrawer")
                 .semantics { paneTitle = title }.padding(WindowInsets.navigationBars.asPaddingValues()),
+            sheetBackground = sheetBackground,
             expression = expression, note = note, type = type, categories = matchingCategories,
             selectedCategoryId = categoryId,
             currency = sourceCurrency ?: primaryCurrency,
@@ -354,6 +364,7 @@ fun RecordTransactionSheet(
  * @param onDismiss 关闭抽屉回调。
  * @param closeDescription 关闭按钮无障碍描述。
  * @param actionsEnabled 操作是否可用。
+ * @param sheetBackground 抽屉与键盘区域共用的底色。
  */
 @Composable
 internal fun RecordTransactionContent(
@@ -376,6 +387,7 @@ internal fun RecordTransactionContent(
     onTimeClick: () -> Unit,
     onSwapAccounts: () -> Unit,
     onConfirm: () -> Unit,
+    sheetBackground: Color,
     modifier: Modifier = Modifier,
     error: String? = null,
     keyHeight: Dp = 48.dp,
@@ -392,6 +404,11 @@ internal fun RecordTransactionContent(
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val colors = MaterialTheme.colorScheme
+    val lightSurface = colors.surface.luminance() > 0.5f
+    val headerControlBackground = if (lightSurface) colors.surface else LedgerStyle.colors.overlayFieldBackground
+    val selectedTypeBackground = if (lightSurface) RecordControlLight else colors.surface
+    val categoryBackground = if (lightSurface) RecordControlLight else colors.surface.copy(alpha = 0.55f)
+    val categoryTextColor = if (lightSurface) colors.onSurfaceVariant else colors.onSurface
     val focusManager = LocalFocusManager.current
     val density = LocalDensity.current
     val expressionScroll = rememberScrollState()
@@ -409,13 +426,13 @@ internal fun RecordTransactionContent(
             SummaryCardIconButton(
                 MaterialSymbols.Close, closeDescription, onDismiss,
                 modifier = Modifier.align(Alignment.CenterStart), enabled = actionsEnabled,
-                containerColor = colors.surface, contentColor = colors.onSurface, showPressFeedback = false,
+                containerColor = headerControlBackground, contentColor = colors.onSurface, showPressFeedback = false,
             )
             SegmentedControl(
                 listOf(textResources.getString(cn.turingzy.ledger.R.string.ui_expense), textResources.getString(cn.turingzy.ledger.R.string.ui_income), textResources.getString(cn.turingzy.ledger.R.string.ui_transfer)), TransactionType.entries.indexOf(type),
                 { onTypeChange(TransactionType.entries[it]) },
                 modifier = Modifier.width(168.dp), height = 27.dp, fontSize = LedgerStyle.typography.label.fontSize,
-                containerColor = colors.surface, selectedContainerColor = colors.surfaceVariant,
+                containerColor = headerControlBackground, selectedContainerColor = selectedTypeBackground,
             )
         }
         Box(Modifier.fillMaxWidth().weight(1f)) {
@@ -425,11 +442,14 @@ internal fun RecordTransactionContent(
                     Modifier.fillMaxSize().padding(bottom = footerHeight + footerLift).padding(horizontal = LedgerStyle.spacing.large).padding(top = 16.dp),
                 )
             } else key(type) {
-                RecordCategoryGrid(categories, selectedCategoryId, selectionColor, onCategorySelect, footerHeight + footerLift)
+                RecordCategoryGrid(
+                    categories, selectedCategoryId, selectionColor, categoryBackground, categoryTextColor,
+                    onCategorySelect, footerHeight + footerLift,
+                )
             }
             SurfaceBase(
                 Modifier.align(Alignment.BottomCenter).offset(y = -footerLift).fillMaxWidth().onSizeChanged { footerHeight = with(density) { it.height.toDp() } },
-                shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp), color = colors.surfaceVariant,
+                shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp), color = sheetBackground,
             ) {
                 Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium)) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium), verticalAlignment = Alignment.CenterVertically) {
@@ -468,7 +488,7 @@ internal fun RecordTransactionContent(
                                 modifier = Modifier.fillMaxWidth().height(36.dp).semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_note) },
                                 decorationBox = { field ->
                                     Box(Modifier.fillMaxSize().padding(start = 6.dp), contentAlignment = Alignment.CenterStart) {
-                                        if (note.isEmpty()) Text(textResources.getString(cn.turingzy.ledger.R.string.ui_add_a_note), fontSize = LedgerStyle.typography.bodySmall.fontSize, lineHeight = 18.sp, color = colors.onSurfaceVariant.copy(alpha = 0.6f))
+                                        if (note.isEmpty()) Text(textResources.getString(cn.turingzy.ledger.R.string.ui_add_a_note), fontSize = LedgerStyle.typography.bodySmall.fontSize, lineHeight = 18.sp, color = LedgerStyle.colors.textSupporting)
                                         field()
                                     }
                                 },
@@ -555,7 +575,7 @@ private fun RecordCompactSelector(
             .padding(horizontal = LedgerStyle.spacing.medium),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.extraSmall),
     ) {
-        if (icon != null) Icon(icon, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (icon != null) Icon(icon, null, Modifier.size(LedgerStyle.icons.small), tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(label, Modifier.weight(1f, fill = false), fontSize = LedgerStyle.typography.label.fontSize, maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant)
         if (required) RequiredAccountMark()
     }
@@ -572,6 +592,8 @@ private fun RecordCategoryGrid(
     categories: List<CategoryWithIcon>,
     selectedId: Long,
     selectedColor: Color,
+    unselectedColor: Color,
+    labelColor: Color,
     onSelect: (Long) -> Unit,
     bottomPadding: Dp,
 ) {
@@ -598,10 +620,10 @@ private fun RecordCategoryGrid(
                 horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp),
             ) {
                 Box(
-                    Modifier.size(LedgerStyle.dimensions.compactIconButton).clip(CircleShape).background(if (chosen) selectedColor else colors.surface.copy(alpha = 0.55f)),
+                    Modifier.size(LedgerStyle.dimensions.compactIconButton).clip(CircleShape).background(if (chosen) selectedColor else unselectedColor),
                     contentAlignment = Alignment.Center,
-                ) { Icon(item.icon.categoryGlyphBiz(), null, Modifier.size(22.dp), tint = if (chosen) colors.onPrimary else colors.onSurfaceVariant) }
-                Text(item.category.name, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = LedgerStyle.typography.label.fontSize, color = colors.onSurface)
+                ) { Icon(item.icon.categoryGlyphBiz(), null, Modifier.size(LedgerStyle.icons.inline), tint = if (chosen) colors.onPrimary else colors.onSurfaceVariant) }
+                Text(item.category.name, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = LedgerStyle.typography.label.fontSize, color = labelColor)
             }
         }
     }

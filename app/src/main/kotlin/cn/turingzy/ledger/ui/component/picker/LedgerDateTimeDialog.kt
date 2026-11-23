@@ -56,7 +56,8 @@ internal fun LedgerDateTimeDialog(
     DialogWindowBase(onDismissRequest = onDismiss) {
         SurfaceBase(
             modifier = Modifier.fillMaxWidth().testTag("recordTimeDialog"),
-            shape = LedgerStyle.shapes.dialog, color = MaterialTheme.colorScheme.surface,
+            shape = LedgerStyle.shapes.dialog,
+            color = LedgerStyle.colors.overlay, contentColor = LedgerStyle.colors.textPrimary,
         ) {
             Column(Modifier.fillMaxWidth().heightIn(max = LedgerStyle.dimensions.dialogMaxHeight).dialogContentPadding(LedgerStyle.spacing.extraLarge), verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium)) {
                 Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {

@@ -127,7 +127,7 @@ internal fun BillSwipeRow(
             ) {
                 BillSwipeAction(MaterialSymbols.FileCopy, R.string.bill_copy_action, R.string.bill_copy_transaction, colors.info, enabled, onCopy)
                 BillSwipeAction(MaterialSymbols.EditSquare, R.string.bill_edit_action, R.string.bill_edit_transaction, colors.textPrimary, enabled, onEdit)
-                BillSwipeAction(MaterialSymbols.Delete, R.string.bill_delete_action, R.string.ui_delete_transaction, colors.expense, enabled, onDelete)
+                BillSwipeAction(MaterialSymbols.Delete, R.string.bill_delete_action, R.string.ui_delete_transaction, colors.destructive, enabled, onDelete)
             }
         }
         val dragModifier = if (canSwipe) Modifier.pointerInput(width) {
@@ -179,7 +179,7 @@ internal fun BillSwipeRow(
                 enter = expandHorizontally(tween(200), expandFrom = Alignment.Start) + fadeIn(tween(200)),
                 exit = shrinkHorizontally(tween(200), shrinkTowards = Alignment.Start) + fadeOut(tween(160)),
             ) {
-                BillSelectionIndicator(selected, Modifier.padding(start = LedgerStyle.dimensions.transactionRowHorizontal))
+                BillSelectionIndicator(selected, Modifier.padding(start = LedgerStyle.spacing.rowHorizontal))
             }
             DayTransactionRowItem(detail, Modifier.weight(1f), onClick = null, showDate = showDate, timeText = timeText)
         }
@@ -200,7 +200,7 @@ private fun BillSwipeAction(icon: ImageVector, label: Int, description: Int, tin
         verticalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterVertically),
     ) {
         Box(Modifier.size(30.dp).background(tint.copy(alpha = 0.10f), CircleShape), contentAlignment = Alignment.Center) {
-            Icon(icon, contentDescription = null, modifier = Modifier.size(17.dp), tint = tint)
+            Icon(icon, contentDescription = null, modifier = Modifier.size(LedgerStyle.icons.inline), tint = tint)
         }
         Text(stringResource(label), style = LedgerStyle.typography.caption, color = LedgerStyle.colors.textSecondary, maxLines = 1)
     }

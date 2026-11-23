@@ -138,7 +138,11 @@ private fun CardTextColorDialog(initialColor: Color, onDismiss: () -> Unit, onCo
     val colors = MaterialTheme.colorScheme
     fun updateColor() { hex = Color.hsv(hue, saturation, brightness, alpha).asHex() }
     DialogWindowBase(onDismissRequest = onDismiss) {
-        SurfaceBase(modifier = Modifier.padding(vertical = LedgerStyle.spacing.large), shape = LedgerStyle.shapes.confirmationDialog, color = colors.surface) {
+        SurfaceBase(
+            modifier = Modifier.padding(vertical = LedgerStyle.spacing.large),
+            shape = LedgerStyle.shapes.confirmationDialog,
+            color = LedgerStyle.colors.overlay, contentColor = LedgerStyle.colors.textPrimary,
+        ) {
             Column(
                 Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).dialogContentPadding(LedgerStyle.spacing.extraLarge),
                 verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium),
@@ -159,7 +163,7 @@ private fun CardTextColorDialog(initialColor: Color, onDismiss: () -> Unit, onCo
                         modifier = Modifier.weight(1f).padding(start = 12.dp).semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_brightness) },
                     )
                 }
-                SurfaceBase(shape = LedgerStyle.shapes.field, color = colors.surface) {
+                SurfaceBase(shape = LedgerStyle.shapes.field, color = LedgerStyle.colors.overlayFieldBackground) {
                     Row(
                         Modifier.fillMaxWidth().padding(10.dp),
                         horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large),

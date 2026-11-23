@@ -14,6 +14,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.*
@@ -37,7 +38,6 @@ import cn.turingzy.ledger.model.account.AccountWithTemplate
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.model.transaction.TransactionType
 import cn.turingzy.ledger.ui.component.base.BottomSheetHeaderBase
-import cn.turingzy.ledger.ui.component.base.DividerBase
 import cn.turingzy.ledger.ui.component.input.FormTextField
 import cn.turingzy.ledger.ui.feature.bill.sheet.RecordAccountSheet
 import androidx.compose.ui.unit.Dp
@@ -132,7 +132,7 @@ internal fun BillSearchControls(
             onDismiss = dismiss,
             onSelect = { apply(request.copy(accountId = it)) },
             onSelectAll = { apply(request.copy(accountId = null)) },
-            selectionColor = LedgerStyle.colors.success,
+            selectionColor = LedgerStyle.colors.info,
         )
         null -> Unit
     }
@@ -182,7 +182,7 @@ internal fun SearchPill(
         )
         if (expanded != null) Icon(
             if (expanded) MaterialSymbols.ExpandMore else MaterialSymbols.ChevronRight,
-            contentDescription = null, modifier = Modifier.size(14.dp), tint = tint,
+            contentDescription = null, modifier = Modifier.size(LedgerStyle.icons.small), tint = tint,
         )
     }
 }
@@ -219,14 +219,13 @@ private fun SearchDrawer(
                     {
                         IconButtonBase(
                             MaterialSymbols.Check, stringResource(R.string.ui_confirm), apply,
-                            enabled = applyEnabled, contentColor = LedgerStyle.colors.success, showPressFeedback = false,
+                            enabled = applyEnabled, contentColor = LedgerStyle.colors.info, showPressFeedback = false,
                         )
                     }
                 },
             ) { Text(title, style = LedgerStyle.typography.cardTitle) }
-            DividerBase()
             val contentSize = if (sheetHeight == null) Modifier.heightIn(max = maxContentHeight) else Modifier.weight(1f)
-            Column(Modifier.fillMaxWidth().then(contentSize).padding(horizontal = LedgerStyle.spacing.pageHorizontal),
+            Column(Modifier.fillMaxWidth().then(contentSize).padding(horizontal = LedgerStyle.spacing.section),
                 content = content)
         }
     }
@@ -241,12 +240,18 @@ private fun <T> SearchChoiceDrawer(
     onSelect: (T) -> Unit,
 ) {
     SearchDrawer(title, onDismiss) {
-        LazyColumn(contentPadding = PaddingValues(bottom = LedgerStyle.spacing.extraLarge)) {
+        LazyColumn(contentPadding = PaddingValues(
+            top = LedgerStyle.spacing.medium,
+            bottom = LedgerStyle.spacing.extraLarge,
+        )) {
             items(choices) { (value, label) ->
                 ListRowBase(
                     headline = { Text(label, style = LedgerStyle.typography.body) },
                     trailing = if (value == selected) ({
-                        Icon(MaterialSymbols.Check, stringResource(R.string.ui_selected), tint = LedgerStyle.colors.success)
+                        Icon(
+                            MaterialSymbols.Check, stringResource(R.string.ui_selected),
+                            modifier = Modifier.size(LedgerStyle.icons.inline), tint = LedgerStyle.colors.info,
+                        )
                     }) else null,
                     contentPadding = PaddingValues(vertical = LedgerStyle.spacing.rowVertical),
                     onClick = { onSelect(value) },
@@ -278,13 +283,15 @@ private fun SearchDateDrawer(
         applyEnabled = valid,
         sheetHeight = LocalConfiguration.current.screenHeightDp.dp / 3,
     ) {
+        val pillBackground = LedgerStyle.colors.overlayFieldBackground
         Column(Modifier.verticalScroll(rememberScrollState()).padding(vertical = LedgerStyle.spacing.extraLarge),
             verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large)) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium),
                 verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.small)) {
                 SearchDatePreset.entries.forEach { preset ->
                     val updated = preset.applyTo(filters, today)
-                    SearchPill(stringResource(preset.label), { onApply(updated, preset) }, active = selectedPreset == preset && draft == updated)
+                    SearchPill(stringResource(preset.label), { onApply(updated, preset) },
+                        background = pillBackground, active = selectedPreset == preset && draft == updated)
                 }
             }
             Text(stringResource(R.string.bill_search_custom_time), style = LedgerStyle.typography.bodyMedium)
@@ -294,12 +301,14 @@ private fun SearchDateDrawer(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 SearchPill(start?.format(format) ?: stringResource(R.string.ui_start_date),
-                    { bound = DateBound.START }, Modifier.weight(1f), active = bound == DateBound.START)
+                    { bound = DateBound.START }, Modifier.weight(1f),
+                    background = pillBackground, active = bound == DateBound.START)
                 Text(stringResource(R.string.bill_search_to), style = LedgerStyle.typography.bodyMedium)
                 SearchPill(end?.format(format) ?: stringResource(R.string.ui_end_date),
-                    { bound = DateBound.END }, Modifier.weight(1f), active = bound == DateBound.END)
+                    { bound = DateBound.END }, Modifier.weight(1f),
+                    background = pillBackground, active = bound == DateBound.END)
             }
-            if (!valid) Text(stringResource(R.string.bill_search_invalid_date_range), color = LedgerStyle.colors.destructive)
+            if (!valid) Text(stringResource(R.string.bill_search_invalid_date_range), color = MaterialTheme.colorScheme.error)
         }
     }
     bound?.let { selection ->
@@ -345,6 +354,7 @@ private fun SearchAmountDrawer(
                 verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.small)) {
                 SearchAmountPreset.entries.forEach { preset ->
                     SearchPill(stringResource(preset.label), { onApply(preset.applyTo(filters), preset) },
+                        background = LedgerStyle.colors.overlayFieldBackground,
                         active = selectedPreset == preset && valid && minCents == preset.minimum && maxCents == preset.maximum)
                 }
             }
@@ -360,7 +370,7 @@ private fun SearchAmountDrawer(
                 FormTextField(stringResource(R.string.bill_search_maximum), maximum, { maximum = it },
                     Modifier.weight(1f), keyboardType = KeyboardType.Decimal)
             }
-            if (!valid) Text(stringResource(R.string.bill_search_invalid_amount_range), color = LedgerStyle.colors.destructive)
+            if (!valid) Text(stringResource(R.string.bill_search_invalid_amount_range), color = MaterialTheme.colorScheme.error)
         }
     }
 }

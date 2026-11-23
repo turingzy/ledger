@@ -34,12 +34,12 @@ import cn.turingzy.ledger.model.settings.LedgerCardAppearance
 import cn.turingzy.ledger.ui.component.navigation.LocalBottomBarContentPadding
 import cn.turingzy.ledger.ui.component.base.PageFrameBase
 import cn.turingzy.ledger.ui.component.base.CardBase
-import cn.turingzy.ledger.ui.component.base.DividerBase
 import cn.turingzy.ledger.ui.component.base.EmptyStateBase
 import cn.turingzy.ledger.ui.component.biz.TransactionRowBiz
 import cn.turingzy.ledger.ui.component.biz.currencySymbolBiz
 import cn.turingzy.ledger.ui.interaction.rememberUiAction
 import cn.turingzy.ledger.ui.interaction.UiInteractionKind
+import cn.turingzy.ledger.ui.component.biz.TransactionRowDividerBiz
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
@@ -211,16 +211,16 @@ fun BillContent(
                         modifier = scrollModifier
                             .fillMaxSize(),
                         contentPadding = PaddingValues(
-                            start = LedgerStyle.spacing.extraLarge, end = LedgerStyle.spacing.extraLarge,
+                            start = LedgerStyle.spacing.pageHorizontal, end = LedgerStyle.spacing.pageHorizontal,
                             top = LedgerStyle.spacing.extraSmall,
                             bottom = LedgerStyle.spacing.block + LocalBottomBarContentPadding.current,
                         ),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.sectionGap),
                     ) {
                         item(key = "header_and_hero") {
                             Column(
                                 modifier = Modifier.fillMaxWidth(),
-                                verticalArrangement = Arrangement.spacedBy(5.dp),
+                                verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.labelGap),
                             ) {
                                 Box(
                                     modifier = Modifier.fillMaxWidth().height(44.dp),
@@ -270,7 +270,7 @@ fun BillContent(
                                     title = textResources.getString(cn.turingzy.ledger.R.string.ui_no_transactions_for_this_period_tap_to_add),
                                     contentPadding = PaddingValues(vertical = LedgerStyle.spacing.block * 2),
                                     titleStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = LedgerStyle.typography.bodyMedium.fontSize),
-                                    titleColor = MaterialTheme.colorScheme.secondary,
+                                    titleColor = LedgerStyle.colors.textSupporting,
                                 )
                             }
                         } else {
@@ -366,7 +366,7 @@ fun DayGroupSection(
         val rows: @Composable () -> Unit = {
             dayGroup.transactions.forEachIndexed { index, detail ->
                 key(detail.transaction.id) {
-                    if (index > 0) DividerBase(Modifier.padding(start = 62.dp, end = 14.dp))
+                    if (index > 0) TransactionRowDividerBiz()
                     if (transactionRow != null) transactionRow(detail, index == 0, index == dayGroup.transactions.lastIndex)
                     else DayTransactionRowItem(detail = detail, onClick = { onTransactionClick(detail.transaction.id) })
                 }

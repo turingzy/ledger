@@ -26,10 +26,13 @@ import cn.turingzy.ledger.model.transaction.TransactionType
  * @property info 提示信息色
  * @property textPrimary 主文本颜色
  * @property textSecondary 次要文本颜色
- * @property currencyUnit 货币符号及单位颜色
+ * @property textSupporting 辅助说明、时间与占位文本颜色
  * @property background 页面底色
  * @property surface 卡片及面板表面色
+ * @property overlay 弹窗、抽屉和下拉菜单的表面色
+ * @property overlayFieldBackground 弹层内输入框及选项控件底色
  * @property fieldBackground 输入框等控件背景色
+ * @property outline 卡片和控件的常规边框色
  * @property divider 分割线颜色
  * @property accountDebit 储蓄卡账户指示色
  * @property accountCredit 信用卡账户指示色
@@ -53,10 +56,13 @@ data class SemanticColors(
     val info: Color,
     val textPrimary: Color,
     val textSecondary: Color,
-    val currencyUnit: Color,
+    val textSupporting: Color,
     val background: Color,
     val surface: Color,
+    val overlay: Color,
+    val overlayFieldBackground: Color,
     val fieldBackground: Color,
+    val outline: Color,
     val divider: Color,
     val accountDebit: Color,
     val accountCredit: Color,
@@ -65,6 +71,9 @@ data class SemanticColors(
     val chartComparison: Color,
     val chartInfoBackground: Color,
 ) {
+    /** 币种单位与其他辅助文字使用同一灰阶。 */
+    val currencyUnit: Color get() = textSupporting
+
     /**
      * 根据交易类型获取对应的语义颜色。
      *
@@ -117,36 +126,42 @@ data class SemanticColors(
  * @param scheme Material 3 配色方案
  * @return 组装后的业务语义色彩对象
  */
-fun semanticColors(scheme: ColorScheme): SemanticColors = SemanticColors(
-    expense = scheme.error,
-    income = scheme.tertiary,
-    transfer = IosYellow,
-    onExpense = scheme.onPrimary,
-    onIncome = scheme.onPrimary,
-    onTransfer = scheme.scrim,
-    balance = scheme.primary,
-    success = scheme.tertiary,
-    warning = IosOrange,
-    destructive = scheme.error,
-    info = scheme.primary,
-    textPrimary = scheme.onSurface,
-    textSecondary = scheme.onSurfaceVariant,
-    currencyUnit = scheme.secondary,
-    background = scheme.background,
-    surface = scheme.surface,
-    fieldBackground = scheme.surfaceVariant,
-    divider = scheme.outlineVariant,
-    accountDebit = scheme.primary,
-    accountCredit = IosPurple,
-    accountWallet = scheme.tertiary,
-    accountCash = IosOrange,
-    chartComparison = scheme.onSurfaceVariant,
-    chartInfoBackground = if (scheme.surface.luminance() > 0.5f) {
-        lerp(scheme.surface, scheme.surfaceVariant, 0.48f)
-    } else {
-        scheme.surfaceVariant
-    },
-)
+fun semanticColors(scheme: ColorScheme): SemanticColors {
+    val lightSurface = scheme.surface.luminance() > 0.5f
+    return SemanticColors(
+        expense = scheme.error,
+        income = scheme.tertiary,
+        transfer = IosYellow,
+        onExpense = scheme.onPrimary,
+        onIncome = scheme.onPrimary,
+        onTransfer = scheme.scrim,
+        balance = scheme.primary,
+        success = if (lightSurface) SuccessLight else SuccessDark,
+        warning = if (lightSurface) WarningLight else WarningDark,
+        destructive = scheme.error,
+        info = scheme.primary,
+        textPrimary = scheme.onSurface,
+        textSecondary = scheme.onSurfaceVariant,
+        textSupporting = if (lightSurface) TextSupportingLight else TextSupportingDark,
+        background = scheme.background,
+        surface = scheme.surface,
+        overlay = if (lightSurface) scheme.surface else OverlayDark,
+        overlayFieldBackground = if (lightSurface) scheme.surfaceVariant else OverlayFieldDark,
+        fieldBackground = scheme.surfaceVariant,
+        outline = scheme.outlineVariant,
+        divider = if (lightSurface) DividerLight else DividerDark,
+        accountDebit = scheme.primary,
+        accountCredit = IosPurple,
+        accountWallet = scheme.tertiary,
+        accountCash = IosOrange,
+        chartComparison = scheme.onSurfaceVariant,
+        chartInfoBackground = if (lightSurface) {
+            lerp(scheme.surface, scheme.surfaceVariant, 0.48f)
+        } else {
+            scheme.surfaceVariant
+        },
+    )
+}
 
 /**
  * 装饰与品牌固定颜色集合。

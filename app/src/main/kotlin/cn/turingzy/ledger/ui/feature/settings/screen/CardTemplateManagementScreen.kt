@@ -326,7 +326,7 @@ private fun CardFaceProperties(
                 cursorBrush = SolidColor(colors.onSurface),
                 decorationBox = { field ->
                     Box(contentAlignment = Alignment.CenterEnd) {
-                        if (template.name.isEmpty()) Text(textResources.getString(cn.turingzy.ledger.R.string.ui_enter_a_design_name), color = colors.onSurfaceVariant)
+                        if (template.name.isEmpty()) Text(textResources.getString(cn.turingzy.ledger.R.string.ui_enter_a_design_name), color = LedgerStyle.colors.textSupporting)
                         field()
                     }
                 },
@@ -374,7 +374,7 @@ private fun TemplateCoverPreview(
                 Text(textResources.getString(cn.turingzy.ledger.R.string.ui_upload_card_image),
                     style = LedgerStyle.typography.bodyMedium, color = LedgerStyle.colors.textPrimary)
                 Text(textResources.getString(cn.turingzy.ledger.R.string.ui_card_image_recommendation),
-                    style = LedgerStyle.typography.caption, color = LedgerStyle.colors.textSecondary,
+                    style = LedgerStyle.typography.caption, color = LedgerStyle.colors.textSupporting,
                     textAlign = TextAlign.Center)
             }
         }

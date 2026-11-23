@@ -277,7 +277,7 @@ internal fun ParseRuleEditor(
                 RuleDivider()
                 RuleTextField(textResources.getString(cn.turingzy.ledger.R.string.ui_note), draft.noteColumn, textResources.getString(cn.turingzy.ledger.R.string.ui_optional), { updateRule(draft.copy(noteColumn = it)) })
             }
-            Text(textResources.getString(cn.turingzy.ledger.R.string.ui_enter_column_names_from_your_file_date_and), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+            Text(textResources.getString(cn.turingzy.ledger.R.string.ui_enter_column_names_from_your_file_date_and), style = MaterialTheme.typography.bodySmall, color = LedgerStyle.colors.textSupporting)
             Text(textResources.getString(cn.turingzy.ledger.R.string.ui_defaults), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
             RuleFieldGroup {
                 RuleChoiceDropdown(
@@ -380,7 +380,7 @@ private fun RuleTextField(
             modifier = Modifier.weight(1f).semantics { contentDescription = label },
             decorationBox = { field ->
                 androidx.compose.foundation.layout.Box(contentAlignment = Alignment.CenterEnd) {
-                    if (value.isEmpty()) Text(placeholder, color = colors.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+                    if (value.isEmpty()) Text(placeholder, color = LedgerStyle.colors.textSupporting, style = MaterialTheme.typography.bodyMedium)
                     field()
                 }
             },

@@ -62,7 +62,11 @@ internal fun ScrollTitleContainerBase(
                     .graphicsLayer {
                         alpha = progress
                     }
-                    .frostedBackdropBase(backdrop, surface.copy(alpha = 0.55f), 3.dp, fadeBottom = 6.dp),
+                    .frostedBackdropBase(
+                        backdrop, surface.copy(alpha = LedgerStyle.opacity.topBarScrolled),
+                        blurRadius = LedgerStyle.dimensions.topBarBlur,
+                        fadeBottom = LedgerStyle.dimensions.primaryTopBarFade,
+                    ),
             )
             Row(
                 Modifier.fillMaxWidth().height(44.dp).padding(horizontal = LedgerStyle.spacing.extraLarge)

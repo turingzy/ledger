@@ -76,14 +76,17 @@ internal fun LedgerBottomBar(
             .padding(horizontal = 16.dp, vertical = BottomBarVerticalPadding)
             .graphicsLayer { alpha = visibility.value }
             .then(if (visible) Modifier else Modifier.clearAndSetSemantics { hideFromAccessibility() })
-            .shadow(2.dp, CircleShape)
+            .shadow(LedgerStyle.dimensions.floatingBarShadow, CircleShape)
             .border(0.5.dp, colors.outlineVariant.copy(alpha = colors.outlineVariant.alpha * 0.5f), CircleShape),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(BottomBarHeight)
-                .frostedBackdropBase(backdrop, colors.surface.copy(alpha = 0.72f), 12.dp)
+                .frostedBackdropBase(
+                    backdrop, colors.surface.copy(alpha = LedgerStyle.opacity.bottomBarTint),
+                    blurRadius = LedgerStyle.dimensions.bottomBarBlur,
+                )
                 .selectableGroup()
                 .padding(horizontal = 4.dp, vertical = 3.dp),
             horizontalArrangement = Arrangement.SpaceAround,
@@ -133,7 +136,7 @@ internal fun LedgerBottomBar(
                         imageVector = if (selected) destination.selectedIcon else destination.icon,
                         contentDescription = null,
                         tint = iconTint,
-                        modifier = Modifier.size(25.dp),
+                        modifier = Modifier.size(LedgerStyle.icons.navigation),
                     )
                     Text(
                         text = stringResource(destination.labelResource),

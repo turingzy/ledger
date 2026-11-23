@@ -82,7 +82,7 @@ fun PageScaffoldBase(
             backdrop,
             colors.background.copy(alpha = headerOpacity),
             blurRadius = LedgerStyle.dimensions.topBarBlur,
-            fadeBottom = LedgerStyle.dimensions.topBarFade,
+            fadeBottom = LedgerStyle.dimensions.subpageTopBarFade,
         )) {
             Row(
                 Modifier.fillMaxWidth().heightIn(min = LedgerStyle.dimensions.toolbarHeight)

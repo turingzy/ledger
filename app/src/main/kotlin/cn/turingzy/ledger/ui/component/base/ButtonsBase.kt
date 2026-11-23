@@ -143,7 +143,7 @@ fun ButtonBase(
     }
     ActionButtonBase(
         onClick, buttonModifier, enabled, variant, shape, buttonColors,
-        border = if (variant == ButtonVariantBase.Outlined) BorderStroke(LedgerStyle.dimensions.dividerThickness, colors.divider) else null,
+        border = if (variant == ButtonVariantBase.Outlined) BorderStroke(LedgerStyle.dimensions.dividerThickness, colors.outline) else null,
         contentPadding = padding, interaction = interaction, showPressFeedback = showPressFeedback, content = content,
     )
 }

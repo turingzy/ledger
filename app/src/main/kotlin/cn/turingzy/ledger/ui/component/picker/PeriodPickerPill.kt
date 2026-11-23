@@ -60,6 +60,6 @@ internal fun PeriodPickerPill(
             style = LedgerStyle.typography.periodPill,
             color = foreground, maxLines = 1, overflow = TextOverflow.Ellipsis,
         )
-        if (trailingIcon != null) Icon(trailingIcon, null, Modifier.size(17.dp), tint = foreground)
+        if (trailingIcon != null) Icon(trailingIcon, null, Modifier.size(LedgerStyle.icons.small), tint = foreground)
     }
 }

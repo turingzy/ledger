@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -59,6 +60,7 @@ fun FormFieldFrameBase(
     content: @Composable RowScope.() -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
+    val labelBackground = LocalSurfaceBackground.current.takeOrElse { colors.surface }
     val borderColor = when {
         readOnly -> colors.onSurface.copy(alpha = LedgerStyle.opacity.readOnlyBorder)
         error != null -> colors.error
@@ -81,7 +83,7 @@ fun FormFieldFrameBase(
             Text(
                 label,
                 Modifier.align(Alignment.TopStart).offset(x = LedgerStyle.spacing.large, y = -LedgerStyle.dimensions.fieldLabelOffset)
-                    .background(colors.surface).padding(horizontal = LedgerStyle.spacing.extraSmall),
+                    .background(labelBackground).padding(horizontal = LedgerStyle.spacing.extraSmall),
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (readOnly) colors.onSurface.copy(alpha = LedgerStyle.opacity.disabled) else colors.onSurfaceVariant,
             )
@@ -132,9 +134,9 @@ fun <T> DropdownMenuBase(
         SurfaceBase(
             Modifier.width(menuWidth).height(minOf(maxHeight,
                 dimensions.dropdownItemHeight * options.size + LedgerStyle.spacing.extraSmall * 2)),
-            shape = LedgerStyle.shapes.card, color = colors.surface,
+            shape = LedgerStyle.shapes.card, color = colors.overlay, contentColor = colors.textPrimary,
             tonalElevation = LedgerStyle.spacing.none, shadowElevation = dimensions.dropdownShadow,
-            border = BorderStroke(dimensions.dropdownBorder, colors.divider),
+            border = BorderStroke(dimensions.dropdownBorder, colors.outline),
         ) {
             LazyColumn(
                 modifier = modifier,
@@ -150,7 +152,7 @@ fun <T> DropdownMenuBase(
                                 color = optionTextColor, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         },
                         trailingIcon = if (isSelected(option)) ({
-                            Icon(MaterialSymbols.Check, null, Modifier.size(LedgerStyle.icons.dropdownCheck), tint = colors.success)
+                            Icon(MaterialSymbols.Check, null, Modifier.size(LedgerStyle.icons.inline), tint = colors.info)
                         }) else null,
                         onClick = { onSelect(option) },
                     )
@@ -181,7 +183,7 @@ fun DropdownIndicatorBase(
     Icon(
         if (expanded) MaterialSymbols.ExpandMore else MaterialSymbols.ChevronRight,
         contentDescription = null,
-        modifier = modifier.size(LedgerStyle.icons.default).rotate(if (expanded && opensUp) 180f else 0f)
+        modifier = modifier.size(LedgerStyle.icons.inline).rotate(if (expanded && opensUp) 180f else 0f)
             .semantics { stateDescription = state },
         tint = contentColor,
     )

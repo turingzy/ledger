@@ -79,7 +79,7 @@ internal fun OpenSourceLibrariesScreen(onBack: () -> Unit, modifier: Modifier = 
                     ) {
                         Row(horizontalArrangement = Arrangement.spacedBy(1.dp), verticalAlignment = Alignment.CenterVertically) {
                             Text(library.name, style = MaterialTheme.typography.bodyLarge)
-                            Icon(MaterialSymbols.NorthEast, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Icon(MaterialSymbols.NorthEast, null, Modifier.size(LedgerStyle.icons.externalLink), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Text("Apache License 2.0", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }

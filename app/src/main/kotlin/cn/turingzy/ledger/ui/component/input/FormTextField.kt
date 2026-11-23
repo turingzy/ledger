@@ -22,6 +22,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import cn.turingzy.ledger.ui.component.base.FormFieldFrameBase
+import cn.turingzy.ledger.ui.theme.LedgerStyle
 
 /**
  * 表单单行文本输入框组件。
@@ -58,6 +59,7 @@ internal fun FormTextField(
     val source = remember { MutableInteractionSource() }
     val focused by source.collectIsFocusedAsState()
     val textColor = if (readOnly) colors.onSurface.copy(alpha = 0.38f) else colors.onSurface
+    val supportingColor = LedgerStyle.colors.textSupporting
     FormFieldFrameBase(
         label, modifier, focused = focused, readOnly = readOnly, error = error,
         onClick = if (readOnly) null else ({ focusRequester.requestFocus() }),
@@ -75,11 +77,11 @@ internal fun FormTextField(
             modifier = Modifier.weight(1f).focusRequester(focusRequester).semantics { contentDescription = label },
             decorationBox = { inner ->
                 Box {
-                    if (value.isEmpty()) Text(placeholder, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                    if (value.isEmpty()) Text(placeholder, style = MaterialTheme.typography.bodyMedium, color = supportingColor)
                     inner()
                 }
             },
         )
-        if (suffix != null) Text(suffix, style = MaterialTheme.typography.bodySmall, color = textColor)
+        if (suffix != null) Text(suffix, style = MaterialTheme.typography.bodySmall, color = if (readOnly) textColor else supportingColor)
     }
 }

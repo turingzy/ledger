@@ -75,13 +75,13 @@ internal fun AccountCardFaceField(
     Column(modifier.fillMaxWidth().semantics { if (!enabled) disabled() }) {
         FormFieldFrameBase(textResources.getString(cn.turingzy.ledger.R.string.ui_card_design), readOnly = !enabled, onClick = if (enabled) onClick else null) {
             Text(value, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = contentColor, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Icon(MaterialSymbols.ChevronRight, null, Modifier.size(LedgerStyle.icons.default), tint = contentColor)
+            Icon(MaterialSymbols.ChevronRight, null, Modifier.size(LedgerStyle.icons.inline), tint = contentColor)
         }
         if (!enabled) {
             Text(
                 disabledHint,
                 Modifier.padding(start = 12.dp, top = 4.dp),
-                style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant,
+                style = MaterialTheme.typography.labelSmall, color = LedgerStyle.colors.textSupporting,
             )
         }
     }

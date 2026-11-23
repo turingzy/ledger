@@ -158,13 +158,13 @@ internal fun GeneralSettingsContent(
                     horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.small),
                 ) {
                     Text(rateDate?.let { stringResource(R.string.rate_as_of, it) } ?: stringResource(R.string.reference_rate),
-                        Modifier.weight(1f, fill = false), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                        Modifier.weight(1f, fill = false), style = MaterialTheme.typography.bodyMedium, color = LedgerStyle.colors.textSupporting)
                     Crossfade(refreshStatus, label = "RateRefreshStatus") { status ->
                         when (status) {
                             RateRefreshStatus.IDLE -> Unit
-                            RateRefreshStatus.REFRESHING -> CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                            RateRefreshStatus.REFRESHING -> CircularProgressIndicator(Modifier.size(LedgerStyle.icons.small), strokeWidth = 2.dp)
                             RateRefreshStatus.SUCCESS -> Icon(MaterialSymbols.Check, stringResource(R.string.rates_refreshed),
-                                Modifier.size(16.dp), tint = colors.tertiary)
+                                Modifier.size(LedgerStyle.icons.small), tint = LedgerStyle.colors.success)
                         }
                     }
                 }
@@ -205,7 +205,7 @@ private fun ExchangeRateField(from: String, primary: String, value: String, enab
             modifier = Modifier.weight(1f).semantics { contentDescription = description },
             decorationBox = { field ->
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
-                    if (value.isBlank()) Text("—", color = colors.onSurfaceVariant)
+                    if (value.isBlank()) Text("—", color = LedgerStyle.colors.textSupporting)
                     field()
                 }
             },

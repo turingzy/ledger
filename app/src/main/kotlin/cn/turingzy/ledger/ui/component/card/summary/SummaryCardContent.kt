@@ -4,7 +4,6 @@ import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.biz.currencySymbolBiz
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.foundation.layout.size
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -60,12 +59,11 @@ fun SummaryCardContent(
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val currencySymbol = currencySymbolBiz(currency)
-    val visibilityIconSize = with(LocalDensity.current) { 15.sp.toDp() }
     Box(modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 18.dp, end = 18.dp, top = 10.dp),
+                .padding(start = LedgerStyle.spacing.cardPadding, end = LedgerStyle.spacing.cardPadding, top = 10.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -87,7 +85,7 @@ fun SummaryCardContent(
                     onClick = onToggleAmounts,
                     modifier = Modifier.size(LedgerStyle.icons.default),
                     containerColor = Color.Transparent,
-                    iconSize = visibilityIconSize,
+                    iconSize = LedgerStyle.icons.small,
                 )
             }
             Spacer(modifier = Modifier.height(2.dp))
@@ -116,7 +114,7 @@ fun SummaryCardContent(
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 18.dp),
+                    .padding(horizontal = LedgerStyle.spacing.cardPadding),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {

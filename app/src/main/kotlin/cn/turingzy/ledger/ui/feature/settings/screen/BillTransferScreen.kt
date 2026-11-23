@@ -89,6 +89,8 @@ private enum class BillTransferStatus {
     RUNNING,
     /** 任务执行完毕。 */
     COMPLETED,
+    /** 任务执行失败，可重试。 */
+    FAILED,
     /** 任务已被取消。 */
     CANCELLED,
 }
@@ -188,7 +190,7 @@ internal fun BillTransferScreen(
                 throw cancelled
             } catch (error: Exception) {
                 Timber.e(error, "Bill transfer failed")
-                status = BillTransferStatus.IDLE
+                status = BillTransferStatus.FAILED
                 resultMessage = error.message ?: textResources.getString(cn.turingzy.ledger.R.string.ui_operation_failed_please_try_again)
             } finally { operation = null }
         }
@@ -203,7 +205,12 @@ internal fun BillTransferScreen(
     duplicateConfirmation?.let { preview ->
         BaseAlertDialog(
             onDismissRequest = { duplicateConfirmation = null },
-            title = { Text(textResources.getString(cn.turingzy.ledger.R.string.ui_possible_duplicate_transactions)) },
+            title = {
+                Text(
+                    textResources.getString(cn.turingzy.ledger.R.string.ui_possible_duplicate_transactions),
+                    color = LedgerStyle.colors.warning,
+                )
+            },
             text = { Text(textResources.getString(cn.turingzy.ledger.R.string.duplicate_prompt, preview.possibleDuplicates)) },
             confirmLabel = textResources.getString(cn.turingzy.ledger.R.string.ui_skip_duplicates),
             onConfirm = { duplicateConfirmation = null; runTransfer(preview = false) },
@@ -230,7 +237,7 @@ internal fun BillTransferScreen(
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !running,
                 )
-                if (importing) Text(textResources.getString(cn.turingzy.ledger.R.string.ui_supports_excel_xlsx_and_csv), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                if (importing) Text(textResources.getString(cn.turingzy.ledger.R.string.ui_supports_excel_xlsx_and_csv), style = MaterialTheme.typography.bodySmall, color = LedgerStyle.colors.textSupporting)
             }
             if (importing) {
                 SettingsTransferFileRow(fileName = fileName, enabled = !running) {
@@ -260,7 +267,7 @@ internal fun BillTransferScreen(
                     }
                 }
                 if (rules.isEmpty()) Text(textResources.getString(cn.turingzy.ledger.R.string.ui_add_a_rule_in_import_rules),
-                    style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                    style = MaterialTheme.typography.bodySmall, color = LedgerStyle.colors.textSupporting)
             } else {
                 Text(textResources.getString(cn.turingzy.ledger.R.string.ui_export_range), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                 Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large)) {
@@ -302,14 +309,17 @@ internal fun BillTransferScreen(
                     }
                 },
             )
-            val message = when (status) {
-                BillTransferStatus.IDLE -> null
-                BillTransferStatus.RUNNING -> null
-                BillTransferStatus.COMPLETED -> null
-                BillTransferStatus.CANCELLED -> if (importing) textResources.getString(cn.turingzy.ledger.R.string.ui_import_cancelled) else textResources.getString(cn.turingzy.ledger.R.string.ui_export_cancelled)
+            if (status == BillTransferStatus.CANCELLED) {
+                val message = if (importing) cn.turingzy.ledger.R.string.ui_import_cancelled else cn.turingzy.ledger.R.string.ui_export_cancelled
+                Text(textResources.getString(message), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
             }
-            if (resultMessage != null) Text(resultMessage.orEmpty(), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
-            if (message != null) Text(message, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+            resultMessage?.let { message ->
+                Text(
+                    message,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (status == BillTransferStatus.FAILED) colors.error else LedgerStyle.colors.success,
+                )
+            }
         }
     }
 
@@ -375,7 +385,7 @@ private fun BillTransferOption(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(title, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-            if (selected) Icon(MaterialSymbols.Check, null, Modifier.size(LedgerStyle.icons.inline), tint = MaterialTheme.colorScheme.tertiary)
+            if (selected) Icon(MaterialSymbols.Check, null, Modifier.size(LedgerStyle.icons.inline), tint = MaterialTheme.colorScheme.primary)
         }
     }
 }

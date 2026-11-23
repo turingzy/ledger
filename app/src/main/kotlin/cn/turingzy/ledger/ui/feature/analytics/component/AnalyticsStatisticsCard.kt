@@ -23,7 +23,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import java.time.LocalDate
@@ -49,11 +48,11 @@ internal fun AnalyticsStatisticsCard(state: AnalyticsUiState.Success, days: Map<
     }
     DashboardCard(modifier) {
         AnalyticsCardTitle(textResources.getString(cn.turingzy.ledger.R.string.ui_income_and_expenses))
-        Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.sectionGap)) {
             StatisticsMetric(textResources.getString(cn.turingzy.ledger.R.string.ui_expense), state.totalExpense, Modifier.weight(1f))
             StatisticsMetric(textResources.getString(cn.turingzy.ledger.R.string.ui_income), state.totalIncome, Modifier.weight(1f))
         }
-        Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.sectionGap)) {
             StatisticsMetric(textResources.getString(cn.turingzy.ledger.R.string.ui_balance), state.balance, Modifier.weight(1f))
             StatisticsMetric(when (average.label) {
                 "月均支出" -> textResources.getString(cn.turingzy.ledger.R.string.ui_monthly_average)
@@ -77,7 +76,10 @@ private fun StatisticsMetric(label: String, amount: Long, modifier: Modifier = M
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val colors = MaterialTheme.colorScheme
     SurfaceBase(modifier.fillMaxHeight(), shape = LedgerStyle.shapes.summaryCard, color = analyticsChartInfoColor()) {
-        Column(Modifier.padding(horizontal = 8.dp, vertical = 5.dp), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+        Column(
+            Modifier.padding(horizontal = LedgerStyle.spacing.medium, vertical = LedgerStyle.spacing.extraSmall),
+            verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.hairline),
+        ) {
             Text(label, fontSize = LedgerStyle.typography.caption.fontSize, lineHeight = 14.sp, color = colors.onSurfaceVariant)
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.extraSmall)) {
                 AnalyticsAmountText(amount, Modifier.weight(1f), fontSize = LedgerStyle.typography.bodyMedium.fontSize)
@@ -87,7 +89,7 @@ private fun StatisticsMetric(label: String, amount: Long, modifier: Modifier = M
                         Icon(
                             if (it.direction > 0) MaterialSymbols.TrendingUp else MaterialSymbols.TrendingDown,
                             if (it.direction > 0) textResources.getString(cn.turingzy.ledger.R.string.ui_increase) else textResources.getString(cn.turingzy.ledger.R.string.ui_decrease),
-                            Modifier.size(10.dp), tint = color,
+                            Modifier.size(LedgerStyle.icons.trend), tint = color,
                         )
                         Text(it.change.substringAfter(' '), fontSize = 9.sp, lineHeight = 11.sp, color = color, maxLines = 1)
                     }

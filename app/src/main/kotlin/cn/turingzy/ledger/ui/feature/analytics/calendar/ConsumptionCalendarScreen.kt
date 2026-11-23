@@ -49,6 +49,7 @@ import cn.turingzy.ledger.ui.component.biz.AmountTextBiz
 import cn.turingzy.ledger.ui.interaction.UiInteractionKind
 import cn.turingzy.ledger.ui.interaction.rememberUiEvent
 import cn.turingzy.ledger.ui.interaction.uiSelectable
+import cn.turingzy.ledger.ui.component.biz.TransactionRowDividerBiz
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.util.toFormattedAmount
 import java.time.LocalDate
@@ -171,7 +172,7 @@ internal fun ConsumptionCalendarContent(
                         CardBase(
                             shape = LedgerStyle.shapes.summaryCard,
                             outlined = true,
-                            contentPadding = PaddingValues(horizontal = LedgerStyle.spacing.calendarCardHorizontal, vertical = LedgerStyle.spacing.calendarCardVertical),
+                            contentPadding = PaddingValues(horizontal = LedgerStyle.spacing.cardPadding, vertical = LedgerStyle.spacing.medium),
                             contentSpacing = LedgerStyle.spacing.inlineGap,
                         ) {
                             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -219,10 +220,7 @@ internal fun ConsumptionCalendarContent(
                     }
                     itemsIndexed(entries, key = { _, entry -> entry.id }) { index, entry ->
                         Column {
-                            if (index > 0) DividerBase(Modifier.padding(
-                                start = LedgerStyle.dimensions.compactIconButton + LedgerStyle.spacing.rowHorizontal + LedgerStyle.spacing.sectionGap,
-                                end = LedgerStyle.spacing.rowHorizontal,
-                            ))
+                            if (index > 0) TransactionRowDividerBiz()
                             transactionRow(entry, index == 0, index == entries.lastIndex)
                         }
                     }

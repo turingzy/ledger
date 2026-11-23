@@ -115,6 +115,7 @@ internal fun PeriodPickerSheet(
                         onSelect = { view = views[it] },
                         modifier = Modifier.width(168.dp).testTag("periodViewSelector"), height = 28.dp,
                         fontSize = LedgerStyle.typography.bodySmall.fontSize, fontWeight = FontWeight.Normal,
+                        containerColor = LedgerStyle.colors.overlayFieldBackground,
                     )
                 }
                 IconButtonContentBase(

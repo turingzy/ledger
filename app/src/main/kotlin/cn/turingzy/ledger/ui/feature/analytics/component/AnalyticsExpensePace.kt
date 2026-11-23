@@ -196,7 +196,7 @@ private fun ExpensePaceReadout(dateLabel: String, current: Long, previous: Long,
                 if (previous > 0L) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(1.dp)) {
                     if (direction != 0) Icon(
                         if (direction > 0) MaterialSymbols.TrendingUp else MaterialSymbols.TrendingDown,
-                        if (direction > 0) textResources.getString(cn.turingzy.ledger.R.string.ui_increase) else textResources.getString(cn.turingzy.ledger.R.string.ui_decrease), Modifier.size(10.dp), tint = changeColor,
+                        if (direction > 0) textResources.getString(cn.turingzy.ledger.R.string.ui_increase) else textResources.getString(cn.turingzy.ledger.R.string.ui_decrease), Modifier.size(LedgerStyle.icons.trend), tint = changeColor,
                     )
                     Text(expensePaceChangeLabel(current, previous).removePrefix("增长 ").removePrefix("下降 "),
                         fontSize = LedgerStyle.typography.chartLabel.fontSize, lineHeight = 12.sp, color = changeColor, maxLines = 1)

@@ -50,20 +50,18 @@ object AppIconStyle {
     const val grade = 0
     const val opticalSize = 24
 
-    /** 下拉菜单选中对勾图标尺寸 (18dp) */
-    val dropdownCheck = 18.dp
-    /** 默认图标尺寸 (24dp) */
+    /** 标准操作图标尺寸 (24dp)。 */
     val default = 24.dp
-    /** 行内内联图标尺寸 (20dp) */
+    /** 列表、行内操作与记账分类图标尺寸 (20dp)。 */
     val inline = 20.dp
-    /** 小型图标尺寸 (16dp) */
+    /** 胶囊与状态提示内的紧凑图标尺寸 (16dp)。 */
     val small = 16.dp
     /** 外链图标尺寸 (14dp) */
     val externalLink = 14.dp
     /** 趋势变化微型图标尺寸 (10dp) */
     val trend = 10.dp
-    /** 导航栏图标尺寸 (25dp) */
-    val navigation = 25.dp
+    /** 底部导航图标在常态和选中态共用标准画布尺寸。 */
+    val navigation = default
     /** 返回导航图标尺寸 (32dp) */
     val back = 32.dp
     /** 图片占位图图标尺寸 (40dp) */
@@ -89,16 +87,15 @@ object AppSpacing {
     val block = 24.dp
     val page = 32.dp
 
-    val pageHorizontal = section
+    /** 普通页面在系统安全区内侧的水平内容边距。 */
+    val pageHorizontal = extraLarge
     val cardPadding = extraLarge
-    val rowHorizontal = large
+    val rowHorizontal = extraLarge
     val rowVertical = medium
     val inlineGap = medium
     val sectionGap = large
     val labelGap = extraSmall
     val settingsIconGap = 14.dp
-    val calendarCardHorizontal = 14.dp
-    val calendarCardVertical = 10.dp
 }
 
 /** [AppSpacing] 的别名 */
@@ -123,8 +120,11 @@ object AppDimensions {
     val dropdownShadow = 6.dp
     val dropdownBorder = 1.dp
     val listIconContainer = 32.dp
-    val settingsDividerInset = 58.dp
-    val subtleCardShadow = 2.dp
+    val settingsDividerInset = AppSpacing.rowHorizontal + listIconContainer + AppSpacing.settingsIconGap
+    /** 底部导航与批量操作条的投影高程。 */
+    val floatingBarShadow = 2.dp
+    /** 主悬浮操作按钮的投影高程。 */
+    val floatingActionShadow = 4.dp
     val touchTarget = 48.dp
     val compactIconButton = 36.dp
     val backButton = 44.dp
@@ -132,8 +132,9 @@ object AppDimensions {
     val rowMinHeight = 48.dp
     val dividerThickness = 0.5.dp
     val topBarBlur = 3.dp
-    val topBarFade = 4.dp
-    val transactionRowHorizontal = 14.dp
+    val primaryTopBarFade = 6.dp
+    val subpageTopBarFade = 4.dp
+    val bottomBarBlur = 12.dp
     val compactButtonHeight = 36.dp
     val calendarEmptyIllustrationWidth = 140.dp
     val calendarEmptyIllustrationHeight = 105.dp
@@ -146,8 +147,9 @@ typealias LedgerDimensions = AppDimensions
  * 透明度与遮罩 Alpha 常量规范。
  */
 object AppOpacity {
+    /** 居中弹窗和模态抽屉共用的黑色遮罩透明度。 */
+    const val modalScrim = 0.45f
     const val readOnlyBorder = 0.12f
-    const val subtleCardShadow = 0.04f
     const val subduedChevron = 0.35f
     const val disabled = 0.38f
     const val pressed = 0.05f
@@ -155,6 +157,7 @@ object AppOpacity {
     const val selectedBackground = 0.08f
     const val cardIconBackground = 0.24f
     const val topBarScrolled = 0.55f
+    const val bottomBarTint = 0.72f
 }
 
 /** [AppOpacity] 的别名 */

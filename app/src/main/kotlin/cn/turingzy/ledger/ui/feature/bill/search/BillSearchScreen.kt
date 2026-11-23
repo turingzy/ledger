@@ -35,7 +35,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cn.turingzy.ledger.R
 import cn.turingzy.ledger.model.transaction.TransactionDetail
 import cn.turingzy.ledger.ui.component.MaterialSymbols
-import cn.turingzy.ledger.ui.component.base.DividerBase
 import cn.turingzy.ledger.ui.component.base.EmptyStateBase
 import cn.turingzy.ledger.ui.component.base.PageFrameBase
 import cn.turingzy.ledger.ui.component.base.ScrollTitleContainerBase
@@ -48,6 +47,7 @@ import cn.turingzy.ledger.ui.feature.bill.detail.TransactionDetailsScreen
 import cn.turingzy.ledger.ui.feature.bill.detail.TransactionDetailsViewModel
 import cn.turingzy.ledger.ui.interaction.UiInteractionKind
 import cn.turingzy.ledger.ui.interaction.uiClickable
+import cn.turingzy.ledger.ui.component.biz.TransactionRowDividerBiz
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import kotlinx.coroutines.launch
 
@@ -231,7 +231,7 @@ internal fun BillSearchHeader(
                 Box(contentAlignment = Alignment.CenterStart) {
                     if (input.isEmpty()) Text(
                         stringResource(R.string.ui_search_notes_categories_accounts),
-                        style = LedgerStyle.typography.searchInput, color = colors.textSecondary, maxLines = 1,
+                        style = LedgerStyle.typography.searchInput, color = colors.textSupporting, maxLines = 1,
                     )
                     field()
                 }
@@ -277,7 +277,7 @@ private fun LazyListScope.searchResults(
         val top = if (roundTop) radius else square
         val bottom = if (roundBottom) radius else square
         Column(Modifier.fillMaxWidth().background(colors.surface, RoundedCornerShape(top, top, bottom, bottom))) {
-            if (index > 0) DividerBase(Modifier.padding(start = 62.dp, end = 14.dp))
+            if (index > 0) TransactionRowDividerBiz()
             transactionRow(detail, roundTop, roundBottom)
         }
     }

@@ -2,12 +2,12 @@ package cn.turingzy.ledger.ui.feature.bill.sheet
 
 import cn.turingzy.ledger.R
 import cn.turingzy.ledger.ui.component.base.BottomSheetHeaderBase
-import cn.turingzy.ledger.ui.component.base.DividerBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.ui.component.base.ModalBottomSheetBase
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -77,7 +77,6 @@ internal fun RecordAccountSheet(
         onDismissRequest = onDismiss,
         contentHandlesInsets = true,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = MaterialTheme.colorScheme.surface,
         dragHandle = null,
     ) {
         Column(Modifier.height(height).testTag("recordAccountDrawer").navigationBarsPadding()) {
@@ -85,7 +84,6 @@ internal fun RecordAccountSheet(
             else BottomSheetHeaderBase(stringResource(R.string.ui_close_account_picker), onDismiss) {
                 Text(title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
-            DividerBase()
             if (accounts.isEmpty() && onSelectAll == null) {
                 Text(emptyMessage ?: textResources.getString(cn.turingzy.ledger.R.string.ui_no_accounts_available_add_one_in_wallet), Modifier.padding(LedgerStyle.spacing.extraLarge), color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else LazyColumn(Modifier.fillMaxWidth().weight(1f)) {
@@ -95,18 +93,24 @@ internal fun RecordAccountSheet(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large),
                     ) {
-                        Icon(MaterialSymbols.AccountBalanceWallet, null, Modifier.size(LedgerStyle.dimensions.listIconContainer),
-                            tint = LedgerStyle.colors.textSecondary)
+                        Box(Modifier.size(LedgerStyle.dimensions.compactIconButton), contentAlignment = Alignment.Center) {
+                            Icon(MaterialSymbols.AccountBalanceWallet, null, Modifier.size(LedgerStyle.icons.inline),
+                                tint = LedgerStyle.colors.textSecondary)
+                        }
                         Text(stringResource(R.string.bill_search_all_accounts), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
                         if (selectedId == 0L) Icon(
-                            MaterialSymbols.Check, stringResource(R.string.ui_selected), tint = selectionColor,
+                            MaterialSymbols.Check, stringResource(R.string.ui_selected),
+                            modifier = Modifier.size(LedgerStyle.icons.inline), tint = selectionColor,
                         )
                     }
                 }
                 items(accounts, key = { it.account.id }) { item ->
                     val selected = item.account.id == selectedId
                     val selectionCheck: @Composable () -> Unit = {
-                        Icon(MaterialSymbols.Check, textResources.getString(cn.turingzy.ledger.R.string.ui_selected), tint = selectionColor)
+                        Icon(
+                            MaterialSymbols.Check, textResources.getString(R.string.ui_selected),
+                            modifier = Modifier.size(LedgerStyle.icons.inline), tint = selectionColor,
+                        )
                     }
                     Row(
                         Modifier.fillMaxWidth().clickable { onSelect(item.account.id) }.padding(horizontal = 16.dp, vertical = 14.dp),

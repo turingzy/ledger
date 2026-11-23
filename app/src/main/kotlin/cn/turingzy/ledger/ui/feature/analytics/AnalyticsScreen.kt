@@ -136,8 +136,8 @@ fun AnalyticsContent(
                         ) { scrollModifier ->
                             Column(
                                 scrollModifier.fillMaxSize().verticalScroll(scrollState)
-                                    .padding(start = LedgerStyle.spacing.extraLarge, end = LedgerStyle.spacing.extraLarge, top = LedgerStyle.spacing.extraSmall, bottom = LedgerStyle.spacing.block + LocalBottomBarContentPadding.current),
-                                verticalArrangement = Arrangement.spacedBy(5.dp),
+                                    .padding(start = LedgerStyle.spacing.pageHorizontal, end = LedgerStyle.spacing.pageHorizontal, top = LedgerStyle.spacing.extraSmall, bottom = LedgerStyle.spacing.block + LocalBottomBarContentPadding.current),
+                                verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.labelGap),
                             ) {
                                 Box(Modifier.fillMaxWidth().height(44.dp), contentAlignment = Alignment.CenterStart) {
                                     Text(

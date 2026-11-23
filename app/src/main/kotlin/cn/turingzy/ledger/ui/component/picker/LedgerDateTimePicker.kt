@@ -5,6 +5,7 @@ import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
+import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -161,16 +162,20 @@ internal fun LedgerDatePicker(selectedDate: LocalDate, onSelect: (LocalDate) -> 
                     LazyVerticalGrid(columns = GridCells.Fixed(7), modifier = Modifier.height(180.dp), userScrollEnabled = false) {
                         items(days, key = { it.toEpochDay() }) { date ->
                             val chosen = date == selectedDate
+                            // Keep the whole cell tappable, but draw feedback on the date circle.
+                            val pressSource = remember { MutableInteractionSource() }
                             Box(
                                 Modifier.height(30.dp).semantics { selected = chosen; contentDescription = date.toString() }
-                                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = LocalIndication.current, role = Role.Button) {
+                                    .clickable(interactionSource = pressSource, indication = null, role = Role.Button) {
                                         month = YearMonth.from(date)
                                         onSelect(date)
                                     },
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Box(
-                                    Modifier.size(28.dp).clip(CircleShape).background(if (chosen) colors.primary else colors.surface.copy(alpha = 0f)),
+                                    Modifier.size(28.dp).clip(CircleShape)
+                                        .background(if (chosen) colors.primary else colors.surface.copy(alpha = 0f))
+                                        .indication(pressSource, LocalIndication.current),
                                     contentAlignment = Alignment.Center,
                                 ) {
                                     Text(
@@ -290,7 +295,7 @@ private fun RecordTimeWheel(label: String, value: String, count: Int, onChange: 
         }
     }
     Box(Modifier.width(80.dp).height(120.dp), contentAlignment = Alignment.Center) {
-        Box(Modifier.fillMaxWidth().height(40.dp).clip(LedgerStyle.shapes.field).background(MaterialTheme.colorScheme.surfaceVariant))
+        Box(Modifier.fillMaxWidth().height(40.dp).clip(LedgerStyle.shapes.field).background(LedgerStyle.colors.overlayFieldBackground))
         LazyColumn(
             state = state, flingBehavior = rememberSnapFlingBehavior(state),
             contentPadding = PaddingValues(vertical = 40.dp),

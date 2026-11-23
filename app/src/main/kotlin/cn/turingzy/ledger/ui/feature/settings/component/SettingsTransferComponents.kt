@@ -63,13 +63,13 @@ internal fun SettingsTransferAction(
         horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium),
     ) {
         if (running && progress == null) {
-            LinearProgressIndicator(modifier = Modifier.weight(1f).height(8.dp).clip(CircleShape), color = colors.tertiary)
+            LinearProgressIndicator(modifier = Modifier.weight(1f).height(8.dp).clip(CircleShape), color = colors.primary)
         }
         if (progress != null) {
             LinearProgressIndicator(
                 progress = { progress / 100f },
                 modifier = Modifier.weight(1f).height(8.dp).clip(CircleShape),
-                color = colors.tertiary,
+                color = LedgerStyle.colors.success,
                 trackColor = colors.surfaceVariant,
                 strokeCap = StrokeCap.Round,
                 gapSize = 0.dp,
@@ -84,7 +84,7 @@ internal fun SettingsTransferAction(
             modifier = Modifier.heightIn(min = SettingsItemHeight),
             contentPadding = PaddingValues(vertical = 8.dp),
             showPressFeedback = false,
-            colors = ButtonDefaults.textButtonColors(contentColor = if (running) colors.error else colors.primary),
+            colors = ButtonDefaults.textButtonColors(contentColor = colors.primary),
         ) {
             Text(title, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Start)
         }

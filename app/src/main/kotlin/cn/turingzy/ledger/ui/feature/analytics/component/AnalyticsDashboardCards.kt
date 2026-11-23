@@ -16,8 +16,6 @@ import cn.turingzy.ledger.ui.theme.LedgerStyle
 import java.time.LocalDate
 import java.time.YearMonth
 
-/** 统计卡片顶部外边距。 */
-internal val AnalyticsCardTopSpacing = 3.dp
 /** 统计图表数据节点圆点半径。 */
 internal val AnalyticsChartNodeRadius = 3.dp
 /** 统计图表绘图区标准高度。 */
@@ -44,12 +42,14 @@ internal fun AnalyticsDashboardCards(state: AnalyticsUiState.Success, dashboard:
     }
     val today = LocalDate.now()
     val anchor = minOf(state.periodEnd, today)
-    AnalyticsStatisticsCard(state, dashboard.days)
-    AnalyticsCategoryShareCard(state, onCategoryTypeChange)
-    DashboardCard(textResources.getString(cn.turingzy.ledger.R.string.ui_cumulative_expenses)) {
-        ExpensePace(dashboard.days, state.timeScope, state.periodStart, state.periodEnd, today)
+    Column(verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.sectionGap)) {
+        AnalyticsStatisticsCard(state, dashboard.days)
+        AnalyticsCategoryShareCard(state, onCategoryTypeChange)
+        DashboardCard(textResources.getString(cn.turingzy.ledger.R.string.ui_cumulative_expenses)) {
+            ExpensePace(dashboard.days, state.timeScope, state.periodStart, state.periodEnd, today)
+        }
+        MonthlyCashflowCard(dashboard.days, YearMonth.from(anchor), transactions = dashboard.transactions)
     }
-    MonthlyCashflowCard(dashboard.days, YearMonth.from(anchor), transactions = dashboard.transactions)
 }
 
 /**
@@ -80,7 +80,7 @@ internal fun DashboardCard(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     CardBase(
-        modifier.padding(top = AnalyticsCardTopSpacing),
+        modifier,
         shape = LedgerStyle.shapes.summaryCard,
         outlined = true,
         contentPadding = PaddingValues(horizontal = LedgerStyle.spacing.cardPadding, vertical = LedgerStyle.spacing.medium),

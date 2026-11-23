@@ -35,6 +35,15 @@ val IosTeal = Color(0xFF30B0C7)
 /** iOS 系统黄色 (#FFCC00) */
 val IosYellow = Color(0xFFFFCC00)
 
+/** 浅色主题的成功前景色。 */
+internal val SuccessLight = Color(0xFF16743A)
+/** 深色主题的成功前景色。 */
+internal val SuccessDark = Color(0xFF34C759)
+/** 浅色主题的警告前景色。 */
+internal val WarningLight = Color(0xFF8A4B00)
+/** 深色主题的警告前景色。 */
+internal val WarningDark = Color(0xFFFF9500)
+
 // Apple HIG Pure Translucent Glass UI (通透纯白微透质感，自然优雅)
 /** iOS 毛玻璃半透明纯白背景色 */
 val IosFrostedGlass = Color(0xF5FFFFFF)
@@ -42,6 +51,20 @@ val IosFrostedGlass = Color(0xF5FFFFFF)
 val IosFrostedPressed = Color(0x14000000)
 /** iOS 毛玻璃微透边框色 */
 val IosFrostedBorder = Color(0x18000000)
+
+/** 浅色主题的次要正文与标签。 */
+internal val TextSecondaryLight = Color(0xFF545458)
+/** 浅色主题的说明、时间和占位文字。 */
+internal val TextSupportingLight = Color(0xFF626266)
+/** 浅色主题的内容分割线。 */
+internal val DividerLight = Color(0xFFDEDEE3)
+
+/** 深色主题的次要正文与标签。 */
+internal val TextSecondaryDark = Color(0xFFC7C7CC)
+/** 深色主题的说明、时间和占位文字。 */
+internal val TextSupportingDark = Color(0xFFA1A1A7)
+/** 深色主题的内容分割线。 */
+internal val DividerDark = Color(0xFF414145)
 
 // Surface & Container Colors for Material 3 Mapping
 /** 浅色主题表面背景色 */
@@ -57,6 +80,10 @@ val OutlineLight = Color(0x1F000000)
 val SurfaceDark = Color(0xFF1C1C1E)
 /** 深色主题变体表面色 */
 val SurfaceVariantDark = Color(0xFF2C2C2E)
+/** 深色主题弹窗、抽屉和下拉菜单的底色。 */
+internal val OverlayDark = Color(0xFF2C2C2E)
+/** 深色弹层中需要与底色区分的输入框和选项控件底色。 */
+internal val OverlayFieldDark = Color(0xFF3A3A3C)
 /** 深色主题底色 */
 val BackgroundDark = Color(0xFF000000)
 /** 深色主题轮廓线颜色 */

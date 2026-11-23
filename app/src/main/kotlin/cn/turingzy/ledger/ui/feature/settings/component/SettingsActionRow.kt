@@ -71,11 +71,11 @@ internal fun SettingsActionRow(
             modifier = Modifier.heightIn(min = if (subtitle == null) SettingsItemHeight else LedgerStyle.dimensions.supportingRowMinHeight)
                 .semantics { if (!enabled) disabled() },
             supportingText = if (subtitle == null) null else ({
-                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(subtitle)
             }),
             supportingSpacing = LedgerStyle.spacing.tiny,
             trailing = if (!showChevron || externalLink) null else ({
-                Icon(MaterialSymbols.ChevronRight, null, Modifier.size(LedgerStyle.icons.default), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(MaterialSymbols.ChevronRight, null, Modifier.size(LedgerStyle.icons.inline), tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }),
             onClick = if (enabled) onClick else null,
         )
@@ -118,7 +118,8 @@ internal fun SettingsDeleteAction(
                     onDelete()
                 },
                 enabled = enabled,
-                contentColor = LedgerStyle.colors.success,
+                contentColor = LedgerStyle.colors.destructive,
+                iconSize = LedgerStyle.icons.inline,
             )
         }
     } else {

@@ -22,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,6 +40,9 @@ import cn.turingzy.ledger.ui.interaction.rememberUiAction
 import cn.turingzy.ledger.ui.interaction.rememberUiIndication
 import cn.turingzy.ledger.ui.interaction.uiClickable
 import cn.turingzy.ledger.ui.theme.LedgerStyle
+
+/** 最近一层容器底色，用于让浮动的表单标签覆盖字段边框。 */
+internal val LocalSurfaceBackground = compositionLocalOf { Color.Unspecified }
 
 /**
  * 基础表面（Surface）容器组件。
@@ -69,8 +73,11 @@ fun SurfaceBase(
     enabled: Boolean = true,
     content: @Composable () -> Unit,
 ) {
+    val surfaceContent: @Composable () -> Unit = {
+        CompositionLocalProvider(LocalSurfaceBackground provides color, content = content)
+    }
     if (onClick == null) {
-        Surface(modifier, shape, color, contentColor, tonalElevation, shadowElevation, border, content = content)
+        Surface(modifier, shape, color, contentColor, tonalElevation, shadowElevation, border, content = surfaceContent)
         return
     }
     val source = remember { MutableInteractionSource() }
@@ -79,7 +86,7 @@ fun SurfaceBase(
         modifier = modifier.clip(shape).indication(source, rememberUiIndication()),
         enabled = enabled, shape = shape, color = color, contentColor = contentColor,
         tonalElevation = tonalElevation, shadowElevation = shadowElevation, border = border,
-        interactionSource = source, content = content,
+        interactionSource = source, content = surfaceContent,
     )
 }
 
@@ -110,7 +117,7 @@ fun CardBase(
         shape = shape,
         color = colors.surface,
         contentColor = colors.textPrimary,
-        border = if (outlined) BorderStroke(LedgerStyle.dimensions.dividerThickness, colors.divider) else null,
+        border = if (outlined) BorderStroke(LedgerStyle.dimensions.dividerThickness, colors.outline) else null,
     ) {
         Column(
             Modifier.padding(contentPadding),
@@ -176,7 +183,7 @@ fun ListRowBase(
                 ProvideTextStyle(LedgerStyle.typography.body, content = headline)
             }
             if (supportingText != null) {
-                CompositionLocalProvider(LocalContentColor provides colors.textSecondary) {
+                CompositionLocalProvider(LocalContentColor provides colors.textSupporting) {
                     ProvideTextStyle(LedgerStyle.typography.bodySmall, content = supportingText)
                 }
             }
@@ -235,7 +242,7 @@ fun SectionHeaderBase(
                 color = if (variant == SectionHeaderVariantBase.Supporting) colors.textSecondary else colors.textPrimary,
             )
             if (subtitle != null) {
-                Text(subtitle, style = LedgerStyle.typography.bodySmall, color = colors.textSecondary)
+                Text(subtitle, style = LedgerStyle.typography.bodySmall, color = colors.textSupporting)
             }
         }
         if (actions != null) {
@@ -270,7 +277,7 @@ fun EmptyStateBase(
     illustration: (@Composable () -> Unit)? = null,
     actions: (@Composable () -> Unit)? = null,
     contentPadding: PaddingValues = PaddingValues(
-        horizontal = LedgerStyle.spacing.pageHorizontal,
+        horizontal = LedgerStyle.spacing.section,
         vertical = LedgerStyle.spacing.block,
     ),
     titleStyle: TextStyle = LedgerStyle.typography.cardTitle,
@@ -290,7 +297,7 @@ fun EmptyStateBase(
         if (message != null) {
             Text(
                 message, style = LedgerStyle.typography.bodySmall,
-                color = colors.textSecondary, textAlign = TextAlign.Center,
+                color = colors.textSupporting, textAlign = TextAlign.Center,
             )
         }
         if (actions != null) actions()

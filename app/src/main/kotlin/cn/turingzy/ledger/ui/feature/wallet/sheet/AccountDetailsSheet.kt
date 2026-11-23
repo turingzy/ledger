@@ -119,7 +119,10 @@ fun AccountDetailsContent(
     )
     if (confirmDelete) {
         DialogWindowBase(onDismissRequest = { confirmDelete = false }) {
-            SurfaceBase(shape = LedgerStyle.shapes.confirmationDialog, color = MaterialTheme.colorScheme.surface) {
+            SurfaceBase(
+                shape = LedgerStyle.shapes.confirmationDialog,
+                color = LedgerStyle.colors.overlay, contentColor = LedgerStyle.colors.textPrimary,
+            ) {
                 Column(
                     Modifier.dialogContentPadding(LedgerStyle.spacing.block),
                     verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.extraLarge),

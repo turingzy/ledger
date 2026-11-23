@@ -49,7 +49,6 @@ import cn.turingzy.ledger.model.transaction.TransactionType
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.base.BaseAlertDialog
 import cn.turingzy.ledger.ui.component.base.IconButtonBase
-import cn.turingzy.ledger.ui.component.base.DividerBase
 import cn.turingzy.ledger.ui.component.base.EmptyStateBase
 import cn.turingzy.ledger.ui.component.base.ModalBottomSheetBase
 import cn.turingzy.ledger.ui.component.base.SurfaceBase
@@ -98,8 +97,8 @@ internal fun BillSelectionBar(
     val actionsEnabled = enabled && selectedCount > 0
     SurfaceBase(
         modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = BottomBarVerticalPadding),
-        shape = CircleShape, color = colors.surface, shadowElevation = 2.dp,
-        border = BorderStroke(0.5.dp, colors.divider),
+        shape = CircleShape, color = colors.surface, shadowElevation = LedgerStyle.dimensions.floatingBarShadow,
+        border = BorderStroke(0.5.dp, colors.outline),
     ) {
         Row(
             Modifier.fillMaxWidth().height(BottomBarHeight).padding(horizontal = 8.dp).testTag("billSelectionBar"),
@@ -122,7 +121,7 @@ internal fun BillSelectionBar(
             Spacer(Modifier.weight(1f))
             BillSelectionAction(stringResource(R.string.ui_account), colors.textPrimary, actionsEnabled, onSelectAccount)
             BillSelectionAction(stringResource(R.string.ui_category), colors.textPrimary, actionsEnabled, onSelectCategory)
-            BillSelectionAction(stringResource(R.string.bill_delete_action), colors.expense, actionsEnabled, onDelete)
+            BillSelectionAction(stringResource(R.string.bill_delete_action), colors.destructive, actionsEnabled, onDelete)
         }
     }
 }
@@ -227,9 +226,9 @@ internal enum class BillActionPicker {
                         modifier = Modifier.width(168.dp),
                         height = 28.dp,
                         fontSize = LedgerStyle.typography.label.fontSize,
+                        containerColor = LedgerStyle.colors.overlayFieldBackground,
                     )
                 }
-                DividerBase()
                 if (visibleCategories.isEmpty()) EmptyStateBase(title = stringResource(R.string.bill_no_compatible_categories))
                 else key(categoryType) {
                     LazyVerticalGrid(
@@ -288,7 +287,7 @@ private fun BillPickerHeader(
         Box(Modifier.weight(1f), contentAlignment = Alignment.Center) { content() }
         IconButtonBase(
             MaterialSymbols.Check, stringResource(R.string.ui_confirm), { onConfirm?.invoke() },
-            enabled = onConfirm != null, contentColor = LedgerStyle.colors.success, showPressFeedback = false,
+            enabled = onConfirm != null, contentColor = LedgerStyle.colors.info, showPressFeedback = false,
         )
     }
 }

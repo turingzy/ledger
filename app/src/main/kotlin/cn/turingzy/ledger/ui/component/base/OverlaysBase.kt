@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.component.base
 
+import android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.WindowInsets
@@ -28,14 +29,18 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.SheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.constrainHeight
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 
 /**
@@ -57,6 +62,15 @@ fun DialogWindowBase(
         onDismissRequest = onDismissRequest,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
     ) {
+        val window = (LocalView.current.parent as? DialogWindowProvider)?.window
+        SideEffect {
+            if (window != null) {
+                if ((window.attributes.flags and FLAG_DIM_BEHIND) == 0) window.addFlags(FLAG_DIM_BEHIND)
+                if (window.attributes.dimAmount != LedgerStyle.opacity.modalScrim) {
+                    window.setDimAmount(LedgerStyle.opacity.modalScrim)
+                }
+            }
+        }
         Box(
             modifier.dialogBounds(),
         ) {
@@ -85,7 +99,7 @@ fun ModalBottomSheetBase(
     onDismissRequest: () -> Unit,
     sheetState: SheetState,
     modifier: Modifier = Modifier,
-    containerColor: Color = LedgerStyle.colors.surface,
+    containerColor: Color = LedgerStyle.colors.overlay,
     contentColor: Color = LedgerStyle.colors.textPrimary,
     dragHandle: (@Composable () -> Unit)? = null,
     contentHandlesInsets: Boolean = false,
@@ -99,15 +113,18 @@ fun ModalBottomSheetBase(
         modifier = modifier,
         containerColor = containerColor,
         contentColor = contentColor,
+        tonalElevation = LedgerStyle.spacing.none,
         shape = LedgerStyle.shapes.bottomSheet,
-        scrimColor = Color.Black.copy(alpha = 0.45f),
+        scrimColor = Color.Black.copy(alpha = LedgerStyle.opacity.modalScrim),
         dragHandle = dragHandle,
         properties = ModalBottomSheetProperties(
             isAppearanceLightStatusBars = lightBars,
             isAppearanceLightNavigationBars = lightBars,
         ),
         contentWindowInsets = { if (contentHandlesInsets) WindowInsets(0, 0, 0, 0) else WindowInsets.safeDrawing },
-        content = content,
+        content = {
+            CompositionLocalProvider(LocalSurfaceBackground provides containerColor) { content() }
+        },
     )
 }
 
@@ -174,7 +191,10 @@ internal fun BaseAlertDialog(
     text: (@Composable () -> Unit)? = null,
 ) {
     DialogWindowBase(onDismissRequest) {
-        SurfaceBase(Modifier.fillMaxWidth(), shape = LedgerStyle.shapes.confirmationDialog, color = LedgerStyle.colors.surface) {
+        SurfaceBase(
+            Modifier.fillMaxWidth(), shape = LedgerStyle.shapes.confirmationDialog,
+            color = LedgerStyle.colors.overlay, contentColor = LedgerStyle.colors.textPrimary,
+        ) {
             Column(Modifier.dialogContentPadding(LedgerStyle.spacing.block), verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium)) {
                 Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium)) {
@@ -264,4 +284,4 @@ internal fun Modifier.keepSheetAnchorDuringIme(): Modifier = composed {
 private fun Modifier.dialogBounds(): Modifier =
     widthIn(max = LedgerStyle.dimensions.wideDialogMaxWidth).fillMaxWidth()
         .windowInsetsPadding(WindowInsets.safeDrawing.union(WindowInsets.ime))
-        .padding(horizontal = LedgerStyle.spacing.pageHorizontal)
+        .padding(horizontal = LedgerStyle.spacing.section)

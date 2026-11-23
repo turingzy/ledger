@@ -13,11 +13,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import cn.turingzy.ledger.R
 import cn.turingzy.ledger.model.category.CategoryWithIcon
 import cn.turingzy.ledger.model.transaction.TransactionType
 import cn.turingzy.ledger.ui.component.MaterialSymbols
+import cn.turingzy.ledger.ui.component.base.DividerBase
 import cn.turingzy.ledger.ui.interaction.uiClickable
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 
@@ -111,19 +114,24 @@ internal fun TransactionRowBiz(
     note: String? = null,
 ) {
     val colors = LedgerStyle.colors
-    val secondaryText = listOfNotNull(
-        timeText.takeIf { it.isNotBlank() },
-        note?.trim()?.replace(TransactionNoteWhitespace, " ")?.takeIf { it.isNotEmpty() },
-    ).joinToString(" · ")
+    val normalizedNote = note?.trim()?.replace(TransactionNoteWhitespace, " ").orEmpty()
+    val secondaryText = buildAnnotatedString {
+        if (timeText.isNotBlank()) {
+            append(timeText)
+            if (normalizedNote.isNotEmpty()) append(" · ")
+            addStyle(SpanStyle(color = colors.textSupporting), start = 0, end = length)
+        }
+        append(normalizedNote)
+    }
     val interaction = if (onClick == null) Modifier else Modifier.uiClickable(onClick = onClick)
     BoxWithConstraints(modifier.fillMaxWidth().then(interaction)) {
         val amountColumnWidth = maxWidth / 2
         Row(
             Modifier.fillMaxWidth().padding(
-                horizontal = LedgerStyle.dimensions.transactionRowHorizontal,
+                horizontal = LedgerStyle.spacing.rowHorizontal,
                 vertical = LedgerStyle.spacing.rowVertical,
             ),
-            horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large),
+            horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.sectionGap),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             TypeIconBiz(icon, type, contentDescription = categoryName)
@@ -145,9 +153,17 @@ internal fun TransactionRowBiz(
                     AmountTextBiz(amount, currency, type = type, primaryCurrency = primaryCurrency,
                         hidden = hidden, size = AmountSizeBiz.Transaction)
                     if (amountSupportingText != null) Text(amountSupportingText,
-                        style = LedgerStyle.typography.caption, color = colors.textSecondary)
+                        style = LedgerStyle.typography.caption, color = colors.textSupporting)
                 }
             }
         }
     }
+}
+
+/** 交易行分割线从分类文字起始位置开始，与右侧金额边缘对齐。 */
+@Composable
+internal fun TransactionRowDividerBiz() {
+    val rowInset = LedgerStyle.spacing.rowHorizontal
+    val textInset = rowInset + LedgerStyle.dimensions.compactIconButton + LedgerStyle.spacing.sectionGap
+    DividerBase(Modifier.padding(start = textInset, end = rowInset))
 }

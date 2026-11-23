@@ -2,6 +2,7 @@ package cn.turingzy.ledger.ui.feature.analytics.sheet
 
 import cn.turingzy.ledger.ui.feature.analytics.AnalyticsTransaction
 import cn.turingzy.ledger.ui.feature.analytics.component.AnalyticsCardTitle
+import cn.turingzy.ledger.ui.component.biz.TransactionRowDividerBiz
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.ui.component.base.ModalBottomSheetBase
 import cn.turingzy.ledger.ui.component.biz.LocalCurrencyBiz
@@ -21,7 +22,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cn.turingzy.ledger.model.transaction.TransactionType
-import cn.turingzy.ledger.ui.component.base.DividerBase
 import cn.turingzy.ledger.ui.component.base.BottomSheetHeaderBase
 import kotlinx.coroutines.launch
 import cn.turingzy.ledger.util.toFormattedAmount
@@ -90,7 +90,6 @@ internal fun AnalyticsTransactionSheet(
             ) {
                 AnalyticsCardTitle(title)
             }
-            DividerBase()
             Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.small)) {
                 if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
@@ -125,7 +124,7 @@ internal fun AnalyticsTransactionSheet(
                             }
                             itemsIndexed(entries, key = { _, entry -> entry.id }) { index, entry ->
                                 Column {
-                                    if (index > 0) DividerBase(Modifier.padding(start = 62.dp, end = 14.dp))
+                                    if (index > 0) TransactionRowDividerBiz()
                                     transactionRow(entry, index == 0, index == entries.lastIndex)
                                 }
                             }

@@ -162,7 +162,7 @@ fun KeypadIconButton(
             imageVector = icon,
             contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_delete_last_digit),
             tint = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.size(26.dp),
+            modifier = Modifier.size(LedgerStyle.icons.default),
         )
     }
 }

@@ -254,7 +254,7 @@ fun WalletContent(
                         modifier = scrollModifier
                             .fillMaxSize(),
                         contentPadding = PaddingValues(
-                            start = LedgerStyle.spacing.extraLarge, end = LedgerStyle.spacing.extraLarge,
+                            start = LedgerStyle.spacing.pageHorizontal, end = LedgerStyle.spacing.pageHorizontal,
                             top = LedgerStyle.spacing.extraSmall,
                             bottom = LedgerStyle.spacing.block + LocalBottomBarContentPadding.current + LedgerStyle.dimensions.touchTarget,
                         ),
@@ -263,7 +263,7 @@ fun WalletContent(
                         item(key = "header_and_hero") {
                             Column(
                                 modifier = Modifier.fillMaxWidth(),
-                                verticalArrangement = Arrangement.spacedBy(5.dp),
+                                verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.labelGap),
                             ) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth().height(44.dp),
@@ -294,7 +294,7 @@ fun WalletContent(
                         }
 
                         item(key = "accounts_section") {
-                            Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                            Column(verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.labelGap)) {
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()

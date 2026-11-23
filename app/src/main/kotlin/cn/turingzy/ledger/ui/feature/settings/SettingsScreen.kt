@@ -36,7 +36,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -162,16 +161,16 @@ fun SettingsContent(
                         state = listState,
                         modifier = scrollModifier.fillMaxSize(),
                         contentPadding = PaddingValues(
-                            start = LedgerStyle.spacing.extraLarge, end = LedgerStyle.spacing.extraLarge,
+                            start = LedgerStyle.spacing.pageHorizontal, end = LedgerStyle.spacing.pageHorizontal,
                             top = LedgerStyle.spacing.extraSmall,
                             bottom = LedgerStyle.spacing.block + LocalBottomBarContentPadding.current,
                         ),
-                        verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.extraLarge),
+                        verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.sectionGap),
                     ) {
                         item(key = "header_and_settings") {
                             Column(
                                 modifier = Modifier.fillMaxWidth(),
-                                verticalArrangement = Arrangement.spacedBy(5.dp),
+                                verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.labelGap),
                             ) {
                                 Box(
                                     modifier = Modifier
@@ -196,21 +195,21 @@ fun SettingsContent(
                                         title = androidx.compose.ui.res.stringResource(cn.turingzy.ledger.R.string.general_settings),
                                         onClick = onGeneralSettingsClick,
                                     )
-                                    DividerBase(Modifier.padding(start = LedgerStyle.dimensions.settingsDividerInset))
+                                    DividerBase(Modifier.padding(start = LedgerStyle.dimensions.settingsDividerInset, end = LedgerStyle.spacing.rowHorizontal))
                                     SettingsRowItem(
                                         icon = MaterialSymbols.DashboardCustomize,
                                         iconColor = MaterialTheme.colorScheme.primary,
                                         title = textResources.getString(cn.turingzy.ledger.R.string.ui_card_designs),
                                         onClick = onCardManagementClick,
                                     )
-                                    DividerBase(Modifier.padding(start = LedgerStyle.dimensions.settingsDividerInset))
+                                    DividerBase(Modifier.padding(start = LedgerStyle.dimensions.settingsDividerInset, end = LedgerStyle.spacing.rowHorizontal))
                                     SettingsRowItem(
                                         icon = MaterialSymbols.Code,
                                         iconColor = MaterialTheme.colorScheme.secondary,
                                         title = textResources.getString(cn.turingzy.ledger.R.string.ui_import_rules),
                                         onClick = onParseRulesClick,
                                     )
-                                    DividerBase(Modifier.padding(start = LedgerStyle.dimensions.settingsDividerInset))
+                                    DividerBase(Modifier.padding(start = LedgerStyle.dimensions.settingsDividerInset, end = LedgerStyle.spacing.rowHorizontal))
                                     SettingsRowItem(
                                         icon = MaterialSymbols.ImportExport,
                                         iconColor = MaterialTheme.colorScheme.tertiary,
@@ -241,19 +240,13 @@ fun SettingsContent(
 /**
  * 设置项分组卡片容器。
  *
- * 为内部的一组设置行提供带有微弱阴影和圆角效果的卡片底板。
+ * 为内部的一组设置行提供圆角卡片底板。
  *
  * @param content 卡片内承载的列表项内容
  */
 @Composable
 private fun SettingsGroup(content: @Composable ColumnScope.() -> Unit) {
-    val shadow = MaterialTheme.colorScheme.scrim.copy(alpha = LedgerStyle.opacity.subtleCardShadow)
     CardBase(
-        modifier = Modifier.shadow(
-            elevation = LedgerStyle.dimensions.subtleCardShadow,
-            shape = LedgerStyle.shapes.card,
-            ambientColor = shadow, spotColor = shadow,
-        ),
         contentPadding = PaddingValues(LedgerStyle.spacing.none),
         contentSpacing = LedgerStyle.spacing.none,
         content = content,
@@ -282,17 +275,14 @@ fun SettingsRowItem(
     ListRowBase(
         headline = { Text(title, style = LedgerStyle.typography.settingsRowTitle) },
         modifier = modifier,
-        contentPadding = PaddingValues(
-            horizontal = LedgerStyle.spacing.extraLarge, vertical = LedgerStyle.spacing.rowVertical,
-        ),
         leadingSpacing = LedgerStyle.spacing.settingsIconGap,
         leading = {
             Box(Modifier.size(LedgerStyle.dimensions.listIconContainer), contentAlignment = Alignment.Center) {
-                Icon(icon, null, Modifier.size(LedgerStyle.icons.default), tint = iconColor)
+                Icon(icon, null, Modifier.size(LedgerStyle.icons.inline), tint = iconColor)
             }
         },
         trailing = {
-            Icon(MaterialSymbols.ChevronRight, null, Modifier.size(LedgerStyle.icons.default),
+            Icon(MaterialSymbols.ChevronRight, null, Modifier.size(LedgerStyle.icons.inline),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant)
         },
         onClick = onClick,

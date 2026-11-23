@@ -269,7 +269,6 @@ private fun AboutUpdateRow(
                 Text(
                     stringResource(R.string.ui_about_installed_version, aboutVersionLabel(versionName)),
                     style = MaterialTheme.typography.bodySmall,
-                    color = colors.textSecondary,
                 )
             },
             supportingSpacing = LedgerStyle.spacing.tiny,
@@ -293,7 +292,7 @@ private fun AboutUpdateRow(
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
-                    Icon(MaterialSymbols.ChevronRight, null, Modifier.size(LedgerStyle.icons.default), tint = colors.textSecondary)
+                    Icon(MaterialSymbols.ChevronRight, null, Modifier.size(LedgerStyle.icons.inline), tint = colors.textSecondary)
                 }
             },
             enabled = state != UpdateCheckState.CHECKING,

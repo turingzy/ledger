@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
@@ -45,7 +44,8 @@ internal fun LedgerDatePickerDialog(
     DialogWindowBase(onDismiss) {
         SurfaceBase(
             modifier.fillMaxWidth().testTag("ledgerDatePickerDialog"),
-            shape = LedgerStyle.shapes.dialog, color = MaterialTheme.colorScheme.surface,
+            shape = LedgerStyle.shapes.dialog,
+            color = LedgerStyle.colors.overlay, contentColor = LedgerStyle.colors.textPrimary,
         ) {
             Column(
                 Modifier.fillMaxWidth().heightIn(max = LedgerStyle.dimensions.dialogMaxHeight).dialogContentPadding(LedgerStyle.spacing.extraLarge),

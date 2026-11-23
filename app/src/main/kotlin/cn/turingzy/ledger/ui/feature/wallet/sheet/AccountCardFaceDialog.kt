@@ -53,7 +53,10 @@ internal fun AccountCardFaceDialog(
     val pager = rememberCircularCardPagerState(faces.map { it.id }, initialId)
     val colors = MaterialTheme.colorScheme
     DialogWindowBase(onDismissRequest = onDismiss) {
-        SurfaceBase(shape = LedgerStyle.shapes.dialog, color = colors.surface) {
+        SurfaceBase(
+            shape = LedgerStyle.shapes.dialog,
+            color = LedgerStyle.colors.overlay, contentColor = LedgerStyle.colors.textPrimary,
+        ) {
             Column(Modifier.dialogContentPadding(LedgerStyle.spacing.extraLarge), verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large)) {
                 Text(textResources.getString(cn.turingzy.ledger.R.string.ui_select_card_design), style = MaterialTheme.typography.titleMedium)
                 HorizontalPager(state = pager, key = { it }, pageSpacing = 12.dp) { page ->
