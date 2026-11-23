@@ -250,6 +250,7 @@
   <string name="bill_select_all">全选</string>
   <string name="bill_action_failed">交易操作失败，请重试。</string>
   <string name="bill_copy_transaction">复制交易</string>
+  <string name="bill_copy_transaction_message">复制后将新增一笔相同的交易，相关账户余额将随之更新。</string>
   <string name="bill_edit_transaction">编辑交易</string>
   <string name="bill_select_transaction">选择交易</string>
   <string name="bill_delete_action">删除</string>

@@ -5,15 +5,13 @@ import cn.turingzy.ledger.ui.feature.wallet.sheet.AccountDetailsSheet
 import cn.turingzy.ledger.ui.feature.wallet.sheet.AddAccountSheet
 import cn.turingzy.ledger.ui.component.base.ScrollTitleContainerBase
 import androidx.compose.foundation.lazy.rememberLazyListState
-import cn.turingzy.ledger.ui.component.card.summary.TopBarIconButton
+import cn.turingzy.ledger.ui.component.navigation.LedgerFloatingActionButton
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.base.PageFrameBase
 import cn.turingzy.ledger.ui.interaction.rememberUiEvent
-import cn.turingzy.ledger.ui.interaction.rememberUiAction
 import cn.turingzy.ledger.ui.interaction.UiInteractionKind
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -258,7 +256,7 @@ fun WalletContent(
                         contentPadding = PaddingValues(
                             start = LedgerStyle.spacing.extraLarge, end = LedgerStyle.spacing.extraLarge,
                             top = LedgerStyle.spacing.extraSmall,
-                            bottom = LedgerStyle.spacing.block + LocalBottomBarContentPadding.current,
+                            bottom = LedgerStyle.spacing.block + LocalBottomBarContentPadding.current + LedgerStyle.dimensions.touchTarget,
                         ),
                         verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.sectionGap),
                     ) {
@@ -267,32 +265,18 @@ fun WalletContent(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalArrangement = Arrangement.spacedBy(5.dp),
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(44.dp),
-                                    contentAlignment = Alignment.CenterEnd,
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().height(44.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
                                 ) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
-                                        Text(
-                                            text = textResources.getString(cn.turingzy.ledger.R.string.ui_wallet),
-                                            fontSize = LedgerStyle.typography.screenTitle.fontSize,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onSurface,
-                                            letterSpacing = (-0.6).sp,
-                                            modifier = Modifier.padding(bottom = 2.dp),
-                                        )
-
-                                        TopBarIconButton(
-                                            imageVector = MaterialSymbols.AddCard,
-                                            contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_add_account),
-                                            onClick = rememberUiAction(onAddAccountClick, UiInteractionKind.Navigation),
-                                        )
-                                    }
+                                    Text(
+                                        text = textResources.getString(R.string.ui_wallet),
+                                        fontSize = LedgerStyle.typography.screenTitle.fontSize,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        letterSpacing = (-0.6).sp,
+                                        modifier = Modifier.padding(bottom = 2.dp),
+                                    )
                                 }
 
                                 if (uiState.amountsAvailable) WalletHeroCard(
@@ -339,9 +323,17 @@ fun WalletContent(
                 }
             }
         }
+        val bottomPadding = LocalBottomBarContentPadding.current
+        LedgerFloatingActionButton(
+            label = textResources.getString(R.string.ui_add_account),
+            icon = MaterialSymbols.AddCard,
+            visible = uiState is WalletUiState.Success,
+            onClick = onAddAccountClick,
+            modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = bottomPadding),
+        )
         SnackbarHost(
             snackbarHostState,
-            Modifier.align(Alignment.BottomCenter).padding(bottom = LocalBottomBarContentPadding.current),
+            Modifier.align(Alignment.BottomCenter).padding(bottom = bottomPadding + LedgerStyle.dimensions.touchTarget),
         )
     }
 }

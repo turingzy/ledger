@@ -1,6 +1,5 @@
 package cn.turingzy.ledger.ui.feature.bill.sheet
 
-import cn.turingzy.ledger.model.transaction.Transaction
 import cn.turingzy.ledger.ui.feature.bill.BillViewModel
 import cn.turingzy.ledger.ui.feature.bill.detail.TransactionDetailsViewModel
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -25,14 +24,13 @@ import java.time.ZoneId
  * 新建记账底部抽屉组件。
  *
  * 包装 [RecordTransactionSheet]，注入可用的分类与账户列表，
- * 支持基于传入的初始基准日期或预填交易草稿（例如复制记账）快速录入新交易并提交持久化。
+ * 支持基于传入的初始基准日期快速录入新交易并提交持久化。
  *
  * @param date 记账默认发生的基准日期。
  * @param onDismiss 关闭或取消抽屉的回调。
  * @param modifier 外部修饰符。
  * @param viewModel 账单 ViewModel，负责创建交易与维护保存状态。
  * @param transactionViewModel 交易详情 ViewModel，用于查询汇率。
- * @param draft 可选的预填交易草稿（例如复制现有交易时传入）。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,7 +40,6 @@ internal fun RecordCreateSheet(
     modifier: Modifier = Modifier,
     viewModel: BillViewModel = hiltViewModel(),
     transactionViewModel: TransactionDetailsViewModel = hiltViewModel(),
-    draft: Transaction? = null,
 ) {
     var ready by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(viewModel) {
@@ -72,7 +69,6 @@ internal fun RecordCreateSheet(
         categories = categories,
         accounts = accounts,
         initialTransactionTime = initialTime,
-        initialTransaction = draft,
         onDismissRequest = { if (!saveState.saving) onDismiss() },
         onConfirm = viewModel::createTransaction,
         modifier = modifier,

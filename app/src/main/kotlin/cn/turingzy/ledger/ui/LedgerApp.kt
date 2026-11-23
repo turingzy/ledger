@@ -28,7 +28,10 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onLayoutRectChanged
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import cn.turingzy.ledger.R
+import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.navigation.LedgerNavHost
 import cn.turingzy.ledger.navigation.TopLevelDestination
 import cn.turingzy.ledger.ui.component.base.rememberBackdropStateBaseBase
@@ -101,6 +104,10 @@ fun LedgerApp(
                     },
             ) {
                 LedgerFloatingActionButton(
+                    label = stringResource(R.string.ui_new_transaction),
+                    icon = MaterialSymbols.EditSquare,
+                    containerColor = MaterialTheme.colorScheme.tertiary,
+                    contentColor = MaterialTheme.colorScheme.onTertiary,
                     visible = isBillTab && !isSubpage && !billSelectionVisible,
                     onClick = { showGlobalRecordSheet = true },
                     modifier = Modifier

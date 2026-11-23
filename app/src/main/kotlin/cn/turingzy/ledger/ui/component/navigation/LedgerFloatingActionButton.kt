@@ -1,98 +1,69 @@
 package cn.turingzy.ledger.ui.component.navigation
 
-import cn.turingzy.ledger.ui.component.MaterialSymbols
-import cn.turingzy.ledger.ui.theme.LedgerStyle
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import cn.turingzy.ledger.ui.component.base.ActionButtonBase
+import cn.turingzy.ledger.ui.interaction.UiInteractionKind
+import cn.turingzy.ledger.ui.theme.LedgerStyle
 
 /**
- * 应用主悬浮操作按钮（FAB）。
- *
- * 用于在主界面快速发起记账（新增交易），采用带阴影边框的圆角胶囊形态与强调色背景，
- * 支持渐变显隐和缩放动画。
- *
- * @param visible 按钮是否可见，控制出入场过渡动画。
- * @param onClick 点击按钮时的回调。
- * @param modifier 应用于该组件的修饰符。
+ * 顶级页面共用的悬浮主操作按钮，统一胶囊尺寸和尾部图标布局。
  */
 @Composable
 fun LedgerFloatingActionButton(
+    label: String,
+    icon: ImageVector,
     visible: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    containerColor: Color = MaterialTheme.colorScheme.primary,
+    contentColor: Color = MaterialTheme.colorScheme.onPrimary,
 ) {
-    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     AnimatedVisibility(
         visible = visible,
         enter = fadeIn() + scaleIn(initialScale = 0.9f),
         exit = fadeOut() + scaleOut(targetScale = 0.9f),
         modifier = modifier,
     ) {
-        val interactionSource = remember { MutableInteractionSource() }
-        Row(
-            modifier = Modifier
-                .height(36.dp)
-                .shadow(
-                    elevation = 10.dp,
-                    shape = LedgerStyle.shapes.summaryCard,
-                    spotColor = Color.Black.copy(alpha = 0.10f),
-                )
-                .clip(LedgerStyle.shapes.summaryCard)
-                .background(MaterialTheme.colorScheme.tertiary)
-                .border(
-                    width = 0.5.dp,
-                    color = MaterialTheme.colorScheme.onTertiary.copy(alpha = 0.16f),
-                    shape = LedgerStyle.shapes.summaryCard,
-                )
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = LocalIndication.current,
-                ) {
-                    onClick()
-                }
-                .padding(horizontal = LedgerStyle.spacing.large),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(7.dp),
+        ActionButtonBase(
+            onClick = onClick,
+            modifier = Modifier.heightIn(min = 36.dp),
+            shape = LedgerStyle.shapes.pill,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = containerColor,
+                contentColor = contentColor,
+            ),
+            contentPadding = PaddingValues(
+                horizontal = LedgerStyle.spacing.extraLarge,
+                vertical = LedgerStyle.spacing.extraSmall,
+            ),
+            interaction = UiInteractionKind.Navigation,
         ) {
-            Text(
-                text = textResources.getString(cn.turingzy.ledger.R.string.ui_new_transaction),
-                fontSize = LedgerStyle.typography.sectionTitle.fontSize,
-                lineHeight = 24.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onTertiary,
-            )
-            Icon(
-                imageVector = MaterialSymbols.EditSquare,
-                contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_new_transaction),
-                tint = MaterialTheme.colorScheme.onTertiary,
-                modifier = Modifier.size(LedgerStyle.icons.default),
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.inlineGap),
+            ) {
+                Text(label, style = LedgerStyle.typography.button)
+                Icon(icon, contentDescription = null, modifier = Modifier.size(LedgerStyle.icons.default))
+            }
         }
     }
 }

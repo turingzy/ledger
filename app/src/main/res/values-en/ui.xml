@@ -247,6 +247,7 @@
   <string name="bill_select_all">Select all</string>
   <string name="bill_action_failed">Could not update transactions. Try again.</string>
   <string name="bill_copy_transaction">Copy transaction</string>
+  <string name="bill_copy_transaction_message">An identical transaction will be added and the affected account balances will be updated.</string>
   <string name="bill_edit_transaction">Edit transaction</string>
   <string name="bill_select_transaction">Select transaction</string>
   <string name="bill_delete_action">Delete</string>

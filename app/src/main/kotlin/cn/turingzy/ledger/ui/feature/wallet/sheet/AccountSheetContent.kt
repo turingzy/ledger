@@ -13,12 +13,14 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import cn.turingzy.ledger.R
 import cn.turingzy.ledger.ui.component.base.BottomSheetHeaderBase
+import cn.turingzy.ledger.ui.component.base.ButtonBase
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -27,13 +29,14 @@ import androidx.compose.ui.unit.dp
 /**
  * 账户操作底部弹窗的基础骨架布局。
  *
- * 包含顶部标题栏（取消按钮、居中标题、保存勾选按钮）、键盘与导航栏避让间距以及可滚动的表单内容容器。
+ * 表单独立滚动，新增账户的保存按钮固定在底部并避让键盘。
  *
  * @param title 弹窗标题文本
  * @param saveEnabled 保存按钮是否启用
  * @param onSave 点击保存回调
  * @param onDismiss 点击取消/关闭回调
  * @param modifier 外部修饰符
+ * @param saveInFooter 是否将保存操作放在底部。
  * @param contentSpacing 内容项垂直间距
  * @param content 弹窗主体内容插槽
  */
@@ -45,6 +48,7 @@ internal fun AccountSheetContent(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     contentSpacing: Dp = 8.dp,
+    saveInFooter: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
@@ -58,7 +62,7 @@ internal fun AccountSheetContent(
         BottomSheetHeaderBase(
             stringResource(R.string.ui_cancel), onDismiss,
             modifier = Modifier.fillMaxWidth().height(44.dp).padding(horizontal = LedgerStyle.spacing.large),
-            action = { AccountSaveButton(saveEnabled, onSave) },
+            action = if (saveInFooter) null else ({ AccountSaveButton(saveEnabled, onSave) }),
         ) {
             Text(title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface,
                 maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -69,5 +73,15 @@ internal fun AccountSheetContent(
             verticalArrangement = Arrangement.spacedBy(contentSpacing),
             content = content,
         )
+        if (saveInFooter) {
+            ButtonBase(
+                label = stringResource(R.string.save),
+                onClick = onSave,
+                enabled = saveEnabled,
+                shape = LedgerStyle.shapes.pill,
+                modifier = Modifier.align(Alignment.End)
+                    .padding(end = LedgerStyle.spacing.section, bottom = LedgerStyle.spacing.medium),
+            )
+        }
     }
 }

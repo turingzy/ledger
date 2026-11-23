@@ -17,15 +17,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import cn.turingzy.ledger.model.account.Account
-import cn.turingzy.ledger.model.account.AccountType
 import cn.turingzy.ledger.model.account.CardTemplate
 import cn.turingzy.ledger.model.account.BuiltInCardFace
 import cn.turingzy.ledger.model.account.selectableCardTemplates
 import cn.turingzy.ledger.ui.component.card.bank.rememberCircularCardPagerState
 import cn.turingzy.ledger.ui.component.card.bank.CardPageIndicator
+import cn.turingzy.ledger.ui.component.card.bank.TitaniumBankCard
 import cn.turingzy.ledger.ui.component.card.bank.titaniumTitle
-import cn.turingzy.ledger.ui.feature.wallet.component.BankCardItem
 
 /**
  * 账户卡面设计选择弹窗。
@@ -34,9 +32,6 @@ import cn.turingzy.ledger.ui.feature.wallet.component.BankCardItem
  *
  * @param templates 可用的卡面模板列表
  * @param selectedId 当前已选中的模板 ID
- * @param accountName 预览显示的账户名称
- * @param accountType 预览显示的账户类型
- * @param tailNumber 预览显示的卡号后四位或账号
  * @param onDismiss 关闭弹窗回调
  * @param onConfirm 确认选择卡面回调，传回所选模板 ID
  */
@@ -44,9 +39,6 @@ import cn.turingzy.ledger.ui.feature.wallet.component.BankCardItem
 internal fun AccountCardFaceDialog(
     templates: List<CardTemplate>,
     selectedId: Long?,
-    accountName: String,
-    accountType: AccountType,
-    tailNumber: String,
     onDismiss: () -> Unit,
     onConfirm: (Long) -> Unit,
 ) {
@@ -66,12 +58,7 @@ internal fun AccountCardFaceDialog(
                 Text(textResources.getString(cn.turingzy.ledger.R.string.ui_select_card_design), style = MaterialTheme.typography.titleMedium)
                 HorizontalPager(state = pager, key = { it }, pageSpacing = 12.dp) { page ->
                     val face = faces[Math.floorMod(page, faces.size)]
-                    BankCardItem(
-                        account = Account(
-                            name = accountName.ifBlank { textResources.getString(cn.turingzy.ledger.R.string.ui_account_name) },
-                            type = accountType,
-                            cardNumber = tailNumber,
-                        ),
+                    TitaniumBankCard(
                         template = face,
                         modifier = Modifier.fillMaxWidth(),
                         motionEnabled = page == pager.settledPage,

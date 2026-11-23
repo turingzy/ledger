@@ -15,6 +15,7 @@ import cn.turingzy.ledger.model.category.CategoryType
 import cn.turingzy.ledger.model.category.CategoryWithIcon
 import cn.turingzy.ledger.model.category.Icon
 import cn.turingzy.ledger.ui.feature.bill.search.BillSearchRequest
+import cn.turingzy.ledger.model.transaction.CurrencySnapshot
 import cn.turingzy.ledger.model.transaction.Transaction
 import cn.turingzy.ledger.model.transaction.TransactionDetail
 import cn.turingzy.ledger.model.transaction.TransactionType
@@ -180,6 +181,35 @@ class BillViewModelTest {
                         it.transactionTime == 1_700_000_000_000L
                 },
             )
+        }
+    }
+
+    @Test
+    fun copyTransaction_preservesHistoricalTransferAmountsAndClearsImportIdentity() = runTest {
+        viewModel = BillViewModel(transactionRepository, categoryRepository, accountRepository, testDispatcher, currencies)
+        val source = Transaction(
+            id = 42L,
+            type = TransactionType.TRANSFER,
+            amount = 1000L,
+            accountId = 1L,
+            toAccountId = 2L,
+            categoryId = 3L,
+            transactionTime = 1_700_000_000_000L,
+            note = "Transfer",
+            importKey = "imported-transfer",
+            baseAmount = 7100L,
+            baseCurrency = "CNY",
+            baseRate = "7.1",
+            baseRateDate = "2023-11-14",
+            toAmount = 920L,
+            transferRate = "0.92",
+            currencySnapshots = listOf(CurrencySnapshot("CNY", 7100L, "7.1", "2023-11-14")),
+        )
+
+        viewModel.copyTransaction(source)
+
+        coVerify(exactly = 1) {
+            transactionRepository.createTransaction(source.copy(id = 0L, importKey = null))
         }
     }
 

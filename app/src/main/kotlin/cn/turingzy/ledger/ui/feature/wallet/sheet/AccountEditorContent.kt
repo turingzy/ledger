@@ -89,6 +89,7 @@ internal fun AccountEditorContent(
     AccountSheetContent(
         title = if (account == null) textResources.getString(cn.turingzy.ledger.R.string.ui_add_account) else textResources.getString(cn.turingzy.ledger.R.string.ui_account_details),
         saveEnabled = result != null,
+        saveInFooter = account == null,
         onDismiss = { focusManager.clearFocus(); onDismiss() },
         onSave = {
             val value = result ?: return@AccountSheetContent
@@ -179,8 +180,7 @@ internal fun AccountEditorContent(
     }
     if (showCardFaceDialog && input.canSelectCardFace) {
         AccountCardFaceDialog(
-            templates = activeTemplates, selectedId = templateId, accountName = name,
-            accountType = type, tailNumber = cardNumber,
+            templates = activeTemplates, selectedId = templateId,
             onDismiss = { showCardFaceDialog = false },
             onConfirm = {
                 templateId = it

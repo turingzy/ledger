@@ -1,6 +1,5 @@
 package cn.turingzy.ledger.ui.feature.settings.screen
 
-import cn.turingzy.ledger.ui.feature.settings.component.CardTextColorPicker
 import cn.turingzy.ledger.ui.feature.settings.component.SettingsItemHeight
 import cn.turingzy.ledger.ui.feature.settings.component.SettingsSubpageScaffold
 import cn.turingzy.ledger.ui.feature.settings.component.SettingsDeleteAction
@@ -56,7 +55,6 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -69,22 +67,15 @@ import cn.turingzy.ledger.model.account.CardTemplate
 import cn.turingzy.ledger.model.account.selectableCardTemplates
 import cn.turingzy.ledger.ui.component.card.bank.BankCardAspectRatio
 import cn.turingzy.ledger.ui.component.card.bank.CardPageIndicator
-import cn.turingzy.ledger.ui.component.card.bank.AutomaticCardTextColor
-import cn.turingzy.ledger.ui.component.card.bank.TitaniumCardSurface
-import cn.turingzy.ledger.ui.component.card.bank.TitaniumDrag
-import cn.turingzy.ledger.ui.component.card.bank.titaniumImageUri
-import cn.turingzy.ledger.ui.component.card.bank.titaniumInkOverride
-import cn.turingzy.ledger.ui.component.card.bank.titaniumPreset
+import cn.turingzy.ledger.ui.component.card.bank.TitaniumBankCard
 import cn.turingzy.ledger.ui.component.card.bank.titaniumTitle
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.card.bank.rememberCircularCardPagerState
 
 /**
  * 卡片背景模板管理页面屏幕组件。
  *
- * 提供卡片外观轮播预览、名称与文字颜色实时修改、封面图片替换、删除模板，
+ * 提供卡片外观轮播预览、名称实时修改、封面图片替换、删除模板，
  * 以及新增自定义卡片模板的完整管理流程。
  *
  * @param templates 当前已有的卡片模板列表
@@ -132,10 +123,7 @@ internal fun CardTemplateManagementScreen(
                 newFace = newFace.copy(coverUri = image)
             } else if (index >= 0) {
                 val current = drafts[index]
-                val updated = current.copy(
-                    coverUri = image,
-                    textColor = if (current.titaniumInkOverride() == null) AutomaticCardTextColor else current.textColor,
-                )
+                val updated = current.copy(coverUri = image)
                 drafts[index] = updated
                 update(updated)
             }
@@ -238,7 +226,7 @@ internal fun CardTemplateManagementScreen(
 /**
  * 新增卡片模板页面组件。
  *
- * 独立于轮播管理页全屏打开，提供选择封面图片、输入模板名称及设置卡片文字颜色的完整表单。
+ * 独立于轮播管理页全屏打开，提供选择封面图片与输入模板名称的表单。
  *
  * @param pending 正在创建的卡片模板草稿数据
  * @param onChange 模板数据变更时的回调
@@ -311,7 +299,7 @@ private fun CardFaceActions(
 /**
  * 卡片模板属性编辑表单组件。
  *
- * 包含模板名称的输入框以及文字颜色的拾色器。
+ * 即时编辑卡面预览下方的模板名称。
  *
  * @param template 当前编辑的卡片模板
  * @param onChange 模板属性变更回调
@@ -323,36 +311,24 @@ private fun CardFaceProperties(
 ) {
     val textResources = androidx.compose.ui.platform.LocalResources.current
     val colors = MaterialTheme.colorScheme
-    Column(verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large)) {
-        SurfaceBase(shape = LedgerStyle.shapes.card, color = colors.surface) {
-            Row(
-                Modifier.fillMaxWidth().heightIn(min = SettingsItemHeight).padding(horizontal = LedgerStyle.spacing.large),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(textResources.getString(cn.turingzy.ledger.R.string.ui_design_name), Modifier.width(LedgerStyle.dimensions.formLabelWidth), style = MaterialTheme.typography.bodyLarge)
-                BasicTextField(
-                    value = template.titaniumTitle(),
-                    onValueChange = { onChange(template.copy(name = it)) },
-                    modifier = Modifier.weight(1f).semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_design_name) },
-                    singleLine = true,
-                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.onSurfaceVariant, textAlign = TextAlign.End),
-                    cursorBrush = SolidColor(colors.onSurface),
-                    decorationBox = { field ->
-                        Box(contentAlignment = Alignment.CenterEnd) {
-                            if (template.name.isEmpty()) Text(textResources.getString(cn.turingzy.ledger.R.string.ui_enter_a_design_name), color = colors.onSurfaceVariant)
-                            field()
-                        }
-                    },
-                )
-            }
-        }
-        SurfaceBase(shape = LedgerStyle.shapes.card, color = colors.surface) {
-            CardTextColorPicker(
-                value = template.textColor,
-                automatic = template.titaniumInkOverride() == null,
-                onChange = { hex ->
-                    val explicitColor = if (hex.length == 7) "#FF" + hex.drop(1) else hex
-                    onChange(template.copy(textColor = explicitColor))
+    SurfaceBase(shape = LedgerStyle.shapes.card, color = colors.surface) {
+        Row(
+            Modifier.fillMaxWidth().heightIn(min = SettingsItemHeight).padding(horizontal = LedgerStyle.spacing.large),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(textResources.getString(cn.turingzy.ledger.R.string.ui_design_name), Modifier.width(LedgerStyle.dimensions.formLabelWidth), style = MaterialTheme.typography.bodyLarge)
+            BasicTextField(
+                value = template.titaniumTitle(),
+                onValueChange = { onChange(template.copy(name = it)) },
+                modifier = Modifier.weight(1f).semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_design_name) },
+                singleLine = true,
+                textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.onSurfaceVariant, textAlign = TextAlign.End),
+                cursorBrush = SolidColor(colors.onSurface),
+                decorationBox = { field ->
+                    Box(contentAlignment = Alignment.CenterEnd) {
+                        if (template.name.isEmpty()) Text(textResources.getString(cn.turingzy.ledger.R.string.ui_enter_a_design_name), color = colors.onSurfaceVariant)
+                        field()
+                    }
                 },
             )
         }
@@ -405,21 +381,9 @@ private fun TemplateCoverPreview(
         return
     }
 
-    TitaniumCardSurface(
-        preset = template.titaniumPreset(),
-        imageUri = template.titaniumImageUri(),
+    TitaniumBankCard(
+        template = template,
         modifier = Modifier.fillMaxWidth(),
-        textColor = template.titaniumInkOverride(),
         motionEnabled = motionEnabled,
-        drag = TitaniumDrag.AfterLongPress,
-    ) { ink ->
-        if (template.name.isNotBlank()) Text(
-            template.titaniumTitle(),
-            modifier = Modifier.align(Alignment.TopStart).padding(start = 20.dp, top = 17.dp, end = 20.dp),
-            color = ink,
-            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 17.sp, fontWeight = FontWeight.Normal),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
+    )
 }

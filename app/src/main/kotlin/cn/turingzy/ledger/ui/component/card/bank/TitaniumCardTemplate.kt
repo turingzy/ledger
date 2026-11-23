@@ -51,22 +51,6 @@ internal fun CardTemplate?.titaniumImageUri(): Uri? = remember(this?.coverUri, t
 }
 
 /**
- * 自动计算文字颜色的标识常量。
- */
-internal const val AutomaticCardTextColor = "auto"
-
-/**
- * 获取卡片模板中覆盖指定的文字颜色。
- *
- * 若为历史内置墨水配置、模板已删除或颜色无效，则返回 `null`（退化为自动亮度计算颜色）。
- */
-internal fun CardTemplate?.titaniumInkOverride(): Color? {
-    val template = this?.takeUnless { it.isDeleted } ?: return null
-    if (BuiltInCardFace.forTemplate(template)?.usesLegacyInk(template) == true) return null
-    return template.textColor.takeUnless { it.equals("#FFFFFF", ignoreCase = true) }?.asCardTextColor()
-}
-
-/**
  * 将十六进制颜色字符串（如 "#RRGGBB" 或 "#AARRGGBB"）解析为 Compose [Color]。
  *
  * @return 解析成功返回对应的 [Color]，若格式非法则返回 `null`。

@@ -21,19 +21,17 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cn.turingzy.ledger.R
-import cn.turingzy.ledger.model.transaction.Transaction
 import cn.turingzy.ledger.model.transaction.TransactionBatchChange
 import cn.turingzy.ledger.model.transaction.TransactionDetail
 import cn.turingzy.ledger.model.transaction.TransactionType
 import cn.turingzy.ledger.ui.component.navigation.LocalBottomBarContentPadding
 import cn.turingzy.ledger.ui.feature.bill.component.BillActionPicker
+import cn.turingzy.ledger.ui.feature.bill.component.BillCopyDialog
 import cn.turingzy.ledger.ui.feature.bill.component.BillDeleteDialog
 import cn.turingzy.ledger.ui.feature.bill.component.BillSelectionBar
 import cn.turingzy.ledger.ui.feature.bill.component.BillSelectionBarPadding
 import cn.turingzy.ledger.ui.feature.bill.component.BillSwipeRow
 import cn.turingzy.ledger.ui.feature.bill.detail.TransactionDetailsViewModel
-import cn.turingzy.ledger.ui.feature.bill.sheet.RecordCreateSheet
-import java.time.LocalDate
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -41,8 +39,7 @@ import timber.log.Timber
 /**
  * 账单交互操作协调组件。
  *
- * 统一管理账单记录的侧滑操作（复制、编辑、删除）、多选批量操作（批量修改账户、分类、批量删除）、
- * 复制生成的预填记账草稿以及确认对话框。
+ * 统一管理账单记录的侧滑操作、批量操作及复制和删除确认。
  *
  * @param dayGroups 按天分组的交易数据列表。
  * @param ungroupedRows 未分组的交易列表（例如搜索结果中），默认空列表。
@@ -68,7 +65,7 @@ internal fun BillTransactionActions(
     var swipeId by remember { mutableStateOf<Long?>(null) }
     var picker by remember { mutableStateOf<BillActionPicker?>(null) }
     var deleteIds by remember { mutableStateOf<Set<Long>?>(null) }
-    var draft by remember { mutableStateOf<Transaction?>(null) }
+    var copyId by remember { mutableStateOf<Long?>(null) }
     var applying by remember { mutableStateOf(false) }
     val transactions = remember(dayGroups, ungroupedRows) {
         (dayGroups.flatMap { it.transactions } + ungroupedRows).associateBy { it.transaction.id }
@@ -85,30 +82,39 @@ internal fun BillTransactionActions(
     LaunchedEffect(transactions.keys) {
         if (selecting) selection = selectedIds
         if (swipeId !in transactions.keys) swipeId = null
+        if (copyId !in transactions.keys) copyId = null
     }
 
     BackHandler(enabled = selecting) {
         if (!applying) selection = null
     }
 
-    fun apply(ids: Set<Long>, change: TransactionBatchChange) {
-        if (applying || ids.isEmpty()) return
+    fun runAction(action: suspend () -> Unit) {
+        if (applying) return
         applying = true
         picker = null
         deleteIds = null
+        copyId = null
         scope.launch {
             try {
-                viewModel.applyBatch(ids, change)
-                selection = selection?.minus(ids)?.takeIf { it.isNotEmpty() }
+                action()
                 swipeId = null
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Exception) {
-                Timber.w(error, "Unable to apply a bill action")
+                Timber.w(error, "Unable to complete a bill action")
                 scope.launch { snackbarHostState.showSnackbar(failureMessage) }
             } finally {
                 applying = false
             }
+        }
+    }
+
+    fun apply(ids: Set<Long>, change: TransactionBatchChange) {
+        if (ids.isEmpty()) return
+        runAction {
+            viewModel.applyBatch(ids, change)
+            selection = selection?.minus(ids)?.takeIf { it.isNotEmpty() }
         }
     }
 
@@ -146,10 +152,7 @@ internal fun BillTransactionActions(
                     },
                     onCopy = {
                         swipeId = null
-                        draft = detail.transaction.copy(
-                            id = 0L, importKey = null, baseAmount = null, baseCurrency = null,
-                            baseRate = null, baseRateDate = null, currencySnapshots = emptyList(),
-                        )
+                        copyId = id
                     },
                     onEdit = {
                         swipeId = null
@@ -205,10 +208,10 @@ internal fun BillTransactionActions(
             onConfirm = { apply(ids, TransactionBatchChange.Delete) },
         )
     }
-    draft?.let { transaction ->
-        RecordCreateSheet(
-            date = LocalDate.now(), onDismiss = { draft = null },
-            viewModel = viewModel, transactionViewModel = transactionViewModel, draft = transaction,
+    copyId?.let(transactions::get)?.transaction?.let { source ->
+        BillCopyDialog(
+            onDismiss = { copyId = null },
+            onConfirm = { runAction { viewModel.copyTransaction(source) } },
         )
     }
 }

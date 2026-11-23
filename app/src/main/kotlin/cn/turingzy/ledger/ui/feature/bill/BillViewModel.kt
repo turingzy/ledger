@@ -279,6 +279,11 @@ class BillViewModel @Inject constructor(
         }
     }
 
+    /** 以新记录保存原交易的时间、金额及历史估值，由仓库原子更新账户余额。 */
+    internal suspend fun copyTransaction(source: Transaction) {
+        transactionRepository.createTransaction(source.copy(id = 0L, importKey = null))
+    }
+
     /**
      * 对选中的交易批量应用修改。
      *

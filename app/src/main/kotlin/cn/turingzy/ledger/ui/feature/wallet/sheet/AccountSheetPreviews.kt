@@ -28,7 +28,7 @@ private fun AccountSheetPreview(@PreviewParameter(AccountSheetPreviewProvider::c
         when (case) {
             AccountSheetPreviewCase.NewAccount -> AddAccountSheet({}, { _, _, _, _, _, _, _ -> }, templates = templates)
             AccountSheetPreviewCase.AccountDetails -> AccountDetailsSheet(account, {}, {}, {}, templates = templates)
-            AccountSheetPreviewCase.CardFacePicker -> AccountCardFaceDialog(templates, null, account.name, account.type, "1234", {}, {})
+            AccountSheetPreviewCase.CardFacePicker -> AccountCardFaceDialog(templates, null, onDismiss = {}, onConfirm = {})
         }
     }
 }

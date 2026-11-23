@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.ui.component.card.bank.BankCardAspectRatio
 import cn.turingzy.ledger.ui.component.card.bank.rememberCircularCardPagerState
 import cn.turingzy.ledger.ui.component.card.bank.CardPageIndicator
+import cn.turingzy.ledger.ui.component.card.bank.TitaniumBankCard
 import cn.turingzy.ledger.ui.component.base.EmptyStateBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.model.account.Account
@@ -71,10 +72,9 @@ fun SwipeableBankCardDeck(
             contentPadding = PaddingValues(bottom = 8.dp),
         ) { page ->
             val item = accounts[Math.floorMod(page, accounts.size)]
-            BankCardItem(
-                account = item.account,
+            TitaniumBankCard(
                 template = item.template.resolveBuiltInAppearance(templates),
-                onAdjustClick = { onAdjustClick(item.account) },
+                onClick = { onAdjustClick(item.account) },
                 motionEnabled = page == settledPage,
                 modifier = Modifier.fillMaxWidth()
                     .semantics { contentDescription = item.account.name },

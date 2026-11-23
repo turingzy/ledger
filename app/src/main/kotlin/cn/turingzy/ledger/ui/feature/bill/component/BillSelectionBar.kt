@@ -315,3 +315,15 @@ internal fun BillDeleteDialog(count: Int, onDismiss: () -> Unit, onConfirm: () -
         confirmLabel = stringResource(R.string.bill_delete_action),
     )
 }
+
+/** 确认复制交易并提示相关账户余额将更新。 */
+@Composable
+internal fun BillCopyDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
+    BaseAlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.bill_copy_transaction)) },
+        text = { Text(stringResource(R.string.bill_copy_transaction_message)) },
+        onConfirm = onConfirm,
+        confirmLabel = stringResource(R.string.bill_copy_action),
+    )
+}
