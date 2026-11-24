@@ -35,9 +35,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.constrainHeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
@@ -78,6 +80,10 @@ fun DialogWindowBase(
         }
     }
 }
+
+/** 新建交易和新增账户表单共用的展开高度，包含底部安全区。 */
+@Composable
+internal fun primaryActionSheetHeight(): Dp = LocalConfiguration.current.screenHeightDp.dp * 0.8f
 
 /**
  * 基础模态底部抽屉组件。

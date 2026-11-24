@@ -6,6 +6,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import cn.turingzy.ledger.model.category.CategoryType
@@ -35,12 +36,17 @@ class BottomBarContentPaddingTest {
         assertTrue(page.bottom - last.bottom >= BottomBarContentPadding)
     }
 
-    @Test fun analyticsViewportReachesBottomBehindFloatingNavigation() {
+    @Test fun analyticsViewportReachesBottomAndLastCardClearsSpendingButton() {
         show {
             AnalyticsContent(AnalyticsUiState.Success(AnalyticsTimeScope.MONTH, CategoryType.EXPENSE, "2026.11",
-                0L, 0L, 0L, emptyList(), LocalDate.of(2026, 11, 1)), {}, {}, Modifier.testTag("page"))
+                0L, 0L, 0L, emptyList(), LocalDate.of(2026, 11, 1)), {}, {}, Modifier.testTag("page"),
+                dashboard = AnalyticsDashboardState(loading = false))
         }
         assertViewportReachesBottom()
+        compose.onNode(verticalScroll).performSemanticsAction(SemanticsActions.ScrollBy) { scroll -> scroll(0f, 100_000f) }
+        val card = compose.onNodeWithTag("analyticsMonthlyCashflowCard").assertIsDisplayed().getUnclippedBoundsInRoot()
+        val button = compose.onNodeWithText("消费").assertHasClickAction().getUnclippedBoundsInRoot()
+        assertTrue(card.bottom < button.top)
     }
 
     @Test fun walletViewportReachesBottomEvenWithShortContent() {

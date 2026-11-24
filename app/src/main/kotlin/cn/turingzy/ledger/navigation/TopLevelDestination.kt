@@ -23,14 +23,6 @@ sealed interface Route {
     @Serializable
     data object Analytics : Route
 
-    /**
-     * 消费日历全屏任务页面路由。
-     *
-     * @property month 目标年月字符串（格式为 `yyyy-MM`）。
-     */
-    @Serializable
-    data class ConsumptionCalendar(val month: String) : Route
-
     /** 钱包主页面路由。 */
     @Serializable
     data object Wallet : Route

@@ -14,6 +14,10 @@ import cn.turingzy.ledger.ui.feature.analytics.calculation.AnalyticsDay
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -83,24 +87,36 @@ class ConsumptionCalendarScreenTest {
         compose.onNodeWithContentDescription("下个月").assertDoesNotExist()
         compose.onNodeWithContentDescription("上个月").assertDoesNotExist()
         compose.onNodeWithText("今天").assertDoesNotExist()
-        compose.onNodeWithText("2024年2月").performClick()
+        compose.onNode(hasText("2024.02") and hasContentDescription("选择月份")).performClick()
         compose.onNodeWithTag("ledgerPeriodPicker").assertIsDisplayed()
         compose.onNodeWithTag("ledgerPeriod-${LocalDate.of(2024, 3, 1).toEpochDay()}").performClick()
-        compose.onNodeWithText("2024年3月").assertIsDisplayed()
-        compose.onNodeWithContentDescription("取消").performClick()
+        compose.onNodeWithText("2024.03").assertIsDisplayed()
+        compose.onNodeWithContentDescription("关闭消费日历").performClick()
         compose.runOnIdle { assertTrue(back) }
     }
 
-    @Test fun analyticsTopRightCalendarEntryPassesTheSelectedPeriod() {
-        val start = LocalDate.of(2024, 2, 1)
-        val state = AnalyticsUiState.Success(AnalyticsTimeScope.MONTH, CategoryType.EXPENSE, "2024年2月",
+    @Test fun spendingButtonOpensTheCalendarSheetForTheSelectedPeriod() {
+        val start = LocalDate.of(2024, 1, 1)
+        val state = AnalyticsUiState.Success(AnalyticsTimeScope.YEAR, CategoryType.EXPENSE, "2024年",
             0L, 0L, 0L, emptyList(), start)
-        var anchor: LocalDate? = null
         compose.setContent { LedgerTheme {
+            var anchor by remember { mutableStateOf<LocalDate?>(null) }
             AnalyticsContent(state, {}, {}, onOpenCalendar = { anchor = it })
+            anchor?.let { date ->
+                ConsumptionCalendarContent(
+                    AnalyticsDashboardState(loading = false),
+                    YearMonth.from(date),
+                    onDismiss = { anchor = null },
+                    today = today,
+                )
+            }
         } }
-        compose.onNodeWithContentDescription("消费日历热力图").assertHasClickAction().performClick()
-        compose.runOnIdle { assertEquals(LocalDate.of(2024, 2, 29), anchor) }
+        compose.onNodeWithText("消费").assertHasClickAction().performClick()
+        compose.onNode(isDialog()).assertExists()
+        compose.onNodeWithText("2024.12").assertIsDisplayed()
+        compose.onNodeWithContentDescription("关闭消费日历").performClick()
+        compose.onNode(isDialog()).assertDoesNotExist()
+        compose.onNodeWithText("消费").assertIsDisplayed()
     }
 
     @Test fun emptyDayOffersRecordingForTheSelectedDateAndKeepsTheHeaderFixed() {
@@ -112,8 +128,11 @@ class ConsumptionCalendarScreenTest {
         } }
         compose.onNodeWithContentDescription("$day，支出¥0.00").performClick()
         val title = compose.onNodeWithText("消费日历").fetchSemanticsNode().boundsInRoot
-        compose.onNodeWithText("这一天没有支出").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("记一笔").performScrollTo().performClick()
+        val list = compose.onNodeWithTag("consumptionCalendarList")
+        list.performScrollToNode(hasText("这一天没有支出"))
+        compose.onNodeWithText("这一天没有支出").assertIsDisplayed()
+        list.performScrollToNode(hasText("记一笔"))
+        compose.onNodeWithText("记一笔").performClick()
         compose.runOnIdle { assertEquals(day, recordDate) }
         assertEquals(title, compose.onNodeWithText("消费日历").fetchSemanticsNode().boundsInRoot)
     }
@@ -177,7 +196,7 @@ class ConsumptionCalendarScreenTest {
         val month = mutableListOf<TextLayoutResult>()
         val amount = mutableListOf<TextLayoutResult>()
         val label = mutableListOf<TextLayoutResult>()
-        compose.onNodeWithText("2026年11月").assertHeightIsEqualTo(32.dp).performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(month) }
+        compose.onNodeWithText("2026.11").assertHeightIsEqualTo(32.dp).performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(month) }
         compose.onNodeWithText("11月总支出").performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(label) }
         compose.onAllNodesWithText("¥0.00")[0].performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(amount) }
         assertEquals(17.sp, month.single().layoutInput.style.fontSize)
@@ -196,7 +215,8 @@ class ConsumptionCalendarScreenTest {
             foreground = LedgerStyle.colors.textSecondary
             ConsumptionCalendarContent(AnalyticsDashboardState(loading = false), YearMonth.from(today), {}, today = today)
         } }
-        val action = compose.onNodeWithText("记一笔").performScrollTo()
+        compose.onNodeWithTag("consumptionCalendarList").performScrollToNode(hasText("记一笔"))
+        val action = compose.onNodeWithText("记一笔")
         val pixels = action.captureToImage().toPixelMap()
         assertEquals(background, pixels[pixels.width / 2, 2])
         val text = compose.onNodeWithText("记一笔", useUnmergedTree = true)
@@ -215,8 +235,11 @@ class ConsumptionCalendarScreenTest {
                 onRecordTransaction = { recordDate = it })
         } }
         compose.onNodeWithText("尚未到来").assertDoesNotExist()
-        compose.onNodeWithText("这一天没有支出").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("记一笔").performScrollTo().performClick()
+        val list = compose.onNodeWithTag("consumptionCalendarList")
+        list.performScrollToNode(hasText("这一天没有支出"))
+        compose.onNodeWithText("这一天没有支出").assertIsDisplayed()
+        list.performScrollToNode(hasText("记一笔"))
+        compose.onNodeWithText("记一笔").performClick()
         compose.runOnIdle { assertEquals(month.atDay(1), recordDate) }
     }
 

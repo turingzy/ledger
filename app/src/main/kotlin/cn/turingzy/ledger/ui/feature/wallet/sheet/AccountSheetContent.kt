@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
  * @param onSave 点击保存回调
  * @param onDismiss 点击取消/关闭回调
  * @param modifier 外部修饰符
+ * @param sheetHeight 展开时包含底部安全区的高度。
  * @param saveInFooter 是否将保存操作放在底部。
  * @param contentSpacing 内容项垂直间距
  * @param content 弹窗主体内容插槽
@@ -47,6 +48,7 @@ internal fun AccountSheetContent(
     onSave: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
+    sheetHeight: Dp = LedgerStyle.dimensions.sheetMaxHeight,
     contentSpacing: Dp = 8.dp,
     saveInFooter: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
@@ -56,7 +58,7 @@ internal fun AccountSheetContent(
     val keyboardHeight = WindowInsets.ime.getBottom(density)
     val bottomInset = maxOf(keyboardHeight, WindowInsets.navigationBars.getBottom(density))
     Column(
-        modifier.fillMaxWidth().height(LedgerStyle.dimensions.sheetMaxHeight)
+        modifier.fillMaxWidth().height(sheetHeight)
             .padding(bottom = with(density) { bottomInset.toDp() }),
     ) {
         BottomSheetHeaderBase(

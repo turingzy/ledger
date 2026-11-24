@@ -158,7 +158,8 @@
   <string name="ui_could_not_check_updates_please_try_again">Could not check updates. Please try again.</string>
   <string name="ui_loading_transactions">Loading transactions</string>
   <string name="ui_spending_calendar">Spending calendar</string>
-  <string name="ui_spending_calendar_2">Spending calendar</string>
+  <string name="ui_spending">Spending</string>
+  <string name="ui_close_spending_calendar">Close spending calendar</string>
   <string name="ui_add_account">Add account</string>
   <string name="ui_decrease">Decrease</string>
   <string name="ui_increase">Increase</string>

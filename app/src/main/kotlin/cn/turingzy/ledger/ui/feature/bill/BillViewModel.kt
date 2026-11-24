@@ -4,6 +4,7 @@ import cn.turingzy.ledger.ui.feature.bill.detail.TransactionSaveState
 import cn.turingzy.ledger.ui.feature.bill.search.BillSearchRequest
 import cn.turingzy.ledger.ui.feature.bill.search.buildBillSearchResults
 import cn.turingzy.ledger.ui.component.picker.CalendarSelection
+import cn.turingzy.ledger.ui.component.picker.periodLabel
 import cn.turingzy.ledger.model.currency.primaryAmount
 import cn.turingzy.ledger.model.currency.CurrencyAmountOverride
 import kotlinx.coroutines.flow.map
@@ -124,7 +125,7 @@ class BillViewModel @Inject constructor(
             is BillDateFilter.Month -> {
                 val s = filter.yearMonth.atDay(1).atStartOfDay(zone).toInstant().toEpochMilli()
                 val e = filter.yearMonth.atEndOfMonth().atTime(23, 59, 59, 999_000_000).atZone(zone).toInstant().toEpochMilli()
-                val header = "${filter.yearMonth.year}.${filter.yearMonth.monthValue.toString().padStart(2, '0')}"
+                val header = periodLabel(DateFilterType.MONTH, filter.yearMonth.atDay(1))
                 val cardLabel = "结余"
                 FilterCalcResult(s, e, DateFilterType.MONTH, header, cardLabel, filter.yearMonth.year, filter.yearMonth.monthValue, filter.yearMonth.atDay(1), filter.yearMonth.atEndOfMonth())
             }

@@ -1,5 +1,7 @@
 package cn.turingzy.ledger.ui.feature.wallet.sheet
 
+import cn.turingzy.ledger.ui.component.base.primaryActionSheetHeight
+
 import cn.turingzy.ledger.ui.component.card.bank.titaniumTitle
 import cn.turingzy.ledger.ui.feature.wallet.component.displayName
 import cn.turingzy.ledger.ui.component.base.ButtonVariantBase
@@ -80,6 +82,7 @@ internal fun AccountEditorContent(
 
     AccountSheetContent(
         title = if (account == null) textResources.getString(cn.turingzy.ledger.R.string.ui_add_account) else textResources.getString(cn.turingzy.ledger.R.string.ui_account_details),
+        sheetHeight = if (account == null) primaryActionSheetHeight() else LedgerStyle.dimensions.sheetMaxHeight,
         saveEnabled = result != null,
         saveInFooter = account == null,
         onDismiss = { focusManager.clearFocus(); onDismiss() },

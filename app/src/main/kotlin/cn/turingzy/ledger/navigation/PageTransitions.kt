@@ -52,7 +52,7 @@ internal object PageTransitions {
         fadeOut(tween(DurationMillis, easing = FastOutSlowInEasing), targetAlpha = ForegroundAlpha)
 
     /**
-     * 全屏临时任务页（如搜索、消费日历）垂直向上滑入动画。
+     * 全屏临时任务页垂直向上滑入动画。
      */
     val taskEnter = slideInVertically(tween(300, easing = LinearOutSlowInEasing)) { it }
 

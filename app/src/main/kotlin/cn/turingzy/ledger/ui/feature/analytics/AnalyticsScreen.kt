@@ -2,6 +2,7 @@ package cn.turingzy.ledger.ui.feature.analytics
 
 import cn.turingzy.ledger.ui.feature.analytics.component.AnalyticsChartInteractionHost
 import cn.turingzy.ledger.ui.feature.analytics.component.AnalyticsDashboardCards
+import cn.turingzy.ledger.ui.feature.analytics.calendar.ConsumptionCalendarSheet
 import cn.turingzy.ledger.ui.component.base.ScrollTitleContainerBase
 import cn.turingzy.ledger.ui.component.biz.LocalCurrencyBiz
 import androidx.compose.foundation.rememberScrollState
@@ -24,8 +25,10 @@ import cn.turingzy.ledger.ui.component.base.PageFrameBase
 import cn.turingzy.ledger.ui.component.base.PrimaryPageHeaderBase
 import androidx.compose.material3.Text
 import cn.turingzy.ledger.ui.component.navigation.LocalBottomBarContentPadding
+import cn.turingzy.ledger.ui.component.navigation.LedgerFloatingActionButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -33,6 +36,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -45,14 +50,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cn.turingzy.ledger.model.transaction.DateFilterType
 import cn.turingzy.ledger.ui.component.picker.LedgerDatePickerDialog
 import cn.turingzy.ledger.ui.component.input.SegmentedControl
-import cn.turingzy.ledger.ui.component.card.summary.TopBarIconButton
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.picker.PeriodPickerSheet
 import cn.turingzy.ledger.ui.interaction.UiInteractionKind
 import cn.turingzy.ledger.ui.interaction.rememberUiAction
 import cn.turingzy.ledger.ui.interaction.uiClickable
 import cn.turingzy.ledger.ui.theme.LedgerStyle
+import cn.turingzy.ledger.R
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 
 /**
@@ -66,18 +72,17 @@ private enum class AnalyticsDateEndpoint { START, END }
  * @param modifier 修饰符。
  * @param viewModel 统计分析主 ViewModel。
  * @param dashboardViewModel 统计看板 ViewModel。
- * @param onOpenCalendar 打开消费日历画面的回调，传入当前周期的结束日期。
  */
 @Composable
 fun AnalyticsScreen(
     modifier: Modifier = Modifier,
     viewModel: AnalyticsViewModel = hiltViewModel(),
     dashboardViewModel: AnalyticsDashboardViewModel = hiltViewModel(),
-    onOpenCalendar: (LocalDate) -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val dashboard by dashboardViewModel.uiState.collectAsStateWithLifecycle()
     val billViewModel: BillViewModel = hiltViewModel()
+    var calendarMonth by rememberSaveable { mutableStateOf<String?>(null) }
     androidx.compose.runtime.CompositionLocalProvider(LocalAnalyticsBillViewModel provides billViewModel) {
         AnalyticsContent(
             uiState = uiState,
@@ -88,7 +93,15 @@ fun AnalyticsScreen(
             onCategoryTypeChange = viewModel::setCategoryType,
             modifier = modifier,
             dashboard = dashboard,
-            onOpenCalendar = onOpenCalendar,
+            onOpenCalendar = { calendarMonth = YearMonth.from(it).toString() },
+        )
+    }
+    calendarMonth?.let { month ->
+        ConsumptionCalendarSheet(
+            dashboard = dashboard,
+            initialMonth = YearMonth.parse(month),
+            onDismiss = { calendarMonth = null },
+            billViewModel = billViewModel,
         )
     }
 }
@@ -121,6 +134,11 @@ fun AnalyticsContent(
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     var showPeriodPicker by rememberSaveable { mutableStateOf(false) }
     var dateEndpoint by rememberSaveable { mutableStateOf<AnalyticsDateEndpoint?>(null) }
+    var spendingButtonHeight by remember { mutableIntStateOf(0) }
+    val bottomBarPadding = LocalBottomBarContentPadding.current
+    val buttonHeight = with(LocalDensity.current) {
+        maxOf(spendingButtonHeight.toDp(), LedgerStyle.dimensions.touchTarget)
+    }
     androidx.compose.runtime.CompositionLocalProvider(LocalCurrencyBiz provides ((uiState as? AnalyticsUiState.Success)?.currency ?: "CNY")) {
         AnalyticsChartInteractionHost {
             PageFrameBase(modifier) {
@@ -135,21 +153,17 @@ fun AnalyticsContent(
                         ) { scrollModifier ->
                             Column(
                                 scrollModifier.fillMaxSize().verticalScroll(scrollState)
-                                    .padding(start = LedgerStyle.spacing.pageHorizontal, end = LedgerStyle.spacing.pageHorizontal, top = LedgerStyle.spacing.extraSmall, bottom = LedgerStyle.spacing.block + LocalBottomBarContentPadding.current),
+                                    .padding(
+                                        start = LedgerStyle.spacing.pageHorizontal,
+                                        end = LedgerStyle.spacing.pageHorizontal,
+                                        top = LedgerStyle.spacing.extraSmall,
+                                        bottom = bottomBarPadding + buttonHeight + LedgerStyle.spacing.block,
+                                    ),
                                 verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.labelGap),
                             ) {
                                 PrimaryPageHeaderBase(
                                     title = textResources.getString(cn.turingzy.ledger.R.string.ui_analytics),
-                                ) {
-                                    TopBarIconButton(
-                                        imageVector = MaterialSymbols.CalendarMonth,
-                                        contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_spending_calendar_2),
-                                        onClick = rememberUiAction(
-                                            { onOpenCalendar(minOf(uiState.periodEnd, LocalDate.now())) },
-                                            UiInteractionKind.Navigation,
-                                        ),
-                                    )
-                                }
+                                )
                                 AnalyticsTimeScopeSelector(uiState.timeScope, onTimeScopeChange)
                                 Row(
                                     Modifier.fillMaxWidth().padding(vertical = LedgerStyle.spacing.extraSmall),
@@ -190,6 +204,19 @@ fun AnalyticsContent(
                             }
                         }
                     }
+                }
+                if (uiState is AnalyticsUiState.Success) {
+                    LedgerFloatingActionButton(
+                        label = textResources.getString(R.string.ui_spending),
+                        icon = MaterialSymbols.CalendarMonth,
+                        containerColor = LedgerStyle.colors.expense,
+                        contentColor = LedgerStyle.colors.onExpense,
+                        visible = true,
+                        onClick = { onOpenCalendar(minOf(uiState.periodEnd, LocalDate.now())) },
+                        modifier = Modifier.align(Alignment.BottomEnd)
+                            .padding(end = LedgerStyle.spacing.pageHorizontal, bottom = bottomBarPadding)
+                            .onSizeChanged { spendingButtonHeight = it.height },
+                    )
                 }
             }
         }
