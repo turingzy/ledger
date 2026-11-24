@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.component.picker
 
+import cn.turingzy.ledger.R
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.input.SegmentedControl
 import cn.turingzy.ledger.ui.component.base.IconButtonContentBase
@@ -7,6 +8,7 @@ import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.model.transaction.DateFilterType
 import cn.turingzy.ledger.ui.interaction.rememberUiIndication
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -39,6 +41,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
@@ -93,18 +97,14 @@ internal fun PeriodPickerSheet(
             onDismiss()
         }
     }
-    fun dismiss() {
-        if (view != type) onSelect(view, periodStart(view, today))
-        onDismiss()
-    }
-    cn.turingzy.ledger.ui.component.base.ModalBottomSheetBase(::dismiss, sheetState, modifier) {
+    cn.turingzy.ledger.ui.component.base.ModalBottomSheetBase(onDismiss, sheetState, modifier) {
         Column(
             Modifier.height(height).fillMaxWidth().testTag("ledgerPeriodPicker")
                 .navigationBarsPadding().padding(horizontal = LedgerStyle.spacing.large),
         ) {
             Box(Modifier.fillMaxWidth().height(48.dp), contentAlignment = Alignment.Center) {
                 IconButtonContentBase(
-                    ::dismiss, modifier = Modifier.align(Alignment.CenterStart), showPressFeedback = false,
+                    onDismiss, modifier = Modifier.align(Alignment.CenterStart), showPressFeedback = false,
                 ) {
                     Icon(MaterialSymbols.Close, androidx.compose.ui.res.stringResource(cn.turingzy.ledger.R.string.ui_close_date_picker))
                 }
@@ -162,12 +162,19 @@ private fun PeriodList(
     val precedingItems = if (type == DateFilterType.YEAR) 4 else if (type == DateFilterType.WEEK) 1 else 0
     val state = rememberLazyListState((series.indexOf(initialDate) - precedingItems).coerceAtLeast(0))
     val chosen = periodStart(type, initialDate)
+    val current = periodStart(type, today)
     Column(modifier.fillMaxWidth()) {
         if (type == DateFilterType.WEEK) {
-            Row(Modifier.fillMaxWidth().padding(vertical = 14.dp)) {
-                listOf(textResources.getString(cn.turingzy.ledger.R.string.ui_mon_2), textResources.getString(cn.turingzy.ledger.R.string.ui_tue_2), textResources.getString(cn.turingzy.ledger.R.string.ui_wed_2), textResources.getString(cn.turingzy.ledger.R.string.ui_thu), textResources.getString(cn.turingzy.ledger.R.string.ui_fri_2), textResources.getString(cn.turingzy.ledger.R.string.ui_sat_2), textResources.getString(cn.turingzy.ledger.R.string.ui_sun)).forEach { day ->
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = LedgerStyle.spacing.medium, vertical = 14.dp),
+                horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.small),
+            ) {
+                listOf(
+                    R.string.ui_sun, R.string.ui_mon_2, R.string.ui_tue_2, R.string.ui_wed_2,
+                    R.string.ui_thu, R.string.ui_fri_2, R.string.ui_sat_2,
+                ).forEach { day ->
                     Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                        Text(day, fontSize = LedgerStyle.typography.bodySmall.fontSize, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(textResources.getString(day), fontSize = LedgerStyle.typography.bodySmall.fontSize, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -181,9 +188,9 @@ private fun PeriodList(
             items(series.size, key = { series.dateAt(it).toEpochDay() }) { index ->
                 val date = series.dateAt(index)
                 when (type) {
-                    DateFilterType.WEEK -> LedgerWeekOption(date, chosen == date, today, onSelect)
-                    DateFilterType.MONTH -> LedgerMonthOptions(date.year, chosen, onSelect)
-                    DateFilterType.YEAR -> PeriodOption(date, "${date.year}年", chosen == date, onSelect)
+                    DateFilterType.WEEK -> LedgerWeekOption(date, chosen == date, current == date, onSelect)
+                    DateFilterType.MONTH -> LedgerMonthOptions(date.year, chosen, current, onSelect)
+                    DateFilterType.YEAR -> PeriodOption(date, "${date.year}年", chosen == date, current == date, onSelect)
                     DateFilterType.RANGE -> Unit
                 }
             }
@@ -194,29 +201,27 @@ private fun PeriodList(
 /**
  * 周选择项视图。
  *
- * 展示该周的日期范围标签与周一至周日的7日数字横向排布。
+ * 日期范围标题独立显示，周日至周六共用一张可点击的日期卡片。
  *
- * @param date 该周周一对应的日期。
+ * @param date 该周周日对应的日期。
  * @param chosen 是否为当前选中的周。
- * @param today 今天日期。
+ * @param current 是否为本周。
  * @param onSelect 选中该周时的回调。
  */
 @Composable
-private fun LedgerWeekOption(date: LocalDate, chosen: Boolean, today: LocalDate, onSelect: (LocalDate) -> Unit) {
+private fun LedgerWeekOption(date: LocalDate, chosen: Boolean, current: Boolean, onSelect: (LocalDate) -> Unit) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
-    val label = weekLabel(date) + if (date == weekStart(today)) textResources.getString(cn.turingzy.ledger.R.string.ui_this_week) else ""
+    val label = weekLabel(date) + if (current) textResources.getString(R.string.ui_this_week) else ""
     Column(
-        Modifier.fillMaxWidth().clip(LedgerStyle.shapes.card)
-            .periodSelection(date, chosen, onSelect),
+        Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium),
     ) {
         Text(
             label, modifier = Modifier.padding(horizontal = LedgerStyle.spacing.tiny), fontSize = LedgerStyle.typography.bodySmall.fontSize,
-            color = if (chosen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+            color = if (current) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
         )
         Row(
-            Modifier.fillMaxWidth().clip(LedgerStyle.shapes.card)
-                .background(if (chosen) MaterialTheme.colorScheme.primary.copy(alpha = 0.06f) else MaterialTheme.colorScheme.background)
+            Modifier.fillMaxWidth().periodSelection(date, chosen, LedgerStyle.shapes.card, onSelect)
                 .padding(LedgerStyle.spacing.medium),
             horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.small),
         ) {
@@ -225,8 +230,12 @@ private fun LedgerWeekOption(date: LocalDate, chosen: Boolean, today: LocalDate,
                     Modifier.weight(1f).height(36.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(date.plusDays(offset.toLong()).dayOfMonth.toString(), fontSize = LedgerStyle.typography.transactionTitle.fontSize,
-                        color = MaterialTheme.colorScheme.onSurface)
+                    Text(
+                        date.plusDays(offset.toLong()).dayOfMonth.toString(),
+                        fontSize = LedgerStyle.typography.transactionTitle.fontSize,
+                        fontWeight = if (chosen) FontWeight.Medium else FontWeight.Normal,
+                        color = if (chosen) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
         }
@@ -238,20 +247,21 @@ private fun LedgerWeekOption(date: LocalDate, chosen: Boolean, today: LocalDate,
  *
  * @param year 所属年份。
  * @param chosen 当前选中的日期。
+ * @param current 本月的起始日期。
  * @param onSelect 选中具体月份1日时的回调。
  */
 @Composable
-private fun LedgerMonthOptions(year: Int, chosen: LocalDate, onSelect: (LocalDate) -> Unit) {
+private fun LedgerMonthOptions(year: Int, chosen: LocalDate, current: LocalDate, onSelect: (LocalDate) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium)) {
         Text(
             "${year}年", modifier = Modifier.padding(start = 4.dp, bottom = 6.dp), fontSize = LedgerStyle.typography.transactionTitle.fontSize,
-            color = if (chosen.year == year) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+            color = MaterialTheme.colorScheme.onSurface,
         )
         (1..12).chunked(5).forEach { months ->
             Row(horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium)) {
                 months.forEach { month ->
                     val date = LocalDate.of(year, month, 1)
-                    PeriodOption(date, "${month}月", chosen == date, onSelect, Modifier.weight(1f))
+                    PeriodOption(date, "${month}月", chosen == date, current == date, onSelect, Modifier.weight(1f))
                 }
                 repeat(5 - months.size) { Spacer(Modifier.weight(1f)) }
             }
@@ -265,6 +275,7 @@ private fun LedgerMonthOptions(year: Int, chosen: LocalDate, onSelect: (LocalDat
  * @param date 选项关联的日期。
  * @param label 显示文案。
  * @param chosen 是否被选中。
+ * @param current 是否为本月或本年。
  * @param onSelect 点击回调。
  * @param modifier 外部修饰符。
  */
@@ -273,28 +284,33 @@ private fun PeriodOption(
     date: LocalDate,
     label: String,
     chosen: Boolean,
+    current: Boolean,
     onSelect: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier.fillMaxWidth().height(44.dp).clip(LedgerStyle.shapes.bankCard)
-            .background(MaterialTheme.colorScheme.background).periodSelection(date, chosen, onSelect),
+        modifier.fillMaxWidth().height(44.dp)
+            .periodSelection(date, chosen, LedgerStyle.shapes.bankCard, onSelect),
         contentAlignment = Alignment.Center,
     ) {
         Text(label, fontSize = LedgerStyle.typography.transactionTitle.fontSize, fontWeight = if (chosen) FontWeight.Medium else FontWeight.Normal,
-            color = if (chosen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
+            color = if (current) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
     }
 }
 
 /**
- * 周期选项通用的点击与无障碍语义扩展修饰符。
- *
- * @param date 关联日期。
- * @param chosen 是否处于选中态。
- * @param onSelect 点击回调。
+ * 在相同的轮廓内绘制选中框、限制按压反馈，并提供周期选择的语义。
  */
 @Composable
-private fun Modifier.periodSelection(date: LocalDate, chosen: Boolean, onSelect: (LocalDate) -> Unit): Modifier =
-    testTag("ledgerPeriod-${date.toEpochDay()}")
+private fun Modifier.periodSelection(
+    date: LocalDate,
+    chosen: Boolean,
+    shape: Shape,
+    onSelect: (LocalDate) -> Unit,
+): Modifier =
+    clip(shape)
+        .background(MaterialTheme.colorScheme.background)
+        .border(LedgerStyle.spacing.hairline, if (chosen) MaterialTheme.colorScheme.primary else Color.Transparent, shape)
+        .testTag("ledgerPeriod-${date.toEpochDay()}")
         .semantics { selected = chosen; contentDescription = date.toString() }
         .clickable(interactionSource = remember { MutableInteractionSource() }, indication = rememberUiIndication()) { onSelect(date) }

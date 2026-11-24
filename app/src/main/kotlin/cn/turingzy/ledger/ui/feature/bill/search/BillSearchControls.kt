@@ -336,9 +336,10 @@ private fun SearchAmountDrawer(
     var maximum by rememberSaveable { mutableStateOf(filters.maximum?.toFormattedAmount().orEmpty()) }
     val minCents = AmountFormatter.parseToCents(minimum)
     val maxCents = AmountFormatter.parseToCents(maximum)
-    val valid = (minimum.isBlank() || (minCents != null && minCents >= 0)) &&
-        (maximum.isBlank() || (maxCents != null && maxCents >= 0)) &&
-        (minCents == null || maxCents == null || minCents <= maxCents)
+    val invalidMinimum = minimum.isNotBlank() && (minCents == null || minCents < 0)
+    val invalidMaximum = maximum.isNotBlank() && (maxCents == null || maxCents < 0)
+    val invalidOrder = !invalidMinimum && !invalidMaximum && minCents != null && maxCents != null && minCents > maxCents
+    val valid = !invalidMinimum && !invalidMaximum && !invalidOrder
     SearchDrawer(
         stringResource(R.string.bill_search_amount_range, currency), onDismiss,
         {
@@ -365,10 +366,10 @@ private fun SearchAmountDrawer(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 FormTextField(stringResource(R.string.bill_search_minimum), minimum, { minimum = it },
-                    Modifier.weight(1f), keyboardType = KeyboardType.Decimal)
+                    Modifier.weight(1f), isError = invalidMinimum || invalidOrder, keyboardType = KeyboardType.Decimal)
                 Text(stringResource(R.string.bill_search_to), style = LedgerStyle.typography.bodyMedium)
                 FormTextField(stringResource(R.string.bill_search_maximum), maximum, { maximum = it },
-                    Modifier.weight(1f), keyboardType = KeyboardType.Decimal)
+                    Modifier.weight(1f), isError = invalidMaximum || invalidOrder, keyboardType = KeyboardType.Decimal)
             }
             if (!valid) Text(stringResource(R.string.bill_search_invalid_amount_range), color = MaterialTheme.colorScheme.error)
         }

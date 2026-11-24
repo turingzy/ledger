@@ -34,7 +34,7 @@ import cn.turingzy.ledger.ui.theme.LedgerStyle
 /**
  * 表单下拉选择框组件。
  *
- * 将标准表单字段外框 [FormFieldFrameBase] 与下拉弹窗 [LedgerDropdown] 结合，展示选中的文本与下拉指示器。
+ * 将标准表单字段外框 [FormFieldFrameBase] 与向下展开的菜单 [LedgerDropdown] 结合。
  *
  * @param label 表单项的标题标签。
  * @param value 当前选中的显示文本。
@@ -68,6 +68,7 @@ internal fun <T> FormDropdown(
         modifier = modifier,
         alignMenuToStart = alignMenuToStart,
         menuTestTag = menuTestTag,
+        direction = DropdownDirection.DOWN,
         menuWidth = menuWidth,
     ) { anchorModifier, expanded, opensUp, onToggle ->
         FormFieldFrameBase(

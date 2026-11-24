@@ -377,15 +377,24 @@ private fun BillTransferOption(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
-    SurfaceBase(modifier, shape = LedgerStyle.shapes.card, color = MaterialTheme.colorScheme.surface) {
+    val colors = LedgerStyle.colors
+    val opacity = if (enabled) 1f else LedgerStyle.opacity.disabled
+    SurfaceBase(modifier, shape = LedgerStyle.shapes.card, color = colors.surface) {
         Row(
             Modifier.fillMaxWidth().heightIn(min = SettingsItemHeight)
                 .selectable(selected = selected, enabled = enabled, role = Role.RadioButton, onClick = onClick)
                 .padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.labelGap),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(title, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-            if (selected) Icon(MaterialSymbols.Check, null, Modifier.size(LedgerStyle.icons.inline), tint = MaterialTheme.colorScheme.primary)
+            Text(title, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge,
+                color = colors.textPrimary.copy(alpha = opacity))
+            Icon(
+                if (selected) MaterialSymbols.RadioButtonChecked else MaterialSymbols.RadioButtonUnchecked,
+                contentDescription = null,
+                modifier = Modifier.size(LedgerStyle.icons.inline),
+                tint = (if (selected) colors.info else colors.textSecondary).copy(alpha = opacity),
+            )
         }
     }
 }

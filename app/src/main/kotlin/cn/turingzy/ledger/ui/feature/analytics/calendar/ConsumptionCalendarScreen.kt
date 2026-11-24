@@ -149,7 +149,6 @@ internal fun ConsumptionCalendarContent(
             title = textResources.getString(R.string.ui_spending_calendar),
             modifier = modifier,
             onBack = onBack,
-            titleStyle = LedgerStyle.typography.detailPageTitle,
             closeInsteadOfBack = true,
             scrolled = listState.canScrollBackward,
         ) { headerPadding ->

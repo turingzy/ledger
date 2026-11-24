@@ -24,7 +24,6 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
@@ -57,7 +56,7 @@ internal fun ScrollTitleContainerBase(
         val progress = ((offset - 20f) / 36f).coerceIn(0f, 1f)
         if (progress > 0f) {
             Box(
-                Modifier.fillMaxWidth().height(44.dp).clipToBounds()
+                Modifier.fillMaxWidth().height(LedgerStyle.dimensions.toolbarHeight).clipToBounds()
                     .blockTouchesBehind()
                     .graphicsLayer {
                         alpha = progress
@@ -69,7 +68,7 @@ internal fun ScrollTitleContainerBase(
                     ),
             )
             Row(
-                Modifier.fillMaxWidth().height(44.dp).padding(horizontal = LedgerStyle.spacing.extraLarge)
+                Modifier.fillMaxWidth().height(LedgerStyle.dimensions.toolbarHeight).padding(horizontal = LedgerStyle.spacing.pageHorizontal)
                     .graphicsLayer { alpha = progress },
                 verticalAlignment = Alignment.CenterVertically,
             ) {

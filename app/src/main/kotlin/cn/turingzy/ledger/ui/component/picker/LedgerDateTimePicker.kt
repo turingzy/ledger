@@ -18,8 +18,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.ui.platform.testTag
@@ -30,14 +30,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
@@ -49,7 +46,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.flow.distinctUntilChanged
 import cn.turingzy.ledger.ui.component.base.DropdownIndicatorBase
 import java.time.LocalDate
 import java.time.YearMonth
@@ -61,28 +57,24 @@ import kotlin.math.abs
  * 整合上方的日期日历视图 [LedgerDatePicker] 与下方的时/分滚轮选择器 [RecordTimeWheel]。
  *
  * @param date 当前选中的日期。
- * @param hour 当前选中的小时字符串（两位数字）。
- * @param minute 当前选中的分钟字符串（两位数字）。
+ * @param hourState 小时滚轮的位置。
+ * @param minuteState 分钟滚轮的位置。
  * @param onDateChange 日期变更回调。
- * @param onHourChange 小时变更回调。
- * @param onMinuteChange 分钟变更回调。
  */
 @Composable
 internal fun LedgerDateTimePicker(
     date: LocalDate,
-    hour: String,
-    minute: String,
+    hourState: LazyListState,
+    minuteState: LazyListState,
     onDateChange: (LocalDate) -> Unit,
-    onHourChange: (String) -> Unit,
-    onMinuteChange: (String) -> Unit,
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     Column(verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium)) {
         LedgerDatePicker(date, onDateChange)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-            RecordTimeWheel(textResources.getString(cn.turingzy.ledger.R.string.ui_hour), hour, 24, onHourChange)
+            RecordTimeWheel(textResources.getString(cn.turingzy.ledger.R.string.ui_hour), hourState, 24)
             Text(":", Modifier.padding(horizontal = LedgerStyle.spacing.large), style = MaterialTheme.typography.titleLarge)
-            RecordTimeWheel(textResources.getString(cn.turingzy.ledger.R.string.ui_minute), minute, 60, onMinuteChange)
+            RecordTimeWheel(textResources.getString(cn.turingzy.ledger.R.string.ui_minute), minuteState, 60)
         }
     }
 }
@@ -274,26 +266,12 @@ private fun RecordPeriodChoices(values: List<Int>, selected: Int, tag: String, d
  * 带有居中指示条和吸附滚动效果（Snap fling behavior）。
  *
  * @param label 无障碍标签（如 "小时"、"分钟"）。
- * @param value 当前选中的数值字符串。
+ * @param state 滚轮的位置。
  * @param count 选项总数（例如小时为 24，分钟为 60）。
- * @param onChange 滚动选中数值变更时的回调。
  */
 @Composable
-private fun RecordTimeWheel(label: String, value: String, count: Int, onChange: (String) -> Unit) {
-    val state = rememberLazyListState(initialFirstVisibleItemIndex = value.toIntOrNull()?.coerceIn(0, count - 1) ?: 0)
-    val currentOnChange by rememberUpdatedState(onChange)
-    val selectedIndex by remember(state) {
-        derivedStateOf {
-            val layout = state.layoutInfo
-            val center = (layout.viewportStartOffset + layout.viewportEndOffset) / 2
-            layout.visibleItemsInfo.minByOrNull { abs(it.offset + it.size / 2 - center) }?.index
-        }
-    }
-    LaunchedEffect(state) {
-        snapshotFlow { selectedIndex }.distinctUntilChanged().collect { index ->
-            if (index != null) currentOnChange(index.toString().padStart(2, '0'))
-        }
-    }
+private fun RecordTimeWheel(label: String, state: LazyListState, count: Int) {
+    val selectedIndex by remember(state) { derivedStateOf { state.centeredWheelIndex() } }
     Box(Modifier.width(80.dp).height(120.dp), contentAlignment = Alignment.Center) {
         Box(Modifier.fillMaxWidth().height(40.dp).clip(LedgerStyle.shapes.field).background(LedgerStyle.colors.overlayFieldBackground))
         LazyColumn(
@@ -301,7 +279,7 @@ private fun RecordTimeWheel(label: String, value: String, count: Int, onChange: 
             contentPadding = PaddingValues(vertical = 40.dp),
             modifier = Modifier.fillMaxWidth().height(120.dp).semantics {
                 contentDescription = label
-                stateDescription = value
+                stateDescription = selectedIndex.toString().padStart(2, '0')
             },
         ) {
             items((0 until count).toList(), key = { it }) { number ->
@@ -315,4 +293,12 @@ private fun RecordTimeWheel(label: String, value: String, count: Int, onChange: 
             }
         }
     }
+}
+
+/** 格式化展示和保存都以最靠近滚轮中央的项为准。 */
+internal fun LazyListState.centeredWheelIndex(): Int {
+    val layout = layoutInfo
+    val center = (layout.viewportStartOffset + layout.viewportEndOffset) / 2
+    return layout.visibleItemsInfo.minByOrNull { abs(it.offset + it.size / 2 - center) }?.index
+        ?: firstVisibleItemIndex
 }

@@ -164,7 +164,7 @@ class ConsumptionCalendarScreenTest {
         val count = mutableListOf<TextLayoutResult>()
         compose.onNodeWithText("消费日历").performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(header) }
         compose.onNodeWithText("11月14日 共0笔消费").performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(count) }
-        assertEquals(17.sp, header.single().layoutInput.style.fontSize)
+        assertEquals(18.sp, header.single().layoutInput.style.fontSize)
         assertEquals(14.sp, count.single().layoutInput.style.fontSize)
     }
 

@@ -3,7 +3,7 @@ package cn.turingzy.ledger.ui.feature.bill
 import cn.turingzy.ledger.ui.feature.bill.detail.TransactionSaveState
 import cn.turingzy.ledger.ui.feature.bill.search.BillSearchRequest
 import cn.turingzy.ledger.ui.feature.bill.search.buildBillSearchResults
-import cn.turingzy.ledger.ui.component.picker.weekLabel
+import cn.turingzy.ledger.ui.component.picker.CalendarSelection
 import cn.turingzy.ledger.model.currency.primaryAmount
 import cn.turingzy.ledger.model.currency.CurrencyAmountOverride
 import kotlinx.coroutines.flow.map
@@ -37,7 +37,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
@@ -114,11 +113,11 @@ class BillViewModel @Inject constructor(
         val zone = ZoneId.systemDefault()
         val calc = when (filter) {
             is BillDateFilter.Week -> {
-                val startOfWeek = filter.anchorDate.with(DayOfWeek.MONDAY)
-                val endOfWeek = filter.anchorDate.with(DayOfWeek.SUNDAY)
+                val week = CalendarSelection.week(filter.anchorDate)
+                val (startOfWeek, endOfWeek) = week
                 val s = startOfWeek.atStartOfDay(zone).toInstant().toEpochMilli()
                 val e = endOfWeek.atTime(23, 59, 59, 999_000_000).atZone(zone).toInstant().toEpochMilli()
-                val header = weekLabel(filter.anchorDate)
+                val header = week.displayRange()
                 val cardLabel = "结余"
                 FilterCalcResult(s, e, DateFilterType.WEEK, header, cardLabel, filter.anchorDate.year, filter.anchorDate.monthValue, startOfWeek, endOfWeek)
             }

@@ -319,3 +319,9 @@ fun DividerBase(modifier: Modifier = Modifier) {
         color = LedgerStyle.colors.divider,
     )
 }
+
+/** 列表分割线从标题起点开始，尾部与行内容对齐。 */
+@Composable
+internal fun ListRowDividerBase(startInset: Dp = LedgerStyle.spacing.rowHorizontal) {
+    DividerBase(Modifier.padding(start = startInset, end = LedgerStyle.spacing.rowHorizontal))
+}

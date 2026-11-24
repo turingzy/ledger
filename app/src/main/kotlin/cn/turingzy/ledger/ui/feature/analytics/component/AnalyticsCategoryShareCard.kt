@@ -102,15 +102,18 @@ internal fun AnalyticsCategoryShareCard(
     fun selectBarCategory(id: Long) {
         selectedBarId = id.takeUnless { it == selectedBarId }
     }
-    DashboardCard(modifier, contentSpacing = LedgerStyle.spacing.extraLarge) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium)) {
-            AnalyticsCardTitle(textResources.getString(cn.turingzy.ledger.R.string.ui_category_breakdown), Modifier.weight(1f))
+    DashboardCard(
+        title = textResources.getString(cn.turingzy.ledger.R.string.ui_category_breakdown),
+        modifier = modifier,
+        contentSpacing = LedgerStyle.spacing.extraLarge,
+        headerActions = {
             SegmentedControl(
                 listOf(textResources.getString(cn.turingzy.ledger.R.string.ui_expense), textResources.getString(cn.turingzy.ledger.R.string.ui_income)), if (income) 1 else 0,
                 { onCategoryTypeChange(if (it == 1) CategoryType.INCOME else CategoryType.EXPENSE) },
                 Modifier.width(88.dp), height = 26.dp, fontSize = LedgerStyle.typography.label.fontSize, emphasizeSelection = false,
             )
-        }
+        },
+    ) {
         Column(verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.extraSmall)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 val totalLabel = if (income) cn.turingzy.ledger.R.string.ui_total_income else cn.turingzy.ledger.R.string.ui_total_expenses

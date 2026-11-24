@@ -1,6 +1,7 @@
 package cn.turingzy.ledger.ui.feature.bill
 
 import cn.turingzy.ledger.ui.component.picker.weekStart
+import cn.turingzy.ledger.ui.component.picker.weekLabel
 import cn.turingzy.ledger.ui.component.picker.periodStart
 import cn.turingzy.ledger.ui.component.picker.PeriodSeries
 import cn.turingzy.ledger.ui.component.picker.PeriodPickerSheet
@@ -9,6 +10,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -46,6 +48,11 @@ class PeriodPickerSheetTest {
             MaterialTheme {
                 PeriodPickerSheet(type, initial, {}, { view, date -> selected = view to date })
             }
+        }
+        val initialPeriod = periodStart(type, initial)
+        compose.onNodeWithTag("ledgerPeriod-${initialPeriod.toEpochDay()}").assertIsSelected()
+        if (type == DateFilterType.WEEK) {
+            compose.onNodeWithText(weekLabel(initialPeriod)).assertHasNoClickAction()
         }
         val listType = if (type == DateFilterType.MONTH) DateFilterType.YEAR else type
         val series = PeriodSeries(listType, initial)
@@ -107,7 +114,7 @@ class PeriodPickerSheetTest {
     }
 
     @Test
-    fun closingAfterSwitchingViewAppliesTheCurrentPeriod() {
+    fun closingAfterSwitchingViewKeepsTheCurrentPeriod() {
         var selected: Pair<DateFilterType, LocalDate>? = null
         compose.setContent {
             MaterialTheme {
@@ -131,7 +138,7 @@ class PeriodPickerSheetTest {
         compose.onNodeWithText("周一").assertIsDisplayed()
         compose.onNodeWithContentDescription("关闭日期选择").performClick()
         compose.onNodeWithTag("ledgerPeriodPicker").assertDoesNotExist()
-        assertEquals(DateFilterType.WEEK to weekStart(LocalDate.now()), selected)
+        assertNull(selected)
     }
 
     @Test
@@ -162,7 +169,7 @@ class PeriodPickerSheetTest {
 
 
     @Test
-    fun closingAfterSwitchingToMonthAppliesThisMonth() {
+    fun systemBackAfterSwitchingToMonthDiscardsTheDraft() {
         var selected: Pair<DateFilterType, LocalDate>? = null
         compose.setContent {
             MaterialTheme {
@@ -171,11 +178,11 @@ class PeriodPickerSheetTest {
         }
         compose.onNodeWithText("月").performClick()
         androidx.test.espresso.Espresso.pressBack()
-        assertEquals(DateFilterType.MONTH to LocalDate.now().withDayOfMonth(1), selected)
+        assertNull(selected)
     }
 
     @Test
-    fun systemBackAfterSwitchingToYearAppliesThisYear() {
+    fun systemBackAfterSwitchingToYearDiscardsTheDraft() {
         var selected: Pair<DateFilterType, LocalDate>? = null
         compose.setContent {
             MaterialTheme {
@@ -185,7 +192,7 @@ class PeriodPickerSheetTest {
         compose.onNodeWithText("年").performClick()
         androidx.test.espresso.Espresso.pressBack()
         compose.waitForIdle()
-        assertEquals(DateFilterType.YEAR to LocalDate.now().withDayOfYear(1), selected)
+        assertNull(selected)
     }
 
 }

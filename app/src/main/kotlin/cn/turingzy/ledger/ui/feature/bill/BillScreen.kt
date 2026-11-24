@@ -6,20 +6,16 @@ import cn.turingzy.ledger.ui.feature.bill.detail.TransactionDetailsViewModel
 import cn.turingzy.ledger.ui.feature.bill.sheet.RecordCreateSheet
 import cn.turingzy.ledger.ui.component.base.ScrollTitleContainerBase
 import androidx.compose.foundation.lazy.rememberLazyListState
+import cn.turingzy.ledger.ui.component.picker.CalendarSelection
 import cn.turingzy.ledger.ui.component.picker.PeriodPickerSheet
 import cn.turingzy.ledger.ui.component.picker.PeriodPickerPill
 import cn.turingzy.ledger.model.transaction.DateFilterType
 import cn.turingzy.ledger.ui.component.MaterialSymbols
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -33,13 +29,14 @@ import androidx.compose.ui.graphics.asImageBitmap
 import cn.turingzy.ledger.model.settings.LedgerCardAppearance
 import cn.turingzy.ledger.ui.component.navigation.LocalBottomBarContentPadding
 import cn.turingzy.ledger.ui.component.base.PageFrameBase
-import cn.turingzy.ledger.ui.component.base.CardBase
+import cn.turingzy.ledger.ui.component.base.PrimaryPageHeaderBase
 import cn.turingzy.ledger.ui.component.base.EmptyStateBase
 import cn.turingzy.ledger.ui.component.biz.TransactionRowBiz
 import cn.turingzy.ledger.ui.component.biz.currencySymbolBiz
 import cn.turingzy.ledger.ui.interaction.rememberUiAction
 import cn.turingzy.ledger.ui.interaction.UiInteractionKind
-import cn.turingzy.ledger.ui.component.biz.TransactionRowDividerBiz
+import cn.turingzy.ledger.ui.component.biz.TransactionGroupHeaderBiz
+import cn.turingzy.ledger.ui.component.biz.TransactionGroupRowBiz
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
@@ -51,11 +48,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cn.turingzy.ledger.ui.component.card.summary.TopBarIconButton
@@ -196,6 +188,14 @@ fun BillContent(
             BillUiState.Loading -> Unit
             is BillUiState.Success -> {
                 val dayGroups = uiState.dayGroups
+                val isWeek = uiState.filterType == DateFilterType.WEEK
+                val start = uiState.filterStartDate
+                val end = uiState.filterEndDate
+                val headerPeriod = if (isWeek && start != null && end != null && start.year != end.year) {
+                    CalendarSelection(start, end).displayRange(separator = "\n")
+                } else {
+                    uiState.monthDisplay
+                }
 
                 val listState = rememberLazyListState()
                 ScrollTitleContainerBase(
@@ -222,31 +222,22 @@ fun BillContent(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.labelGap),
                             ) {
-                                Box(
-                                    modifier = Modifier.fillMaxWidth().height(44.dp),
-                                    contentAlignment = Alignment.Center,
+                                PrimaryPageHeaderBase(
+                                    title = textResources.getString(cn.turingzy.ledger.R.string.ui_bill),
+                                    centerContentUsesAvailableWidth = isWeek && '\n' !in headerPeriod,
+                                    centerContent = {
+                                        PeriodPickerPill(
+                                            text = headerPeriod,
+                                            onClick = { showPeriodPicker = true },
+                                            description = textResources.getString(cn.turingzy.ledger.R.string.ui_select_ledger_period),
+                                            trailingIcon = MaterialSymbols.DateRange,
+                                        )
+                                    },
                                 ) {
-                                    Text(
-                                        text = textResources.getString(cn.turingzy.ledger.R.string.ui_bill),
-                                        fontSize = LedgerStyle.typography.screenTitle.fontSize,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        letterSpacing = (-0.6).sp,
-                                        modifier = Modifier.align(Alignment.CenterStart),
-                                    )
-                                    PeriodPickerPill(
-                                        text = uiState.monthDisplay,
-                                        onClick = { showPeriodPicker = true },
-                                        modifier = Modifier.align(Alignment.Center),
-                                        description = textResources.getString(cn.turingzy.ledger.R.string.ui_select_ledger_period),
-                                        trailingIcon = MaterialSymbols.DateRange,
-                                    )
-
                                     TopBarIconButton(
                                         imageVector = MaterialSymbols.Search,
                                         contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_search),
                                         onClick = rememberUiAction(onOpenSearch, UiInteractionKind.Navigation),
-                                        modifier = Modifier.align(Alignment.CenterEnd),
                                     )
                                 }
                                 if (uiState.amountsAvailable) SummaryHeroBanner(
@@ -321,7 +312,6 @@ fun DayGroupSection(
     transactionRow: (@Composable (detail: TransactionDetail, roundTop: Boolean, roundBottom: Boolean) -> Unit)? = null,
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
-    val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
     val currencySymbol = currencySymbolBiz(currency)
     val summary = buildList {
         if (dayGroup.transactions.any { it.transaction.type != TransactionType.TRANSFER && it.primaryAmount(currency) == null }) return@buildList
@@ -334,53 +324,23 @@ fun DayGroupSection(
             add(textResources.getString(cn.turingzy.ledger.R.string.ui_income) + ": $amount")
         }
     }.joinToString("  ")
-    val colors = MaterialTheme.colorScheme
-    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.tiny)) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(start = 4.dp, top = 3.dp, end = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.extraSmall),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = java.time.LocalDate.ofEpochDay(dayGroup.dateEpochDay).format(DateTimeFormatter.ofPattern("MM/dd E", locale)),
-                modifier = Modifier.padding(end = 4.dp),
-                maxLines = 1,
-                fontSize = LedgerStyle.typography.bodySmall.fontSize,
-                lineHeight = 18.sp,
-                fontWeight = FontWeight.Normal,
-                color = colors.onSurfaceVariant,
-            )
-            if (summary.isEmpty()) Spacer(Modifier.weight(1f))
-            else Text(
-                text = summary,
-                modifier = Modifier.weight(1f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.End,
-                fontSize = LedgerStyle.typography.bodySmall.fontSize,
-                lineHeight = 18.sp,
-                fontWeight = FontWeight.Normal,
-                color = colors.onSurfaceVariant,
-            )
-        }
-        val rows: @Composable () -> Unit = {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium),
+    ) {
+        val date = LocalDate.ofEpochDay(dayGroup.dateEpochDay)
+        TransactionGroupHeaderBiz(date, summary)
+        Column {
             dayGroup.transactions.forEachIndexed { index, detail ->
                 key(detail.transaction.id) {
-                    if (index > 0) TransactionRowDividerBiz()
-                    if (transactionRow != null) transactionRow(detail, index == 0, index == dayGroup.transactions.lastIndex)
-                    else DayTransactionRowItem(detail = detail, onClick = { onTransactionClick(detail.transaction.id) })
+                    val first = index == 0
+                    val last = index == dayGroup.transactions.lastIndex
+                    TransactionGroupRowBiz(first, last, clipContent = transactionRow == null) {
+                        if (transactionRow != null) transactionRow(detail, first, last)
+                        else DayTransactionRowItem(detail = detail, onClick = { onTransactionClick(detail.transaction.id) })
+                    }
                 }
             }
-        }
-        val shape = LedgerStyle.shapes.summaryCard
-        if (transactionRow != null) {
-            Column(Modifier.fillMaxWidth().background(colors.surface, shape)) { rows() }
-        } else {
-            CardBase(
-                shape = shape,
-                contentPadding = PaddingValues(LedgerStyle.spacing.none),
-                contentSpacing = LedgerStyle.spacing.none,
-            ) { rows() }
         }
     }
 }

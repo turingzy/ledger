@@ -68,10 +68,13 @@ class NavigationAndScrollHeaderTest {
             }
         }
         listOf("账本", "分析", "钱包", "设置").forEach { compose.onNodeWithText(it).assertIsDisplayed() }
+        val walletLabel = compose.onNodeWithText("钱包", useUnmergedTree = true)
+        val walletLabelBounds = walletLabel.fetchSemanticsNode().boundsInRoot
         compose.onNodeWithText("账本").assertIsSelected().performClick()
         compose.runOnIdle { assertEquals(0, navigationCount) }
         compose.onNodeWithText("钱包").performClick().assertIsSelected()
         compose.runOnIdle { assertEquals(1, navigationCount) }
+        assertEquals(walletLabelBounds, walletLabel.fetchSemanticsNode().boundsInRoot)
     }
 
     @Test

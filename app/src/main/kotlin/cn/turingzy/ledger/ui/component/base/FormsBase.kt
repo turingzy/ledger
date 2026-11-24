@@ -25,6 +25,8 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
@@ -39,13 +41,14 @@ import cn.turingzy.ledger.ui.theme.LedgerStyle
 /**
  * 表单字段外框容器。
  *
- * 提供浮动标签、状态边框（正常、聚焦、只读、错误）及底部错误文案展示。
+ * 提供浮动标签、状态边框及底部错误文案展示。
  *
  * @param label 浮动显示在上边框的标签文本。
  * @param modifier 应用于整个表单字段容器的修饰符。
  * @param focused 是否处于聚焦状态。
- * @param readOnly 是否为只读状态。
+ * @param enabled 字段是否可用。
  * @param error 错误提示文本，为 null 时不显示。
+ * @param isError 是否使用错误色。跨字段校验可在组下显示统一提示。
  * @param onClick 可选的点击事件回调，传入时使整个外框可点击。
  * @param content 字段内部行内容插槽。
  */
@@ -54,26 +57,35 @@ fun FormFieldFrameBase(
     label: String,
     modifier: Modifier = Modifier,
     focused: Boolean = false,
-    readOnly: Boolean = false,
+    enabled: Boolean = true,
     error: String? = null,
+    isError: Boolean = error != null,
     onClick: (() -> Unit)? = null,
     content: @Composable RowScope.() -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
     val labelBackground = LocalSurfaceBackground.current.takeOrElse { colors.surface }
-    val borderColor = when {
-        readOnly -> colors.onSurface.copy(alpha = LedgerStyle.opacity.readOnlyBorder)
-        error != null -> colors.error
+    val highlight = when {
+        !enabled -> null
+        isError -> colors.error
         focused -> colors.primary
-        else -> colors.outlineVariant
+        else -> null
     }
-    Column(modifier.fillMaxWidth().semantics(mergeDescendants = onClick != null) {}) {
+    val borderColor = if (enabled) highlight ?: colors.outlineVariant
+        else colors.onSurface.copy(alpha = LedgerStyle.opacity.disabledFieldBorder)
+    val labelColor = if (enabled) highlight ?: colors.onSurfaceVariant
+        else colors.onSurface.copy(alpha = LedgerStyle.opacity.disabled)
+    Column(modifier.fillMaxWidth().semantics(mergeDescendants = onClick != null) {
+        if (!enabled) disabled()
+        if (error != null && enabled) this.error(error)
+    }) {
         Box(Modifier.fillMaxWidth().padding(top = LedgerStyle.dimensions.fieldLabelOffset)) {
             Row(
                 Modifier.fillMaxWidth().height(LedgerStyle.dimensions.rowMinHeight)
                     .border(LedgerStyle.dimensions.formBorderThickness, borderColor, LedgerStyle.shapes.field)
                     .then(if (onClick == null) Modifier else Modifier.clickable(
-                        interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick,
+                        enabled = enabled, interactionSource = remember { MutableInteractionSource() },
+                        indication = null, onClick = onClick,
                     ))
                     .padding(horizontal = LedgerStyle.spacing.large),
                 verticalAlignment = Alignment.CenterVertically,
@@ -85,10 +97,10 @@ fun FormFieldFrameBase(
                 Modifier.align(Alignment.TopStart).offset(x = LedgerStyle.spacing.large, y = -LedgerStyle.dimensions.fieldLabelOffset)
                     .background(labelBackground).padding(horizontal = LedgerStyle.spacing.extraSmall),
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (readOnly) colors.onSurface.copy(alpha = LedgerStyle.opacity.disabled) else colors.onSurfaceVariant,
+                color = labelColor,
             )
         }
-        if (error != null) {
+        if (error != null && enabled) {
             Text(error, Modifier.padding(start = LedgerStyle.spacing.large, top = LedgerStyle.spacing.extraSmall), style = MaterialTheme.typography.labelSmall, color = colors.error)
         }
     }

@@ -104,7 +104,7 @@ fun LedgerApp(
                     },
             ) {
                 LedgerFloatingActionButton(
-                    label = stringResource(R.string.ui_new_transaction),
+                    label = stringResource(R.string.ui_transaction),
                     icon = MaterialSymbols.EditSquare,
                     containerColor = MaterialTheme.colorScheme.tertiary,
                     contentColor = MaterialTheme.colorScheme.onTertiary,

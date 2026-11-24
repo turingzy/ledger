@@ -1,6 +1,10 @@
 package cn.turingzy.ledger.ui.component.input
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.requiredSize
@@ -10,13 +14,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import cn.turingzy.ledger.ui.theme.LedgerInteractionStyle
+import cn.turingzy.ledger.ui.theme.LedgerStyle
 
 /**
  * 紧凑型滑块组件。
@@ -30,7 +37,6 @@ import androidx.compose.ui.unit.dp
  * @param valueRange 可选数值范围，默认为 0f..1f。
  * @param onValueChangeFinished 滑动结束时的回调函数。
  * @param color 滑块与激活轨道的主题颜色，默认为当前主题的 primary 颜色。
- * @param thumbDiameter 滑块指示器的直径，默认为 16.dp。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,15 +48,23 @@ internal fun CompactSlider(
     valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
     onValueChangeFinished: () -> Unit = {},
     color: Color = MaterialTheme.colorScheme.primary,
-    thumbDiameter: Dp = 16.dp,
 ) {
     val interactions = remember { MutableInteractionSource() }
+    val pressed by interactions.collectIsPressedAsState()
+    val dragged by interactions.collectIsDraggedAsState()
+    val thumbActive = enabled && (pressed || dragged)
+    val thumbScale by animateFloatAsState(
+        targetValue = if (thumbActive) 0.9f else 1f,
+        animationSpec = tween(if (thumbActive) LedgerInteractionStyle.pressEnterMillis else LedgerInteractionStyle.pressExitMillis),
+        label = "CompactSliderThumbScale",
+    )
+    val thumbDiameter = 16.dp
     val colors = SliderDefaults.colors(
         thumbColor = color,
         activeTrackColor = color,
         inactiveTrackColor = color.copy(alpha = 0.24f),
-        disabledThumbColor = color.copy(alpha = 0.38f),
-        disabledActiveTrackColor = color.copy(alpha = 0.38f),
+        disabledThumbColor = color.copy(alpha = LedgerStyle.opacity.disabled),
+        disabledActiveTrackColor = color.copy(alpha = LedgerStyle.opacity.disabled),
         disabledInactiveTrackColor = color.copy(alpha = 0.12f),
     )
     Slider(
@@ -58,8 +72,12 @@ internal fun CompactSlider(
         valueRange = valueRange, onValueChangeFinished = onValueChangeFinished,
         interactionSource = interactions, colors = colors,
         thumb = {
+            // Scale the drawing only so the seek position stays stable during a drag.
             SliderDefaults.Thumb(
-                interactionSource = interactions, modifier = Modifier.requiredSize(thumbDiameter).clip(CircleShape),
+                interactionSource = interactions,
+                modifier = Modifier.requiredSize(thumbDiameter)
+                    .graphicsLayer { scaleX = thumbScale; scaleY = thumbScale }
+                    .clip(CircleShape),
                 colors = colors, enabled = enabled, thumbSize = DpSize(thumbDiameter, thumbDiameter),
             )
         },

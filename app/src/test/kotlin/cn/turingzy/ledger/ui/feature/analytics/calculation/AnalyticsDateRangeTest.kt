@@ -23,6 +23,6 @@ class AnalyticsDateRangeTest {
         val partial = CalendarSelection(LocalDate.of(2024, 1, 1), LocalDate.of(2024, 11, 30))
         assertEquals("2024 01.01-11.30", partial.analyticsDisplayRange())
         val week = CalendarSelection.week(LocalDate.of(2026, 1, 1))
-        assertEquals("2025 12.29-2026 01.04", week.analyticsDisplayRange())
+        assertEquals("2025 12.28-2026 01.03", week.analyticsDisplayRange())
     }
 }

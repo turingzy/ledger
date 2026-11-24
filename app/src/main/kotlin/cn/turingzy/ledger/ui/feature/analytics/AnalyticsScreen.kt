@@ -15,13 +15,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import cn.turingzy.ledger.ui.component.base.PageFrameBase
+import cn.turingzy.ledger.ui.component.base.PrimaryPageHeaderBase
 import androidx.compose.material3.Text
 import cn.turingzy.ledger.ui.component.navigation.LocalBottomBarContentPadding
 import androidx.compose.runtime.Composable
@@ -39,7 +39,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import cn.turingzy.ledger.ui.feature.bill.BillViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -139,16 +138,17 @@ fun AnalyticsContent(
                                     .padding(start = LedgerStyle.spacing.pageHorizontal, end = LedgerStyle.spacing.pageHorizontal, top = LedgerStyle.spacing.extraSmall, bottom = LedgerStyle.spacing.block + LocalBottomBarContentPadding.current),
                                 verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.labelGap),
                             ) {
-                                Box(Modifier.fillMaxWidth().height(44.dp), contentAlignment = Alignment.CenterStart) {
-                                    Text(
-                                        textResources.getString(cn.turingzy.ledger.R.string.ui_analytics), fontSize = LedgerStyle.typography.screenTitle.fontSize, fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface, letterSpacing = (-0.6).sp,
+                                PrimaryPageHeaderBase(
+                                    title = textResources.getString(cn.turingzy.ledger.R.string.ui_analytics),
+                                ) {
+                                    TopBarIconButton(
+                                        imageVector = MaterialSymbols.CalendarMonth,
+                                        contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_spending_calendar_2),
+                                        onClick = rememberUiAction(
+                                            { onOpenCalendar(minOf(uiState.periodEnd, LocalDate.now())) },
+                                            UiInteractionKind.Navigation,
+                                        ),
                                     )
-                                    Row(Modifier.align(Alignment.CenterEnd), verticalAlignment = Alignment.CenterVertically) {
-                                        TopBarIconButton(MaterialSymbols.CalendarMonth, textResources.getString(cn.turingzy.ledger.R.string.ui_spending_calendar_2),
-                                            rememberUiAction({ onOpenCalendar(minOf(uiState.periodEnd, LocalDate.now())) }, UiInteractionKind.Navigation),
-                                            Modifier)
-                                    }
                                 }
                                 AnalyticsTimeScopeSelector(uiState.timeScope, onTimeScopeChange)
                                 Row(

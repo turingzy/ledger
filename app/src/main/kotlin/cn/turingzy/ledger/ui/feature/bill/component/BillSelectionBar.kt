@@ -114,9 +114,12 @@ internal fun BillSelectionBar(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.small),
             ) {
-                BillSelectionIndicator(allSelected)
-                Text(stringResource(R.string.bill_select_all), style = LedgerStyle.typography.bodySmall, maxLines = 1)
-                Text(selectedCount.toString(), style = LedgerStyle.typography.bodySmall, color = colors.textSecondary, maxLines = 1)
+                val opacity = if (enabled) 1f else LedgerStyle.opacity.disabled
+                BillSelectionIndicator(allSelected, enabled = enabled)
+                Text(stringResource(R.string.bill_select_all), style = LedgerStyle.typography.bodySmall,
+                    color = colors.textPrimary.copy(alpha = opacity), maxLines = 1)
+                Text(selectedCount.toString(), style = LedgerStyle.typography.bodySmall,
+                    color = colors.textSecondary.copy(alpha = opacity), maxLines = 1)
             }
             Spacer(Modifier.weight(1f))
             BillSelectionAction(stringResource(R.string.ui_account), colors.textPrimary, actionsEnabled, onSelectAccount)

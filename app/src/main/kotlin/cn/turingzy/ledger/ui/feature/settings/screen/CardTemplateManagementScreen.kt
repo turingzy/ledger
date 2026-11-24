@@ -29,7 +29,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.text.BasicTextField
+import cn.turingzy.ledger.ui.component.input.FormInputBase
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -51,7 +51,6 @@ import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -317,13 +316,11 @@ private fun CardFaceProperties(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(textResources.getString(cn.turingzy.ledger.R.string.ui_design_name), Modifier.width(LedgerStyle.dimensions.formLabelWidth), style = MaterialTheme.typography.bodyLarge)
-            BasicTextField(
+            FormInputBase(
                 value = template.titaniumTitle(),
                 onValueChange = { onChange(template.copy(name = it)) },
                 modifier = Modifier.weight(1f).semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_design_name) },
-                singleLine = true,
                 textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.onSurfaceVariant, textAlign = TextAlign.End),
-                cursorBrush = SolidColor(colors.onSurface),
                 decorationBox = { field ->
                     Box(contentAlignment = Alignment.CenterEnd) {
                         if (template.name.isEmpty()) Text(textResources.getString(cn.turingzy.ledger.R.string.ui_enter_a_design_name), color = LedgerStyle.colors.textSupporting)

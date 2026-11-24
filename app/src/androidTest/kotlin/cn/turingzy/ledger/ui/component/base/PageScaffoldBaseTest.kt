@@ -21,11 +21,13 @@ import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.assertLeftPositionInRootIsEqualTo
 import androidx.compose.ui.test.assertTopPositionInRootIsEqualTo
 import androidx.compose.ui.test.assertWidthIsEqualTo
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.ui.theme.LedgerTheme
 import cn.turingzy.ledger.ui.theme.LedgerStyle
@@ -40,6 +42,21 @@ class PageScaffoldBaseTest {
 
     @Test fun safeInsetsAreAppliedOnce() = verifyInsets(parentConsumesInsets = false)
     @Test fun aParentConsumingInsetsDoesNotDoubleThePadding() = verifyInsets(parentConsumesInsets = true)
+
+    @Test
+    fun subpageTitleStartsAfterTheBackButtonSlot() {
+        compose.setContent {
+            LedgerTheme {
+                PageScaffoldBase(
+                    title = "详情",
+                    onBack = {},
+                    windowInsets = WindowInsets(0, 0, 0, 0),
+                ) {}
+            }
+        }
+        compose.onNodeWithTag("basePageTopBar").assertHeightIsEqualTo(44.dp)
+        compose.onNodeWithText("详情").assertLeftPositionInRootIsEqualTo(56.dp)
+    }
 
     @Test
     fun scrollingContentFeedsTheFixedFrostedTopBar() {
@@ -107,7 +124,7 @@ class PageScaffoldBaseTest {
         }
         compose.onNodeWithTag("content")
             .assertLeftPositionInRootIsEqualTo(12.dp)
-            .assertTopPositionInRootIsEqualTo(80.dp)
+            .assertTopPositionInRootIsEqualTo(68.dp)
             .assertWidthIsEqualTo(292.dp)
     }
 }

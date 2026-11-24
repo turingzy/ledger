@@ -16,7 +16,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
@@ -71,9 +70,9 @@ internal fun AccountCardFaceField(
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val colors = MaterialTheme.colorScheme
-    val contentColor = if (enabled) colors.onSurface else colors.onSurface.copy(alpha = 0.38f)
-    Column(modifier.fillMaxWidth().semantics { if (!enabled) disabled() }) {
-        FormFieldFrameBase(textResources.getString(cn.turingzy.ledger.R.string.ui_card_design), readOnly = !enabled, onClick = if (enabled) onClick else null) {
+    val contentColor = colors.onSurface.copy(alpha = if (enabled) 1f else LedgerStyle.opacity.disabled)
+    Column(modifier.fillMaxWidth()) {
+        FormFieldFrameBase(textResources.getString(cn.turingzy.ledger.R.string.ui_card_design), enabled = enabled, onClick = if (enabled) onClick else null) {
             Text(value, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = contentColor, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Icon(MaterialSymbols.ChevronRight, null, Modifier.size(LedgerStyle.icons.inline), tint = contentColor)
         }

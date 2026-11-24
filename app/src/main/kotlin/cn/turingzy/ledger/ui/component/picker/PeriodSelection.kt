@@ -5,17 +5,18 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
+import java.time.temporal.TemporalAdjusters.previousOrSame
 
 /**
- * 获取指定日期所在周的周一日期。
+ * 获取指定日期所在周的周日日期。
  *
  * @param date 目标日期。
- * @return 所在周周一的 [LocalDate]。
+ * @return 所在周周日的 [LocalDate]。
  */
-internal fun weekStart(date: LocalDate): LocalDate = date.with(DayOfWeek.MONDAY)
+internal fun weekStart(date: LocalDate): LocalDate = date.with(previousOrSame(DayOfWeek.SUNDAY))
 
 /**
- * 获取指定日期所在周的文本显示范围（如 "2024 05.06-05.12"）。
+ * 获取指定日期所在周的文本显示范围（如 "2024 05.05-05.11"）。
  *
  * @param date 目标日期。
  * @return 格式化后的周范围文本。
@@ -25,7 +26,7 @@ internal fun weekLabel(date: LocalDate): String = CalendarSelection.week(date).d
 /**
  * 根据周期筛选类型获取包含该日期的周期起始日期。
  *
- * - 周视图：该周周一
+ * - 周视图：该周周日
  * - 月视图：该月1日
  * - 年视图：该年1月1日
  * - 自定义范围：原始日期

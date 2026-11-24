@@ -46,8 +46,10 @@ internal fun AnalyticsStatisticsCard(state: AnalyticsUiState.Success, days: Map<
         analyticsExpenseAverage(state.timeScope, state.totalExpense, state.periodStart, state.periodEnd,
             previousExpense, state.comparison?.periodStart ?: previous.start, state.comparison?.periodEnd ?: previous.end)
     }
-    DashboardCard(modifier) {
-        AnalyticsCardTitle(textResources.getString(cn.turingzy.ledger.R.string.ui_income_and_expenses))
+    DashboardCard(
+        title = textResources.getString(cn.turingzy.ledger.R.string.ui_income_and_expenses),
+        modifier = modifier,
+    ) {
         Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.sectionGap)) {
             StatisticsMetric(textResources.getString(cn.turingzy.ledger.R.string.ui_expense), state.totalExpense, Modifier.weight(1f))
             StatisticsMetric(textResources.getString(cn.turingzy.ledger.R.string.ui_income), state.totalIncome, Modifier.weight(1f))

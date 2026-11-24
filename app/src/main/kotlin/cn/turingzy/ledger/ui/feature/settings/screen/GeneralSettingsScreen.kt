@@ -8,18 +8,21 @@ import cn.turingzy.ledger.ui.component.base.ButtonVariantBase
 import cn.turingzy.ledger.ui.component.base.ActionButtonBase
 import androidx.compose.foundation.layout.*
 import cn.turingzy.ledger.model.settings.AppPreferences
+import cn.turingzy.ledger.model.currency.convertCents
 import cn.turingzy.ledger.ui.component.base.CardBase
-import cn.turingzy.ledger.ui.component.base.DividerBase
+import cn.turingzy.ledger.ui.component.base.ListRowDividerBase
+import cn.turingzy.ledger.ui.component.base.SectionHeaderBase
+import cn.turingzy.ledger.ui.component.base.SectionHeaderVariantBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
-import androidx.compose.foundation.text.BasicTextField
+import cn.turingzy.ledger.ui.component.input.FormInputBase
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -136,21 +139,24 @@ internal fun GeneralSettingsContent(
             Modifier.fillMaxWidth().settingsPageScroll(),
             verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.sectionGap),
         ) {
-            Text(stringResource(R.string.basic_preferences), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-            GeneralPreferencesForm(draft, onPreferencesChange, !busy)
-            Text(stringResource(R.string.exchange_rates), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-            CardBase(contentPadding = PaddingValues(LedgerStyle.spacing.none), contentSpacing = LedgerStyle.spacing.none) {
-                PreferenceChoice(
-                    title = stringResource(R.string.account_currency),
-                    selected = from,
-                    options = currencyOptionsBiz(currencies),
-                    enabled = !busy,
-                    selectedLabel = from,
-                    menuWidth = LedgerStyle.dimensions.currencyDropdownWidth,
-                    onSelect = onFromChange,
-                )
-                DividerBase(Modifier.padding(horizontal = LedgerStyle.spacing.large))
-                ExchangeRateField(from, draft.primaryCurrency, rate, !busy, onRateChange)
+            GeneralSettingsSection(stringResource(R.string.basic_preferences)) {
+                GeneralPreferencesForm(draft, onPreferencesChange, !busy)
+            }
+            GeneralSettingsSection(stringResource(R.string.exchange_rates)) {
+                CardBase(contentPadding = PaddingValues(LedgerStyle.spacing.none), contentSpacing = LedgerStyle.spacing.none) {
+                    PreferenceChoice(
+                        title = stringResource(R.string.account_currency),
+                        selected = from,
+                        options = currencyOptionsBiz(currencies),
+                        enabled = !busy,
+                        selectedLabel = from,
+                        menuWidth = LedgerStyle.dimensions.currencyDropdownWidth,
+                        horizontalPadding = LedgerStyle.spacing.rowHorizontal,
+                        onSelect = onFromChange,
+                    )
+                    ListRowDividerBase()
+                    ExchangeRateField(from, draft.primaryCurrency, rate, !busy, onRateChange)
+                }
             }
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Row(
@@ -174,8 +180,17 @@ internal fun GeneralSettingsContent(
                     Text(stringResource(R.string.refresh_rates), style = MaterialTheme.typography.bodyMedium)
                 }
             }
-            message?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant) }
+            message?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = colors.error) }
         }
+    }
+}
+
+/** 分组标题与卡片之间的留白小于分组之间的留白。 */
+@Composable
+private fun GeneralSettingsSection(title: String, content: @Composable () -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium)) {
+        SectionHeaderBase(title, variant = SectionHeaderVariantBase.Supporting)
+        content()
     }
 }
 
@@ -194,23 +209,41 @@ internal fun GeneralSettingsContent(
 private fun ExchangeRateField(from: String, primary: String, value: String, enabled: Boolean, onChange: (String) -> Unit) {
     val colors = MaterialTheme.colorScheme
     val description = "1 $from, $primary"
-    Row(Modifier.fillMaxWidth().heightIn(min = SettingsItemHeight).padding(horizontal = LedgerStyle.spacing.large), verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.inlineGap)) {
-        Text("1 $from", style = MaterialTheme.typography.bodyLarge, color = colors.onSurface)
-        BasicTextField(
-            value = value, onValueChange = onChange, enabled = enabled, singleLine = true,
-            textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.onSurfaceVariant.copy(alpha = if (enabled) 1f else LedgerStyle.opacity.disabled), textAlign = TextAlign.End),
-            cursorBrush = SolidColor(colors.onSurface),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            modifier = Modifier.weight(1f).semantics { contentDescription = description },
-            decorationBox = { field ->
-                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
-                    if (value.isBlank()) Text("—", color = LedgerStyle.colors.textSupporting)
-                    field()
-                }
-            },
-        )
-        Text(primary, style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant)
+    val rateError = if (value.isNotBlank() && runCatching { convertCents(0L, value) }.isFailure) {
+        stringResource(R.string.ui_enter_a_valid_exchange_rate)
+    } else null
+    val opacity = if (enabled) 1f else LedgerStyle.opacity.disabled
+    Column {
+        Row(
+            Modifier.fillMaxWidth().heightIn(min = SettingsItemHeight).padding(horizontal = LedgerStyle.spacing.rowHorizontal),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.inlineGap),
+        ) {
+            Text("1 $from", style = MaterialTheme.typography.bodyLarge, color = colors.onSurface.copy(alpha = opacity))
+            FormInputBase(
+                value = value, onValueChange = onChange, enabled = enabled, isError = rateError != null,
+                textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.onSurfaceVariant, textAlign = TextAlign.End),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                modifier = Modifier.weight(1f).semantics {
+                    contentDescription = description
+                    if (enabled && rateError != null) error(rateError)
+                },
+                decorationBox = { field ->
+                    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+                        if (value.isBlank()) Text("—", color = LedgerStyle.colors.textSupporting.copy(alpha = opacity))
+                        field()
+                    }
+                },
+            )
+            Text(primary, style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant.copy(alpha = opacity))
+        }
+        if (enabled && rateError != null) {
+            Text(
+                rateError,
+                Modifier.padding(horizontal = LedgerStyle.spacing.rowHorizontal).padding(bottom = LedgerStyle.spacing.medium),
+                style = MaterialTheme.typography.bodySmall, color = colors.error,
+            )
+        }
     }
 }
 

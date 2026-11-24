@@ -111,7 +111,8 @@ object AppDimensions {
     val dialogMaxHeight = 520.dp
     val sheetMaxHeight = 640.dp
     val wideDialogMaxWidth = 560.dp
-    val compactToolbarHeight = 44.dp
+    /** 主页面、滚动顶栏和子页共用的视觉栏高。 */
+    val toolbarHeight = 44.dp
     val supportingRowMinHeight = 58.dp
     val dropdownWidth = 160.dp
     val currencyDropdownWidth = 240.dp
@@ -127,8 +128,6 @@ object AppDimensions {
     val floatingActionShadow = 4.dp
     val touchTarget = 48.dp
     val compactIconButton = 36.dp
-    val backButton = 44.dp
-    val toolbarHeight = 56.dp
     val rowMinHeight = 48.dp
     val dividerThickness = 0.5.dp
     val topBarBlur = 3.dp
@@ -149,7 +148,7 @@ typealias LedgerDimensions = AppDimensions
 object AppOpacity {
     /** 居中弹窗和模态抽屉共用的黑色遮罩透明度。 */
     const val modalScrim = 0.45f
-    const val readOnlyBorder = 0.12f
+    const val disabledFieldBorder = 0.12f
     const val subduedChevron = 0.35f
     const val disabled = 0.38f
     const val pressed = 0.05f

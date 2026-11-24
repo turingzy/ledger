@@ -71,7 +71,7 @@ fun LedgerFloatingActionButton(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.inlineGap),
                     ) {
-                        Text(label, style = LedgerStyle.typography.button)
+                        Text(label, style = LedgerStyle.typography.floatingActionLabel)
                         Icon(icon, contentDescription = null, modifier = Modifier.size(LedgerStyle.icons.default))
                     }
                 }

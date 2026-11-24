@@ -1,6 +1,5 @@
 package cn.turingzy.ledger.ui.component.picker
 
-import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -31,10 +30,10 @@ internal data class CalendarSelection(val start: LocalDate, val end: LocalDate) 
      *
      * 同年格式为 "yyyy MM.dd-MM.dd"，跨年格式为 "yyyy MM.dd-yyyy MM.dd"。
      */
-    fun displayRange(): String {
+    fun displayRange(separator: String = "-"): String {
         val startLabel = start.format(RANGE_START_FORMAT)
         val endLabel = end.format(if (start.year == end.year) RANGE_END_FORMAT else RANGE_START_FORMAT)
-        return "$startLabel-$endLabel"
+        return "$startLabel$separator$endLabel"
     }
 
     /**
@@ -86,12 +85,14 @@ internal data class CalendarSelection(val start: LocalDate, val end: LocalDate) 
             CalendarSelection(LocalDate.of(year, 1, 1), LocalDate.of(year, 12, 31))
 
         /**
-         * 创建包含指定日期的完整自然周选区（周一至周日）。
+         * 创建包含指定日期的完整周选区（周日至周六）。
          *
          * @param date 目标日期。
          */
-        fun week(date: LocalDate): CalendarSelection =
-            CalendarSelection(date.with(DayOfWeek.MONDAY), date.with(DayOfWeek.SUNDAY))
+        fun week(date: LocalDate): CalendarSelection {
+            val start = weekStart(date)
+            return CalendarSelection(start, start.plusDays(6))
+        }
 
         /**
          * 创建指定月份全月的选区（当月1日至当月末日）。

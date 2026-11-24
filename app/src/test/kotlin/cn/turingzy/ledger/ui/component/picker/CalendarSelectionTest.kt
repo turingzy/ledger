@@ -7,8 +7,12 @@ import org.junit.Test
 
 class CalendarSelectionTest {
     @Test
-    fun defaultWeekCrossesYearWithMondayAndSundayBoundaries() {
-        assertEquals(range("2025-12-29", "2026-01-04"), CalendarSelection.week(date("2026-01-01")))
+    fun weekCrossesYearAndIncludesSundayThroughSaturday() {
+        val week = range("2025-12-28", "2026-01-03")
+        assertEquals(week, CalendarSelection.week(week.start))
+        assertEquals(week, CalendarSelection.week(date("2026-01-01")))
+        assertEquals(week, CalendarSelection.week(week.end))
+        assertEquals(range("2026-01-04", "2026-01-10"), CalendarSelection.week(date("2026-01-04")))
     }
 
     @Test

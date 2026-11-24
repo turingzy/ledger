@@ -193,6 +193,23 @@ class RecordTransactionSheetTest {
     }
 
     @Test
+    fun cancellingDateTimeChangesKeepsTheOriginalTransactionTime() {
+        val initialTime = java.time.LocalDate.of(2024, 2, 29).atTime(12, 30)
+            .atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+        var saved: Transaction? = null
+        showSheet(initialTransactionTime = initialTime) { saved = it }
+        compose.onNodeWithContentDescription("选择时间").performClick()
+        compose.onNodeWithContentDescription("2024-02-28").performClick()
+        compose.onNodeWithContentDescription("小时").performScrollToIndex(23)
+        compose.onNodeWithContentDescription("分钟").performScrollToIndex(59)
+        compose.onNodeWithText("取消").performClick()
+        compose.onNodeWithText("12:30", substring = true).assertIsDisplayed()
+        compose.onNodeWithTag("keypad_1").performClick()
+        compose.onNodeWithText("完成").performClick()
+        compose.runOnIdle { assertEquals(initialTime, checkNotNull(saved).transactionTime) }
+    }
+
+    @Test
     fun transferUsesHorizontalAccountSelectorsAndSavesSwappedDirection() {
         var saved: Transaction? = null
         showSheet { saved = it }

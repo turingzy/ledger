@@ -3,7 +3,6 @@ package cn.turingzy.ledger.ui.feature.settings.component
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.platform.testTag
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -12,7 +11,6 @@ import cn.turingzy.ledger.ui.component.base.PageScaffoldBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -73,7 +71,7 @@ internal fun SettingsSubpageScaffold(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     closeInsteadOfBack: Boolean = false,
-    actions: @Composable RowScope.() -> Unit = { Box(Modifier.size(LedgerStyle.dimensions.touchTarget)) },
+    actions: @Composable RowScope.() -> Unit = {},
     content: @Composable ColumnScope.() -> Unit,
 ) {
     var offset by remember(title) { mutableFloatStateOf(0f) }
@@ -92,9 +90,6 @@ internal fun SettingsSubpageScaffold(
     )
     PageScaffoldBase(
         title, modifier, onBack = onBack,
-        titleStyle = LedgerStyle.typography.detailPageTitle,
-        titlePadding = LedgerStyle.spacing.none,
-        backButtonSize = LedgerStyle.dimensions.backButton,
         headerOpacity = opacity,
         closeInsteadOfBack = closeInsteadOfBack,
         actions = actions,

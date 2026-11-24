@@ -180,10 +180,16 @@
   <string name="ui_rule_details">规则详情</string>
   <string name="ui_import_rule">解析规则</string>
   <string name="ui_include_in_total_assets">计入总资产</string>
+  <string name="ui_yes">是</string>
+  <string name="ui_no">否</string>
+  <string name="ui_transaction">交易</string>
   <string name="ui_new_transaction">记一笔</string>
   <string name="ui_settings">设置</string>
   <string name="ui_transaction_unavailable_or_deleted">该交易不存在或已删除</string>
   <string name="ui_enter_an_exchange_rate">请填写汇率</string>
+  <string name="ui_enter_a_valid_exchange_rate">请输入有效汇率，汇率须大于零。</string>
+  <string name="ui_enter_a_valid_hex_color">请输入有效的十六进制颜色。</string>
+  <string name="ui_read_only">只读</string>
   <string name="ui_enter_a_design_name">请输入卡面名称</string>
   <string name="ui_enter_a_name">请输入名称</string>
   <string name="ui_enter_a_valid_amount">请输入有效金额</string>

@@ -4,19 +4,23 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import cn.turingzy.ledger.ui.component.base.DialogWindowBase
 import cn.turingzy.ledger.ui.component.base.DialogActions
 import cn.turingzy.ledger.ui.component.base.dialogContentPadding
@@ -48,10 +52,17 @@ internal fun LedgerDateTimeDialog(
     val zone = remember { ZoneId.systemDefault() }
     val initial = remember(initialTime) { Instant.ofEpochMilli(initialTime).atZone(zone) }
     var day by rememberSaveable(initialTime) { mutableLongStateOf(initial.toLocalDate().toEpochDay()) }
-    var hour by rememberSaveable(initialTime) { mutableStateOf(initial.hour.toString().padStart(2, '0')) }
-    var minute by rememberSaveable(initialTime) { mutableStateOf(initial.minute.toString().padStart(2, '0')) }
+    val hour = rememberSaveable(initialTime, saver = LazyListState.Saver) { LazyListState(initial.hour) }
+    val minute = rememberSaveable(initialTime, saver = LazyListState.Saver) { LazyListState(initial.minute) }
     val date = LocalDate.ofEpochDay(day)
-    val selectedTime = recordTimeMillis(date, hour, minute, zone)
+    val selectedTime by remember(hour, minute, zone) {
+        derivedStateOf {
+            recordTimeMillis(
+                LocalDate.ofEpochDay(day), hour.centeredWheelIndex().toString(), minute.centeredWheelIndex().toString(), zone,
+            )
+        }
+    }
+    val scrolling = hour.isScrollInProgress || minute.isScrollInProgress
     val allowedTime = selectedTime?.takeIf(isTimeAllowed)
     DialogWindowBase(onDismissRequest = onDismiss) {
         SurfaceBase(
@@ -61,15 +72,24 @@ internal fun LedgerDateTimeDialog(
         ) {
             Column(Modifier.fillMaxWidth().heightIn(max = LedgerStyle.dimensions.dialogMaxHeight).dialogContentPadding(LedgerStyle.spacing.extraLarge), verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium)) {
                 Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
-                    LedgerDateTimePicker(date, hour, minute, { day = it.toEpochDay() }, { hour = it }, { minute = it })
-                    if (invalidTimeMessage != null && selectedTime != null && allowedTime == null) {
-                        Text(invalidTimeMessage, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
-                    }
+                    LedgerDateTimePicker(date, hour, minute) { day = it.toEpochDay() }
+                }
+                if (!scrolling && invalidTimeMessage != null && selectedTime != null && allowedTime == null) {
+                    Text(
+                        invalidTimeMessage,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
                 }
                 DialogActions(
                     onCancel = onDismiss,
-                    onConfirm = { allowedTime?.let(onConfirm) },
-                    confirmEnabled = allowedTime != null,
+                    onConfirm = {
+                        if (!hour.isScrollInProgress && !minute.isScrollInProgress) {
+                            selectedTime?.takeIf(isTimeAllowed)?.let(onConfirm)
+                        }
+                    },
+                    confirmEnabled = !scrolling && allowedTime != null,
                 )
             }
         }

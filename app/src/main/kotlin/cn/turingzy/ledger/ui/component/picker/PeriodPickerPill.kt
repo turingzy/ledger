@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.ui.interaction.UiInteractionKind
@@ -27,7 +28,7 @@ import cn.turingzy.ledger.ui.theme.LedgerStyle
  *
  * 在账单、日历及统计页面共享该胶囊按钮的尺寸与排版样式，展示当前选中的时间周期文案，并支持点击调出时间选择弹窗。
  *
- * @param text 胶囊内展示的周期或日期文案。
+ * @param text 胶囊内展示的日期文案。包含换行的区间以较小的字号分两行显示。
  * @param onClick 点击胶囊时的回调函数。
  * @param modifier 应用于该组件的修饰符。
  * @param background 胶囊背景颜色，默认为 [LedgerStyle.colors.surface]。
@@ -44,6 +45,7 @@ internal fun PeriodPickerPill(
     trailingIcon: ImageVector? = null,
 ) {
     val foreground = LedgerStyle.colors.textPrimary
+    val twoLines = '\n' in text
     Row(
         modifier
             .heightIn(min = 32.dp)
@@ -55,10 +57,18 @@ internal fun PeriodPickerPill(
         horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.small),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        val labelStyle = LedgerStyle.typography.periodPill
         Text(
             text,
-            style = LedgerStyle.typography.periodPill,
-            color = foreground, maxLines = 1, overflow = TextOverflow.Ellipsis,
+            modifier = if (trailingIcon != null) Modifier.weight(1f, fill = false) else Modifier,
+            style = if (twoLines) labelStyle.copy(
+                fontSize = LedgerStyle.typography.label.fontSize,
+                lineHeight = LedgerStyle.typography.label.lineHeight,
+            ) else labelStyle,
+            color = foreground,
+            textAlign = if (twoLines) TextAlign.Center else null,
+            maxLines = if (twoLines) 2 else 1,
+            overflow = TextOverflow.Ellipsis,
         )
         if (trailingIcon != null) Icon(trailingIcon, null, Modifier.size(LedgerStyle.icons.small), tint = foreground)
     }

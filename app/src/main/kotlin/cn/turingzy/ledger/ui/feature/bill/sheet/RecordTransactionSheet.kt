@@ -7,6 +7,7 @@ import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.ui.component.base.SurfaceBase
 import cn.turingzy.ledger.ui.component.base.ModalBottomSheetBase
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -35,7 +36,7 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
+import cn.turingzy.ledger.ui.component.input.FormInputBase
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -56,7 +57,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onSizeChanged
@@ -247,7 +247,7 @@ fun RecordTransactionSheet(
             accountName = accounts.firstOrNull { it.account.id == accountId }?.account?.name,
             destinationName = accounts.firstOrNull { it.account.id == destinationId }?.account?.name,
             timeLabel = recordTimeLabel(transactionTime, zone),
-            error = error ?: rateError,
+            error = error,
             primaryAmountLabel = if (canEditPrimaryAmount) {
                 val amountText = amountTextBiz(primaryAmount, primaryCurrency, primaryCurrency, useGrouping = true)
                 when {
@@ -261,6 +261,13 @@ fun RecordTransactionSheet(
             closeDescription = stringResource(R.string.ui_close_record_sheet, title),
             actionsEnabled = !saving,
             transferRate = transferRate.takeIf { crossCurrency },
+            transferRateError = if (crossCurrency) {
+                when {
+                    transferRate.isBlank() -> rateError
+                    runCatching { convertCents(0L, transferRate) }.isFailure -> stringResource(R.string.ui_enter_a_valid_exchange_rate)
+                    else -> null
+                }
+            } else null,
             transferLabel = "1 ${sourceCurrency.orEmpty()} = … ${targetCurrency.orEmpty()}",
             transferredAmount = transaction?.toAmount?.toFormattedAmount()?.let { "$it ${targetCurrency.orEmpty()}" },
             onTransferRateChange = { rateEdited = true; transferRate = it; rateError = null },
@@ -356,6 +363,7 @@ fun RecordTransactionSheet(
  * @param keyHeight 键盘按键高度。
  * @param currency 当前账户币种代码。
  * @param transferRate 跨币种转账汇率。
+ * @param transferRateError 汇率字段的加载或校验提示。
  * @param transferLabel 汇率说明标签。
  * @param transferredAmount 折算后的目标账户金额。
  * @param onTransferRateChange 修改转账汇率回调。
@@ -393,6 +401,7 @@ internal fun RecordTransactionContent(
     keyHeight: Dp = 48.dp,
     currency: String = "CNY",
     transferRate: String? = null,
+    transferRateError: String? = null,
     transferLabel: String = "",
     transferredAmount: String? = null,
     onTransferRateChange: (String) -> Unit = {},
@@ -480,15 +489,18 @@ internal fun RecordTransactionContent(
                                 )
                             }
                             DividerBase()
-                            BasicTextField(
-                                value = note, onValueChange = onNoteChange, singleLine = true,
+                            FormInputBase(
+                                value = note, onValueChange = onNoteChange, enabled = actionsEnabled,
                                 textStyle = TextStyle(fontSize = LedgerStyle.typography.bodySmall.fontSize, lineHeight = 18.sp, color = colors.onSurfaceVariant),
-                                cursorBrush = SolidColor(colors.onSurface),
                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done), keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                                 modifier = Modifier.fillMaxWidth().height(36.dp).semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_note) },
                                 decorationBox = { field ->
                                     Box(Modifier.fillMaxSize().padding(start = 6.dp), contentAlignment = Alignment.CenterStart) {
-                                        if (note.isEmpty()) Text(textResources.getString(cn.turingzy.ledger.R.string.ui_add_a_note), fontSize = LedgerStyle.typography.bodySmall.fontSize, lineHeight = 18.sp, color = LedgerStyle.colors.textSupporting)
+                                        if (note.isEmpty()) Text(
+                                            textResources.getString(R.string.ui_add_a_note),
+                                            fontSize = LedgerStyle.typography.bodySmall.fontSize, lineHeight = 18.sp,
+                                            color = LedgerStyle.colors.textSupporting.copy(alpha = if (actionsEnabled) 1f else LedgerStyle.opacity.disabled),
+                                        )
                                         field()
                                     }
                                 },
@@ -496,9 +508,18 @@ internal fun RecordTransactionContent(
                         }
                     }
                     if (transferRate != null) {
-                        OutlinedTextField(transferRate, onTransferRateChange, label = { Text(transferLabel) }, singleLine = true,
+                        OutlinedTextField(
+                            transferRate, onTransferRateChange, label = { Text(transferLabel) },
+                            singleLine = true, enabled = actionsEnabled, isError = transferRateError != null,
+                            shape = LedgerStyle.shapes.field,
+                            colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = LedgerStyle.colors.outline),
                             keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
-                            supportingText = { transferredAmount?.let { Text(textResources.getString(cn.turingzy.ledger.R.string.destination_amount, it)) } }, modifier = Modifier.fillMaxWidth())
+                            supportingText = {
+                                val hint = transferRateError ?: transferredAmount?.let { stringResource(R.string.destination_amount, it) }
+                                if (hint != null) Text(hint)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
                     }
                     error?.let { Text(it, color = colors.error, style = MaterialTheme.typography.bodySmall) }
                     BuiltInKeypad(
@@ -535,6 +556,7 @@ private fun PrimaryAmountEditor(
     var amountText by rememberSaveable { mutableStateOf(initialAmount?.toFormattedAmount().orEmpty()) }
     val amountOverride = AmountFormatter.parseToCents(amountText)?.let { CurrencyAmountOverride(currency, it) }
     val validAmount = amountOverride?.takeIf { runCatching { it.rateFor(originalAmount) }.isSuccess }?.amount
+    val invalidAmount = amountText.isNotBlank() && validAmount == null
     BaseAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.ui_edit_primary_amount)) },
@@ -544,7 +566,12 @@ private fun PrimaryAmountEditor(
                 onValueChange = { amountText = it },
                 label = { Text(stringResource(R.string.ui_primary_amount_in_currency, currency)) },
                 modifier = Modifier.testTag("primaryAmountInput"),
-                singleLine = true,
+                singleLine = true, isError = invalidAmount,
+                shape = LedgerStyle.shapes.field,
+                colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = LedgerStyle.colors.outline),
+                supportingText = if (invalidAmount) {
+                    { Text(stringResource(R.string.ui_enter_a_valid_amount)) }
+                } else null,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             )
         },

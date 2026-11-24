@@ -58,7 +58,7 @@ class BillSearchTest {
 
     @Test fun quickDateRangesUseBillWeekAndCalendarMonths() {
         val original = BillSearchFilters(minimum = 500)
-        assertEquals(original.copy(start = day.minusDays(6), end = day),
+        assertEquals(original.copy(start = day, end = day.plusDays(6)),
             SearchDatePreset.THIS_WEEK.applyTo(original, day))
         assertEquals(original.copy(start = day, end = day.withDayOfMonth(30)),
             SearchDatePreset.THIS_MONTH.applyTo(original, day))

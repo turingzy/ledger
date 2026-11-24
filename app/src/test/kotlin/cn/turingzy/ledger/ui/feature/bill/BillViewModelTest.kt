@@ -19,6 +19,7 @@ import cn.turingzy.ledger.model.transaction.CurrencySnapshot
 import cn.turingzy.ledger.model.transaction.Transaction
 import cn.turingzy.ledger.model.transaction.TransactionDetail
 import cn.turingzy.ledger.model.transaction.TransactionType
+import cn.turingzy.ledger.ui.component.picker.weekStart
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -37,7 +38,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.time.LocalDate
-import java.time.DayOfWeek
 import java.time.YearMonth
 import java.time.ZoneId
 import kotlin.coroutines.ContinuationInterceptor
@@ -245,7 +245,7 @@ class BillViewModelTest {
         coEvery { transactionRepository.getTransactionsBetween(any(), any(), "CNY") } returns flowOf(emptyList())
         viewModel = BillViewModel(transactionRepository, categoryRepository, accountRepository, testDispatcher, currencies)
         val cases = listOf(
-            Triple(DateFilterType.WEEK, LocalDate.of(2021, 1, 1), LocalDate.of(2020, 12, 28) to LocalDate.of(2021, 1, 3)),
+            Triple(DateFilterType.WEEK, LocalDate.of(2021, 1, 1), LocalDate.of(2020, 12, 27) to LocalDate.of(2021, 1, 2)),
             Triple(DateFilterType.MONTH, LocalDate.of(2024, 2, 29), LocalDate.of(2024, 2, 1) to LocalDate.of(2024, 2, 29)),
             Triple(DateFilterType.YEAR, LocalDate.of(2024, 2, 29), LocalDate.of(2024, 1, 1) to LocalDate.of(2024, 12, 31)),
         )
@@ -272,7 +272,7 @@ class BillViewModelTest {
                 testDispatcher.scheduler.advanceUntilIdle()
                 val current = expectMostRecentItem() as BillUiState.Success
                 val expectedStart = when (type) {
-                    DateFilterType.WEEK -> today.with(DayOfWeek.MONDAY)
+                    DateFilterType.WEEK -> weekStart(today)
                     DateFilterType.MONTH -> today.withDayOfMonth(1)
                     DateFilterType.YEAR -> today.withDayOfYear(1)
                     DateFilterType.RANGE -> today

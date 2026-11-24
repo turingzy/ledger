@@ -67,7 +67,6 @@ internal fun SummaryCardSettings(
                     enabled = enabled,
                     valueRange = 0f..100f,
                     color = colors.tertiary,
-                    thumbDiameter = 14.dp,
                     modifier = Modifier.align(Alignment.Center).fillMaxWidth().semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_transparency) },
                 )
                 Text(

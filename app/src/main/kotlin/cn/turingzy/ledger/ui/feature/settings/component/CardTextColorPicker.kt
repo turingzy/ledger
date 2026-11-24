@@ -22,7 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.BasicTextField
+import cn.turingzy.ledger.ui.component.input.FormInputBase
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -40,7 +40,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
@@ -135,6 +134,7 @@ private fun CardTextColorDialog(initialColor: Color, onDismiss: () -> Unit, onCo
     var alpha by remember { mutableStateOf(initialColor.alpha) }
     var hex by remember { mutableStateOf(initialColor.asHex()) }
     val parsed = hex.asCardTextColor()
+    val colorError = if (parsed == null) textResources.getString(cn.turingzy.ledger.R.string.ui_enter_a_valid_hex_color) else null
     val colors = MaterialTheme.colorScheme
     fun updateColor() { hex = Color.hsv(hue, saturation, brightness, alpha).asHex() }
     DialogWindowBase(onDismissRequest = onDismiss) {
@@ -169,7 +169,7 @@ private fun CardTextColorDialog(initialColor: Color, onDismiss: () -> Unit, onCo
                         horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.large),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        BasicTextField(
+                        FormInputBase(
                             value = hex,
                             onValueChange = { input ->
                                 hex = input.uppercase().take(9)
@@ -179,13 +179,13 @@ private fun CardTextColorDialog(initialColor: Color, onDismiss: () -> Unit, onCo
                                 }
                             },
                             modifier = Modifier.weight(1f).semantics { contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_hex_color) },
-                            singleLine = true,
-                            textStyle = MaterialTheme.typography.bodyLarge.copy(color = if (parsed == null) colors.error else colors.onSurface),
-                            cursorBrush = SolidColor(colors.onSurface),
+                            textStyle = MaterialTheme.typography.bodyLarge,
+                            isError = colorError != null,
                         )
                         Box(Modifier.size(LedgerStyle.icons.default).clip(CircleShape).background(parsed ?: initialColor).border(0.5.dp, colors.outlineVariant, CircleShape))
                     }
                 }
+                if (colorError != null) Text(colorError, style = MaterialTheme.typography.bodySmall, color = colors.error)
                 DialogActions(
                     onCancel = onDismiss,
                     onConfirm = { parsed?.let(onConfirm) },

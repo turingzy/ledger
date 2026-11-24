@@ -179,7 +179,7 @@ internal fun BillSwipeRow(
                 enter = expandHorizontally(tween(200), expandFrom = Alignment.Start) + fadeIn(tween(200)),
                 exit = shrinkHorizontally(tween(200), shrinkTowards = Alignment.Start) + fadeOut(tween(160)),
             ) {
-                BillSelectionIndicator(selected, Modifier.padding(start = LedgerStyle.spacing.rowHorizontal))
+                BillSelectionIndicator(selected, Modifier.padding(start = LedgerStyle.spacing.rowHorizontal), enabled = enabled)
             }
             DayTransactionRowItem(detail, Modifier.weight(1f), onClick = null, showDate = showDate, timeText = timeText)
         }
@@ -207,17 +207,20 @@ private fun BillSwipeAction(icon: ImageVector, label: Int, description: Int, tin
 }
 
 /**
- * 账单多选状态单选指示器图标。
+ * 账单多选的复选标记，交互由所在行提供。
  *
  * @param checked 当前项是否选中。
  * @param modifier 外部修饰符。
+ * @param enabled 当前操作是否可用。
  */
 @Composable
-internal fun BillSelectionIndicator(checked: Boolean, modifier: Modifier = Modifier) {
+internal fun BillSelectionIndicator(checked: Boolean, modifier: Modifier = Modifier, enabled: Boolean = true) {
+    val colors = LedgerStyle.colors
+    val tint = if (checked) colors.info else colors.textSecondary
     Icon(
-        if (checked) MaterialSymbols.RadioButtonChecked else MaterialSymbols.RadioButtonUnchecked,
+        if (checked) MaterialSymbols.CheckBox else MaterialSymbols.CheckBoxOutlineBlank,
         contentDescription = null,
         modifier = modifier.size(LedgerStyle.icons.inline),
-        tint = if (checked) LedgerStyle.colors.info else LedgerStyle.colors.textSecondary,
+        tint = tint.copy(alpha = if (enabled) 1f else LedgerStyle.opacity.disabled),
     )
 }

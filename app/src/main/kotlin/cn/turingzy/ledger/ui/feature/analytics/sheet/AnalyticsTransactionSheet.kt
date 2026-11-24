@@ -2,7 +2,8 @@ package cn.turingzy.ledger.ui.feature.analytics.sheet
 
 import cn.turingzy.ledger.ui.feature.analytics.AnalyticsTransaction
 import cn.turingzy.ledger.ui.feature.analytics.component.AnalyticsCardTitle
-import cn.turingzy.ledger.ui.component.biz.TransactionRowDividerBiz
+import cn.turingzy.ledger.ui.component.biz.TransactionGroupHeaderBiz
+import cn.turingzy.ledger.ui.component.biz.TransactionGroupRowBiz
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.ui.component.base.ModalBottomSheetBase
 import cn.turingzy.ledger.ui.component.biz.LocalCurrencyBiz
@@ -20,7 +21,6 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import cn.turingzy.ledger.model.transaction.TransactionType
 import cn.turingzy.ledger.ui.component.base.BottomSheetHeaderBase
 import kotlinx.coroutines.launch
@@ -65,8 +65,6 @@ internal fun AnalyticsTransactionSheet(
         if (groupByDate) transactions.groupBy { it.date }.toSortedMap(reverseOrder()).entries.map { it.key to it.value }
         else listOf(null to transactions.sortedByDescending { it.amount })
     }
-    val locale = LocalConfiguration.current.locales[0]
-    val dateFormatter = remember(locale) { DateTimeFormatter.ofPattern("MM.dd E", locale) }
     val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
     val shortDateFormatter = remember { DateTimeFormatter.ofPattern("MM.dd") }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -93,7 +91,15 @@ internal fun AnalyticsTransactionSheet(
             Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.small)) {
                 if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
-                AnalyticsTransactionTotals(transactions, summaryType, Modifier.weight(1f), showTotalLabel = true)
+                Text(
+                    analyticsTransactionSummary(transactions, summaryType, showTotalLabel = true),
+                    Modifier.weight(1f),
+                    style = LedgerStyle.typography.bodySmall,
+                    color = colors.onSurfaceVariant,
+                    textAlign = TextAlign.End,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
             if (transactions.isEmpty()) {
                 Text(textResources.getString(R.string.ui_no_transactions), Modifier.padding(LedgerStyle.spacing.extraLarge), color = colors.onSurfaceVariant)
@@ -111,21 +117,28 @@ internal fun AnalyticsTransactionSheet(
                 ) { transactionRow ->
                     LazyColumn(
                         Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 12.dp + LocalBottomBarContentPadding.current),
+                        contentPadding = PaddingValues(
+                            start = LedgerStyle.spacing.pageHorizontal,
+                            end = LedgerStyle.spacing.pageHorizontal,
+                            bottom = LedgerStyle.spacing.sectionGap + LocalBottomBarContentPadding.current,
+                        ),
                     ) {
-                        groups.forEach { (date, entries) ->
+                        groups.forEachIndexed { groupIndex, (date, entries) ->
                             if (date != null) item(key = "date:$date") {
-                                Row(Modifier.fillMaxWidth().padding(start = 4.dp, top = 8.dp, bottom = 7.dp),
-                                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.small)) {
-                                    Text(date.format(dateFormatter), fontSize = LedgerStyle.typography.bodySmall.fontSize,
-                                        lineHeight = 18.sp, color = colors.onSurfaceVariant, maxLines = 1)
-                                    AnalyticsTransactionTotals(entries, summaryType, Modifier.weight(1f))
-                                }
+                                TransactionGroupHeaderBiz(
+                                    date,
+                                    analyticsTransactionSummary(entries, summaryType),
+                                    Modifier.padding(
+                                        top = if (groupIndex == 0) LedgerStyle.spacing.none else LedgerStyle.spacing.sectionGap,
+                                        bottom = LedgerStyle.spacing.medium,
+                                    ),
+                                )
                             }
                             itemsIndexed(entries, key = { _, entry -> entry.id }) { index, entry ->
-                                Column {
-                                    if (index > 0) TransactionRowDividerBiz()
-                                    transactionRow(entry, index == 0, index == entries.lastIndex)
+                                val first = index == 0
+                                val last = index == entries.lastIndex
+                                TransactionGroupRowBiz(first, last) {
+                                    transactionRow(entry, first, last)
                                 }
                             }
                         }
@@ -146,16 +159,14 @@ internal fun AnalyticsTransactionSheet(
  *
  * @param transactions 交易列表。
  * @param summaryType 指定过滤汇总的交易类型。
- * @param modifier 修饰符。
  * @param showTotalLabel 是否在标签前追加“总”（例如“总支出” vs “支出”）。
  */
 @Composable
-private fun AnalyticsTransactionTotals(
+private fun analyticsTransactionSummary(
     transactions: List<AnalyticsTransaction>,
     summaryType: TransactionType?,
-    modifier: Modifier,
     showTotalLabel: Boolean = false,
-) {
+): String {
     val currencySymbol = currencySymbolBiz(LocalCurrencyBiz.current)
     val expense = remember(transactions) { transactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.primaryAmount } }
     val income = remember(transactions) { transactions.filter { it.type == TransactionType.INCOME }.sumOf { it.primaryAmount } }
@@ -163,11 +174,8 @@ private fun AnalyticsTransactionTotals(
     val showIncome = summaryType == TransactionType.INCOME || (summaryType == null && income > 0L)
     val expenseLabel = stringResource(if (showTotalLabel) R.string.ui_total_expenses else R.string.ui_expense)
     val incomeLabel = stringResource(if (showTotalLabel) R.string.ui_total_income else R.string.ui_income)
-    val summary = buildList {
+    return buildList {
         if (showExpense) add("$expenseLabel ${expense.toFormattedAmount(true, symbol = currencySymbol)}")
         if (showIncome) add("$incomeLabel ${income.toFormattedAmount(true, symbol = currencySymbol)}")
     }.joinToString("  ")
-    Text(summary, modifier, fontSize = LedgerStyle.typography.bodySmall.fontSize, lineHeight = 18.sp,
-        color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.End,
-        maxLines = 1, overflow = TextOverflow.Ellipsis)
 }

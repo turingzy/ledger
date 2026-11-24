@@ -12,14 +12,14 @@ class FormMenuPositionProviderTest {
     private val window = IntSize(360, 800)
     private val menu = IntSize(160, 116)
 
-    @Test fun generalSettingsOpenBelowTheFieldAlignedToItsTrailingArrow() {
+    @Test fun downwardMenusOpenBelowTheFieldAlignedToItsTrailingArrow() {
         val position = FormMenuPositionProvider(false, DropdownDirection.DOWN)
             .calculatePosition(field, window, LayoutDirection.Ltr, menu)
         assertEquals(IntOffset(160, 348), position)
         assertEquals(field.right, position.x + menu.width)
     }
 
-    @Test fun accountFormsKeepTheirExistingUpwardDirection() {
+    @Test fun menusUsingTheDefaultDirectionOpenAboveTheirAnchor() {
         val position = FormMenuPositionProvider(false)
             .calculatePosition(field, window, LayoutDirection.Ltr, menu)
         assertEquals(IntOffset(160, 184), position)

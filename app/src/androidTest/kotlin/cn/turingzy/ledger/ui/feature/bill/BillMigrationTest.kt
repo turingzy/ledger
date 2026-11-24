@@ -1,6 +1,9 @@
 package cn.turingzy.ledger.ui.feature.bill
 
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import cn.turingzy.ledger.model.transaction.DateFilterType
 import cn.turingzy.ledger.ui.feature.bill.search.BillSearchHeader
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.SemanticsActions
@@ -13,6 +16,7 @@ import androidx.compose.ui.unit.sp
 import cn.turingzy.ledger.ui.interaction.LocalUiInteractionClock
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.ui.theme.LedgerTheme
+import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -64,6 +68,57 @@ class BillMigrationTest {
         assertEquals(17.sp, results.single().layoutInput.style.fontSize)
         assertEquals(FontWeight.Medium, results.single().layoutInput.style.fontWeight)
         assertEquals(foreground, results.single().layoutInput.style.color)
+    }
+
+    @Test fun crossYearWeekFitsInTheDateEntryOnANarrowScreen() {
+        val weekLabel = "2026 12.27\n2027 01.02"
+        compose.setContent {
+            LedgerTheme {
+                BillContent(
+                    state.copy(
+                        filterType = DateFilterType.WEEK,
+                        monthDisplay = "2026 12.27-2027 01.02",
+                        filterStartDate = LocalDate.of(2026, 12, 27),
+                        filterEndDate = LocalDate.of(2027, 1, 2),
+                    ),
+                    modifier = Modifier.width(320.dp),
+                )
+            }
+        }
+        val results = mutableListOf<TextLayoutResult>()
+        compose.onNodeWithText(weekLabel, useUnmergedTree = true)
+            .assertIsDisplayed()
+            .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(results) }
+        val layout = results.single()
+        assertTrue(!layout.hasVisualOverflow)
+        assertEquals(2, layout.lineCount)
+        assertEquals(12.sp, layout.layoutInput.style.fontSize)
+        assertEquals(weekLabel.length, layout.getLineEnd(layout.lineCount - 1, visibleEnd = true))
+    }
+
+    @Test fun sameYearWeekStaysOnOneLineInTheDateEntry() {
+        val weekLabel = "2026 11.22-11.28"
+        compose.setContent {
+            LedgerTheme {
+                BillContent(
+                    state.copy(
+                        filterType = DateFilterType.WEEK,
+                        monthDisplay = weekLabel,
+                        filterStartDate = LocalDate.of(2026, 11, 22),
+                        filterEndDate = LocalDate.of(2026, 11, 28),
+                    ),
+                    modifier = Modifier.width(320.dp),
+                )
+            }
+        }
+        val results = mutableListOf<TextLayoutResult>()
+        compose.onNodeWithText(weekLabel, useUnmergedTree = true)
+            .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(results) }
+        val layout = results.single()
+        assertTrue(!layout.hasVisualOverflow)
+        assertEquals(1, layout.lineCount)
+        assertEquals(17.sp, layout.layoutInput.style.fontSize)
+        assertEquals(weekLabel.length, layout.getLineEnd(0, visibleEnd = true))
     }
 
     @Test fun transactionClickUsesTheSharedGateAndPreservesTheSelectedId() {

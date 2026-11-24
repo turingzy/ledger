@@ -130,7 +130,7 @@ internal fun LedgerBottomBar(
                             }
                         }),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(1.dp, Alignment.CenterVertically),
+                    verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.tiny, Alignment.CenterVertically),
                 ) {
                     Icon(
                         imageVector = if (selected) destination.selectedIcon else destination.icon,

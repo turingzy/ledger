@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.component.biz
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -7,22 +8,29 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import cn.turingzy.ledger.R
 import cn.turingzy.ledger.model.category.CategoryWithIcon
 import cn.turingzy.ledger.model.transaction.TransactionType
 import cn.turingzy.ledger.ui.component.MaterialSymbols
-import cn.turingzy.ledger.ui.component.base.DividerBase
+import cn.turingzy.ledger.ui.component.base.ListRowDividerBase
 import cn.turingzy.ledger.ui.interaction.uiClickable
 import cn.turingzy.ledger.ui.theme.LedgerStyle
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 private val TransactionNoteWhitespace = Regex("\\s+")
 
@@ -160,10 +168,67 @@ internal fun TransactionRowBiz(
     }
 }
 
+/** 日期和当日汇总与交易卡片内侧的左右边距对齐。 */
+@Composable
+internal fun TransactionGroupHeaderBiz(
+    date: LocalDate,
+    summary: String,
+    modifier: Modifier = Modifier,
+) {
+    val locale = LocalConfiguration.current.locales[0]
+    val formatter = remember(locale) { DateTimeFormatter.ofPattern("MM/dd E", locale) }
+    val style = LedgerStyle.typography.bodySmall
+    val color = LedgerStyle.colors.textSecondary
+    Row(
+        modifier.fillMaxWidth().padding(horizontal = LedgerStyle.spacing.rowHorizontal),
+        horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.inlineGap),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(date.format(formatter), style = style, color = color, maxLines = 1)
+        if (summary.isNotEmpty()) {
+            Text(
+                summary,
+                Modifier.weight(1f),
+                style = style,
+                color = color,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.End,
+            )
+        }
+    }
+}
+
+/** 每行各自绘制卡片底板，供惰性列表复用，并给侧滑内容保留越过行边缘的空间。 */
+@Composable
+internal fun TransactionGroupRowBiz(
+    first: Boolean,
+    last: Boolean,
+    clipContent: Boolean = false,
+    content: @Composable () -> Unit,
+) {
+    val corners = LedgerStyle.shapes.summaryCard
+    val square = CornerSize(LedgerStyle.spacing.none)
+    val shape = corners.copy(
+        topStart = if (first) corners.topStart else square,
+        topEnd = if (first) corners.topEnd else square,
+        bottomStart = if (last) corners.bottomStart else square,
+        bottomEnd = if (last) corners.bottomEnd else square,
+    )
+    Column(
+        Modifier.fillMaxWidth()
+            .then(if (clipContent) Modifier.clip(shape) else Modifier)
+            .background(LedgerStyle.colors.surface, shape),
+    ) {
+        if (!first) TransactionRowDividerBiz()
+        content()
+    }
+}
+
 /** 交易行分割线从分类文字起始位置开始，与右侧金额边缘对齐。 */
 @Composable
 internal fun TransactionRowDividerBiz() {
     val rowInset = LedgerStyle.spacing.rowHorizontal
     val textInset = rowInset + LedgerStyle.dimensions.compactIconButton + LedgerStyle.spacing.sectionGap
-    DividerBase(Modifier.padding(start = textInset, end = rowInset))
+    ListRowDividerBase(startInset = textInset)
 }

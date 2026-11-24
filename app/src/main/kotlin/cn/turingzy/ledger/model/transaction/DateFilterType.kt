@@ -7,7 +7,7 @@ package cn.turingzy.ledger.model.transaction
  */
 enum class DateFilterType {
     /**
-     * 按周筛选（自然周，通常为周一至周日）。
+     * 按周筛选（周日至周六）。
      */
     WEEK,
 

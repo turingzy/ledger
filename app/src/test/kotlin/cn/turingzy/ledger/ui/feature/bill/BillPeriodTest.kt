@@ -14,16 +14,16 @@ class BillPeriodTest {
     @Test
     fun weekLabelIncludesBothYearsWhenWeekCrossesNewYear() {
         val anchor = LocalDate.of(2021, 1, 1)
-        assertEquals(LocalDate.of(2020, 12, 28), weekStart(anchor))
-        assertEquals("2020 12.28-2021 01.03", weekLabel(anchor))
-        assertEquals("2024 02.26-03.03", weekLabel(LocalDate.of(2024, 2, 29)))
+        assertEquals(LocalDate.of(2020, 12, 27), weekStart(anchor))
+        assertEquals("2020 12.27-2021 01.02", weekLabel(anchor))
+        assertEquals("2024 02.25-03.02", weekLabel(LocalDate.of(2024, 2, 29)))
     }
 
     @Test
     fun scrollingAdvancesWholePeriodsAcrossCalendarBoundaries() {
         val anchor = LocalDate.of(2024, 2, 29)
         val cases = listOf(
-            Triple(DateFilterType.WEEK, LocalDate.of(2024, 2, 26), LocalDate.of(2024, 3, 4)),
+            Triple(DateFilterType.WEEK, LocalDate.of(2024, 2, 25), LocalDate.of(2024, 3, 3)),
             Triple(DateFilterType.MONTH, LocalDate.of(2024, 2, 1), LocalDate.of(2024, 3, 1)),
             Triple(DateFilterType.YEAR, LocalDate.of(2024, 1, 1), LocalDate.of(2025, 1, 1)),
         )
@@ -35,7 +35,7 @@ class BillPeriodTest {
             assertEquals(index + 1, series.indexOf(next))
         }
         val weeks = PeriodSeries(DateFilterType.WEEK, anchor)
-        assertEquals(LocalDate.of(2020, 12, 28), weeks.dateAt(weeks.indexOf(LocalDate.of(2021, 1, 1))))
+        assertEquals(LocalDate.of(2020, 12, 27), weeks.dateAt(weeks.indexOf(LocalDate.of(2021, 1, 1))))
     }
 
     @Test
@@ -54,7 +54,7 @@ class BillPeriodTest {
     @Test
     fun calendarAnchorMapsToTheSelectedPeriod() {
         val leapDay = LocalDate.of(2024, 2, 29)
-        assertEquals(LocalDate.of(2024, 2, 26), periodStart(DateFilterType.WEEK, leapDay))
+        assertEquals(LocalDate.of(2024, 2, 25), periodStart(DateFilterType.WEEK, leapDay))
         assertEquals(LocalDate.of(2024, 2, 1), periodStart(DateFilterType.MONTH, leapDay))
         assertEquals(LocalDate.of(2024, 1, 1), periodStart(DateFilterType.YEAR, leapDay))
         assertEquals("2024.02", periodLabel(DateFilterType.MONTH, leapDay))

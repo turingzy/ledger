@@ -5,6 +5,7 @@ import cn.turingzy.ledger.ui.feature.analytics.AnalyticsUiState
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -53,30 +54,20 @@ internal fun AnalyticsDashboardCards(state: AnalyticsUiState.Success, dashboard:
 }
 
 /**
- * 带标题的统计看板卡片容器。
+ * 统计看板卡片的标题行和内容区使用固定间距，内容区可独立设置间距。
  *
  * @param title 卡片标题。
- * @param content 卡片内部内容。
- */
-@Composable
-internal fun DashboardCard(title: String, content: @Composable ColumnScope.() -> Unit) {
-    DashboardCard {
-        AnalyticsCardTitle(title)
-        content()
-    }
-}
-
-/**
- * 统计看板通用卡片容器。
- *
  * @param modifier 修饰符。
- * @param contentSpacing 内容纵向间距。
+ * @param contentSpacing 内容区内部的纵向间距。
+ * @param headerActions 标题右侧的控件或图例。
  * @param content 卡片内部内容。
  */
 @Composable
 internal fun DashboardCard(
+    title: String,
     modifier: Modifier = Modifier,
     contentSpacing: androidx.compose.ui.unit.Dp = LedgerStyle.spacing.sectionGap,
+    headerActions: @Composable RowScope.() -> Unit = {},
     content: @Composable ColumnScope.() -> Unit,
 ) {
     CardBase(
@@ -84,9 +75,18 @@ internal fun DashboardCard(
         shape = LedgerStyle.shapes.summaryCard,
         outlined = true,
         contentPadding = PaddingValues(horizontal = LedgerStyle.spacing.cardPadding, vertical = LedgerStyle.spacing.medium),
-        contentSpacing = contentSpacing,
-        content = content,
-    )
+        contentSpacing = LedgerStyle.spacing.sectionGap,
+    ) {
+        Row(
+            Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium),
+        ) {
+            AnalyticsCardTitle(title, Modifier.weight(1f))
+            headerActions()
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(contentSpacing), content = content)
+    }
 }
 
 /**

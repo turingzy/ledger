@@ -2,10 +2,9 @@ package cn.turingzy.ledger.ui.feature.bill.search
 
 import androidx.annotation.StringRes
 import cn.turingzy.ledger.R
-import java.time.DayOfWeek
+import cn.turingzy.ledger.ui.component.picker.CalendarSelection
 import java.time.LocalDate
 import java.time.YearMonth
-import java.time.temporal.TemporalAdjusters.previousOrSame
 
 /**
  * 账单搜索常用的预设日期区间。
@@ -15,7 +14,7 @@ import java.time.temporal.TemporalAdjusters.previousOrSame
 internal enum class SearchDatePreset(@param:StringRes val label: Int) {
     /** 全部日期。 */
     ALL(R.string.ui_all),
-    /** 本周（周一至周日）。 */
+    /** 本周（周日至周六）。 */
     THIS_WEEK(R.string.bill_search_this_week),
     /** 本月。 */
     THIS_MONTH(R.string.bill_search_this_month),
@@ -38,8 +37,8 @@ internal enum class SearchDatePreset(@param:StringRes val label: Int) {
     fun applyTo(filters: BillSearchFilters, today: LocalDate): BillSearchFilters = when (this) {
         ALL -> filters.copy(start = null, end = null)
         THIS_WEEK -> {
-            val start = today.with(previousOrSame(DayOfWeek.MONDAY))
-            filters.copy(start = start, end = start.plusDays(6))
+            val (start, end) = CalendarSelection.week(today)
+            filters.copy(start = start, end = end)
         }
         THIS_MONTH, LAST_MONTH -> {
             val month = YearMonth.from(today).minusMonths(if (this == LAST_MONTH) 1 else 0)

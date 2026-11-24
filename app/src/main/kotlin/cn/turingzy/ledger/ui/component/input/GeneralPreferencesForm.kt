@@ -3,7 +3,7 @@ package cn.turingzy.ledger.ui.component.input
 import cn.turingzy.ledger.ui.component.base.DropdownIndicatorBase
 import androidx.compose.foundation.layout.*
 import cn.turingzy.ledger.ui.component.base.CardBase
-import cn.turingzy.ledger.ui.component.base.DividerBase
+import cn.turingzy.ledger.ui.component.base.ListRowDividerBase
 import cn.turingzy.ledger.ui.interaction.uiClickable
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.material3.*
@@ -45,12 +45,28 @@ internal fun GeneralPreferencesForm(value: AppPreferences, onChange: (AppPrefere
         contentPadding = PaddingValues(LedgerStyle.spacing.none),
         contentSpacing = LedgerStyle.spacing.none,
     ) {
-        PreferenceChoice(stringResource(R.string.preference_language), language,
-            listOf("zh" to "简体中文", "en" to "English"), enabled) { onChange(value.copy(language = it)) }
-        DividerBase(Modifier.padding(horizontal = LedgerStyle.spacing.large))
-        PreferenceChoice(stringResource(R.string.preference_theme), value.theme,
-            listOf("system" to stringResource(R.string.follow_system), "light" to stringResource(R.string.light_theme), "dark" to stringResource(R.string.dark_theme)), enabled) { onChange(value.copy(theme = it)) }
-        DividerBase(Modifier.padding(horizontal = LedgerStyle.spacing.large))
+        PreferenceChoice(
+            title = stringResource(R.string.preference_language),
+            selected = language,
+            options = listOf("zh" to "简体中文", "en" to "English"),
+            enabled = enabled,
+            horizontalPadding = LedgerStyle.spacing.rowHorizontal,
+            onSelect = { onChange(value.copy(language = it)) },
+        )
+        ListRowDividerBase()
+        PreferenceChoice(
+            title = stringResource(R.string.preference_theme),
+            selected = value.theme,
+            options = listOf(
+                "system" to stringResource(R.string.follow_system),
+                "light" to stringResource(R.string.light_theme),
+                "dark" to stringResource(R.string.dark_theme),
+            ),
+            enabled = enabled,
+            horizontalPadding = LedgerStyle.spacing.rowHorizontal,
+            onSelect = { onChange(value.copy(theme = it)) },
+        )
+        ListRowDividerBase()
         PreferenceChoice(
             title = stringResource(R.string.display_currency),
             selected = value.primaryCurrency,
@@ -58,6 +74,7 @@ internal fun GeneralPreferencesForm(value: AppPreferences, onChange: (AppPrefere
             enabled = enabled,
             selectedLabel = value.primaryCurrency,
             menuWidth = LedgerStyle.dimensions.currencyDropdownWidth,
+            horizontalPadding = LedgerStyle.spacing.rowHorizontal,
             onSelect = { onChange(value.copy(primaryCurrency = it)) },
         )
     }
@@ -74,6 +91,7 @@ internal fun GeneralPreferencesForm(value: AppPreferences, onChange: (AppPrefere
  * @param enabled 是否允许交互。
  * @param selectedLabel 收起时的显示值，默认沿用菜单里的选项文案。
  * @param menuWidth 弹出菜单的宽度。
+ * @param horizontalPadding 行内容左右内边距。
  * @param onSelect 选中某个选项 key 时的回调。
  */
 @Composable
@@ -84,6 +102,7 @@ internal fun PreferenceChoice(
     enabled: Boolean = true,
     selectedLabel: String = options.firstOrNull { it.first == selected }?.second ?: selected,
     menuWidth: Dp = LedgerStyle.dimensions.dropdownWidth,
+    horizontalPadding: Dp = LedgerStyle.spacing.large,
     onSelect: (String) -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
@@ -99,7 +118,7 @@ internal fun PreferenceChoice(
             Modifier.fillMaxWidth()
                 .semantics(mergeDescendants = true) { contentDescription = title }
                 .uiClickable(enabled = enabled, showPressFeedback = false, onClick = onToggle)
-                .padding(horizontal = LedgerStyle.spacing.large),
+                .padding(horizontal = horizontalPadding),
         ) {
             Row(
                 anchorModifier.fillMaxWidth().heightIn(min = LedgerStyle.dimensions.rowMinHeight),

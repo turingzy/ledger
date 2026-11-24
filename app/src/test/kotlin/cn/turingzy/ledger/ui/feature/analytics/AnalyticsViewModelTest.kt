@@ -15,6 +15,7 @@ import cn.turingzy.ledger.model.category.Icon
 import cn.turingzy.ledger.model.transaction.Transaction
 import cn.turingzy.ledger.model.transaction.TransactionDetail
 import cn.turingzy.ledger.model.transaction.TransactionType
+import cn.turingzy.ledger.ui.component.picker.weekStart
 import io.mockk.coVerify
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -217,7 +218,7 @@ class AnalyticsViewModelTest {
         viewModel = AnalyticsViewModel(transactionRepository, testDispatcher, currencies)
         val zone = ZoneId.systemDefault()
         val cases = listOf(
-            Triple(AnalyticsTimeScope.WEEK, LocalDate.of(2020, 12, 31), LocalDate.of(2020, 12, 28)),
+            Triple(AnalyticsTimeScope.WEEK, LocalDate.of(2020, 12, 31), LocalDate.of(2020, 12, 27)),
             Triple(AnalyticsTimeScope.MONTH, LocalDate.of(2024, 2, 29), LocalDate.of(2024, 2, 1)),
             Triple(AnalyticsTimeScope.YEAR, LocalDate.of(2024, 7, 15), LocalDate.of(2024, 1, 1)),
         )
@@ -235,7 +236,7 @@ class AnalyticsViewModelTest {
                 assertEquals(scope, selected.timeScope)
                 assertEquals(expectedStart, selected.periodStart)
                 if (scope == AnalyticsTimeScope.WEEK) {
-                    assertEquals("2020 12.28-2021 01.03", selected.periodDisplay)
+                    assertEquals("2020 12.27-2021 01.02", selected.periodDisplay)
                 }
 
                 val nextStart = when (scope) {
@@ -291,7 +292,7 @@ class AnalyticsViewModelTest {
             viewModel.setTimeScope(AnalyticsTimeScope.WEEK)
             testDispatcher.scheduler.advanceUntilIdle()
             val reset = awaitItem() as AnalyticsUiState.Success
-            assertEquals(LocalDate.now().with(java.time.DayOfWeek.MONDAY), reset.periodStart)
+            assertEquals(weekStart(LocalDate.now()), reset.periodStart)
             assertEquals(reset.periodStart.plusDays(6), reset.periodEnd)
         }
     }

@@ -6,7 +6,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -47,7 +46,7 @@ import cn.turingzy.ledger.ui.feature.bill.detail.TransactionDetailsScreen
 import cn.turingzy.ledger.ui.feature.bill.detail.TransactionDetailsViewModel
 import cn.turingzy.ledger.ui.interaction.UiInteractionKind
 import cn.turingzy.ledger.ui.interaction.uiClickable
-import cn.turingzy.ledger.ui.component.biz.TransactionRowDividerBiz
+import cn.turingzy.ledger.ui.component.biz.TransactionGroupRowBiz
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import kotlinx.coroutines.launch
 
@@ -263,22 +262,21 @@ private fun LazyListScope.searchResults(
         return
     }
     item(key = "resultsSpacing") { Spacer(Modifier.height(LedgerStyle.spacing.large)) }
-    results.groups.forEach { group ->
+    results.groups.forEachIndexed { index, group ->
         item(key = "group_${group.dateEpochDay}") {
-            DayGroupSection(group, Modifier.padding(bottom = 10.dp), currency = results.currency, transactionRow = transactionRow)
+            DayGroupSection(
+                group,
+                Modifier.padding(top = if (index == 0) LedgerStyle.spacing.none else LedgerStyle.spacing.sectionGap),
+                currency = results.currency,
+                transactionRow = transactionRow,
+            )
         }
     }
     itemsIndexed(results.ungrouped, key = { _, detail -> detail.transaction.id }) { index, detail ->
-        val colors = LedgerStyle.colors
-        val radius = LedgerStyle.shapes.summaryCard.topStart
-        val square = androidx.compose.foundation.shape.CornerSize(0.dp)
-        val roundTop = index == 0
-        val roundBottom = index == results.ungrouped.lastIndex
-        val top = if (roundTop) radius else square
-        val bottom = if (roundBottom) radius else square
-        Column(Modifier.fillMaxWidth().background(colors.surface, RoundedCornerShape(top, top, bottom, bottom))) {
-            if (index > 0) TransactionRowDividerBiz()
-            transactionRow(detail, roundTop, roundBottom)
+        val first = index == 0
+        val last = index == results.ungrouped.lastIndex
+        TransactionGroupRowBiz(first, last) {
+            transactionRow(detail, first, last)
         }
     }
 }

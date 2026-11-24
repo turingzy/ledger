@@ -58,13 +58,15 @@ import kotlin.math.roundToInt
 internal fun MonthlyCashflowCard(days: Map<LocalDate, AnalyticsDay>, month: YearMonth, modifier: Modifier = Modifier, transactions: List<AnalyticsTransaction> = emptyList()) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val colors = MaterialTheme.colorScheme
-    DashboardCard(modifier) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium)) {
-            AnalyticsCardTitle(textResources.getString(cn.turingzy.ledger.R.string.ui_monthly_cash_flow), Modifier.weight(1f))
+    DashboardCard(
+        title = textResources.getString(cn.turingzy.ledger.R.string.ui_monthly_cash_flow),
+        modifier = modifier,
+        headerActions = {
             CashflowLegend(textResources.getString(cn.turingzy.ledger.R.string.ui_expense), colors.error)
             CashflowLegend(textResources.getString(cn.turingzy.ledger.R.string.ui_income), colors.tertiary)
             CashflowLegend(textResources.getString(cn.turingzy.ledger.R.string.ui_balance), colors.primary, line = true)
-        }
+        },
+    ) {
         MonthlyCashflow(days, month, transactions)
     }
 }

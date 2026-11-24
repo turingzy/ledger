@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import cn.turingzy.ledger.ui.component.navigation.LedgerFloatingActionButton
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.base.PageFrameBase
+import cn.turingzy.ledger.ui.component.base.PrimaryPageHeaderBase
 import cn.turingzy.ledger.ui.interaction.rememberUiEvent
 import cn.turingzy.ledger.ui.interaction.UiInteractionKind
 import cn.turingzy.ledger.ui.theme.LedgerStyle
@@ -42,7 +43,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cn.turingzy.ledger.ui.component.card.summary.SummaryCard
@@ -265,19 +265,7 @@ fun WalletContent(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.labelGap),
                             ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().height(44.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Text(
-                                        text = textResources.getString(R.string.ui_wallet),
-                                        fontSize = LedgerStyle.typography.screenTitle.fontSize,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        letterSpacing = (-0.6).sp,
-                                        modifier = Modifier.padding(bottom = 2.dp),
-                                    )
-                                }
+                                PrimaryPageHeaderBase(title = textResources.getString(R.string.ui_wallet))
 
                                 if (uiState.amountsAvailable) WalletHeroCard(
                                     totalAsset = totals.assets,
@@ -325,7 +313,7 @@ fun WalletContent(
         }
         val bottomPadding = LocalBottomBarContentPadding.current
         LedgerFloatingActionButton(
-            label = textResources.getString(R.string.ui_add_account),
+            label = textResources.getString(R.string.ui_account),
             icon = MaterialSymbols.AddCard,
             visible = uiState is WalletUiState.Success,
             onClick = onAddAccountClick,

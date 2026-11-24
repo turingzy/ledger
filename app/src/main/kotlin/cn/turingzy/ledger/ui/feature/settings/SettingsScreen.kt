@@ -18,8 +18,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Icon
@@ -28,8 +26,9 @@ import androidx.compose.material3.Text
 import cn.turingzy.ledger.ui.component.navigation.LocalBottomBarContentPadding
 import androidx.compose.foundation.layout.ColumnScope
 import cn.turingzy.ledger.ui.component.base.PageFrameBase
+import cn.turingzy.ledger.ui.component.base.PrimaryPageHeaderBase
 import cn.turingzy.ledger.ui.component.base.CardBase
-import cn.turingzy.ledger.ui.component.base.DividerBase
+import cn.turingzy.ledger.ui.component.base.ListRowDividerBase
 import cn.turingzy.ledger.ui.component.base.ListRowBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.runtime.Composable
@@ -38,9 +37,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import cn.turingzy.ledger.ui.AppStateViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -172,21 +168,9 @@ fun SettingsContent(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.labelGap),
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(44.dp),
-                                    contentAlignment = Alignment.CenterStart,
-                                ) {
-                                    Text(
-                                        text = textResources.getString(cn.turingzy.ledger.R.string.ui_settings),
-                                        fontSize = LedgerStyle.typography.screenTitle.fontSize,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        letterSpacing = (-0.6).sp,
-                                        modifier = Modifier.padding(bottom = 2.dp),
-                                    )
-                                }
+                                PrimaryPageHeaderBase(
+                                    title = textResources.getString(cn.turingzy.ledger.R.string.ui_settings),
+                                )
 
                                 SettingsGroup {
                                     SettingsRowItem(
@@ -195,21 +179,21 @@ fun SettingsContent(
                                         title = androidx.compose.ui.res.stringResource(cn.turingzy.ledger.R.string.general_settings),
                                         onClick = onGeneralSettingsClick,
                                     )
-                                    DividerBase(Modifier.padding(start = LedgerStyle.dimensions.settingsDividerInset, end = LedgerStyle.spacing.rowHorizontal))
+                                    ListRowDividerBase(startInset = LedgerStyle.dimensions.settingsDividerInset)
                                     SettingsRowItem(
                                         icon = MaterialSymbols.DashboardCustomize,
                                         iconColor = MaterialTheme.colorScheme.primary,
                                         title = textResources.getString(cn.turingzy.ledger.R.string.ui_card_designs),
                                         onClick = onCardManagementClick,
                                     )
-                                    DividerBase(Modifier.padding(start = LedgerStyle.dimensions.settingsDividerInset, end = LedgerStyle.spacing.rowHorizontal))
+                                    ListRowDividerBase(startInset = LedgerStyle.dimensions.settingsDividerInset)
                                     SettingsRowItem(
                                         icon = MaterialSymbols.Code,
                                         iconColor = MaterialTheme.colorScheme.secondary,
                                         title = textResources.getString(cn.turingzy.ledger.R.string.ui_import_rules),
                                         onClick = onParseRulesClick,
                                     )
-                                    DividerBase(Modifier.padding(start = LedgerStyle.dimensions.settingsDividerInset, end = LedgerStyle.spacing.rowHorizontal))
+                                    ListRowDividerBase(startInset = LedgerStyle.dimensions.settingsDividerInset)
                                     SettingsRowItem(
                                         icon = MaterialSymbols.ImportExport,
                                         iconColor = MaterialTheme.colorScheme.tertiary,
