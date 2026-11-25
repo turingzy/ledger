@@ -28,9 +28,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.SheetState
+import androidx.compose.material3.SheetValue
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -44,6 +48,9 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import cn.turingzy.ledger.ui.theme.LedgerStyle
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 
 /**
  * 弹窗窗口基础容器。
@@ -84,6 +91,40 @@ fun DialogWindowBase(
 /** 新建交易和新增账户表单共用的展开高度，包含底部安全区。 */
 @Composable
 internal fun primaryActionSheetHeight(): Dp = LocalConfiguration.current.screenHeightDp.dp * 0.8f
+
+/** 将按钮关闭与 Material 的手势、返回键关闭汇合为一次退出。 */
+@OptIn(ExperimentalMaterial3Api::class)
+internal class SheetDismiss(
+    private val state: SheetState,
+    private val scope: CoroutineScope,
+    private val onDismiss: () -> Unit,
+) {
+    private var closeJob: Job? = null
+    private var delivered = false
+
+    fun close() {
+        if (delivered || closeJob?.isActive == true) return
+        closeJob = scope.launch {
+            state.hide()
+            onHidden()
+        }
+    }
+
+    fun onHidden() {
+        if (delivered || state.isVisible || state.targetValue != SheetValue.Hidden) return
+        delivered = true
+        onDismiss()
+    }
+}
+
+/** 在同一次抽屉打开期间保留关闭流程，并使用最新的关闭回调。 */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun rememberSheetDismiss(state: SheetState, onDismiss: () -> Unit): SheetDismiss {
+    val scope = rememberCoroutineScope()
+    val callback = rememberUpdatedState(onDismiss)
+    return remember(state, scope) { SheetDismiss(state, scope) { callback.value() } }
+}
 
 /**
  * 基础模态底部抽屉组件。

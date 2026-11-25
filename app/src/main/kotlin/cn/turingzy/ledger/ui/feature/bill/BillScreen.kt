@@ -32,6 +32,7 @@ import cn.turingzy.ledger.ui.component.base.PageFrameBase
 import cn.turingzy.ledger.ui.component.base.PrimaryPageHeaderBase
 import cn.turingzy.ledger.ui.component.base.EmptyStateBase
 import cn.turingzy.ledger.ui.component.biz.TransactionRowBiz
+import cn.turingzy.ledger.ui.component.biz.MissingExchangeRateNoticeBiz
 import cn.turingzy.ledger.ui.component.biz.currencySymbolBiz
 import cn.turingzy.ledger.ui.interaction.rememberUiAction
 import cn.turingzy.ledger.ui.interaction.UiInteractionKind
@@ -183,93 +184,99 @@ fun BillContent(
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     var showPeriodPicker by rememberSaveable { mutableStateOf(false) }
 
-    PageFrameBase(modifier) {
-        when (uiState) {
-            BillUiState.Loading -> Unit
-            is BillUiState.Success -> {
-                val dayGroups = uiState.dayGroups
-                val isWeek = uiState.filterType == DateFilterType.WEEK
-                val start = uiState.filterStartDate
-                val end = uiState.filterEndDate
-                val headerPeriod = if (isWeek && start != null && end != null && start.year != end.year) {
-                    CalendarSelection(start, end).displayRange(separator = "\n")
-                } else {
-                    uiState.monthDisplay
-                }
+    val periodState = uiState as? BillUiState.Success
+    val listState = rememberLazyListState()
+    val title = textResources.getString(cn.turingzy.ledger.R.string.ui_bill)
+    val isWeek = periodState?.filterType == DateFilterType.WEEK
+    val start = periodState?.filterStartDate
+    val end = periodState?.filterEndDate
+    val headerPeriod = if (isWeek && start != null && end != null && start.year != end.year) {
+        CalendarSelection(start, end).displayRange(separator = "\n")
+    } else {
+        periodState?.monthDisplay
+    }
 
-                val listState = rememberLazyListState()
-                ScrollTitleContainerBase(
-                    title = textResources.getString(cn.turingzy.ledger.R.string.ui_bill),
-                    scrollOffset = {
-                        if (listState.firstVisibleItemIndex == 0) listState.firstVisibleItemScrollOffset
-                        else Int.MAX_VALUE
-                    },
-                    onScrollToTop = { listState.animateScrollToItem(0) },
-                ) { scrollModifier ->
-                    LazyColumn(
-                        state = listState,
-                        modifier = scrollModifier
-                            .fillMaxSize(),
-                        contentPadding = PaddingValues(
-                            start = LedgerStyle.spacing.pageHorizontal, end = LedgerStyle.spacing.pageHorizontal,
-                            top = LedgerStyle.spacing.extraSmall,
-                            bottom = LedgerStyle.spacing.block + LocalBottomBarContentPadding.current,
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.sectionGap),
+    PageFrameBase(modifier) {
+        ScrollTitleContainerBase(
+            title = title,
+            scrollOffset = {
+                if (listState.firstVisibleItemIndex == 0) listState.firstVisibleItemScrollOffset
+                else Int.MAX_VALUE
+            },
+            onScrollToTop = { listState.animateScrollToItem(0) },
+        ) { scrollModifier ->
+            LazyColumn(
+                state = listState,
+                modifier = scrollModifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    start = LedgerStyle.spacing.pageHorizontal,
+                    end = LedgerStyle.spacing.pageHorizontal,
+                    top = LedgerStyle.spacing.extraSmall,
+                    bottom = LedgerStyle.spacing.block + LocalBottomBarContentPadding.current,
+                ),
+                verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.sectionGap),
+            ) {
+                item(key = "header_and_hero") {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.labelGap),
                     ) {
-                        item(key = "header_and_hero") {
-                            Column(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.labelGap),
-                            ) {
-                                PrimaryPageHeaderBase(
-                                    title = textResources.getString(cn.turingzy.ledger.R.string.ui_bill),
-                                    centerContentUsesAvailableWidth = isWeek && '\n' !in headerPeriod,
-                                    centerContent = {
-                                        PeriodPickerPill(
-                                            text = headerPeriod,
-                                            onClick = { showPeriodPicker = true },
-                                            description = textResources.getString(cn.turingzy.ledger.R.string.ui_select_ledger_period),
-                                            trailingIcon = MaterialSymbols.DateRange,
-                                        )
-                                    },
-                                ) {
-                                    TopBarIconButton(
-                                        imageVector = MaterialSymbols.Search,
-                                        contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_search),
-                                        onClick = rememberUiAction(onOpenSearch, UiInteractionKind.Navigation),
+                        PrimaryPageHeaderBase(
+                            title = title,
+                            centerContentUsesAvailableWidth = isWeek && headerPeriod != null && '\n' !in headerPeriod,
+                            centerContent = if (headerPeriod != null) {
+                                {
+                                    PeriodPickerPill(
+                                        text = headerPeriod,
+                                        onClick = { showPeriodPicker = true },
+                                        description = textResources.getString(cn.turingzy.ledger.R.string.ui_select_ledger_period),
+                                        trailingIcon = MaterialSymbols.DateRange,
                                     )
                                 }
-                                if (uiState.amountsAvailable) SummaryHeroBanner(
-                                    cardMonthDisplay = uiState.cardMonthDisplay,
-                                    balance = uiState.monthBalance,
-                                    expense = uiState.monthExpense,
-                                    income = uiState.monthIncome,
-                                    currency = uiState.currency,
+                            } else null,
+                        ) {
+                            TopBarIconButton(
+                                imageVector = MaterialSymbols.Search,
+                                contentDescription = textResources.getString(cn.turingzy.ledger.R.string.ui_search),
+                                onClick = rememberUiAction(onOpenSearch, UiInteractionKind.Navigation),
+                            )
+                        }
+                        if (periodState != null) {
+                            if (periodState.amountsAvailable) {
+                                SummaryHeroBanner(
+                                    cardMonthDisplay = periodState.cardMonthDisplay,
+                                    balance = periodState.monthBalance,
+                                    expense = periodState.monthExpense,
+                                    income = periodState.monthIncome,
+                                    currency = periodState.currency,
                                     appearance = cardAppearance,
                                     background = cardBackground,
                                     settingsEnabled = cardSettingsEnabled,
                                     onUploadBackground = onUploadCardBackground,
                                     onTransparencyChange = onCardTransparencyChange,
-                                ) else Text(textResources.getString(cn.turingzy.ledger.R.string.ui_exchange_rate_needed_refresh_or_enter_a_rate), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = LedgerStyle.typography.bodySmall.fontSize)
+                                )
+                            } else {
+                                MissingExchangeRateNoticeBiz()
                             }
                         }
+                    }
+                }
 
-                        if (dayGroups.isEmpty()) {
-                            item(key = "empty_placeholder") {
-                                EmptyStateBase(
-                                    title = textResources.getString(cn.turingzy.ledger.R.string.ui_no_transactions_for_this_period_tap_to_add),
-                                    contentPadding = PaddingValues(vertical = LedgerStyle.spacing.block * 2),
-                                    titleStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = LedgerStyle.typography.bodyMedium.fontSize),
-                                    titleColor = LedgerStyle.colors.textSupporting,
-                                )
-                            }
-                        } else {
-                            dayGroups.forEach { dayGroup ->
-                                item(key = "group_${dayGroup.dateEpochDay}") {
-                                    DayGroupSection(dayGroup = dayGroup, onTransactionClick = onTransactionClick, currency = uiState.currency, transactionRow = transactionRow)
-                                }
-                            }
+                when {
+                    periodState == null -> item(key = "loading") {
+                        BillListStatus(textResources.getString(cn.turingzy.ledger.R.string.ui_loading_transactions))
+                    }
+                    periodState.dayGroups.isEmpty() -> item(key = "empty_placeholder") {
+                        BillListStatus(textResources.getString(cn.turingzy.ledger.R.string.ui_no_transactions_for_period))
+                    }
+                    else -> periodState.dayGroups.forEach { dayGroup ->
+                        item(key = "group_${dayGroup.dateEpochDay}") {
+                            DayGroupSection(
+                                dayGroup = dayGroup,
+                                onTransactionClick = onTransactionClick,
+                                currency = periodState.currency,
+                                transactionRow = transactionRow,
+                            )
                         }
                     }
                 }
@@ -280,7 +287,6 @@ fun BillContent(
             Modifier.align(Alignment.BottomCenter).padding(bottom = LocalBottomBarContentPadding.current),
         )
     }
-    val periodState = uiState as? BillUiState.Success
     if (showPeriodPicker && periodState != null) {
         PeriodPickerSheet(
             type = periodState.filterType,
@@ -290,6 +296,17 @@ fun BillContent(
         )
     }
 
+}
+
+/** 在交易列表的内容区展示加载或空状态提示。 */
+@Composable
+internal fun BillListStatus(message: String) {
+    EmptyStateBase(
+        title = message,
+        contentPadding = PaddingValues(vertical = LedgerStyle.spacing.block * 2),
+        titleStyle = LedgerStyle.typography.bodyMedium,
+        titleColor = LedgerStyle.colors.textSupporting,
+    )
 }
 
 /**

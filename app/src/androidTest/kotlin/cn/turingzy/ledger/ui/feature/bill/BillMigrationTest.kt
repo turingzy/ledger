@@ -26,6 +26,20 @@ class BillMigrationTest {
     @get:Rule val compose = createComposeRule()
     private val state = BillUiState.Success(2026, 11, "2026.11", "11月结余", 0L, 0L, 0L, emptyList())
 
+    @Test fun ledgerKeepsItsHeaderAndSeparatesLoadingFromAnEmptyPeriod() {
+        val uiState = mutableStateOf<BillUiState>(BillUiState.Loading)
+        compose.setContent { LedgerTheme { BillContent(uiState.value) } }
+
+        compose.onNodeWithText("账本").assertIsDisplayed()
+        compose.onNodeWithText("正在加载账单").assertIsDisplayed()
+        compose.onNodeWithText("本期暂无交易").assertDoesNotExist()
+
+        compose.runOnIdle { uiState.value = state }
+        compose.onNodeWithText("账本").assertIsDisplayed()
+        compose.onNodeWithText("本期暂无交易").assertIsDisplayed()
+        compose.onNodeWithText("正在加载账单").assertDoesNotExist()
+    }
+
     @Test fun billSearchButtonNavigatesOutOfTheBillHeader() {
         var opened = false
         compose.setContent { LedgerTheme { BillContent(state, onOpenSearch = { opened = true }) } }

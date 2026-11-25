@@ -117,7 +117,7 @@ internal fun LedgerBottomBar(
                         .fillMaxHeight()
                         .clip(CircleShape)
                         .background(selectionColor)
-                        .navigationPressFeedback(interactionSource)
+                        .navigationPressFeedback(interactionSource, enabled = visible)
                         .then(if (!visible) Modifier else Modifier.selectable(
                             selected = selected,
                             role = Role.Tab,

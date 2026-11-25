@@ -62,7 +62,7 @@ internal fun AccountSheetContent(
             .padding(bottom = with(density) { bottomInset.toDp() }),
     ) {
         BottomSheetHeaderBase(
-            stringResource(R.string.ui_cancel), onDismiss,
+            stringResource(R.string.ui_close_named_sheet, title), onDismiss,
             modifier = Modifier.fillMaxWidth().height(44.dp).padding(horizontal = LedgerStyle.spacing.large),
             action = if (saveInFooter) null else ({ AccountSaveButton(saveEnabled, onSave) }),
         ) {

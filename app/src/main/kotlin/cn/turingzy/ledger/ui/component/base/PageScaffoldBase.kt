@@ -1,7 +1,6 @@
 package cn.turingzy.ledger.ui.component.base
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -34,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import cn.turingzy.ledger.R
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.interaction.UiInteractionKind
+import cn.turingzy.ledger.ui.interaction.rememberPressFeedbackProgress
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 
 /**
@@ -156,7 +156,7 @@ fun PageScaffoldBase(
 @Composable
 private fun PageBackButton(description: String, closeInsteadOfBack: Boolean, onBack: () -> Unit) {
     val source = remember { MutableInteractionSource() }
-    val pressed by source.collectIsPressedAsState()
+    val pressProgress by rememberPressFeedbackProgress(source)
     val tint = LedgerStyle.colors.textPrimary
     IconButtonContentBase(
         onClick = onBack,
@@ -168,7 +168,7 @@ private fun PageBackButton(description: String, closeInsteadOfBack: Boolean, onB
             if (closeInsteadOfBack) MaterialSymbols.Close else MaterialSymbols.ChevronLeft,
             description,
             Modifier.size(if (closeInsteadOfBack) LedgerStyle.icons.default else LedgerStyle.icons.back),
-            tint = if (pressed) tint.copy(alpha = tint.alpha * 0.55f) else tint,
+            tint = tint.copy(alpha = tint.alpha * (1f - 0.45f * pressProgress)),
         )
     }
 }

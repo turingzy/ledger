@@ -71,14 +71,19 @@ class PeriodPickerSheetTest {
                 PeriodPickerSheet(DateFilterType.MONTH, LocalDate.of(2024, 2, 1), {}, { type, date -> selected = type to date })
             }
         }
-        compose.onNodeWithText("年").performClick()
-        compose.mainClock.advanceTimeBy(240)
-        compose.waitForIdle()
-        compose.onNodeWithContentDescription("确认日期选择").assertDoesNotExist()
         val year = LocalDate.of(2024, 1, 1)
-        compose.onNodeWithTag("ledgerPeriod-${year.toEpochDay()}").assertIsSelected()
-        assertNull(selected)
-        compose.onNodeWithTag("ledgerPeriod-${year.toEpochDay()}").performClick()
+        val yearOption = compose.onNodeWithTag("ledgerPeriod-${year.toEpochDay()}")
+        compose.mainClock.autoAdvance = false
+        try {
+            compose.onNodeWithText("年").performClick()
+            compose.mainClock.advanceTimeBy(48)
+            compose.onNodeWithContentDescription("确认日期选择").assertDoesNotExist()
+            yearOption.assertIsSelected()
+            assertNull(selected)
+        } finally {
+            compose.mainClock.autoAdvance = true
+        }
+        yearOption.performClick()
         assertEquals(DateFilterType.YEAR to year, selected)
     }
 

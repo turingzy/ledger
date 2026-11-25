@@ -1,7 +1,5 @@
 package cn.turingzy.ledger.ui.component.card.summary
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,7 +14,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,9 +25,8 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
+import cn.turingzy.ledger.ui.interaction.rememberPressFeedbackProgress
 import cn.turingzy.ledger.ui.theme.LedgerStyle
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collectLatest
 
 /**
  * 摘要卡片专用的紧凑型圆形图标按钮。
@@ -132,24 +128,11 @@ private fun Modifier.topBarPressFeedback(
     enabled: Boolean,
     color: Color = MaterialTheme.colorScheme.onSurface,
 ): Modifier {
-    val alpha = remember { Animatable(0f) }
-    LaunchedEffect(interactionSource, enabled, color) {
-        alpha.snapTo(0f)
-        if (!enabled) return@LaunchedEffect
-        interactionSource.interactions.collectLatest { interaction ->
-            when (interaction) {
-                is PressInteraction.Press -> alpha.animateTo(LedgerStyle.opacity.toolbarPressed, tween(70))
-                is PressInteraction.Release -> {
-                    // A quick tap must remain visible even when down and up arrive in one frame.
-                    alpha.animateTo(LedgerStyle.opacity.toolbarPressed, tween(40))
-                    delay(40)
-                    alpha.animateTo(0f, tween(140))
-                }
-                is PressInteraction.Cancel -> alpha.animateTo(0f, tween(100))
-            }
-        }
+    val progress = rememberPressFeedbackProgress(interactionSource, enabled)
+    val pressedAlpha = LedgerStyle.opacity.toolbarPressed
+    return drawBehind {
+        if (progress.value > 0f) drawRect(color.copy(alpha = progress.value * pressedAlpha))
     }
-    return drawBehind { drawRect(color.copy(alpha = alpha.value)) }
         .pointerInput(interactionSource, enabled) {
             if (!enabled) return@pointerInput
             awaitEachGesture {

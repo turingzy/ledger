@@ -38,6 +38,7 @@ import cn.turingzy.ledger.R
 import cn.turingzy.ledger.model.transaction.DateFilterType
 import cn.turingzy.ledger.model.transaction.TransactionType
 import cn.turingzy.ledger.ui.component.biz.LocalCurrencyBiz
+import cn.turingzy.ledger.ui.component.biz.MissingExchangeRateNoticeBiz
 import cn.turingzy.ledger.ui.component.picker.PeriodPickerSheet
 import cn.turingzy.ledger.ui.component.picker.PeriodPickerPill
 import cn.turingzy.ledger.ui.component.picker.periodLabel
@@ -145,18 +146,13 @@ internal fun ConsumptionCalendarContent(
     val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
     val listState = rememberLazyListState()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val scope = rememberCoroutineScope()
+    val dismiss = rememberSheetDismiss(sheetState, onDismiss)
     val sheetHeight = configuration.screenHeightDp.dp * 0.86f
-    ModalBottomSheetBase(onDismiss, sheetState, modifier) {
+    ModalBottomSheetBase(dismiss::onHidden, sheetState, modifier) {
         Column(Modifier.fillMaxWidth().height(sheetHeight)) {
             BottomSheetHeaderBase(
                 closeDescription = textResources.getString(R.string.ui_close_spending_calendar),
-                onClose = {
-                    scope.launch {
-                        sheetState.hide()
-                        if (!sheetState.isVisible) onDismiss()
-                    }
-                },
+                onClose = dismiss::close,
             ) {
                 Text(textResources.getString(R.string.ui_spending_calendar), style = LedgerStyle.typography.detailPageTitle)
             }
@@ -183,7 +179,7 @@ internal fun ConsumptionCalendarContent(
                             ) {
                                 if (!dashboard.amountsAvailable) {
                                     item(key = "missing_rates") {
-                                        EmptyStateBase(title = textResources.getString(R.string.ui_exchange_rate_needed_refresh_or_enter_a_rate))
+                                        MissingExchangeRateNoticeBiz(Modifier.padding(vertical = LedgerStyle.spacing.block))
                                     }
                                 } else {
                                     item(key = "calendar") {

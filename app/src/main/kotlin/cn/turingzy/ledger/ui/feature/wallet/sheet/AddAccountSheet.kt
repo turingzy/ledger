@@ -2,17 +2,17 @@ package cn.turingzy.ledger.ui.feature.wallet.sheet
 
 import cn.turingzy.ledger.ui.component.base.ModalBottomSheetBase
 import cn.turingzy.ledger.ui.component.base.keepSheetAnchorDuringIme
+import cn.turingzy.ledger.ui.component.base.rememberSheetDismiss
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SheetState
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import cn.turingzy.ledger.model.account.AccountType
 import cn.turingzy.ledger.model.account.CardTemplate
 import cn.turingzy.ledger.ui.theme.LedgerTheme
-import kotlinx.coroutines.launch
 
 /**
  * 新增账户底部弹窗。
@@ -42,27 +42,23 @@ fun AddAccountSheet(
     sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
     templates: List<CardTemplate> = emptyList(),
 ) {
-    val scope = rememberCoroutineScope()
-    fun dismiss() {
-        scope.launch {
-            sheetState.hide()
-            if (!sheetState.isVisible) onDismissRequest()
-        }
-    }
+    val dismiss = rememberSheetDismiss(sheetState, onDismissRequest)
 
     ModalBottomSheetBase(
         contentHandlesInsets = true,
-        onDismissRequest = onDismissRequest,
+        onDismissRequest = dismiss::onHidden,
         sheetState = sheetState,
         modifier = modifier.keepSheetAnchorDuringIme(),
     ) {
         AddAccountSheetContent(
             onConfirm = { name, type, balance, cardNumber, includeInTotal, currency, templateId ->
-                onConfirm(name, type, balance, cardNumber, includeInTotal, currency, templateId)
-                dismiss()
+                if (sheetState.targetValue != SheetValue.Hidden) {
+                    onConfirm(name, type, balance, cardNumber, includeInTotal, currency, templateId)
+                    dismiss.close()
+                }
             },
             templates = templates,
-            onDismiss = ::dismiss,
+            onDismiss = dismiss::close,
         )
     }
 }

@@ -14,6 +14,7 @@ import cn.turingzy.ledger.ui.interaction.uiClickable
 import cn.turingzy.ledger.ui.component.base.DividerBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.ui.component.base.SurfaceBase
+import cn.turingzy.ledger.ui.component.base.StatusMessageBase
 import cn.turingzy.ledger.ui.component.base.BaseAlertDialog
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -311,13 +312,12 @@ internal fun BillTransferScreen(
             )
             if (status == BillTransferStatus.CANCELLED) {
                 val message = if (importing) cn.turingzy.ledger.R.string.ui_import_cancelled else cn.turingzy.ledger.R.string.ui_export_cancelled
-                Text(textResources.getString(message), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                StatusMessageBase(textResources.getString(message), color = LedgerStyle.colors.textSecondary)
             }
             resultMessage?.let { message ->
-                Text(
+                StatusMessageBase(
                     message,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (status == BillTransferStatus.FAILED) colors.error else LedgerStyle.colors.success,
+                    color = if (status == BillTransferStatus.FAILED) LedgerStyle.colors.destructive else LedgerStyle.colors.success,
                 )
             }
         }

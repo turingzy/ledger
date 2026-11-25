@@ -43,7 +43,7 @@ internal fun ConsumptionCalendarEmptyState(onRecord: () -> Unit, modifier: Modif
             },
             actions = {
                 ButtonBase(
-                    stringResource(R.string.ui_new_transaction), onRecord,
+                    stringResource(R.string.ui_record_selected_date), onRecord,
                     modifier = Modifier.height(LedgerStyle.dimensions.compactButtonHeight),
                     tone = ButtonToneBase.Neutral, trailingIcon = MaterialSymbols.EditSquare,
                     iconSize = LedgerStyle.icons.small, shape = LedgerStyle.shapes.pill,

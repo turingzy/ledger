@@ -9,6 +9,7 @@ import cn.turingzy.ledger.ui.component.navigation.LedgerFloatingActionButton
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.base.PageFrameBase
 import cn.turingzy.ledger.ui.component.base.PrimaryPageHeaderBase
+import cn.turingzy.ledger.ui.component.biz.MissingExchangeRateNoticeBiz
 import cn.turingzy.ledger.ui.interaction.rememberUiEvent
 import cn.turingzy.ledger.ui.interaction.UiInteractionKind
 import cn.turingzy.ledger.ui.theme.LedgerStyle
@@ -277,7 +278,7 @@ fun WalletContent(
                                     settingsEnabled = cardSettingsEnabled,
                                     onUploadBackground = onUploadCardBackground,
                                     onTransparencyChange = onCardTransparencyChange,
-                                ) else Text(textResources.getString(cn.turingzy.ledger.R.string.ui_exchange_rate_needed_refresh_or_enter_a_rate), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                ) else MissingExchangeRateNoticeBiz()
                             }
                         }
 

@@ -130,7 +130,7 @@ class RecordTransactionSheetTest {
         compose.onNodeWithTag("recordCategoryGrid").performScrollToNode(hasText("分类39"))
         compose.onNodeWithText("分类39").performClick()
         compose.onNodeWithText("0.00").assertIsDisplayed()
-        compose.onNodeWithText("完成").assertIsDisplayed()
+        compose.onNodeWithText("保存").assertIsDisplayed()
         compose.onNodeWithContentDescription("删除最后一位").assertIsDisplayed()
     }
 
@@ -152,7 +152,7 @@ class RecordTransactionSheetTest {
         compose.onNodeWithText("0.3").assertIsDisplayed()
         compose.onNodeWithContentDescription("备注").performTextReplacement("早餐")
         compose.onNodeWithContentDescription("备注").performImeAction()
-        compose.onNodeWithText("完成").performClick()
+        compose.onNodeWithText("保存").performClick()
         assertEquals(30L, saved?.amount)
         assertEquals("早餐", saved?.note)
         assertEquals(1L, saved?.accountId)
@@ -205,7 +205,7 @@ class RecordTransactionSheetTest {
         compose.onNodeWithText("取消").performClick()
         compose.onNodeWithText("12:30", substring = true).assertIsDisplayed()
         compose.onNodeWithTag("keypad_1").performClick()
-        compose.onNodeWithText("完成").performClick()
+        compose.onNodeWithText("保存").performClick()
         compose.runOnIdle { assertEquals(initialTime, checkNotNull(saved).transactionTime) }
     }
 
@@ -227,7 +227,7 @@ class RecordTransactionSheetTest {
         compose.onNodeWithText("储蓄账户").performClick()
         compose.onNodeWithTag("keypad_5").performClick()
         compose.onNodeWithContentDescription("交换转出转入账户").performClick()
-        compose.onNodeWithText("完成").performClick()
+        compose.onNodeWithText("保存").performClick()
         assertEquals(TransactionType.TRANSFER, saved?.type)
         assertEquals(500L, saved?.amount)
         assertEquals(2L, saved?.accountId)
@@ -311,7 +311,7 @@ class RecordTransactionSheetTest {
         compose.onNodeWithText("AC").performClick()
         compose.onNodeWithText("0.00").assertIsDisplayed()
         compose.onNodeWithText("4").performClick()
-        compose.onNodeWithText("完成").performClick()
+        compose.onNodeWithText("保存").performClick()
         assertEquals(400L, saved?.amount)
         assertEquals("保留备注", saved?.note)
         assertEquals(1L, saved?.accountId)
@@ -325,7 +325,7 @@ class RecordTransactionSheetTest {
         var saved: Transaction? = null
         showSheet(initialTransactionTime = initialTime) { saved = it }
         compose.onNodeWithText("1").performClick()
-        compose.onNodeWithText("完成").performClick()
+        compose.onNodeWithText("保存").performClick()
         compose.runOnIdle { assertEquals(initialTime, checkNotNull(saved).transactionTime) }
     }
 
@@ -354,11 +354,31 @@ class RecordTransactionSheetTest {
         compose.runOnIdle { assertEquals(3, clicks) }
     }
 
+    @Test
+    fun closeKeepsTheDrawerMountedDuringExitAndDismissesOnce() {
+        var dismissCount = 0
+        showSheet(onDismiss = { dismissCount++ }) {}
+        val drawer = compose.onNodeWithTag("recordDrawer").assertIsDisplayed()
+        val close = compose.onNodeWithContentDescription("关闭新建交易")
+        compose.mainClock.autoAdvance = false
+        try {
+            close.performClick().performClick()
+            compose.mainClock.advanceTimeBy(64)
+            drawer.assertExists()
+            compose.runOnIdle { assertEquals(0, dismissCount) }
+            compose.mainClock.advanceTimeBy(600)
+            compose.runOnIdle { assertEquals(1, dismissCount) }
+        } finally {
+            compose.mainClock.autoAdvance = true
+        }
+    }
+
     private fun showSheet(
         sheetHeight: Dp = 520.dp,
         initialTransaction: Transaction? = null,
         initialTransactionTime: Long? = null,
         onClickFeedback: (() -> Unit)? = null,
+        onDismiss: () -> Unit = {},
         onSave: (Transaction) -> Unit,
     ) {
         compose.setContent {
@@ -367,7 +387,7 @@ class RecordTransactionSheetTest {
                     RecordTransactionSheet(
                         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
                         sheetHeight = sheetHeight, initialTransaction = initialTransaction, initialTransactionTime = initialTransactionTime,
-                        categories = categories, accounts = accounts, onDismissRequest = {},
+                        categories = categories, accounts = accounts, onDismissRequest = onDismiss,
                         onConfirm = { type, amount, accountId, destinationId, categoryId, note, time, toAmount, _ ->
                             onSave(Transaction(
                                 type = type, amount = amount, accountId = accountId, toAccountId = destinationId,

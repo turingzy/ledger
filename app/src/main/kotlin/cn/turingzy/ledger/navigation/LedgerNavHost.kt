@@ -87,7 +87,12 @@ fun LedgerNavHost(
                         popExitTransition = { PageTransitions.taskPopExit },
                     ) { searchEntry ->
                         TemporaryTaskContent(searchEntry.id, { onTaskTopChange(destination, searchEntry.id, it) }) {
-                            BillSearchScreen(onBack = { navController.popBackStack() })
+                            BillSearchScreen(onBack = {
+                                // Ignore close events from a search entry that is already leaving.
+                                if (navController.currentBackStackEntry?.id == searchEntry.id) {
+                                    navController.popBackStack<Route.Bill>(inclusive = false)
+                                }
+                            })
                         }
                     }
                 }

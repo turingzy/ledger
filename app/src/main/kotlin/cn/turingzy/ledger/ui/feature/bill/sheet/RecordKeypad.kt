@@ -82,7 +82,7 @@ fun BuiltInKeypad(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    if (hasPendingCalculation) "=" else textResources.getString(cn.turingzy.ledger.R.string.ui_done),
+                    if (hasPendingCalculation) "=" else textResources.getString(cn.turingzy.ledger.R.string.save),
                     fontSize = if (hasPendingCalculation) 20.sp else 16.sp,
                     fontWeight = FontWeight.Normal,
                     color = actionContentColor.copy(alpha = if (actionEnabled) 1f else 0.55f),

@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import cn.turingzy.ledger.ui.component.base.CardBase
+import cn.turingzy.ledger.ui.component.biz.MissingExchangeRateNoticeBiz
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import java.time.LocalDate
 import java.time.YearMonth
@@ -39,7 +40,7 @@ internal fun AnalyticsDashboardCards(state: AnalyticsUiState.Success, dashboard:
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     if (state.currency != dashboard.currency) return
     if (!state.amountsAvailable || !dashboard.amountsAvailable) {
-        Text(textResources.getString(cn.turingzy.ledger.R.string.ui_exchange_rate_needed_refresh_or_enter_a_rate), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        MissingExchangeRateNoticeBiz()
         return
     }
     val today = LocalDate.now()

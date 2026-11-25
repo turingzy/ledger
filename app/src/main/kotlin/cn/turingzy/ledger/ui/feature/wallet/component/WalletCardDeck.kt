@@ -80,7 +80,7 @@ fun SwipeableBankCardDeck(
                     .semantics { contentDescription = item.account.name },
             )
         }
-        CardPageIndicator(pageCount = accounts.size, currentPage = Math.floorMod(pagerState.currentPage, accounts.size))
+        CardPageIndicator(pageCount = accounts.size, currentPage = Math.floorMod(settledPage, accounts.size))
     }
 }
 

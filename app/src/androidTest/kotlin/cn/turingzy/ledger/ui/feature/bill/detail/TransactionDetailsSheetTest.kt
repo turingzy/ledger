@@ -70,7 +70,7 @@ class TransactionDetailsSheetTest {
         compose.onNodeWithText("零钱").assertIsDisplayed()
         compose.onNodeWithContentDescription("备注").performTextReplacement("更新后的备注")
         compose.onNodeWithContentDescription("备注").performImeAction()
-        compose.onNodeWithText("完成").performClick()
+        compose.onNodeWithText("保存").performClick()
         assertEquals(detail.transaction.copy(note = "更新后的备注"), saved)
         compose.onNodeWithContentDescription("关闭交易详情").performClick()
         assertTrue(closed)

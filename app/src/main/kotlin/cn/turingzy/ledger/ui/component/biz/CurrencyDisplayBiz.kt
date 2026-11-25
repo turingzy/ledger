@@ -4,6 +4,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import cn.turingzy.ledger.R
+import cn.turingzy.ledger.ui.component.base.StatusMessageBase
+import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.util.AmountFormatter
 import cn.turingzy.ledger.model.settings.supportedCurrencyCodes
 import java.util.Currency
@@ -13,6 +18,21 @@ import java.util.Locale
  * 提供当前应用全局主货币代码的 [androidx.compose.runtime.CompositionLocal]，默认值为 "CNY"。
  */
 internal val LocalCurrencyBiz = staticCompositionLocalOf { "CNY" }
+
+/** 提示汇总无法折算，并给出汇率设置的入口路径。 */
+@Composable
+internal fun MissingExchangeRateNoticeBiz(modifier: Modifier = Modifier) {
+    StatusMessageBase(
+        message = stringResource(
+            R.string.ui_exchange_rate_needed_refresh_or_enter_a_rate,
+            stringResource(R.string.ui_settings),
+            stringResource(R.string.general_settings),
+            stringResource(R.string.exchange_rates),
+        ),
+        color = LedgerStyle.colors.warning,
+        modifier = modifier,
+    )
+}
 
 /**
  * 获取指定货币代码对应的显示符号。

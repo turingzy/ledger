@@ -81,7 +81,6 @@
   <string name="ui_e_g_transaction_type">e.g. Transaction type</string>
   <string name="ui_e_g_amount">e.g. Amount</string>
   <string name="ui_column_mapping">Column mapping</string>
-  <string name="ui_done">Done</string>
   <string name="ui_import">Import</string>
   <string name="ui_choose_on_import">Choose on import</string>
   <string name="ui_import_transactions">Import transactions</string>
@@ -153,7 +152,8 @@
   <string name="ui_change_card_design">Change card design</string>
   <string name="ui_month">Month</string>
   <string name="ui_no_matching_transactions">No matching transactions</string>
-  <string name="ui_no_transactions_for_this_period_tap_to_add">No transactions for this period. Tap + to add one.</string>
+  <string name="ui_no_transactions_for_period">No transactions for this period</string>
+  <string name="ui_searching_transactions">Searching transactions</string>
   <string name="ui_view_app_source_code">View app source code</string>
   <string name="ui_could_not_check_updates_please_try_again">Could not check updates. Please try again.</string>
   <string name="ui_loading_transactions">Loading transactions</string>
@@ -172,7 +172,7 @@
   <string name="ui_balance">Balance</string>
   <string name="ui_end_date">End date</string>
   <string name="ui_end_time_must_not_precede_start_time">End time must not precede start time</string>
-  <string name="ui_exchange_rate_needed_refresh_or_enter_a_rate">Exchange rate needed. Refresh or enter a rate in General.</string>
+  <string name="ui_exchange_rate_needed_refresh_or_enter_a_rate">Missing exchange rate. Go to %1$s → %2$s → %3$s to refresh or enter a rate.</string>
   <string name="ui_custom_color">Custom color</string>
   <string name="ui_rule_name">Rule name</string>
   <string name="ui_rule_details">Rule details</string>
@@ -182,6 +182,7 @@
   <string name="ui_no">No</string>
   <string name="ui_transaction">Transaction</string>
   <string name="ui_new_transaction">New transaction</string>
+  <string name="ui_record_selected_date">Record transaction</string>
   <string name="ui_settings">Settings</string>
   <string name="ui_transaction_unavailable_or_deleted">Transaction unavailable or deleted</string>
   <string name="ui_enter_an_exchange_rate">Enter an exchange rate</string>
@@ -248,7 +249,7 @@
   <string name="ui_daily_average">Daily average</string>
   <string name="ui_delete_transaction">Delete transaction</string>
   <string name="ui_delete_transaction_message">Balances for affected accounts will be updated.</string>
-  <string name="ui_close_record_sheet">Close %1$s</string>
+  <string name="ui_close_named_sheet">Close %1$s</string>
   <string name="ui_edit_primary_amount">Edit converted amount</string>
   <string name="ui_primary_amount_in_currency">Converted amount (%1$s)</string>
   <string name="bill_select_all">Select all</string>

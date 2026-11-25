@@ -1,11 +1,14 @@
 package cn.turingzy.ledger.ui.interaction
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.IndicationNodeFactory
 import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -56,29 +59,44 @@ private class FeedbackNode(private val source: InteractionSource, private val co
     override fun onAttach() {
         coroutineScope.launch {
             alpha.snapTo(0f)
-            val presses = mutableSetOf<PressInteraction.Press>()
-            source.interactions.filterIsInstance<PressInteraction>().collectLatest { interaction ->
-                when (interaction) {
-                    is PressInteraction.Press -> presses.add(interaction)
-                    is PressInteraction.Release -> presses.remove(interaction.press)
-                    is PressInteraction.Cancel -> presses.remove(interaction.press)
-                }
-                when {
-                    presses.isNotEmpty() -> alpha.animateTo(1f, tween(LedgerInteractionStyle.pressEnterMillis))
-                    interaction is PressInteraction.Release -> {
-                        // A quick tap must remain visible even if press and release share a frame.
-                        alpha.animateTo(1f, tween(LedgerInteractionStyle.quickTapEnterMillis))
-                        delay(LedgerInteractionStyle.quickTapHoldMillis.milliseconds)
-                        alpha.animateTo(0f, tween(LedgerInteractionStyle.pressExitMillis))
-                    }
-                    else -> alpha.animateTo(0f, tween(LedgerInteractionStyle.pressCancelMillis))
-                }
-            }
+            alpha.animatePressFeedback(source)
         }
     }
 
     override fun ContentDrawScope.draw() {
         drawContent()
         if (alpha.value > 0f) drawRect(color.copy(alpha = color.alpha * alpha.value))
+    }
+}
+
+/** 为使用自定义图标或背景绘制的控件提供统一的按压进度。 */
+@Composable
+internal fun rememberPressFeedbackProgress(source: InteractionSource, enabled: Boolean = true): State<Float> {
+    val progress = remember(source) { Animatable(0f) }
+    LaunchedEffect(source, enabled) {
+        progress.snapTo(0f)
+        if (enabled) progress.animatePressFeedback(source)
+    }
+    return progress.asState()
+}
+
+/** 跟踪未结束的按压，并让同一帧内完成的短按仍有可见反馈。 */
+private suspend fun Animatable<Float, AnimationVector1D>.animatePressFeedback(source: InteractionSource) {
+    val presses = mutableSetOf<PressInteraction.Press>()
+    source.interactions.filterIsInstance<PressInteraction>().collectLatest { interaction ->
+        when (interaction) {
+            is PressInteraction.Press -> presses.add(interaction)
+            is PressInteraction.Release -> presses.remove(interaction.press)
+            is PressInteraction.Cancel -> presses.remove(interaction.press)
+        }
+        when {
+            presses.isNotEmpty() -> animateTo(1f, tween(LedgerInteractionStyle.pressEnterMillis))
+            interaction is PressInteraction.Release -> {
+                animateTo(1f, tween(LedgerInteractionStyle.quickTapEnterMillis))
+                delay(LedgerInteractionStyle.quickTapHoldMillis.milliseconds)
+                animateTo(0f, tween(LedgerInteractionStyle.pressExitMillis))
+            }
+            else -> animateTo(0f, tween(LedgerInteractionStyle.pressCancelMillis))
+        }
     }
 }

@@ -13,6 +13,7 @@ import cn.turingzy.ledger.ui.component.base.CardBase
 import cn.turingzy.ledger.ui.component.base.ListRowDividerBase
 import cn.turingzy.ledger.ui.component.base.SectionHeaderBase
 import cn.turingzy.ledger.ui.component.base.SectionHeaderVariantBase
+import cn.turingzy.ledger.ui.component.base.StatusMessageBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.ui.component.input.FormInputBase
 import androidx.compose.foundation.text.KeyboardOptions
@@ -131,7 +132,6 @@ internal fun GeneralSettingsContent(
     modifier: Modifier = Modifier,
     refreshStatus: RateRefreshStatus = RateRefreshStatus.IDLE,
 ) {
-    val colors = MaterialTheme.colorScheme
     SettingsSubpageScaffold(
         title = stringResource(R.string.general_settings), onBack = onBack, modifier = modifier,
     ) {
@@ -180,7 +180,7 @@ internal fun GeneralSettingsContent(
                     Text(stringResource(R.string.refresh_rates), style = MaterialTheme.typography.bodyMedium)
                 }
             }
-            message?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = colors.error) }
+            message?.let { StatusMessageBase(it, color = LedgerStyle.colors.destructive) }
         }
     }
 }

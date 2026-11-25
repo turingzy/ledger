@@ -115,6 +115,7 @@ internal fun BillSwipeRow(
         }
     }
     val offset = if (selecting) 0f else draggingOffset ?: slideOffset.value
+    val actionsEnabled = canSwipe && revealed && !dragging && offset >= width
     val updateRevealed by rememberUpdatedState(onRevealChange)
     val wasRevealed by rememberUpdatedState(revealed)
 
@@ -125,9 +126,9 @@ internal fun BillSwipeRow(
                 Modifier.align(Alignment.CenterEnd).width(SwipeActionsWidth).fillMaxHeight(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                BillSwipeAction(MaterialSymbols.FileCopy, R.string.bill_copy_action, R.string.bill_copy_transaction, colors.info, enabled, onCopy)
-                BillSwipeAction(MaterialSymbols.EditSquare, R.string.bill_edit_action, R.string.bill_edit_transaction, colors.textPrimary, enabled, onEdit)
-                BillSwipeAction(MaterialSymbols.Delete, R.string.bill_delete_action, R.string.ui_delete_transaction, colors.destructive, enabled, onDelete)
+                BillSwipeAction(MaterialSymbols.FileCopy, R.string.bill_copy_action, R.string.bill_copy_transaction, colors.info, actionsEnabled, onCopy)
+                BillSwipeAction(MaterialSymbols.EditSquare, R.string.bill_edit_action, R.string.bill_edit_transaction, colors.textPrimary, actionsEnabled, onEdit)
+                BillSwipeAction(MaterialSymbols.Delete, R.string.bill_delete_action, R.string.ui_delete_transaction, colors.destructive, actionsEnabled, onDelete)
             }
         }
         val dragModifier = if (canSwipe) Modifier.pointerInput(width) {
@@ -135,7 +136,7 @@ internal fun BillSwipeRow(
             detectHorizontalDragGestures(
                 onDragStart = {
                     initialOpen = wasRevealed
-                    draggingOffset = slideOffset.value
+                    draggingOffset = draggingOffset ?: slideOffset.value
                     dragging = true
                     updateRevealed(true)
                 },

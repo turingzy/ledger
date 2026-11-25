@@ -31,7 +31,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -51,7 +50,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -79,13 +77,7 @@ internal fun PeriodPickerSheet(
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val views = listOf(DateFilterType.WEEK, DateFilterType.MONTH, DateFilterType.YEAR)
     var view by rememberSaveable { mutableStateOf(type.takeIf { it in views } ?: DateFilterType.MONTH) }
-    var contentView by remember { mutableStateOf(view) }
     val listStates = rememberSaveableStateHolder()
-    LaunchedEffect(view) {
-        // Keep list measurement out of the selector's slide animation.
-        if (contentView != view) delay(220)
-        contentView = view
-    }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
     val height = LocalConfiguration.current.screenHeightDp.dp * 0.72f
@@ -128,10 +120,11 @@ internal fun PeriodPickerSheet(
                     )
                 }
             }
-            listStates.SaveableStateProvider(contentView) {
+            val selectedView = view
+            listStates.SaveableStateProvider(selectedView) {
                 PeriodList(
-                    contentView, initialDate, today,
-                    { date -> if (contentView == view) apply(contentView, date) },
+                    selectedView, initialDate, today,
+                    { date -> if (selectedView == view) apply(selectedView, date) },
                     Modifier.weight(1f),
                 )
             }

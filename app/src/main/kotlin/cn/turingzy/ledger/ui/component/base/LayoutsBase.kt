@@ -32,6 +32,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
@@ -317,6 +319,17 @@ fun DividerBase(modifier: Modifier = Modifier) {
         modifier = modifier,
         thickness = LedgerStyle.dimensions.dividerThickness,
         color = LedgerStyle.colors.divider,
+    )
+}
+
+/** 在受影响的内容或操作旁显示状态，并由无障碍服务读出更新。 */
+@Composable
+internal fun StatusMessageBase(message: String, color: Color, modifier: Modifier = Modifier) {
+    Text(
+        message,
+        modifier.semantics { liveRegion = LiveRegionMode.Polite },
+        style = LedgerStyle.typography.bodySmall,
+        color = color,
     )
 }
 

@@ -84,7 +84,6 @@
   <string name="ui_e_g_transaction_type">如：收支类型</string>
   <string name="ui_e_g_amount">如：金额</string>
   <string name="ui_column_mapping">字段对应</string>
-  <string name="ui_done">完成</string>
   <string name="ui_import">导入</string>
   <string name="ui_choose_on_import">导入时选择</string>
   <string name="ui_import_transactions">导入账单</string>
@@ -155,8 +154,9 @@
   <string name="ui_change_card_background">更换卡片背景</string>
   <string name="ui_change_card_design">更换卡面</string>
   <string name="ui_month">月</string>
-  <string name="ui_no_matching_transactions">未找到相关账单</string>
-  <string name="ui_no_transactions_for_this_period_tap_to_add">本期暂无交易明细，点击右下角开始记账</string>
+  <string name="ui_no_matching_transactions">未找到匹配的交易</string>
+  <string name="ui_no_transactions_for_period">本期暂无交易</string>
+  <string name="ui_searching_transactions">正在搜索交易</string>
   <string name="ui_view_app_source_code">查看此应用的源代码</string>
   <string name="ui_could_not_check_updates_please_try_again">检查更新失败，请重试</string>
   <string name="ui_loading_transactions">正在加载账单</string>
@@ -175,7 +175,7 @@
   <string name="ui_balance">结余</string>
   <string name="ui_end_date">结束日期</string>
   <string name="ui_end_time_must_not_precede_start_time">结束时间不能早于开始时间</string>
-  <string name="ui_exchange_rate_needed_refresh_or_enter_a_rate">缺少汇率，请在常规中刷新或填写</string>
+  <string name="ui_exchange_rate_needed_refresh_or_enter_a_rate">缺少汇率。请前往「%1$s → %2$s → %3$s」刷新或手动填写。</string>
   <string name="ui_custom_color">自定义颜色</string>
   <string name="ui_rule_name">规则名称</string>
   <string name="ui_rule_details">规则详情</string>
@@ -184,7 +184,8 @@
   <string name="ui_yes">是</string>
   <string name="ui_no">否</string>
   <string name="ui_transaction">交易</string>
-  <string name="ui_new_transaction">记一笔</string>
+  <string name="ui_new_transaction">新建交易</string>
+  <string name="ui_record_selected_date">记一笔</string>
   <string name="ui_settings">设置</string>
   <string name="ui_transaction_unavailable_or_deleted">该交易不存在或已删除</string>
   <string name="ui_enter_an_exchange_rate">请填写汇率</string>
@@ -251,7 +252,7 @@
   <string name="ui_daily_average">日均支出</string>
   <string name="ui_delete_transaction">删除交易</string>
   <string name="ui_delete_transaction_message">删除后，相关账户余额将随之更新。</string>
-  <string name="ui_close_record_sheet">关闭%1$s</string>
+  <string name="ui_close_named_sheet">关闭%1$s</string>
   <string name="ui_edit_primary_amount">修改折算金额</string>
   <string name="ui_primary_amount_in_currency">折算金额（%1$s）</string>
   <string name="bill_select_all">全选</string>

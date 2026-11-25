@@ -16,9 +16,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -31,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.navigation.TopLevelDestination
 import cn.turingzy.ledger.ui.theme.LedgerTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Rule
 import org.junit.Test
 
@@ -75,6 +78,40 @@ class NavigationAndScrollHeaderTest {
         compose.onNodeWithText("钱包").performClick().assertIsSelected()
         compose.runOnIdle { assertEquals(1, navigationCount) }
         assertEquals(walletLabelBounds, walletLabel.fetchSemanticsNode().boundsInRoot)
+    }
+
+    @Test
+    fun quickTabTapShowsFeedbackAndCancelClearsItWithoutNavigating() {
+        var navigationCount = 0
+        compose.setContent {
+            LedgerTheme {
+                LedgerBottomBar(TopLevelDestination.entries, TopLevelDestination.BILL, { navigationCount++ })
+            }
+        }
+        val tab = compose.onNodeWithText("钱包")
+        val baselineImage = tab.captureToImage().toPixelMap()
+        val x = baselineImage.width / 4
+        val y = baselineImage.height / 2
+        val baseline = baselineImage[x, y]
+        compose.mainClock.autoAdvance = false
+        try {
+            tab.performTouchInput { down(center); up() }
+            compose.mainClock.advanceTimeBy(80)
+            assertNotEquals(baseline, tab.captureToImage().toPixelMap()[x, y])
+            compose.mainClock.advanceTimeBy(400)
+            assertEquals(baseline, tab.captureToImage().toPixelMap()[x, y])
+            assertEquals(1, navigationCount)
+
+            tab.performTouchInput { down(center) }
+            compose.mainClock.advanceTimeBy(160)
+            assertNotEquals(baseline, tab.captureToImage().toPixelMap()[x, y])
+            tab.performTouchInput { cancel() }
+            compose.mainClock.advanceTimeBy(160)
+            assertEquals(baseline, tab.captureToImage().toPixelMap()[x, y])
+            assertEquals(1, navigationCount)
+        } finally {
+            compose.mainClock.autoAdvance = true
+        }
     }
 
     @Test

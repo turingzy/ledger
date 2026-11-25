@@ -57,21 +57,19 @@ internal fun RecordCreateSheet(
         confirmValueChange = { !saveState.saving || it != SheetValue.Hidden },
     )
     val initialTime = rememberSaveable(date.toEpochDay()) { date.atTime(LocalTime.now()).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() }
-    LaunchedEffect(saveState.saved) {
-        if (!saveState.saved) return@LaunchedEffect
-        sheetState.hide()
-        viewModel.resetSaveState()
-        onDismiss()
-    }
     RecordTransactionSheet(
         sheetState = sheetState,
         categories = categories,
         accounts = accounts,
         initialTransactionTime = initialTime,
-        onDismissRequest = { if (!saveState.saving) onDismiss() },
+        onDismissRequest = {
+            if (saveState.saved) viewModel.resetSaveState()
+            if (!saveState.saving) onDismiss()
+        },
         onConfirm = viewModel::createTransaction,
         modifier = modifier,
         saving = saveState.saving,
+        dismissAfterSave = saveState.saved,
         error = saveState.error,
         sheetHeight = primaryActionSheetHeight(),
         onLoadExchangeRate = transactionViewModel::exchangeRate,

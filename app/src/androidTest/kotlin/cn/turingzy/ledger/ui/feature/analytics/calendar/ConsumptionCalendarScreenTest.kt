@@ -150,7 +150,7 @@ class ConsumptionCalendarScreenTest {
             ConsumptionCalendarContent(AnalyticsDashboardState(loading = false, amountsAvailable = false),
                 YearMonth.from(today), {}, today = today)
         } }
-        compose.onNodeWithText("缺少汇率，请在常规中刷新或填写").assertIsDisplayed()
+        compose.onNodeWithText("缺少汇率。请前往「设置 → 常规 → 汇率」刷新或手动填写。").assertIsDisplayed()
         compose.onNodeWithText("记一笔").assertDoesNotExist()
         compose.onNodeWithContentDescription("$today，支出¥0.00").assertDoesNotExist()
     }

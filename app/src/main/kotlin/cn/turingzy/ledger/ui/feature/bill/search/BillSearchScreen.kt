@@ -34,7 +34,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cn.turingzy.ledger.R
 import cn.turingzy.ledger.model.transaction.TransactionDetail
 import cn.turingzy.ledger.ui.component.MaterialSymbols
-import cn.turingzy.ledger.ui.component.base.EmptyStateBase
+import cn.turingzy.ledger.ui.feature.bill.BillListStatus
 import cn.turingzy.ledger.ui.component.base.PageFrameBase
 import cn.turingzy.ledger.ui.component.base.ScrollTitleContainerBase
 import cn.turingzy.ledger.ui.component.biz.LocalCurrencyBiz
@@ -138,7 +138,7 @@ internal fun BillSearchScreen(
                             item(key = "searchControls") {
                                 BillSearchControls(request, accounts, currency, onChange = { request = it })
                             }
-                            if (results != null) searchResults(results, transactionRow)
+                            searchResults(results, transactionRow)
                         } else if (suggestions.isNotEmpty()) item(key = "searchSuggestions") {
                             Column(
                                 Modifier.padding(top = LedgerStyle.spacing.extraLarge),
@@ -247,17 +247,20 @@ internal fun BillSearchHeader(
     }
 }
 
-/** Adds grouped bill rows or globally amount-sorted rows to the search scroll surface. */
+/** 显示搜索进度、空结果，或按请求排序的交易。 */
 private fun LazyListScope.searchResults(
-    results: BillSearchResults,
+    results: BillSearchResults?,
     transactionRow: @Composable (detail: TransactionDetail, roundTop: Boolean, roundBottom: Boolean) -> Unit,
 ) {
+    if (results == null) {
+        item(key = "searchLoading") {
+            BillListStatus(stringResource(R.string.ui_searching_transactions))
+        }
+        return
+    }
     if (results.groups.isEmpty() && results.ungrouped.isEmpty()) {
         item(key = "noSearchResults") {
-            EmptyStateBase(
-                title = stringResource(R.string.ui_no_matching_transactions),
-                contentPadding = PaddingValues(vertical = LedgerStyle.spacing.block * 2),
-            )
+            BillListStatus(stringResource(R.string.ui_no_matching_transactions))
         }
         return
     }

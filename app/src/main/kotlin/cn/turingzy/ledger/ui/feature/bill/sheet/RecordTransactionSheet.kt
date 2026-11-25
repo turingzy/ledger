@@ -5,7 +5,9 @@ import cn.turingzy.ledger.ui.component.base.IconButtonContentBase
 import cn.turingzy.ledger.ui.component.base.DividerBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.ui.component.base.SurfaceBase
+import cn.turingzy.ledger.ui.component.base.StatusMessageBase
 import cn.turingzy.ledger.ui.component.base.ModalBottomSheetBase
+import cn.turingzy.ledger.ui.component.base.rememberSheetDismiss
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.foundation.LocalIndication
@@ -43,6 +45,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SheetState
+import androidx.compose.material3.SheetValue
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -64,6 +67,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.error as fieldError
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -128,6 +132,7 @@ private val RecordControlLight = Color(0xFFECECEE)
  * @param initialTransactionTime 新增模式下的初始交易时间戳。
  * @param title 抽屉标题文本。
  * @param saving 是否正在提交保存中。
+ * @param dismissAfterSave 保存完成后关闭抽屉。
  * @param error 错误提示文案。
  * @param sheetHeight 抽屉整体高度。
  * @param onLoadExchangeRate 跨币种汇率异步加载方法。
@@ -150,10 +155,16 @@ fun RecordTransactionSheet(
     saving: Boolean = false,
     error: String? = null,
     sheetHeight: Dp = 520.dp,
+    dismissAfterSave: Boolean = false,
     onLoadExchangeRate: suspend (String, String, Long) -> String? = { _, _, _ -> null },
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val fixedHeight = remember { sheetHeight }
+    val dismiss = rememberSheetDismiss(sheetState, onDismissRequest)
+    val canEdit = !saving && !dismissAfterSave && sheetState.targetValue != SheetValue.Hidden
+    LaunchedEffect(dismissAfterSave, dismiss) {
+        if (dismissAfterSave) dismiss.close()
+    }
     var expression by rememberSaveable(initialTransaction?.id) { mutableStateOf(initialTransaction?.amount?.toFormattedAmount().orEmpty()) }
     var note by rememberSaveable(initialTransaction?.id) { mutableStateOf(initialTransaction?.note.orEmpty()) }
     var type by rememberSaveable(initialTransaction?.id) { mutableStateOf(initialTransaction?.type ?: TransactionType.EXPENSE) }
@@ -175,7 +186,7 @@ fun RecordTransactionSheet(
     val hasCalculation = expression.drop(1).any { it in "+-×÷" }
     val evaluatedExpression = if (hasCalculation) evaluateMathExpression(expression) else expression
     val enteredAmount = AmountFormatter.parseToCents(evaluatedExpression)
-    val canEvaluate = !saving && hasCalculation && enteredAmount != null
+    val canEvaluate = canEdit && hasCalculation && enteredAmount != null
     val sourceCurrency = accounts.firstOrNull { it.account.id == accountId }?.account?.currency
     val targetCurrency = accounts.firstOrNull { it.account.id == destinationId }?.account?.currency
     val crossCurrency = type == TransactionType.TRANSFER && sourceCurrency != null && targetCurrency != null && sourceCurrency != targetCurrency
@@ -223,7 +234,7 @@ fun RecordTransactionSheet(
     }
 
     fun openPanel(target: RecordPanel) {
-        if (saving) return
+        if (!canEdit) return
         focusManager.clearFocus()
         panel = target
     }
@@ -231,7 +242,7 @@ fun RecordTransactionSheet(
     val colors = MaterialTheme.colorScheme
     val sheetBackground = if (colors.surface.luminance() > 0.5f) RecordSurfaceLight else colors.surfaceVariant
     ModalBottomSheetBase(
-        onDismissRequest = onDismissRequest, sheetState = sheetState,
+        onDismissRequest = dismiss::onHidden, sheetState = sheetState,
         modifier = modifier.keepSheetAnchorDuringIme(),
         containerColor = sheetBackground,
         dragHandle = null,
@@ -256,10 +267,10 @@ fun RecordTransactionSheet(
                     else -> amountText
                 }
             } else null,
-            onEditPrimaryAmount = { if (!saving) showAmountEditor = true },
-            onDismiss = onDismissRequest,
-            closeDescription = stringResource(R.string.ui_close_record_sheet, title),
-            actionsEnabled = !saving,
+            onEditPrimaryAmount = { if (canEdit) showAmountEditor = true },
+            onDismiss = dismiss::close,
+            closeDescription = stringResource(R.string.ui_close_named_sheet, title),
+            actionsEnabled = canEdit,
             transferRate = transferRate.takeIf { crossCurrency },
             transferRateError = if (crossCurrency) {
                 when {
@@ -272,22 +283,22 @@ fun RecordTransactionSheet(
             transferredAmount = transaction?.toAmount?.toFormattedAmount()?.let { "$it ${targetCurrency.orEmpty()}" },
             onTransferRateChange = { rateEdited = true; transferRate = it; rateError = null },
             hasCalculation = hasCalculation,
-            actionEnabled = if (hasCalculation) canEvaluate else !saving && transaction != null,
+            actionEnabled = if (hasCalculation) canEvaluate else canEdit && transaction != null,
             onTypeChange = { selected ->
-                if (!saving && selected != type) {
+                if (canEdit && selected != type) {
                     type = selected
                     categoryId = initialTransaction?.takeIf { it.type == selected }?.categoryId ?: 0L
                 }
             },
-            onCategorySelect = { if (!saving) categoryId = it },
-            onExpressionChange = { if (!saving) expression = it },
-            onNoteChange = { if (!saving) note = it },
+            onCategorySelect = { if (canEdit) categoryId = it },
+            onExpressionChange = { if (canEdit) expression = it },
+            onNoteChange = { if (canEdit) note = it },
             onAccountClick = { openPanel(RecordPanel.ACCOUNT) },
             onDestinationClick = { openPanel(RecordPanel.DESTINATION) },
             onTimeClick = { openPanel(RecordPanel.DATE_TIME) },
-            onSwapAccounts = { if (!saving) { val previous = accountId; accountId = destinationId; destinationId = previous } },
+            onSwapAccounts = { if (canEdit) { val previous = accountId; accountId = destinationId; destinationId = previous } },
             onConfirm = {
-                if (!saving) {
+                if (canEdit) {
                     if (hasCalculation) expression = evaluatedExpression
                     else transaction?.let { value ->
                         onConfirm(value.type, value.amount, value.accountId, value.toAccountId, value.categoryId, value.note, value.transactionTime, value.toAmount, amountOverride)
@@ -518,10 +529,12 @@ internal fun RecordTransactionContent(
                                 val hint = transferRateError ?: transferredAmount?.let { stringResource(R.string.destination_amount, it) }
                                 if (hint != null) Text(hint)
                             },
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().semantics {
+                                if (transferRateError != null) fieldError(transferRateError)
+                            },
                         )
                     }
-                    error?.let { Text(it, color = colors.error, style = MaterialTheme.typography.bodySmall) }
+                    error?.let { StatusMessageBase(it, color = LedgerStyle.colors.destructive) }
                     BuiltInKeypad(
                         hasPendingCalculation = hasCalculation, actionEnabled = actionEnabled, keyHeight = keyHeight,
                         actionColor = selectionColor,

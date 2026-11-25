@@ -1,14 +1,11 @@
 package cn.turingzy.ledger.ui.component.navigation
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.interaction.InteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import cn.turingzy.ledger.ui.interaction.rememberPressFeedbackProgress
 
 /**
  * 导航项按压视觉反馈修饰符。
@@ -24,12 +21,9 @@ internal fun Modifier.navigationPressFeedback(
     interactionSource: InteractionSource,
     enabled: Boolean = true,
 ): Modifier {
-    val pressed by interactionSource.collectIsPressedAsState()
-    val alpha by animateFloatAsState(
-        targetValue = if (enabled && pressed) 0.05f else 0f,
-        animationSpec = tween(durationMillis = if (pressed) 70 else 140),
-        label = "NavigationPressAlpha",
-    )
+    val progress = rememberPressFeedbackProgress(interactionSource, enabled)
     val color = MaterialTheme.colorScheme.onSurface
-    return drawBehind { drawRect(color.copy(alpha = alpha)) }
+    return drawBehind {
+        if (progress.value > 0f) drawRect(color.copy(alpha = progress.value * 0.05f))
+    }
 }
