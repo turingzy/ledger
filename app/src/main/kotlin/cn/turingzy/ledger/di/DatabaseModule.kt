@@ -9,6 +9,7 @@ import cn.turingzy.ledger.data.database.migration.Migration2To3
 import cn.turingzy.ledger.data.database.migration.Migration3To4
 import cn.turingzy.ledger.data.database.migration.Migration4To5
 import cn.turingzy.ledger.data.database.migration.Migration5To6
+import cn.turingzy.ledger.data.database.migration.Migration6To7
 import cn.turingzy.ledger.data.database.LedgerDatabase
 import cn.turingzy.ledger.data.database.dao.AccountDao
 import cn.turingzy.ledger.data.database.dao.BackupConfigDao
@@ -63,7 +64,7 @@ object DatabaseModule {
             context,
             LedgerDatabase::class.java,
             DATABASE_NAME,
-        ).addMigrations(Migration1To2, Migration2To3, Migration3To4, Migration4To5, Migration5To6).addCallback(
+        ).addMigrations(Migration1To2, Migration2To3, Migration3To4, Migration4To5, Migration5To6, Migration6To7).addCallback(
             object : RoomDatabase.Callback() {
                 override fun onCreate(db: SupportSQLiteDatabase) {
                     super.onCreate(db)

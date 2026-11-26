@@ -26,7 +26,7 @@ class AnalyticsMigrationTest {
         compose.setContent { LedgerTheme {
             AnalyticsContent(state, {}, {}, dashboard = AnalyticsDashboardState(loading = false))
         } }
-        val title = layoutOf("分析")
+        val title = layoutOf("统计")
         val period = layoutOf("2026年11月")
         val card = layoutOf("收支统计")
         assertEquals(28.sp, title.layoutInput.style.fontSize)

@@ -23,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import java.time.LocalDate
@@ -74,18 +75,25 @@ internal fun AnalyticsStatisticsCard(state: AnalyticsUiState.Success, days: Map<
  * @param average 平均支出指标扩展信息（用于展示环比变动与图标）。
  */
 @Composable
-private fun StatisticsMetric(label: String, amount: Long, modifier: Modifier = Modifier, average: AnalyticsExpenseAverage? = null) {
-    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
+internal fun StatisticsMetric(
+    label: String,
+    amount: Long,
+    modifier: Modifier = Modifier,
+    average: AnalyticsExpenseAverage? = null,
+    background: Color = analyticsChartInfoColor(),
+    useGrouping: Boolean = false,
+) {
     val colors = MaterialTheme.colorScheme
-    SurfaceBase(modifier.fillMaxHeight(), shape = LedgerStyle.shapes.summaryCard, color = analyticsChartInfoColor()) {
+    SurfaceBase(modifier.fillMaxHeight(), shape = LedgerStyle.shapes.summaryCard, color = background) {
         Column(
             Modifier.padding(horizontal = LedgerStyle.spacing.medium, vertical = LedgerStyle.spacing.extraSmall),
             verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.hairline),
         ) {
             Text(label, fontSize = LedgerStyle.typography.caption.fontSize, lineHeight = 14.sp, color = colors.onSurfaceVariant)
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.extraSmall)) {
-                AnalyticsAmountText(amount, Modifier.weight(1f), fontSize = LedgerStyle.typography.bodyMedium.fontSize)
+                AnalyticsAmountText(amount, Modifier.weight(1f), fontSize = LedgerStyle.typography.bodyMedium.fontSize, useGrouping = useGrouping)
                 average?.takeIf { it.direction != 0 }?.let {
+                    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
                     val color = if (it.direction > 0) colors.error else colors.tertiary
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.tiny)) {
                         Icon(

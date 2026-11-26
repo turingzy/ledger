@@ -77,5 +77,7 @@ data class AccountEntity(
     val baseRate: String? = null,
     @ColumnInfo(name = "base_rate_date")
     val baseRateDate: String? = null,
+    @ColumnInfo(name = "encrypted_card_details")
+    val encryptedCardDetails: String? = null,
 )
 

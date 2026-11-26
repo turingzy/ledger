@@ -25,6 +25,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.VisualTransformation
 import cn.turingzy.ledger.R
 import cn.turingzy.ledger.ui.component.base.FormFieldFrameBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
@@ -42,6 +43,7 @@ internal fun FormInputBase(
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+    visualTransformation: VisualTransformation = VisualTransformation.None,
     decorationBox: @Composable (@Composable () -> Unit) -> Unit = { it() },
 ) {
     val colors = MaterialTheme.colorScheme
@@ -59,6 +61,7 @@ internal fun FormInputBase(
         textStyle = textStyle.copy(color = inputColor),
         cursorBrush = SolidColor(if (enabled && isError) colors.error else colors.primary),
         keyboardOptions = keyboardOptions, keyboardActions = keyboardActions,
+        visualTransformation = visualTransformation,
         interactionSource = interactionSource, decorationBox = decorationBox,
     )
 }
@@ -95,6 +98,7 @@ internal fun FormTextField(
     isError: Boolean = error != null,
     keyboardType: KeyboardType = KeyboardType.Text,
     imeAction: ImeAction = ImeAction.Next,
+    visualTransformation: VisualTransformation = VisualTransformation.None,
 ) {
     val focusManager = LocalFocusManager.current
     val focusRequester = remember { FocusRequester() }
@@ -110,6 +114,7 @@ internal fun FormTextField(
             value = value, onValueChange = onValueChange, enabled = enabled, readOnly = readOnly,
             interactionSource = source, isError = isError, textStyle = MaterialTheme.typography.bodyMedium,
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType, imeAction = imeAction),
+            visualTransformation = visualTransformation,
             keyboardActions = KeyboardActions(
                 onNext = { focusManager.moveFocus(FocusDirection.Down) },
                 onDone = { focusManager.clearFocus() },

@@ -2,7 +2,7 @@ package cn.turingzy.ledger.ui.feature.wallet
 
 import android.net.Uri
 import cn.turingzy.ledger.ui.feature.wallet.component.SwipeableBankCardDeck
-import cn.turingzy.ledger.ui.feature.wallet.sheet.AccountDetailsSheet
+import cn.turingzy.ledger.ui.feature.wallet.component.WalletAccountInfo
 import cn.turingzy.ledger.ui.feature.wallet.sheet.AddAccountSheet
 import cn.turingzy.ledger.ui.component.base.ScrollTitleContainerBase
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -12,7 +12,6 @@ import cn.turingzy.ledger.ui.component.base.PageFrameBase
 import cn.turingzy.ledger.ui.component.base.PrimaryPageHeaderBase
 import cn.turingzy.ledger.ui.component.biz.MissingExchangeRateNoticeBiz
 import cn.turingzy.ledger.ui.interaction.rememberUiAction
-import cn.turingzy.ledger.ui.interaction.rememberUiEvent
 import cn.turingzy.ledger.ui.interaction.UiInteractionKind
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.foundation.layout.Arrangement
@@ -33,7 +32,6 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.material3.Text
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.Stable
 import cn.turingzy.ledger.ui.component.navigation.LocalBottomBarContentPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -45,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cn.turingzy.ledger.ui.component.card.summary.SummaryCard
@@ -63,6 +62,7 @@ import cn.turingzy.ledger.model.account.Account
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WalletScreen(
+    onOpenAccount: (Long) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: WalletViewModel = hiltViewModel(),
 ) {
@@ -70,6 +70,10 @@ fun WalletScreen(
     val cardUiState by cardViewModel.uiState.collectAsStateWithLifecycle()
     val background = remember(cardUiState.background) { cardUiState.background?.asImageBitmap() }
     val snackbarHostState = remember { SnackbarHostState() }
+    val accountSaveError = stringResource(R.string.wallet_account_save_failed)
+    LaunchedEffect(viewModel, accountSaveError) {
+        viewModel.accountSaveErrors.collect { snackbarHostState.showSnackbar(accountSaveError) }
+    }
     LaunchedEffect(cardUiState.error) {
         val error = cardUiState.error ?: return@LaunchedEffect
         snackbarHostState.showSnackbar(error)
@@ -77,12 +81,14 @@ fun WalletScreen(
     }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    val accountSheets = remember { WalletAccountSheetController() }
+    var addingAccount by rememberSaveable { mutableStateOf(false) }
 
     WalletContent(
         uiState = uiState,
-        onAddAccountClick = accountSheets::showAdd,
-        onAdjustBalanceClick = accountSheets::showDetails,
+        onAddAccountClick = { addingAccount = true },
+        onOpenAccount = { onOpenAccount(it.id) },
+        onUpdateAccount = viewModel::updateAccountInfo,
+        onDeleteAccount = viewModel::deleteAccount,
         modifier = modifier,
         cardBackground = background,
         cardSettingsEnabled = !cardUiState.loading && !cardUiState.importing,
@@ -90,109 +96,11 @@ fun WalletScreen(
         snackbarHostState = snackbarHostState,
     )
 
-    WalletAccountSheets(
-        controller = accountSheets,
-        uiState = uiState,
-        onCreate = { value ->
-            viewModel.createAccount(
-                name = value.name,
-                type = value.type,
-                initialBalance = value.initialBalance,
-                cardNumber = value.cardNumber,
-                includeInTotal = value.includeInTotal,
-                currency = value.currency,
-                templateId = value.templateId,
-            )
-        },
-        onSave = viewModel::updateAccountInfo,
-        onDelete = viewModel::deleteAccount,
-    )
-}
-
-/**
- * 钱包页面账户底部弹窗（新增账户 / 账户详情）状态控制器。
- */
-@Stable
-private class WalletAccountSheetController {
-    /** 是否正在展示新增账户弹窗 */
-    var adding by mutableStateOf(false)
-        private set
-    /** 当前选中的账户，非空时展示账户详情弹窗 */
-    var selected by mutableStateOf<Account?>(null)
-        private set
-
-    /** 显示新增账户弹窗 */
-    fun showAdd() {
-        selected = null
-        adding = true
-    }
-
-    /**
-     * 显示指定账户的详情与编辑弹窗
-     *
-     * @param account 目标账户
-     */
-    fun showDetails(account: Account) {
-        adding = false
-        selected = account
-    }
-
-    /** 关闭新增账户弹窗 */
-    fun dismissAdd() { adding = false }
-    /** 关闭账户详情弹窗 */
-    fun dismissDetails() { selected = null }
-}
-
-/**
- * 钱包账户底部弹窗容器，根据控制器状态渲染新增账户或账户详情弹窗。
- *
- * @param controller 弹窗状态控制器
- * @param uiState 当前钱包 UI 状态
- * @param onCreate 创建新账户回调
- * @param onSave 保存账户修改回调
- * @param onDelete 删除账户回调
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun WalletAccountSheets(
-    controller: WalletAccountSheetController,
-    uiState: WalletUiState,
-    onCreate: (Account) -> Unit,
-    onSave: (Account) -> Unit,
-    onDelete: (Long) -> Unit,
-) {
-    val success = uiState as? WalletUiState.Success
-
-    if (controller.adding) {
+    if (addingAccount) {
         AddAccountSheet(
-            templates = success?.templates.orEmpty(),
-            onDismissRequest = controller::dismissAdd,
-            onConfirm = { name, type, balance, cardNo, includeInTotal, currency, templateId ->
-                onCreate(
-                    Account(
-                        name = name,
-                        type = type,
-                        initialBalance = balance,
-                        currentBalance = balance,
-                        cardNumber = cardNo,
-                        includeInTotal = includeInTotal,
-                        currency = currency,
-                        templateId = templateId,
-                    ),
-                )
-            },
-        )
-    }
-
-    controller.selected?.let { selected ->
-        val current = success?.accounts?.firstOrNull { it.account.id == selected.id }
-        AccountDetailsSheet(
-            account = current?.account ?: selected,
-            assignedTemplate = current?.template,
-            templates = success?.templates.orEmpty(),
-            onDismissRequest = controller::dismissDetails,
-            onSave = onSave,
-            onDelete = onDelete,
+            templates = (uiState as? WalletUiState.Success)?.templates.orEmpty(),
+            onDismissRequest = { addingAccount = false },
+            onConfirm = viewModel::createAccount,
         )
     }
 }
@@ -204,7 +112,7 @@ private fun WalletAccountSheets(
  *
  * @param uiState 钱包页面状态
  * @param onAddAccountClick 点击新增账户回调
- * @param onAdjustBalanceClick 点击调整账户余额/查看账户详情回调
+ * @param onOpenAccount 点击轮播主卡时前往账户流水子页。
  * @param modifier 外部修饰符
  * @param cardBackground 汇总卡片自定义背景图
  * @param cardSettingsEnabled 是否允许修改卡片设置
@@ -215,15 +123,16 @@ private fun WalletAccountSheets(
 fun WalletContent(
     uiState: WalletUiState,
     onAddAccountClick: () -> Unit,
-    onAdjustBalanceClick: (Account) -> Unit,
+    onOpenAccount: (Account) -> Unit,
     modifier: Modifier = Modifier,
     cardBackground: ImageBitmap? = null,
     cardSettingsEnabled: Boolean = true,
     onCardBackgroundSelected: (Uri) -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    onUpdateAccount: (Account) -> Unit = {},
+    onDeleteAccount: (Long) -> Unit = {},
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
-    val openAccount = rememberUiEvent(onAdjustBalanceClick, UiInteractionKind.Navigation)
     val bottomBarPadding = LocalBottomBarContentPadding.current
     PageFrameBase(modifier) {
         when (uiState) {
@@ -233,6 +142,8 @@ fun WalletContent(
                 val currencyTotals = uiState.currencyTotals.ifEmpty { listOf(WalletCurrencyTotals("CNY", assets = uiState.totalAsset)) }
                 val totals = currencyTotals.first()
                 var selectedAccountId by rememberSaveable { mutableStateOf<Long?>(null) }
+                val selectedAccount = accounts.firstOrNull { it.account.id == selectedAccountId }
+                    ?: accounts.firstOrNull()
 
                 val listState = rememberLazyListState()
                 ScrollTitleContainerBase(
@@ -242,13 +153,6 @@ fun WalletContent(
                         else Int.MAX_VALUE
                     },
                     onScrollToTop = { listState.animateScrollToItem(0) },
-                    actions = {
-                        TopBarIconButton(
-                            imageVector = MaterialSymbols.AddCard,
-                            contentDescription = textResources.getString(R.string.ui_add_account),
-                            onClick = rememberUiAction(onAddAccountClick, UiInteractionKind.Navigation),
-                        )
-                    },
                 ) { scrollModifier ->
                     LazyColumn(
                         state = listState,
@@ -266,7 +170,13 @@ fun WalletContent(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.labelGap),
                             ) {
-                                PrimaryPageHeaderBase(title = textResources.getString(R.string.ui_wallet))
+                                PrimaryPageHeaderBase(title = textResources.getString(R.string.ui_wallet)) {
+                                    TopBarIconButton(
+                                        imageVector = MaterialSymbols.AddCard,
+                                        contentDescription = textResources.getString(R.string.ui_add_account),
+                                        onClick = rememberUiAction(onAddAccountClick, UiInteractionKind.Navigation),
+                                    )
+                                }
 
                                 if (uiState.amountsAvailable) WalletHeroCard(
                                     totalAsset = totals.assets,
@@ -282,28 +192,18 @@ fun WalletContent(
 
                         item(key = "accounts_section") {
                             Column(verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.labelGap)) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(LedgerStyle.dimensions.compactIconButton)
-                                        .padding(start = 4.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Text(
-                                        text = textResources.getString(cn.turingzy.ledger.R.string.ui_account),
-                                        fontSize = LedgerStyle.typography.transactionTitle.fontSize,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
+                                WalletSectionHeading(stringResource(R.string.ui_account))
 
                                 SwipeableBankCardDeck(
                                     accounts = accounts,
                                     templates = uiState.templates,
-                                    onAdjustClick = openAccount,
                                     selectedAccountId = selectedAccountId,
                                     onSelectedAccountChange = { selectedAccountId = it },
+                                    onOpenAccount = onOpenAccount,
                                 )
+                                if (selectedAccount != null) {
+                                    WalletAccountInfo(selectedAccount, uiState.templates, onUpdateAccount, onDeleteAccount)
+                                }
                             }
                         }
                     }
@@ -313,6 +213,22 @@ fun WalletContent(
         SnackbarHost(
             snackbarHostState,
             Modifier.align(Alignment.BottomCenter).padding(bottom = bottomBarPadding),
+        )
+    }
+}
+
+/** 钱包主页面和账户子页共用的区块标题。 */
+@Composable
+internal fun WalletSectionHeading(title: String) {
+    Row(
+        Modifier.fillMaxWidth().height(LedgerStyle.dimensions.compactIconButton).padding(start = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            title,
+            fontSize = LedgerStyle.typography.transactionTitle.fontSize,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

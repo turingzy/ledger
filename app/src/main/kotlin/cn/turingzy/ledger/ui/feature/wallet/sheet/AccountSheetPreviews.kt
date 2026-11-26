@@ -8,10 +8,12 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import cn.turingzy.ledger.model.account.Account
 import cn.turingzy.ledger.model.account.AccountType
+import cn.turingzy.ledger.model.account.AccountWithTemplate
 import cn.turingzy.ledger.model.account.CardTemplate
+import cn.turingzy.ledger.ui.feature.wallet.component.WalletAccountInfo
 import cn.turingzy.ledger.ui.theme.LedgerTheme
 
-internal enum class AccountSheetPreviewCase { NewAccount, AccountDetails, CardFacePicker }
+internal enum class AccountSheetPreviewCase { NewAccount, InlineDetails, CardFacePicker }
 
 internal class AccountSheetPreviewProvider : PreviewParameterProvider<AccountSheetPreviewCase> {
     override val values: Sequence<AccountSheetPreviewCase> = AccountSheetPreviewCase.entries.asSequence()
@@ -26,8 +28,8 @@ private fun AccountSheetPreview(@PreviewParameter(AccountSheetPreviewProvider::c
     val templates = listOf(CardTemplate(1L, "示例卡面", ""))
     LedgerTheme {
         when (case) {
-            AccountSheetPreviewCase.NewAccount -> AddAccountSheet({}, { _, _, _, _, _, _, _ -> }, templates = templates)
-            AccountSheetPreviewCase.AccountDetails -> AccountDetailsSheet(account, {}, {}, {}, templates = templates)
+            AccountSheetPreviewCase.NewAccount -> AddAccountSheet({}, {}, templates = templates)
+            AccountSheetPreviewCase.InlineDetails -> WalletAccountInfo(AccountWithTemplate(account), templates, {}, {})
             AccountSheetPreviewCase.CardFacePicker -> AccountCardFaceDialog(templates, null, onDismiss = {}, onConfirm = {})
         }
     }

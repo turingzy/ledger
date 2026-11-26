@@ -1,7 +1,6 @@
 package cn.turingzy.ledger.ui.feature.wallet.sheet
 
 import cn.turingzy.ledger.ui.component.base.FormFieldFrameBase
-import cn.turingzy.ledger.ui.component.input.FormTextField
 import cn.turingzy.ledger.ui.component.base.IconButtonContentBase
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.foundation.layout.Column
@@ -12,13 +11,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cn.turingzy.ledger.ui.component.MaterialSymbols
@@ -66,7 +59,7 @@ internal fun AccountCardFaceField(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    disabledHint: String = androidx.compose.ui.res.stringResource(cn.turingzy.ledger.R.string.ui_enter_an_account_name_and_last_four_digits),
+    disabledHint: String = androidx.compose.ui.res.stringResource(cn.turingzy.ledger.R.string.ui_enter_an_account_name_first),
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val colors = MaterialTheme.colorScheme
@@ -84,24 +77,4 @@ internal fun AccountCardFaceField(
             )
         }
     }
-}
-
-/**
- * 银行卡卡号尾号（后四位）输入框字段。
- *
- * 限制仅允许输入最多 4 位数字。
- *
- * @param value 当前输入的尾号字符
- * @param onValueChange 尾号变更回调
- * @param modifier 外部修饰符
- */
-@Composable
-internal fun AccountTailNumberField(value: String, onValueChange: (String) -> Unit, modifier: Modifier = Modifier) {
-    FormTextField(
-        label = androidx.compose.ui.res.stringResource(cn.turingzy.ledger.R.string.ui_last_digits),
-        value = value,
-        onValueChange = { if (it.length <= 4 && it.all { digit -> digit in '0'..'9' }) onValueChange(it) },
-        modifier = modifier,
-        keyboardType = KeyboardType.Number,
-    )
 }

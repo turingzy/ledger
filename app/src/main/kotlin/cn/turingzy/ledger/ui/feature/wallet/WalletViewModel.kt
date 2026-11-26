@@ -11,15 +11,19 @@ import cn.turingzy.ledger.model.currency.primaryAmount
 import cn.turingzy.ledger.model.currency.primaryBalance
 import cn.turingzy.ledger.di.Dispatcher
 import cn.turingzy.ledger.di.LedgerDispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
-import cn.turingzy.ledger.model.account.AccountType
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 
 /**
@@ -46,7 +50,7 @@ class WalletViewModel @Inject constructor(
      * 钱包页面 UI 状态流，订阅时保持活跃并在退火 5 秒后超时。
      */
     val uiState: StateFlow<WalletUiState> = combine(
-        accountRepository.getAccountsStream(),
+        accountRepository.getAccountsStream(includeCardDetails = true),
         cardTemplateRepository.getTemplatesStream(),
         transactionRepository.getTransactionsBetween(Long.MIN_VALUE, Long.MAX_VALUE),
         currencies.selection,
@@ -68,49 +72,26 @@ class WalletViewModel @Inject constructor(
         initialValue = WalletUiState.Loading,
     )
 
-    /**
-     * 创建新账户。
-     *
-     * @param name 账户名称
-     * @param type 账户类型
-     * @param initialBalance 初始余额（单位：分）
-     * @param cardNumber 卡号或账号（可选）
-     * @param includeInTotal 是否计入总资产
-     * @param currency 币种代码，默认为 "CNY"
-     * @param templateId 关联的银行卡卡面模板 ID（可选）
-     */
-    fun createAccount(
-        name: String,
-        type: AccountType,
-        initialBalance: Long,
-        cardNumber: String?,
-        includeInTotal: Boolean = true,
-        currency: String = "CNY",
-        templateId: Long? = null,
-    ) {
-        viewModelScope.launch {
-            val account = Account(
-                name = name.trim(),
-                type = type,
-                initialBalance = initialBalance,
-                currentBalance = initialBalance,
-                cardNumber = cardNumber?.trim()?.takeIf { it.isNotEmpty() },
-                includeInTotal = includeInTotal,
-                currency = currency,
-                templateId = templateId,
-            )
-            accountRepository.createAccount(account)
-        }
-    }
+    /** 保存已通过表单校验的新账户和银行卡信息。 */
+    fun createAccount(account: Account) = saveAccount { accountRepository.createAccount(account) }
 
-    /**
-     * 更新已有账户的基本信息。
-     *
-     * @param account 更新后的账户实体
-     */
-    fun updateAccountInfo(account: Account) {
+    /** 更新账户属性和银行卡信息，保留当前余额。 */
+    fun updateAccountInfo(account: Account) = saveAccount { accountRepository.updateAccountInfo(account) }
+
+    private val _accountSaveErrors = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val accountSaveErrors = _accountSaveErrors.asSharedFlow()
+    private val accountWrites = Mutex()
+
+    /** 将保存失败交给钱包页面显示，避免记录敏感表单内容。 */
+    private fun saveAccount(action: suspend () -> Unit) {
         viewModelScope.launch {
-            accountRepository.updateAccountInfo(account)
+            try {
+                accountWrites.withLock { action() }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                _accountSaveErrors.emit(Unit)
+            }
         }
     }
 
@@ -131,9 +112,5 @@ class WalletViewModel @Inject constructor(
      *
      * @param accountId 目标账户 ID
      */
-    fun deleteAccount(accountId: Long) {
-        viewModelScope.launch {
-            accountRepository.deleteAccount(accountId)
-        }
-    }
+    fun deleteAccount(accountId: Long) = saveAccount { accountRepository.deleteAccount(accountId) }
 }

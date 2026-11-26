@@ -24,6 +24,7 @@ import cn.turingzy.ledger.ui.feature.bill.search.BillSearchScreen
 import cn.turingzy.ledger.ui.feature.bill.sheet.RecordCreateSheet
 import cn.turingzy.ledger.ui.feature.settings.SettingsScreen
 import cn.turingzy.ledger.ui.feature.wallet.WalletScreen
+import cn.turingzy.ledger.ui.feature.wallet.activity.AccountActivityScreen
 import java.time.LocalDate
 
 /**
@@ -52,7 +53,7 @@ fun LedgerNavHost(
 ) {
     RetainedDestinationHost(currentDestination, modifier) { destination ->
         val navController = rememberNavController()
-        if (destination == TopLevelDestination.BILL) {
+        if (destination == TopLevelDestination.BILL || destination == TopLevelDestination.WALLET) {
             val entry by navController.currentBackStackEntryAsState()
             val isSubpage = entry?.destination?.isTemporaryTask() == true
             LaunchedEffect(isSubpage) { onSubpageChange(destination, isSubpage) }
@@ -95,7 +96,25 @@ fun LedgerNavHost(
                     }
                 }
                 TopLevelDestination.ANALYTICS -> composable<Route.Analytics> { AnalyticsScreen() }
-                TopLevelDestination.WALLET -> composable<Route.Wallet> { WalletScreen() }
+                TopLevelDestination.WALLET -> {
+                    composable<Route.Wallet> {
+                        WalletScreen(onOpenAccount = { id ->
+                            navController.navigate(Route.WalletAccount(id)) { launchSingleTop = true }
+                        })
+                    }
+                    composable<Route.WalletAccount>(
+                        enterTransition = { PageTransitions.taskEnter },
+                        popExitTransition = { PageTransitions.taskPopExit },
+                    ) { accountEntry ->
+                        TemporaryTaskContent(accountEntry.id, { onTaskTopChange(destination, accountEntry.id, it) }) {
+                            AccountActivityScreen(onBack = {
+                                if (navController.currentBackStackEntry?.id == accountEntry.id) {
+                                    navController.popBackStack<Route.Wallet>(inclusive = false)
+                                }
+                            })
+                        }
+                    }
+                }
                 TopLevelDestination.SETTINGS -> composable<Route.Settings> {
                     SettingsScreen(onSubpageChange = { onSubpageChange(destination, it) })
                 }
@@ -110,7 +129,7 @@ fun LedgerNavHost(
 /**
  * 判断当前目的地是否为覆盖在父级页面之上的全屏临时任务页。
  */
-private fun NavDestination.isTemporaryTask(): Boolean = hasRoute<Route.BillSearch>()
+private fun NavDestination.isTemporaryTask(): Boolean = hasRoute<Route.BillSearch>() || hasRoute<Route.WalletAccount>()
 
 /**
  * 包装全屏临时任务页内容，并在页面布局变化或离开组合时实时上报其顶部 Y 轴位置。

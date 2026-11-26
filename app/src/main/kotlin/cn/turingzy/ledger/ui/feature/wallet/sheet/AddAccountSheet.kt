@@ -10,7 +10,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import cn.turingzy.ledger.model.account.AccountType
+import cn.turingzy.ledger.model.account.Account
 import cn.turingzy.ledger.model.account.CardTemplate
 import cn.turingzy.ledger.ui.theme.LedgerTheme
 
@@ -20,7 +20,7 @@ import cn.turingzy.ledger.ui.theme.LedgerTheme
  * 包装 [AddAccountSheetContent]，提供弹窗展开/收起过渡动画及输入法弹起锚定适配。
  *
  * @param onDismissRequest 关闭弹窗请求回调
- * @param onConfirm 确认创建账户回调，传回名称、类型、期初余额、卡号、是否计入总资产、币种与卡面模板 ID
+ * @param onConfirm 确认创建账户回调
  * @param modifier 外部修饰符
  * @param sheetState 底部弹窗状态
  * @param templates 可用的卡面模板列表
@@ -29,15 +29,7 @@ import cn.turingzy.ledger.ui.theme.LedgerTheme
 @Composable
 fun AddAccountSheet(
     onDismissRequest: () -> Unit,
-    onConfirm: (
-        name: String,
-        type: AccountType,
-        initialBalance: Long,
-        cardNumber: String?,
-        includeInTotal: Boolean,
-        currency: String,
-        templateId: Long?,
-    ) -> Unit,
+    onConfirm: (Account) -> Unit,
     modifier: Modifier = Modifier,
     sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
     templates: List<CardTemplate> = emptyList(),
@@ -51,9 +43,9 @@ fun AddAccountSheet(
         modifier = modifier.keepSheetAnchorDuringIme(),
     ) {
         AddAccountSheetContent(
-            onConfirm = { name, type, balance, cardNumber, includeInTotal, currency, templateId ->
+            onConfirm = { account ->
                 if (sheetState.targetValue != SheetValue.Hidden) {
-                    onConfirm(name, type, balance, cardNumber, includeInTotal, currency, templateId)
+                    onConfirm(account)
                     dismiss.close()
                 }
             },
@@ -66,9 +58,9 @@ fun AddAccountSheet(
 /**
  * 新增账户表单内容组件。
  *
- * 嵌入 [AccountEditorContent]，当保存成功后将属性拆包回调给调用方。
+ * 嵌入 [AccountEditorContent]，当保存成功后将账户回调给调用方。
  *
- * @param onConfirm 确认创建回调，传回账户各字段属性
+ * @param onConfirm 确认创建账户回调
  * @param modifier 外部修饰符
  * @param templates 可用的卡面模板列表
  * @param onDismiss 取消或关闭回调
@@ -76,15 +68,7 @@ fun AddAccountSheet(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddAccountSheetContent(
-    onConfirm: (
-        name: String,
-        type: AccountType,
-        initialBalance: Long,
-        cardNumber: String?,
-        includeInTotal: Boolean,
-        currency: String,
-        templateId: Long?,
-    ) -> Unit,
+    onConfirm: (Account) -> Unit,
     modifier: Modifier = Modifier,
     templates: List<CardTemplate> = emptyList(),
     onDismiss: () -> Unit = {},
@@ -93,12 +77,7 @@ fun AddAccountSheetContent(
         account = null,
         onDismiss = onDismiss,
         templates = templates,
-        onSave = { value ->
-            onConfirm(
-                value.name, value.type, value.initialBalance, value.cardNumber,
-                value.includeInTotal, value.currency, value.templateId,
-            )
-        },
+        onSave = onConfirm,
         modifier = modifier,
     )
 }
@@ -108,6 +87,6 @@ fun AddAccountSheetContent(
 @Composable
 private fun AddAccountSheetContentPreview() {
     LedgerTheme {
-        AddAccountSheetContent(onConfirm = { _, _, _, _, _, _, _ -> })
+        AddAccountSheetContent(onConfirm = {})
     }
 }

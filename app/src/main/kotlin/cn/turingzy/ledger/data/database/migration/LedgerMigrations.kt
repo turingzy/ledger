@@ -67,3 +67,10 @@ internal val Migration4To5 = object : Migration(4, 5) {
 internal val Migration5To6 = object : Migration(5, 6) {
     override fun migrate(db: SupportSQLiteDatabase) = db.seedExpandedSystemCategories()
 }
+
+/** 为钱包增加本机加密的银行卡信息，保留原有卡号字段供历史账户读取。 */
+internal val Migration6To7 = object : Migration(6, 7) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE tb_account ADD COLUMN encrypted_card_details TEXT")
+    }
+}

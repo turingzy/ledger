@@ -27,6 +27,10 @@ sealed interface Route {
     @Serializable
     data object Wallet : Route
 
+    /** 钱包中指定账户的余额走势和交易流水。 */
+    @Serializable
+    data class WalletAccount(val accountId: Long) : Route
+
     /** 设置主页面路由。 */
     @Serializable
     data object Settings : Route
@@ -35,7 +39,7 @@ sealed interface Route {
 /**
  * 底部主导航栏的顶级目的地枚举。
  *
- * 定义主导航栏四个核心模块（账单、统计、钱包、设置）所关联的图标、文案与起始路由。
+ * 定义主导航栏四个核心模块（账本、钱包、统计、设置）所关联的图标、文案与起始路由。
  *
  * @property icon 未选中的常规状态图标。
  * @property selectedIcon 激活选中状态的高亮图标。
@@ -55,19 +59,19 @@ enum class TopLevelDestination(
         labelResource = R.string.ui_bill,
         route = Route.Bill,
     ),
-    /** 统计报表页面。 */
-    ANALYTICS(
-        icon = MaterialSymbols.Leaderboard,
-        selectedIcon = MaterialSymbols.LeaderboardFilled,
-        labelResource = R.string.ui_analytics,
-        route = Route.Analytics,
-    ),
     /** 钱包账户页面。 */
     WALLET(
         icon = MaterialSymbols.CreditCard,
         selectedIcon = MaterialSymbols.CreditCardFilled,
         labelResource = R.string.ui_wallet,
         route = Route.Wallet,
+    ),
+    /** 统计报表页面。 */
+    ANALYTICS(
+        icon = MaterialSymbols.Leaderboard,
+        selectedIcon = MaterialSymbols.LeaderboardFilled,
+        labelResource = R.string.ui_analytics,
+        route = Route.Analytics,
     ),
     /** 应用设置页面。 */
     SETTINGS(

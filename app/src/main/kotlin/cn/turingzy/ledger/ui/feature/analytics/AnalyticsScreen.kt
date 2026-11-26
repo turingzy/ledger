@@ -7,7 +7,6 @@ import cn.turingzy.ledger.ui.component.base.ScrollTitleContainerBase
 import cn.turingzy.ledger.ui.component.biz.LocalCurrencyBiz
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -17,9 +16,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import cn.turingzy.ledger.ui.component.base.PageFrameBase
 import cn.turingzy.ledger.ui.component.base.PrimaryPageHeaderBase
@@ -34,7 +30,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -49,6 +44,7 @@ import cn.turingzy.ledger.ui.component.picker.LedgerDatePickerDialog
 import cn.turingzy.ledger.ui.component.input.SegmentedControl
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.picker.PeriodPickerSheet
+import cn.turingzy.ledger.ui.component.picker.PeriodNavigationArrow
 import cn.turingzy.ledger.ui.interaction.UiInteractionKind
 import cn.turingzy.ledger.ui.interaction.rememberUiAction
 import cn.turingzy.ledger.ui.interaction.uiClickable
@@ -291,32 +287,4 @@ fun AnalyticsTimeScopeSelector(
         onSelect = { selectedScope = scopes[it]; onScopeSelected(scopes[it]) },
         modifier = modifier.fillMaxWidth(), emphasizeSelection = false,
     )
-}
-
-/**
- * 周期前后切换的圆形导航箭头按钮。
- *
- * @param forward 是否为前进（下一周期），true 表示下一周期，false 表示上一周期。
- * @param onClick 点击事件回调。
- * @param modifier 修饰符。
- */
-@Composable
-private fun PeriodNavigationArrow(
-    forward: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
-    Box(
-        modifier.size(28.dp).clip(CircleShape)
-            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
-            .uiClickable(kind = UiInteractionKind.Navigation, onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            if (forward) MaterialSymbols.ChevronRight else MaterialSymbols.ChevronLeft,
-            if (forward) textResources.getString(cn.turingzy.ledger.R.string.ui_next_period) else textResources.getString(cn.turingzy.ledger.R.string.ui_previous_period),
-            Modifier.size(LedgerStyle.icons.default), tint = MaterialTheme.colorScheme.primary,
-        )
-    }
 }

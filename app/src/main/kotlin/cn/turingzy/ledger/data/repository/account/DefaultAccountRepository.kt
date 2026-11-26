@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
+import timber.log.Timber
 
 /**
  * [AccountRepository] 的默认实现。
@@ -35,14 +36,29 @@ class DefaultAccountRepository @Inject constructor(
     private val valuation: MoneyValuation,
     private val rates: ExchangeRateRepository,
     @param:Dispatcher(LedgerDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
+    private val cardCipher: BankCardDetailsCipher,
 ) : AccountRepository {
 
     /**
      * 获取所有账户及其关联卡片模板的流，并结合当前主币种和汇率计算基准金额。
      */
-    override fun getAccountsStream(): Flow<List<AccountWithTemplate>> =
+    override fun getAccountsStream(includeCardDetails: Boolean): Flow<List<AccountWithTemplate>> =
         combine(accountDao.getPopulatedAccounts(), preferences.preferences, rates.changes) { entries, settings, _ -> entries to settings.primaryCurrency }
-            .map { (entries, primary) -> valuation.accounts(entries.map { it.asExternalModel() }, primary) }
+            .map { (entries, primary) ->
+                valuation.accounts(entries.map { entry ->
+                    val model = entry.asExternalModel()
+                    if (!includeCardDetails) model else model.copy(account = model.account.copy(
+                        cardDetails = entry.account.encryptedCardDetails?.let { encrypted ->
+                            try {
+                                cardCipher.decrypt(encrypted)
+                            } catch (_: Exception) {
+                                Timber.w("Unable to read device-local card details")
+                                null
+                            }
+                        },
+                    ))
+                }, primary)
+            }
             .flowOn(ioDispatcher)
 
     /**
@@ -83,7 +99,9 @@ class DefaultAccountRepository @Inject constructor(
             } else {
                 account
             }
-            accountDao.insertAccount(accountToSave.asEntity())
+            accountDao.insertAccount(accountToSave.asEntity().copy(
+                encryptedCardDetails = accountToSave.cardDetails?.let(cardCipher::encrypt),
+            ))
         }
 
     /**
@@ -93,7 +111,10 @@ class DefaultAccountRepository @Inject constructor(
      */
     override suspend fun updateAccount(account: Account) {
         withContext(ioDispatcher) {
-            accountDao.updateAccount(account.asEntity())
+            val current = accountDao.getAccountIncludingDeleted(account.id)
+            accountDao.updateAccount(account.asEntity().copy(
+                encryptedCardDetails = account.cardDetails?.let(cardCipher::encrypt) ?: current?.encryptedCardDetails,
+            ))
         }
     }
 
@@ -112,6 +133,7 @@ class DefaultAccountRepository @Inject constructor(
                 templateId = account.templateId,
                 cardNumber = account.cardNumber,
                 includeInTotal = account.includeInTotal,
+                encryptedCardDetails = account.cardDetails?.let(cardCipher::encrypt),
             )
         }
     }

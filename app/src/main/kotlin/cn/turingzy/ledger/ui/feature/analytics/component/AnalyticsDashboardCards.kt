@@ -23,6 +23,8 @@ import java.time.YearMonth
 internal val AnalyticsChartNodeRadius = 3.dp
 /** 统计图表绘图区标准高度。 */
 internal val AnalyticsChartPlotHeight = 170.dp
+/** 余额走势和累计支出图共用的纵轴刻度栏宽度。 */
+internal val AnalyticsChartAxisWidth = 40.dp
 /** 统计图表网格间隔数。 */
 internal const val AnalyticsChartGridIntervals = 8
 

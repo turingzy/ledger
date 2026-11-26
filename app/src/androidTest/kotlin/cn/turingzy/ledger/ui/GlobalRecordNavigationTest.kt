@@ -23,7 +23,7 @@ class GlobalRecordNavigationTest {
     fun recordSheetOpensAndClosesOnEveryTab() {
         val record = hasContentDescription("记一笔") or hasContentDescription("Record transaction")
         val tab = SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab)
-        val tabs = listOf("账本" to "Ledger", "分析" to "Analytics", "钱包" to "Wallet", "设置" to "Settings")
+        val tabs = listOf("账本" to "Ledger", "钱包" to "Wallet", "统计" to "Statistics", "设置" to "Settings")
         compose.waitUntil(timeoutMillis = 10_000) {
             compose.onAllNodes(record).fetchSemanticsNodes().isNotEmpty()
         }

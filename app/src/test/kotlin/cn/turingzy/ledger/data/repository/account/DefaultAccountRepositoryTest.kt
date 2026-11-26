@@ -4,8 +4,10 @@ import cn.turingzy.ledger.data.database.dao.AccountDao
 import cn.turingzy.ledger.data.database.entity.AccountEntity
 import cn.turingzy.ledger.model.account.Account
 import cn.turingzy.ledger.model.account.AccountType
+import cn.turingzy.ledger.model.account.BankCardDetails
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -18,6 +20,7 @@ import org.junit.Test
 class DefaultAccountRepositoryTest {
 
     private val accountDao: AccountDao = mockk(relaxed = true)
+    private val cardCipher: BankCardDetailsCipher = mockk()
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var repository: DefaultAccountRepository
 
@@ -25,6 +28,7 @@ class DefaultAccountRepositoryTest {
     fun setup() {
         repository = DefaultAccountRepository(
             accountDao = accountDao,
+            cardCipher = cardCipher,
             ioDispatcher = testDispatcher,
             preferences = mockk(relaxed = true), valuation = mockk(relaxed = true), rates = mockk(relaxed = true),
         )
@@ -95,10 +99,18 @@ class DefaultAccountRepositoryTest {
         repository.updateAccountInfo(edited)
 
         coVerify(exactly = 1) {
-            accountDao.updateAccountInfo(10L, "工资卡", AccountType.DEBIT, 12000L, 42L, "1234", false)
+            accountDao.updateAccountInfo(10L, "工资卡", AccountType.DEBIT, 12000L, 42L, "1234", false, null)
         }
         coVerify(exactly = 0) { accountDao.updateAccount(any()) }
         coVerify(exactly = 0) { accountDao.updateBalance(any(), any()) }
+    }
+
+    @Test
+    fun createAccountWritesCardDetailsAsEncryptedData() = runTest(testDispatcher) {
+        val details = BankCardDetails("4111111111111111", "08/29", "123")
+        every { cardCipher.encrypt(details) } returns "ciphertext"
+        repository.createAccount(Account(name = "银行卡", type = AccountType.DEBIT, cardNumber = "1111", cardDetails = details))
+        coVerify { accountDao.insertAccount(match { it.cardNumber == "1111" && it.encryptedCardDetails == "ciphertext" }) }
     }
 
 }

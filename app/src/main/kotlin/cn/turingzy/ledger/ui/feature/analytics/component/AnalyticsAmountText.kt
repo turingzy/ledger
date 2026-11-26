@@ -20,9 +20,16 @@ import androidx.compose.ui.unit.sp
  * @param fontSize 字体大小。
  */
 @Composable
-internal fun AnalyticsAmountText(amount: Long, modifier: Modifier = Modifier, textAlign: TextAlign = TextAlign.Start, fontSize: androidx.compose.ui.unit.TextUnit = 16.sp) {
+internal fun AnalyticsAmountText(
+    amount: Long,
+    modifier: Modifier = Modifier,
+    textAlign: TextAlign = TextAlign.Start,
+    fontSize: androidx.compose.ui.unit.TextUnit = 16.sp,
+    useGrouping: Boolean = false,
+) {
     AmountTextBiz(
         amount, LocalCurrencyBiz.current, modifier,
+        useGrouping = useGrouping,
         textStyle = MaterialTheme.typography.bodyLarge.copy(
             fontSize = fontSize, lineHeight = 18.sp, fontWeight = FontWeight.Normal,
             color = MaterialTheme.colorScheme.onSurface, fontFeatureSettings = "tnum", textAlign = textAlign,

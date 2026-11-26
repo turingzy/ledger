@@ -15,7 +15,7 @@ interface AccountRepository {
      *
      * 账户金额会自动折算为主币种基准金额。
      */
-    fun getAccountsStream(): Flow<List<AccountWithTemplate>>
+    fun getAccountsStream(includeCardDetails: Boolean = false): Flow<List<AccountWithTemplate>>
 
     /**
      * 根据账户 ID 获取指定账户及其关联卡片模板信息的流。

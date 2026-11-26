@@ -67,7 +67,8 @@ fun LedgerApp(
     var showGlobalRecordSheet by remember { mutableStateOf(false) }
     val bottomContentPadding = BottomBarContentPadding + LedgerStyle.dimensions.touchTarget
 
-    BackHandler(enabled = !isBillTab && !showGlobalRecordSheet) {
+    val isAccountSubpage = currentTopLevelDestination == TopLevelDestination.WALLET && isSubpage
+    BackHandler(enabled = !isBillTab && !isAccountSubpage && !showGlobalRecordSheet) {
         currentTopLevelDestination = TopLevelDestination.BILL
     }
 

@@ -27,13 +27,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
@@ -67,14 +71,14 @@ internal fun ExpensePace(days: Map<LocalDate, AnalyticsDay>, scope: AnalyticsTim
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val density = LocalDensity.current
         val canvasWidth = with(density) { maxWidth.toPx() }
+        val left = with(density) { AnalyticsChartAxisWidth.toPx() }.coerceAtMost(canvasWidth * .40f)
+        val labelWidth = (left - with(density) { LedgerStyle.spacing.tiny.toPx() }).coerceAtLeast(1f)
         val labels = (0..4).map { tick ->
             val amount = BigDecimal.valueOf(data.scale).multiply(BigDecimal.valueOf(tick.toLong())).divide(BigDecimal.valueOf(4), 0, RoundingMode.HALF_UP).longValueExact()
-            measurer.measure(expenseAxisLabel(amount, currencySymbol), labelStyle)
+            measurer.measureChartAxisLabel(expenseAxisLabel(amount, currencySymbol), labelStyle, labelWidth)
         }
         val tickIndices = expensePaceTickIndices(data.dates.size, scope)
         val showAllMonths = scope == AnalyticsTimeScope.YEAR
-        val axisGap = with(density) { if (showAllMonths) 3.dp.toPx() else 8.dp.toPx() }
-        val left = labels.maxOf { it.size.width }.toFloat() + axisGap
         val right = canvasWidth
         val monthSlot = (right - left).coerceAtLeast(1f) / tickIndices.size.coerceAtLeast(1)
         val tickLabels = tickIndices.associateWith { index ->
@@ -112,11 +116,7 @@ internal fun ExpensePace(days: Map<LocalDate, AnalyticsDay>, scope: AnalyticsTim
                     if (data.dates.size == 1) (left + right) / 2 else left + (right - left) * index / (data.dates.size - 1),
                     bottom - (bottom - top) * analyticsRatio(value, data.scale),
                 )
-                for (tick in 0..AnalyticsChartGridIntervals) {
-                    val y = bottom - (bottom - top) * tick / AnalyticsChartGridIntervals
-                    drawLine(colors.onSurfaceVariant.copy(alpha = 0.35f), Offset(left, y), Offset(right, y), 0.7.dp.toPx())
-                    if (tick % 2 == 0) drawText(labels[tick / 2], topLeft = Offset(0f, y - labels[tick / 2].size.height / 2))
-                }
+                drawChartGrid(top, bottom, left, right, colors.onSurfaceVariant, labels)
                 val previous = data.previous.mapIndexed { index, value -> point(index, value) }
                 val actual = data.current.mapIndexed { index, value -> point(index, value) }
                 if (actual.size > 1) {
@@ -231,6 +231,27 @@ internal fun expenseAxisLabel(cents: Long, currencySymbol: String = "¥"): Strin
     if (cents < 100_000L) return cents.toFormattedAmount(showSymbol = true, symbol = currencySymbol).removeSuffix(".00")
     val thousands = BigDecimal.valueOf(cents).divide(BigDecimal.valueOf(100_000L), 2, RoundingMode.HALF_UP)
     return "$currencySymbol${thousands.stripTrailingZeros().toPlainString()}k"
+}
+
+/** 长刻度金额按可用宽度缩小，使绘图区宽度不随范围变化。 */
+internal fun TextMeasurer.measureChartAxisLabel(text: String, style: TextStyle, width: Float): TextLayoutResult {
+    val label = measure(text, style)
+    return if (label.size.width > width) {
+        measure(text, style.copy(fontSize = style.fontSize * (width / label.size.width)))
+    } else label
+}
+
+/** 刻度文字在纵轴栏内靠左，横线从纵轴栏右侧的绘图区开始。 */
+internal fun DrawScope.drawChartGrid(top: Float, bottom: Float, left: Float, right: Float, color: Color, labels: List<TextLayoutResult>) {
+    val lineColor = color.copy(alpha = .35f)
+    for (tick in 0..AnalyticsChartGridIntervals) {
+        val y = bottom - (bottom - top) * tick / AnalyticsChartGridIntervals
+        drawLine(lineColor, Offset(left, y), Offset(right, y), .7.dp.toPx())
+        if (tick % 2 == 0) {
+            val label = labels[tick / 2]
+            drawText(label, topLeft = Offset(0f, y - label.size.height / 2f))
+        }
+    }
 }
 
 /**

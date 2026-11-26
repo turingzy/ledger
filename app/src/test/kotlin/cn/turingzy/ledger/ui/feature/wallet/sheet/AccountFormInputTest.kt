@@ -18,16 +18,21 @@ class AccountFormInputTest {
                 name = " 工资卡 ",
                 type = AccountType.DEBIT,
                 balance = "1234.56",
-                cardNumber = "1234 5678",
+                cardNumber = "4111 1111 1111 1111",
                 currency = " usd ",
                 templateId = template.id,
                 includeInTotal = false,
+                cardExpiry = "08/29",
+                cardSecurityCode = "123",
             ).toAccountOrNull(listOf(template)),
         )
         assertEquals("工资卡", account.name)
         assertEquals(123456L, account.initialBalance)
         assertEquals(account.initialBalance, account.currentBalance)
-        assertEquals("12345678", account.cardNumber)
+        assertEquals("1111", account.cardNumber)
+        assertEquals("4111111111111111", account.cardDetails?.number)
+        assertEquals("08/29", account.cardDetails?.expiry)
+        assertEquals("123", account.cardDetails?.securityCode)
         assertEquals("USD", account.currency)
         assertEquals(42L, account.templateId)
         assertFalse(account.includeInTotal)
@@ -45,7 +50,7 @@ class AccountFormInputTest {
     fun nonBankAccountsCanSelectCardFacesWithoutKeepingHiddenCardNumbers() {
         listOf(AccountType.WALLET, AccountType.CASH).forEach { type ->
             val input = AccountFormInput(name = "钱包", type = type)
-            assertFalse(input.requiresCardTail)
+            assertFalse(input.isBankCard)
             assertTrue(input.canSelectCardFace)
             assertFalse(input.copy(name = " ").canSelectCardFace)
             assertNull(checkNotNull(input.copy(cardNumber = "invalid").toAccountOrNull(emptyList())).cardNumber)
@@ -68,19 +73,21 @@ class AccountFormInputTest {
             valid.copy(currency = "invalid"),
             valid.copy(cardNumber = "123x"),
             valid.copy(cardNumber = "12345678901234567890"),
+            valid.copy(cardExpiry = "13/29"),
+            valid.copy(cardSecurityCode = "12"),
             valid.copy(templateId = 42L),
         ).forEach { assertNull(it.toAccountOrNull(emptyList())) }
     }
 
     @Test
-    fun cardFaceSelectionRequiresNameAndACompleteNumericTail() {
+    fun cardFaceSelectionRequiresNameAndAcceptsOptionalCardNumber() {
         val valid = AccountFormInput(name = "工资卡", cardNumber = "1234")
         assertTrue(valid.canSelectCardFace)
         assertTrue(valid.copy(type = AccountType.CREDIT).canSelectCardFace)
         assertTrue(valid.copy(cardNumber = "1234 5678 9012 3456").canSelectCardFace)
+        assertTrue(valid.copy(cardNumber = "").canSelectCardFace)
         listOf(
             valid.copy(name = " "),
-            valid.copy(cardNumber = ""),
             valid.copy(cardNumber = "123"),
             valid.copy(cardNumber = "12x4"),
         ).forEach { assertFalse(it.canSelectCardFace) }

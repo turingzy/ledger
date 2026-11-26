@@ -98,11 +98,14 @@ class DefaultTransactionRepository @Inject constructor(
         valued(transactionDao.getPopulatedTransactionsBetween(startTime, endTime), currency)
 
     /**
-     * 获取指定账户下的交易明细列表流（含估值计算）。
+     * 获取账户原币交易流水，包括从其他账户转入的交易与实际到账金额。
      *
      * @param accountId 账户 ID
      */
-    override fun getTransactionsByAccount(accountId: Long): Flow<List<TransactionDetail>> = valued(transactionDao.getPopulatedTransactionsByAccount(accountId))
+    override fun getTransactionsByAccount(accountId: Long): Flow<List<TransactionDetail>> =
+        transactionDao.getPopulatedTransactionsByAccount(accountId)
+            .map { entries -> entries.map { it.asExternalModel() } }
+            .flowOn(ioDispatcher)
 
     /**
      * 获取指定分类下的交易明细列表流（含估值计算）。

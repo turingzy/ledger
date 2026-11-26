@@ -95,7 +95,7 @@ interface AccountDao {
         """
         UPDATE tb_account
         SET name = :name, type = :type, initial_balance = :initialBalance,
-            template_id = :templateId, card_number = :cardNumber,
+            template_id = :templateId, card_number = :cardNumber, encrypted_card_details = :encryptedCardDetails,
             include_in_total = :includeInTotal
         WHERE account_id = :accountId AND is_deleted = 0
         """,
@@ -108,6 +108,7 @@ interface AccountDao {
         templateId: Long?,
         cardNumber: String?,
         includeInTotal: Boolean,
+        encryptedCardDetails: String?,
     ): Int
 
     /**

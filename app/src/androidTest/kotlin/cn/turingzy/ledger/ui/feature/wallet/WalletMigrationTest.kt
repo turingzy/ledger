@@ -1,12 +1,16 @@
 package cn.turingzy.ledger.ui.feature.wallet
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import cn.turingzy.ledger.model.account.Account
 import cn.turingzy.ledger.model.account.AccountType
 import cn.turingzy.ledger.model.account.AccountWithTemplate
-import cn.turingzy.ledger.ui.feature.wallet.sheet.AccountDetailsContent
+import cn.turingzy.ledger.ui.feature.wallet.component.WalletAccountInfo
 import cn.turingzy.ledger.ui.interaction.LocalUiInteractionClock
 import cn.turingzy.ledger.ui.theme.LedgerTheme
 import org.junit.Assert.assertEquals
@@ -18,12 +22,14 @@ class WalletMigrationTest {
     private val account = Account(42L, "测试账户", AccountType.DEBIT, currentBalance = 12345L)
     private val state = WalletUiState.Success(12345L, 0L, listOf(AccountWithTemplate(account, null)))
 
-    @Test fun horizontalDeckOpensTheOriginalAccount() {
+    @Test fun cardOpensActivityWhileNameRemainsDirectlyEditable() {
         val selections = mutableListOf<Account>()
         compose.setContent {
             LedgerTheme { WalletContent(state, {}, { selections += it }) }
         }
         compose.onNodeWithContentDescription("测试账户").performClick()
+        compose.onNodeWithText("测试账户").assertIsDisplayed()
+        compose.onNodeWithContentDescription("账户名称").assert(hasSetTextAction())
         compose.runOnIdle { assertEquals(listOf(account), selections) }
     }
 
@@ -46,7 +52,7 @@ class WalletMigrationTest {
     @Test fun missingRatesKeepAccountsAccessibleWithoutShowingAnAssetTotal() {
         compose.setContent { LedgerTheme { WalletContent(state.copy(amountsAvailable = false), {}, {}) } }
         compose.onNodeWithText("总资产").assertDoesNotExist()
-        compose.onNodeWithContentDescription("测试账户").assertHasClickAction()
+        compose.onNodeWithText("测试账户").assertIsDisplayed()
     }
 
     @Test fun accountTotalParticipationIsSavedFromTheYesNoSelector() {
@@ -54,13 +60,14 @@ class WalletMigrationTest {
         var saved: Account? = null
         compose.setContent {
             LedgerTheme {
-                AccountDetailsContent(cashAccount, onSave = { saved = it }, onDelete = {})
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    WalletAccountInfo(AccountWithTemplate(cashAccount), emptyList(), onUpdate = { saved = it }, onDelete = {})
+                }
             }
         }
         compose.onNodeWithContentDescription("计入总资产").performClick()
         compose.onNodeWithText("否").performClick()
         compose.onNodeWithText("否").assertIsDisplayed()
-        compose.onNodeWithContentDescription("保存账户").performClick()
         compose.runOnIdle { assertEquals(cashAccount.copy(includeInTotal = false), saved) }
     }
 }

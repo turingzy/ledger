@@ -1,6 +1,7 @@
 package cn.turingzy.ledger.model.account
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
 /**
  * 账户业务模型。
@@ -14,13 +15,14 @@ import kotlinx.serialization.Serializable
  * @property currentBalance 当前余额（单位：分）
  * @property currency 账户币种代码，符合 ISO 4217 标准（默认为 "CNY"）
  * @property templateId 关联的卡片外观模板 ID，为 null 时使用默认外观
- * @property cardNumber 卡号或自定义编号（通常为后四位），可为空
+ * @property cardNumber 卡号尾号，或从旧账户读取的卡号。
  * @property includeInTotal 是否计入总资产统计
  * @property isDeleted 软删除标记，true 表示该账户已被删除
  * @property baseBalance 折算为主币种后的余额（单位：分），在查询视图或多币种估值时填充
  * @property baseCurrency 主币种代码，与 [baseBalance] 对应
  * @property baseRate 折算为主币种所使用的汇率快照
  * @property baseRateDate 汇率快照生效日期（格式：yyyy-MM-dd）
+ * @property cardDetails 钱包解密后的银行卡信息，不参与账户序列化。
  */
 @Serializable
 data class Account(
@@ -38,7 +40,23 @@ data class Account(
     val baseCurrency: String? = null,
     val baseRate: String? = null,
     val baseRateDate: String? = null,
+    @Transient val cardDetails: BankCardDetails? = null,
 )
+
+/** 仅在钱包编辑与展示时解密的银行卡信息。 */
+@Serializable
+data class BankCardDetails(
+    val number: String? = null,
+    val expiry: String? = null,
+    val securityCode: String? = null,
+) {
+    /** 让账户调试输出只显示此类型，避免附带卡号或安全码。 */
+    override fun toString(): String = "BankCardDetails(redacted)"
+}
+
+/** 只有储蓄卡与信用卡账户具有银行卡信息。 */
+internal val AccountType.isBankCard: Boolean
+    get() = this == AccountType.DEBIT || this == AccountType.CREDIT
 
 /**
  * 包含关联卡片模板信息的账户数据模型。

@@ -2,6 +2,7 @@ package cn.turingzy.ledger.data.transfer
 
 import cn.turingzy.ledger.model.account.Account
 import cn.turingzy.ledger.model.account.AccountType
+import cn.turingzy.ledger.model.account.BankCardDetails
 import cn.turingzy.ledger.model.category.Category
 import cn.turingzy.ledger.model.category.CategoryType
 import cn.turingzy.ledger.model.category.Icon
@@ -27,6 +28,18 @@ class LedgerBackupValidatorTest {
         val decoded = Json.decodeFromString<LedgerBackup>(Json.encodeToString(snapshot))
         LedgerBackupValidator.validate(decoded)
         assertEquals(snapshot, decoded)
+    }
+    @Test fun backupKeepsOnlyTheDisplayTailForProtectedCardDetails() {
+        val card = bills.accounts.single().copy(
+            type = AccountType.DEBIT,
+            cardNumber = "1111",
+            cardDetails = BankCardDetails("4111111111111111", "08/29", "123"),
+        )
+        val encoded = Json.encodeToString(LedgerBackup(bills = bills.copy(accounts = listOf(card))))
+        val reopened = Json.decodeFromString<LedgerBackup>(encoded).bills?.accounts?.single()
+        assertEquals("1111", reopened?.cardNumber)
+        assertNull(reopened?.cardDetails)
+        assertFalse(encoded.contains("4111111111111111"))
     }
     @Test fun legacyCardAppearanceRestoresImageAndDropsTransparency() {
         val json = Json { encodeDefaults = true; ignoreUnknownKeys = true }

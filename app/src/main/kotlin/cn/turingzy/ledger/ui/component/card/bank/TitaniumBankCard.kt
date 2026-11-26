@@ -3,7 +3,6 @@ package cn.turingzy.ledger.ui.component.card.bank
 import android.os.Build
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,14 +27,15 @@ import cn.turingzy.ledger.ui.theme.LedgerShapes
 /**
  * 渲染账户与卡面预览共用的卡面材质、封面图片及光影。
  *
- * 可点击的账户卡片由调用方提供无障碍描述。
+ * 触摸倾斜可独立于设备感应关闭。
  */
 @Composable
 internal fun TitaniumBankCard(
     template: CardTemplate?,
     modifier: Modifier = Modifier,
     motionEnabled: Boolean = true,
-    onClick: (() -> Unit)? = null,
+    drag: TitaniumDrag = TitaniumDrag.AfterLongPress,
+    aspectRatio: Float = BankCardAspectRatio,
 ) {
     val preset = template.titaniumPreset()
     val imageUri = template.titaniumImageUri()
@@ -43,9 +43,9 @@ internal fun TitaniumBankCard(
     val inspection = LocalInspectionMode.current
     val image = rememberTitaniumCardImage(imageUri, preset.base.toArgb())
     val dark = image?.luminance?.let { it < .20 } ?: preset.dark
-    val (motion, gesture) = rememberTitaniumTilt(motionEnabled && !inspection, TitaniumDrag.AfterLongPress, tuning)
+    val (motion, gesture) = rememberTitaniumTilt(motionEnabled && !inspection, drag, tuning)
     Box(
-        modifier.aspectRatio(BankCardAspectRatio)
+        modifier.aspectRatio(aspectRatio)
             .then(gesture)
             .graphicsLayer {
                 val (angle, dragStrength) = motion.value
@@ -59,8 +59,7 @@ internal fun TitaniumBankCard(
                 ambientShadowColor = Color.Black.copy(alpha = .36f)
                 spotShadowColor = Color.Black.copy(alpha = .30f)
             }
-            .titaniumEdge(dark)
-            .then(if (onClick == null) Modifier else Modifier.clickable(onClick = onClick)),
+            .titaniumEdge(dark),
     ) {
         if (image == null) {
             TitaniumMaterial(preset, motion, tuning, Modifier.matchParentSize())
