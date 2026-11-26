@@ -1,13 +1,12 @@
 package cn.turingzy.ledger.data.database.seed
 
+import androidx.room.withTransaction
 import cn.turingzy.ledger.data.database.LedgerDatabase
-import cn.turingzy.ledger.data.database.entity.AccountEntity
 import cn.turingzy.ledger.data.database.dao.CardTemplateDao
 import cn.turingzy.ledger.data.database.mapper.asEntity
 import cn.turingzy.ledger.model.account.BuiltInCardFace
 import cn.turingzy.ledger.data.database.entity.CategoryEntity
 import cn.turingzy.ledger.data.database.entity.IconEntity
-import cn.turingzy.ledger.model.account.AccountType
 import cn.turingzy.ledger.model.category.CategoryType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -39,10 +38,6 @@ object DefaultDatabaseSeeder {
                 IconEntity(iconId = 9, keyName = "ic_transfer", displayName = "转账", iconUri = "res://drawable/ic_transfer", isSystem = true, sortOrder = 9),
                 IconEntity(iconId = 10, keyName = "ic_other", displayName = "其他", iconUri = "res://drawable/ic_other", isSystem = true, sortOrder = 10),
             )
-            database.iconDao().insertIcons(defaultIcons)
-
-            database.cardTemplateDao().ensureBuiltInCardFaces()
-
             val defaultCategories = listOf(
                 CategoryEntity(categoryId = 1, name = "餐饮", type = CategoryType.EXPENSE, iconId = 1, sortOrder = 1, isSystem = true),
                 CategoryEntity(categoryId = 2, name = "购物", type = CategoryType.EXPENSE, iconId = 2, sortOrder = 2, isSystem = true),
@@ -56,7 +51,13 @@ object DefaultDatabaseSeeder {
                 CategoryEntity(categoryId = 10, name = "其他收入", type = CategoryType.INCOME, iconId = 10, sortOrder = 3, isSystem = true),
                 CategoryEntity(categoryId = 11, name = "转账", type = CategoryType.TRANSFER, iconId = 9, sortOrder = 99, isSystem = true),
             )
-            database.categoryDao().insertCategories(defaultCategories)
+            database.withTransaction {
+                database.iconDao().insertIcons(defaultIcons)
+                database.categoryDao().insertCategories(defaultCategories)
+                database.openHelper.writableDatabase.seedExpandedSystemCategories()
+            }
+
+            database.cardTemplateDao().ensureBuiltInCardFaces()
 
             database.parseRuleDao().insertRules(cn.turingzy.ledger.model.transfer.BillParseRule.defaults().map { rule -> cn.turingzy.ledger.data.database.entity.ParseRuleEntity(
                 ruleId = rule.id, name = rule.name, startRow = rule.startRow.toInt(),

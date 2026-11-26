@@ -28,18 +28,17 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onLayoutRectChanged
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import cn.turingzy.ledger.R
-import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.navigation.LedgerNavHost
 import cn.turingzy.ledger.navigation.TopLevelDestination
 import cn.turingzy.ledger.ui.component.base.rememberBackdropStateBaseBase
 import cn.turingzy.ledger.ui.component.base.recordBackdropBase
+import cn.turingzy.ledger.ui.component.card.summary.LocalSummaryAmountsObscured
 import cn.turingzy.ledger.ui.component.navigation.LedgerBottomBar
 import cn.turingzy.ledger.ui.component.navigation.LedgerFloatingActionButton
 import cn.turingzy.ledger.ui.interaction.LocalSystemClickFeedback
 import cn.turingzy.ledger.ui.interaction.rememberSystemClickFeedback
+import cn.turingzy.ledger.ui.theme.LedgerStyle
 
 /**
  * 账本应用主框架界面。
@@ -66,21 +65,22 @@ fun LedgerApp(
     val isSubpage = subpages[currentTopLevelDestination] == true
     val billSelectionActive = isBillTab && billSelectionVisible
     var showGlobalRecordSheet by remember { mutableStateOf(false) }
+    val bottomContentPadding = BottomBarContentPadding + LedgerStyle.dimensions.touchTarget
 
-    BackHandler(enabled = !isBillTab) {
+    BackHandler(enabled = !isBillTab && !showGlobalRecordSheet) {
         currentTopLevelDestination = TopLevelDestination.BILL
     }
 
     CompositionLocalProvider(
         LocalSystemClickFeedback provides systemClickFeedback,
-        LocalBottomBarContentPadding provides if (billSelectionActive) 0.dp else BottomBarContentPadding,
+        LocalSummaryAmountsObscured provides showGlobalRecordSheet,
+        LocalBottomBarContentPadding provides if (billSelectionActive) 0.dp else bottomContentPadding,
     ) {
         Box(modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
             LedgerNavHost(
                 currentDestination = currentTopLevelDestination,
                 showRecordSheet = showGlobalRecordSheet,
                 onRecordSheetDismiss = { showGlobalRecordSheet = false },
-                onNavigateToRecord = { showGlobalRecordSheet = true },
                 onBillSelectionVisibleChange = { billSelectionVisible = it },
                 onSubpageChange = { destination, visible -> subpages[destination] = visible },
                 onTaskTopChange = { destination, entryId, top ->
@@ -103,28 +103,25 @@ fun LedgerApp(
                         if (clip) shape = RevealedChromeShape((requireNotNull(taskTop) - chromeTop).toFloat())
                     },
             ) {
-                LedgerFloatingActionButton(
-                    label = stringResource(R.string.ui_transaction),
-                    icon = MaterialSymbols.EditSquare,
-                    containerColor = MaterialTheme.colorScheme.tertiary,
-                    contentColor = MaterialTheme.colorScheme.onTertiary,
-                    visible = isBillTab && !isSubpage && !billSelectionVisible,
-                    onClick = { showGlobalRecordSheet = true },
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .navigationBarsPadding()
-                        .padding(end = 16.dp, bottom = BottomBarContentPadding),
-                )
-
-                // Reattach the bar as the root page returns, without a separate fade-in.
-                if (!isSubpage) LedgerBottomBar(
-                    visible = !billSelectionActive,
-                    destinations = TopLevelDestination.entries,
-                    currentDestination = currentTopLevelDestination,
-                    onNavigateToDestination = { currentTopLevelDestination = it },
-                    modifier = Modifier.align(Alignment.BottomCenter),
-                    backdrop = navigationBackdrop,
-                )
+                // Reattach both bottom controls together as the root page returns.
+                if (!isSubpage) {
+                    LedgerFloatingActionButton(
+                        visible = !billSelectionActive,
+                        onClick = { showGlobalRecordSheet = true },
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .navigationBarsPadding()
+                            .padding(bottom = BottomBarContentPadding),
+                    )
+                    LedgerBottomBar(
+                        visible = !billSelectionActive,
+                        destinations = TopLevelDestination.entries,
+                        currentDestination = currentTopLevelDestination,
+                        onNavigateToDestination = { currentTopLevelDestination = it },
+                        modifier = Modifier.align(Alignment.BottomCenter),
+                        backdrop = navigationBackdrop,
+                    )
+                }
             }
         }
     }

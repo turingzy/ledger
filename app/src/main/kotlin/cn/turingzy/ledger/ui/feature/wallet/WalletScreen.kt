@@ -5,11 +5,12 @@ import cn.turingzy.ledger.ui.feature.wallet.sheet.AccountDetailsSheet
 import cn.turingzy.ledger.ui.feature.wallet.sheet.AddAccountSheet
 import cn.turingzy.ledger.ui.component.base.ScrollTitleContainerBase
 import androidx.compose.foundation.lazy.rememberLazyListState
-import cn.turingzy.ledger.ui.component.navigation.LedgerFloatingActionButton
+import cn.turingzy.ledger.ui.component.card.summary.TopBarIconButton
 import cn.turingzy.ledger.ui.component.MaterialSymbols
 import cn.turingzy.ledger.ui.component.base.PageFrameBase
 import cn.turingzy.ledger.ui.component.base.PrimaryPageHeaderBase
 import cn.turingzy.ledger.ui.component.biz.MissingExchangeRateNoticeBiz
+import cn.turingzy.ledger.ui.interaction.rememberUiAction
 import cn.turingzy.ledger.ui.interaction.rememberUiEvent
 import cn.turingzy.ledger.ui.interaction.UiInteractionKind
 import cn.turingzy.ledger.ui.theme.LedgerStyle
@@ -37,6 +38,7 @@ import androidx.compose.runtime.Stable
 import cn.turingzy.ledger.ui.component.navigation.LocalBottomBarContentPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -208,7 +210,6 @@ private fun WalletAccountSheets(
  * @param onAddAccountClick 点击新增账户回调
  * @param onAdjustBalanceClick 点击调整账户余额/查看账户详情回调
  * @param modifier 外部修饰符
- * @param onDeleteAccountClick 删除账户回调（保留参数）
  * @param cardAppearance 汇总卡片外观样式
  * @param cardBackground 汇总卡片自定义背景图
  * @param cardSettingsEnabled 是否允许修改卡片设置
@@ -222,7 +223,6 @@ fun WalletContent(
     onAddAccountClick: () -> Unit,
     onAdjustBalanceClick: (Account) -> Unit,
     modifier: Modifier = Modifier,
-    @Suppress("UNUSED_PARAMETER") onDeleteAccountClick: (Long) -> Unit = {},
     cardAppearance: LedgerCardAppearance = LedgerCardAppearance(),
     cardBackground: ImageBitmap? = null,
     cardSettingsEnabled: Boolean = true,
@@ -232,6 +232,7 @@ fun WalletContent(
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val openAccount = rememberUiEvent(onAdjustBalanceClick, UiInteractionKind.Navigation)
+    val bottomBarPadding = LocalBottomBarContentPadding.current
     PageFrameBase(modifier) {
         when (uiState) {
             WalletUiState.Loading -> Unit
@@ -249,6 +250,13 @@ fun WalletContent(
                         else Int.MAX_VALUE
                     },
                     onScrollToTop = { listState.animateScrollToItem(0) },
+                    actions = {
+                        TopBarIconButton(
+                            imageVector = MaterialSymbols.AddCard,
+                            contentDescription = textResources.getString(R.string.ui_add_account),
+                            onClick = rememberUiAction(onAddAccountClick, UiInteractionKind.Navigation),
+                        )
+                    },
                 ) { scrollModifier ->
                     LazyColumn(
                         state = listState,
@@ -257,7 +265,7 @@ fun WalletContent(
                         contentPadding = PaddingValues(
                             start = LedgerStyle.spacing.pageHorizontal, end = LedgerStyle.spacing.pageHorizontal,
                             top = LedgerStyle.spacing.extraSmall,
-                            bottom = LedgerStyle.spacing.block + LocalBottomBarContentPadding.current + LedgerStyle.dimensions.touchTarget,
+                            bottom = LedgerStyle.spacing.block + bottomBarPadding,
                         ),
                         verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.sectionGap),
                     ) {
@@ -312,17 +320,9 @@ fun WalletContent(
                 }
             }
         }
-        val bottomPadding = LocalBottomBarContentPadding.current
-        LedgerFloatingActionButton(
-            label = textResources.getString(R.string.ui_account),
-            icon = MaterialSymbols.AddCard,
-            visible = uiState is WalletUiState.Success,
-            onClick = onAddAccountClick,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = bottomPadding),
-        )
         SnackbarHost(
             snackbarHostState,
-            Modifier.align(Alignment.BottomCenter).padding(bottom = bottomPadding + LedgerStyle.dimensions.touchTarget),
+            Modifier.align(Alignment.BottomCenter).padding(bottom = bottomBarPadding),
         )
     }
 }
@@ -366,17 +366,20 @@ fun WalletHeroCard(
         settingsEnabled = settingsEnabled,
         onUploadBackground = onUploadBackground,
         onTransparencyChange = onTransparencyChange,
-    ) {
-        SummaryCardContent(
-            title = textResources.getString(cn.turingzy.ledger.R.string.ui_total_assets),
-            amount = totalAsset,
-            amountsHidden = amountsHidden,
-            onToggleAmounts = { amountsHidden = !amountsHidden },
-            leftAmount = totalExpense,
-            rightAmount = totalIncome,
-            currency = currency,
-            leftLabel = textResources.getString(cn.turingzy.ledger.R.string.ui_total_expenses),
-            rightLabel = textResources.getString(cn.turingzy.ledger.R.string.ui_total_income),
-        )
+    ) { activeFace ->
+        key(currency) {
+            SummaryCardContent(
+                title = textResources.getString(cn.turingzy.ledger.R.string.ui_total_assets),
+                amount = totalAsset,
+                amountsHidden = amountsHidden,
+                onToggleAmounts = { amountsHidden = !amountsHidden },
+                leftAmount = totalExpense,
+                rightAmount = totalIncome,
+                currency = currency,
+                leftLabel = textResources.getString(cn.turingzy.ledger.R.string.ui_total_expenses),
+                rightLabel = textResources.getString(cn.turingzy.ledger.R.string.ui_total_income),
+                activeFace = activeFace,
+            )
+        }
     }
 }

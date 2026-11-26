@@ -67,7 +67,7 @@ import kotlin.math.roundToInt
  * @param settingsEnabled 是否允许滑动切换至背面设置面板。
  * @param onUploadBackground 点击上传/更换背景图回调。
  * @param onTransparencyChange 毛玻璃透明度百分比调节完成回调。
- * @param content 卡片正面内容插槽（通常为 [SummaryCardContent]）。
+ * @param content 卡片正面内容插槽，参数表示正面是否为当前卡面。
  */
 @Composable
 fun SummaryCard(
@@ -78,7 +78,7 @@ fun SummaryCard(
     settingsEnabled: Boolean = true,
     onUploadBackground: () -> Unit = {},
     onTransparencyChange: (Int) -> Unit = {},
-    content: @Composable BoxScope.() -> Unit,
+    content: @Composable BoxScope.(Boolean) -> Unit,
 ) {
     var settingsVisible by remember { mutableStateOf(false) }
     LifecycleResumeEffect(Unit) {
@@ -171,7 +171,7 @@ fun SummaryCard(
                     swipeModifier = swipeModifier,
                 )
             } else {
-                Box(Modifier.fillMaxSize().then(swipeModifier), content = content)
+                Box(Modifier.fillMaxSize().then(swipeModifier)) { content(isActiveFace) }
             }
         }
     }

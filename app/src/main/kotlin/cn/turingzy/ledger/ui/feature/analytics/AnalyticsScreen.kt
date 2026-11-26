@@ -24,11 +24,10 @@ import androidx.compose.material3.MaterialTheme
 import cn.turingzy.ledger.ui.component.base.PageFrameBase
 import cn.turingzy.ledger.ui.component.base.PrimaryPageHeaderBase
 import androidx.compose.material3.Text
+import cn.turingzy.ledger.ui.component.card.summary.TopBarIconButton
 import cn.turingzy.ledger.ui.component.navigation.LocalBottomBarContentPadding
-import cn.turingzy.ledger.ui.component.navigation.LedgerFloatingActionButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -36,8 +35,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -134,11 +131,7 @@ fun AnalyticsContent(
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     var showPeriodPicker by rememberSaveable { mutableStateOf(false) }
     var dateEndpoint by rememberSaveable { mutableStateOf<AnalyticsDateEndpoint?>(null) }
-    var spendingButtonHeight by remember { mutableIntStateOf(0) }
     val bottomBarPadding = LocalBottomBarContentPadding.current
-    val buttonHeight = with(LocalDensity.current) {
-        maxOf(spendingButtonHeight.toDp(), LedgerStyle.dimensions.touchTarget)
-    }
     androidx.compose.runtime.CompositionLocalProvider(LocalCurrencyBiz provides ((uiState as? AnalyticsUiState.Success)?.currency ?: "CNY")) {
         AnalyticsChartInteractionHost {
             PageFrameBase(modifier) {
@@ -150,6 +143,16 @@ fun AnalyticsContent(
                             title = textResources.getString(cn.turingzy.ledger.R.string.ui_analytics),
                             scrollOffset = { scrollState.value },
                             onScrollToTop = { scrollState.animateScrollTo(0) },
+                            actions = {
+                                TopBarIconButton(
+                                    imageVector = MaterialSymbols.CalendarMonth,
+                                    contentDescription = textResources.getString(R.string.ui_spending_calendar),
+                                    onClick = rememberUiAction(
+                                        { onOpenCalendar(minOf(uiState.periodEnd, LocalDate.now())) },
+                                        UiInteractionKind.Navigation,
+                                    ),
+                                )
+                            },
                         ) { scrollModifier ->
                             Column(
                                 scrollModifier.fillMaxSize().verticalScroll(scrollState)
@@ -157,7 +160,7 @@ fun AnalyticsContent(
                                         start = LedgerStyle.spacing.pageHorizontal,
                                         end = LedgerStyle.spacing.pageHorizontal,
                                         top = LedgerStyle.spacing.extraSmall,
-                                        bottom = bottomBarPadding + buttonHeight + LedgerStyle.spacing.block,
+                                        bottom = bottomBarPadding + LedgerStyle.spacing.block,
                                     ),
                                 verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.labelGap),
                             ) {
@@ -204,19 +207,6 @@ fun AnalyticsContent(
                             }
                         }
                     }
-                }
-                if (uiState is AnalyticsUiState.Success) {
-                    LedgerFloatingActionButton(
-                        label = textResources.getString(R.string.ui_spending),
-                        icon = MaterialSymbols.CalendarMonth,
-                        containerColor = LedgerStyle.colors.expense,
-                        contentColor = LedgerStyle.colors.onExpense,
-                        visible = true,
-                        onClick = { onOpenCalendar(minOf(uiState.periodEnd, LocalDate.now())) },
-                        modifier = Modifier.align(Alignment.BottomEnd)
-                            .padding(end = LedgerStyle.spacing.pageHorizontal, bottom = bottomBarPadding)
-                            .onSizeChanged { spendingButtonHeight = it.height },
-                    )
                 }
             }
         }

@@ -21,8 +21,10 @@ import androidx.navigation.compose.rememberNavController
 import cn.turingzy.ledger.ui.feature.analytics.AnalyticsScreen
 import cn.turingzy.ledger.ui.feature.bill.BillScreen
 import cn.turingzy.ledger.ui.feature.bill.search.BillSearchScreen
+import cn.turingzy.ledger.ui.feature.bill.sheet.RecordCreateSheet
 import cn.turingzy.ledger.ui.feature.settings.SettingsScreen
 import cn.turingzy.ledger.ui.feature.wallet.WalletScreen
+import java.time.LocalDate
 
 /**
  * 账本应用主导航宿主组件。
@@ -33,7 +35,6 @@ import cn.turingzy.ledger.ui.feature.wallet.WalletScreen
  * @param currentDestination 当前激活的顶级目的地。
  * @param showRecordSheet 是否显示快速记账半屏弹窗。
  * @param onRecordSheetDismiss 快速记账半屏弹窗关闭回调。
- * @param onNavigateToRecord 触发新建记账操作的回调。
  * @param modifier 宿主容器的 Modifier。
  * @param onBillSelectionVisibleChange 账单列表多选状态变更通知（用于调整主脚手架底部栏）。
  * @param onSubpageChange 某顶级目的地内部二级子页面状态变更通知。
@@ -44,7 +45,6 @@ fun LedgerNavHost(
     currentDestination: TopLevelDestination,
     showRecordSheet: Boolean,
     onRecordSheetDismiss: () -> Unit,
-    onNavigateToRecord: () -> Unit,
     modifier: Modifier = Modifier,
     onBillSelectionVisibleChange: (Boolean) -> Unit = {},
     onSubpageChange: (TopLevelDestination, Boolean) -> Unit = { _, _ -> },
@@ -76,8 +76,6 @@ fun LedgerNavHost(
                     composable<Route.Bill> {
                         BillScreen(
                             showRecordSheet = showRecordSheet,
-                            onRecordSheetDismiss = onRecordSheetDismiss,
-                            onNavigateToRecord = onNavigateToRecord,
                             onSelectionVisibleChange = onBillSelectionVisibleChange,
                             onOpenSearch = { navController.navigate(Route.BillSearch) { launchSingleTop = true } },
                         )
@@ -103,6 +101,9 @@ fun LedgerNavHost(
                 }
             }
         }
+    }
+    if (showRecordSheet) {
+        RecordCreateSheet(date = LocalDate.now(), onDismiss = onRecordSheetDismiss)
     }
 }
 

@@ -77,6 +77,27 @@ class AppStateViewModelTest {
         coVerify(exactly = 0) { accounts.createAccount(any()) }
     }
 
+    @Test fun themeSaveKeepsTheSettingsControlsVisuallyEnabled() = runTest {
+        val model = AppStateViewModel(preferences, accounts, rates)
+        val subscription = backgroundScope.launch { model.preferences.collect {} }
+        runCurrent()
+        val current = requireNotNull(model.preferences.value)
+        val target = current.copy(theme = "dark")
+        val persisted = CompletableDeferred<Unit>()
+        coEvery { preferences.save(target) } coAnswers { persisted.await() }
+
+        model.save(target)
+        runCurrent()
+        assertFalse(model.busy.value)
+        model.save(target)
+        persisted.complete(Unit)
+        runCurrent()
+
+        coVerify(exactly = 1) { preferences.save(target) }
+        assertFalse(model.busy.value)
+        subscription.cancel()
+    }
+
     @Test fun failedPreferenceSaveCanBeRetried() = runTest {
         val model = AppStateViewModel(preferences, accounts, rates)
         val settings = AppPreferences(primaryCurrency = "USD")

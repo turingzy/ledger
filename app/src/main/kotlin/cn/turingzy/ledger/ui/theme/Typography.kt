@@ -41,8 +41,6 @@ object AppTypography {
     val bodyMedium = textStyle(14.sp, 20.sp)
     /** 按钮文字样式 (14sp / 中粗) */
     val button = bodyMedium.copy(fontWeight = FontWeight.Medium)
-    /** 悬浮操作按钮的标签样式 (16sp / 中粗)。 */
-    val floatingActionLabel = textStyle(16.sp, 24.sp, FontWeight.Medium)
     /** 周期胶囊选择器文本样式 (17sp / 中粗) */
     val periodPill = body.copy(fontSize = sectionTitle.fontSize, fontWeight = FontWeight.Medium)
     /** 消费日历月份标签样式 (11sp) */

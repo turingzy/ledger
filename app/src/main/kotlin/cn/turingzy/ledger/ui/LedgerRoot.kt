@@ -23,6 +23,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import cn.turingzy.ledger.model.settings.AppPreferences
 import cn.turingzy.ledger.ui.component.biz.LocalCurrencyBiz
 import cn.turingzy.ledger.ui.theme.LedgerTheme
+import cn.turingzy.ledger.ui.theme.ThemeWipe
 import java.util.Locale
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
@@ -53,10 +54,6 @@ internal fun LedgerRoot(window: Window, viewModel: AppStateViewModel = hiltViewM
     val localizedContext = remember(context, configuration) { localizedActivityContext(context, configuration) }
     val dark = when (settings.theme) { "dark" -> true; "light" -> false; else -> isSystemInDarkTheme() }
     val systemBars = remember(window) { WindowCompat.getInsetsController(window, window.decorView) }
-    SideEffect {
-        systemBars.isAppearanceLightStatusBars = !dark
-        systemBars.isAppearanceLightNavigationBars = !dark
-    }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(lifecycle, preferences?.primaryCurrency) {
         if (preferences == null) return@LaunchedEffect
@@ -69,9 +66,17 @@ internal fun LedgerRoot(window: Window, viewModel: AppStateViewModel = hiltViewM
     }
     CompositionLocalProvider(LocalContext provides localizedContext, LocalConfiguration provides configuration,
         LocalCurrencyBiz provides settings.primaryCurrency) {
-        LedgerTheme(darkTheme = dark) {
-            if (preferences == null) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-            else LedgerApp()
+        key(preferences != null) {
+            ThemeWipe(dark) { topDark, bottomDark ->
+                SideEffect {
+                    systemBars.isAppearanceLightStatusBars = !topDark
+                    systemBars.isAppearanceLightNavigationBars = !bottomDark
+                }
+                LedgerTheme(darkTheme = topDark) {
+                    if (preferences == null) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                    else LedgerApp()
+                }
+            }
         }
     }
 }

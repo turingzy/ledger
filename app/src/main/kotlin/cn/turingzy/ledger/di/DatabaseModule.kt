@@ -8,6 +8,7 @@ import cn.turingzy.ledger.data.database.migration.Migration1To2
 import cn.turingzy.ledger.data.database.migration.Migration2To3
 import cn.turingzy.ledger.data.database.migration.Migration3To4
 import cn.turingzy.ledger.data.database.migration.Migration4To5
+import cn.turingzy.ledger.data.database.migration.Migration5To6
 import cn.turingzy.ledger.data.database.LedgerDatabase
 import cn.turingzy.ledger.data.database.dao.AccountDao
 import cn.turingzy.ledger.data.database.dao.BackupConfigDao
@@ -44,7 +45,7 @@ object DatabaseModule {
     /**
      * 构建并提供 [LedgerDatabase] 数据库单例。
      *
-     * 注册数据库迁移配置（1->2, 2->3, 3->4, 4->5）以及在初次创建数据库时的异步种子数据播种回调。
+     * 注册数据库迁移和初次建库的异步种子数据回调。
      *
      * @param context 应用程序全局上下文。
      * @param ioDispatcher IO 密集型协程调度器。
@@ -62,7 +63,7 @@ object DatabaseModule {
             context,
             LedgerDatabase::class.java,
             DATABASE_NAME,
-        ).addMigrations(Migration1To2, Migration2To3, Migration3To4, Migration4To5).addCallback(
+        ).addMigrations(Migration1To2, Migration2To3, Migration3To4, Migration4To5, Migration5To6).addCallback(
             object : RoomDatabase.Callback() {
                 override fun onCreate(db: SupportSQLiteDatabase) {
                     super.onCreate(db)

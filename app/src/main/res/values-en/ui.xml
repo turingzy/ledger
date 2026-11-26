@@ -158,7 +158,6 @@
   <string name="ui_could_not_check_updates_please_try_again">Could not check updates. Please try again.</string>
   <string name="ui_loading_transactions">Loading transactions</string>
   <string name="ui_spending_calendar">Spending calendar</string>
-  <string name="ui_spending">Spending</string>
   <string name="ui_close_spending_calendar">Close spending calendar</string>
   <string name="ui_add_account">Add account</string>
   <string name="ui_decrease">Decrease</string>
@@ -180,7 +179,7 @@
   <string name="ui_include_in_total_assets">Include in total assets</string>
   <string name="ui_yes">Yes</string>
   <string name="ui_no">No</string>
-  <string name="ui_transaction">Transaction</string>
+  <string name="ui_record_transaction">Record transaction</string>
   <string name="ui_new_transaction">New transaction</string>
   <string name="ui_record_selected_date">Record transaction</string>
   <string name="ui_settings">Settings</string>

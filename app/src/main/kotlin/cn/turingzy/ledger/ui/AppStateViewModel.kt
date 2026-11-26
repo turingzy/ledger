@@ -58,9 +58,10 @@ class AppStateViewModel @Inject constructor(
     val accounts = accountsRepository.getAccountsStream().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val _busy = MutableStateFlow(false)
+    private var operationInProgress = false
 
     /**
-     * 全局异步操作繁忙状态流。为 `true` 时表示正在执行设置保存或汇率同步。
+     * 通用设置控件的繁忙状态。主题切换保存期间保持原有文字颜色。
      */
     val busy = _busy.asStateFlow()
 
@@ -119,15 +120,19 @@ class AppStateViewModel @Inject constructor(
      *
      * @param action 待执行的挂起操作。
      */
-    private fun perform(action: suspend () -> Unit) {
-        if (_busy.value) return
-        _busy.value = true
+    private fun perform(showBusy: Boolean = true, action: suspend () -> Unit) {
+        if (operationInProgress) return
+        operationInProgress = true
+        _busy.value = showBusy
         _message.value = null
         viewModelScope.launch {
             try { action() }
             catch (error: CancellationException) { throw error }
             catch (error: Exception) { Timber.e(error, "Unable to apply general settings"); _message.value = error.message ?: "操作失败，请重试" }
-            finally { _busy.value = false }
+            finally {
+                operationInProgress = false
+                _busy.value = false
+            }
         }
     }
 
@@ -136,7 +141,11 @@ class AppStateViewModel @Inject constructor(
      *
      * @param value 最新的偏好设置实体。
      */
-    fun save(value: AppPreferences) = perform { preferencesRepository.save(value) }
+    fun save(value: AppPreferences) {
+        val current = preferences.value
+        val themeOnly = current != null && current.theme != value.theme && current.copy(theme = value.theme) == value
+        perform(showBusy = !themeOnly) { preferencesRepository.save(value) }
+    }
 
     /**
      * 查询指定币种对在当天的最新报价汇率。

@@ -3,7 +3,6 @@ package cn.turingzy.ledger.ui.feature.bill
 import cn.turingzy.ledger.ui.feature.bill.component.SummaryHeroBanner
 import cn.turingzy.ledger.ui.feature.bill.detail.TransactionDetailsScreen
 import cn.turingzy.ledger.ui.feature.bill.detail.TransactionDetailsViewModel
-import cn.turingzy.ledger.ui.feature.bill.sheet.RecordCreateSheet
 import cn.turingzy.ledger.ui.component.base.ScrollTitleContainerBase
 import androidx.compose.foundation.lazy.rememberLazyListState
 import cn.turingzy.ledger.ui.component.picker.CalendarSelection
@@ -19,8 +18,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarHost
@@ -40,6 +37,7 @@ import cn.turingzy.ledger.ui.component.biz.TransactionGroupHeaderBiz
 import cn.turingzy.ledger.ui.component.biz.TransactionGroupRowBiz
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.key
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -52,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cn.turingzy.ledger.ui.component.card.summary.TopBarIconButton
+import cn.turingzy.ledger.ui.component.card.summary.LocalSummaryAmountsObscured
 import cn.turingzy.ledger.ui.component.card.summary.rememberSummaryBackgroundPicker
 import cn.turingzy.ledger.ui.component.biz.categoryGlyphBiz
 import cn.turingzy.ledger.model.transaction.TransactionDetail
@@ -67,14 +66,12 @@ import java.time.format.DateTimeFormatter
 /**
  * 账单功能主页面入口组件。
  *
- * 整合账单月度/周期统计汇总卡片、按天分组的账单明细列表、交易滑动与批量操作、
- * 交易详情抽屉以及新建记账弹窗等。
+ * 整合账单月度/周期统计汇总卡片、按天分组的账单明细列表、交易滑动与批量操作，
+ * 以及交易详情抽屉。
  *
- * @param showRecordSheet 是否显示记账底部抽屉。
- * @param onRecordSheetDismiss 关闭记账抽屉的回调。
+ * @param showRecordSheet 全局记账抽屉打开时，收起交易详情。
  * @param modifier 外部修饰符。
  * @param viewModel 账单业务逻辑 ViewModel。
- * @param onNavigateToRecord 跳转到记账的回调。
  * @param onSelectionVisibleChange 批量选择条可见性变化回调。
  * @param onOpenSearch 打开搜索页面的回调。
  */
@@ -82,10 +79,8 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun BillScreen(
     showRecordSheet: Boolean,
-    onRecordSheetDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: BillViewModel = hiltViewModel(),
-    onNavigateToRecord: () -> Unit = {},
     onSelectionVisibleChange: (Boolean) -> Unit = {},
     onOpenSearch: () -> Unit = {},
 ) {
@@ -101,6 +96,7 @@ fun BillScreen(
         cardViewModel.clearError()
     }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val selectedTransactionId by transactionViewModel.selectedTransactionId.collectAsStateWithLifecycle()
 
     val scope = rememberCoroutineScope()
 
@@ -117,35 +113,28 @@ fun BillScreen(
         snackbarHostState = snackbarHostState,
         onSelectionVisibleChange = onSelectionVisibleChange,
     ) { transactionRow ->
-        BillContent(
-            uiState = uiState,
-            onOpenSearch = onOpenSearch,
-            modifier = modifier,
-            cardAppearance = cardUiState.appearance,
-            cardBackground = background,
-            cardSettingsEnabled = !cardUiState.loading && !cardUiState.importing,
-            onUploadCardBackground = pickBackground,
-            onCardTransparencyChange = cardViewModel::setTransparencyPercent,
-            snackbarHostState = snackbarHostState,
-            onTransactionClick = transactionViewModel::selectTransaction,
-            onSelectPeriod = viewModel::selectPeriod,
-            transactionRow = transactionRow,
-        )
+        CompositionLocalProvider(LocalSummaryAmountsObscured provides (showRecordSheet || selectedTransactionId != null)) {
+            BillContent(
+                uiState = uiState,
+                onOpenSearch = onOpenSearch,
+                modifier = modifier,
+                cardAppearance = cardUiState.appearance,
+                cardBackground = background,
+                cardSettingsEnabled = !cardUiState.loading && !cardUiState.importing,
+                onUploadCardBackground = pickBackground,
+                onCardTransparencyChange = cardViewModel::setTransparencyPercent,
+                snackbarHostState = snackbarHostState,
+                onTransactionClick = transactionViewModel::selectTransaction,
+                onSelectPeriod = viewModel::selectPeriod,
+                transactionRow = transactionRow,
+            )
+        }
     }
 
     if (!showRecordSheet) TransactionDetailsScreen(
         onLoadFailure = { message -> scope.launch { snackbarHostState.showSnackbar(message) } },
         viewModel = transactionViewModel,
     )
-
-    if (showRecordSheet) {
-        RecordCreateSheet(
-            date = LocalDate.now(),
-            onDismiss = onRecordSheetDismiss,
-            viewModel = viewModel,
-            transactionViewModel = transactionViewModel,
-        )
-    }
 }
 
 /**
@@ -249,6 +238,7 @@ fun BillContent(
                                     expense = periodState.monthExpense,
                                     income = periodState.monthIncome,
                                     currency = periodState.currency,
+                                    amountPeriodKey = Triple(periodState.filterType, start, end),
                                     appearance = cardAppearance,
                                     background = cardBackground,
                                     settingsEnabled = cardSettingsEnabled,

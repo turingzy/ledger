@@ -2,6 +2,7 @@ package cn.turingzy.ledger.data.database.migration
 
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import cn.turingzy.ledger.data.database.seed.seedExpandedSystemCategories
 
 /**
  * 数据库版本 1 -> 2 迁移：
@@ -60,4 +61,9 @@ internal val Migration4To5 = object : Migration(4, 5) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL("ALTER TABLE tb_exchange_rate ADD COLUMN updated_at_millis INTEGER")
     }
+}
+
+/** 为已有账本补充常用收支分类，保持交易与分类原有的引用关系。 */
+internal val Migration5To6 = object : Migration(5, 6) {
+    override fun migrate(db: SupportSQLiteDatabase) = db.seedExpandedSystemCategories()
 }

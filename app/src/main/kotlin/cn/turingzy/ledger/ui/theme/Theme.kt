@@ -8,7 +8,6 @@ import androidx.compose.foundation.LocalIndication
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LocalRippleConfiguration
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.remember
 import cn.turingzy.ledger.ui.interaction.rememberUiIndication
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
@@ -67,7 +66,7 @@ private val LightColorScheme = lightColorScheme(
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppTheme(
+fun LedgerTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
@@ -78,18 +77,10 @@ fun AppTheme(
         typography = Typography,
     ) {
         val feedback = rememberUiIndication()
-        CompositionLocalProvider(LocalIndication provides feedback, LocalRippleConfiguration provides null, content = content)
+        CompositionLocalProvider(
+            LocalIndication provides feedback,
+            LocalRippleConfiguration provides null,
+            content = content,
+        )
     }
 }
-
-/**
- * 应用主题 Composable 入口（[AppTheme] 的便捷别名）。
- *
- * @param darkTheme 是否启用深色模式，默认跟随系统
- * @param content 子 Composable 内容插槽
- */
-@Composable
-fun LedgerTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit,
-) = AppTheme(darkTheme = darkTheme, content = content)

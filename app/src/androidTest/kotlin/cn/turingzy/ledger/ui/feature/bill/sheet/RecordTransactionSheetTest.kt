@@ -22,6 +22,8 @@ import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextReplacement
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeDown
 import cn.turingzy.ledger.model.account.Account
 import cn.turingzy.ledger.model.account.AccountType
 import cn.turingzy.ledger.model.account.AccountWithTemplate
@@ -132,6 +134,25 @@ class RecordTransactionSheetTest {
         compose.onNodeWithText("0.00").assertIsDisplayed()
         compose.onNodeWithText("保存").assertIsDisplayed()
         compose.onNodeWithContentDescription("删除最后一位").assertIsDisplayed()
+    }
+
+    @Test
+    fun swipingPastTheTopOfTheCategoryGridDoesNotMoveOrDismissTheDrawer() {
+        var dismissCount = 0
+        showSheet(sheetHeight = 500.dp, onDismiss = { dismissCount++ }) {}
+        val drawer = compose.onNodeWithTag("recordDrawer").assertIsDisplayed()
+        val grid = compose.onNodeWithTag("recordCategoryGrid")
+        val expandedBounds = drawer.getUnclippedBoundsInRoot()
+
+        grid.performScrollToNode(hasText("分类39"))
+        grid.performScrollToIndex(0)
+        compose.onNodeWithText("分类0").assertIsDisplayed()
+        grid.performTouchInput { swipeDown(startY = 20.dp.toPx(), durationMillis = 150) }
+
+        assertEquals(expandedBounds, drawer.getUnclippedBoundsInRoot())
+        compose.runOnIdle { assertEquals(0, dismissCount) }
+        compose.onNodeWithContentDescription("关闭新建交易").performClick()
+        compose.runOnIdle { assertEquals(1, dismissCount) }
     }
 
     @Test

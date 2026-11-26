@@ -24,6 +24,16 @@ symbols = {
 'Leaderboard':'leaderboard', 'LeaderboardFilled':'leaderboard', 'HomeFilled':'home', 'CreditCard':'credit_card', 'CreditCardFilled':'credit_card', 'DateRange':'date_range', 'CalendarMonth':'calendar_month', 'Tune':'tune',
 'AccountBalanceWallet':'account_balance_wallet', 'Settings':'settings',
 'SettingsFilled':'settings',
+# Built-in expense and income category icons.
+'Grocery':'grocery', 'LocalCafe':'local_cafe', 'ShoppingCart':'shopping_cart', 'Key':'key',
+'Bolt':'bolt', 'Wifi':'wifi', 'School':'school', 'FitnessCenter':'fitness_center', 'Pets':'pets',
+'FlightTakeoff':'flight_takeoff', 'Build':'build', 'LocalGasStation':'local_gas_station',
+'Checkroom':'checkroom', 'Spa':'spa', 'VerifiedUser':'verified_user', 'Redeem':'redeem',
+'MilitaryTech':'military_tech', 'Celebration':'celebration', 'MoreTime':'more_time', 'Work':'work',
+'Storefront':'storefront', 'VolunteerActivism':'volunteer_activism', 'ReceiptLong':'receipt_long',
+'AssignmentReturn':'assignment_return', 'Percent':'percent', 'Mail':'mail', 'Apartment':'apartment',
+'Savings':'savings', 'PieChart':'pie_chart', 'Sell':'sell', 'EditNote':'edit_note', 'Elderly':'elderly',
+'AddCircle':'add_circle',
 }
 ROOT = Path(__file__).resolve().parents[1]
 cache = Path(tempfile.gettempdir()) / 'ledger-material-symbols'
@@ -66,7 +76,21 @@ import androidx.compose.ui.unit.dp
 
 // Generated from Google Material Symbols Rounded by scripts/sync_material_symbols.py.
 // Weight 400, grade 0, optical size 24. Apache-2.0; see assets/licenses/material-symbols.txt.
+/**
+ * 共享的 Material Symbols Rounded 矢量图标集合。
+ *
+ * 集中管理应用内统一使用的 Google 官方 Material Symbols 图标资源（规格为 Weight 400、Grade 0、Optical Size 24dp）。
+ * 所有图标均通过 [lazy] 委托按需延迟加载解析为 [ImageVector]。
+ */
 internal object MaterialSymbols {
+    /**
+     * 根据 SVG 路径字符串构造 [ImageVector] 矢量图。
+     *
+     * @param name 图标名称，用于无障碍或调试标识。
+     * @param path SVG 路径字符串数据。
+     * @param autoMirror 在从右到左 (RTL) 布局环境中是否自动镜像翻转。
+     * @return 构造完成的 [ImageVector] 实例。
+     */
     private fun symbol(name: String, path: String, autoMirror: Boolean = false): ImageVector =
         ImageVector.Builder(
             name = name,

@@ -161,7 +161,6 @@
   <string name="ui_could_not_check_updates_please_try_again">检查更新失败，请重试</string>
   <string name="ui_loading_transactions">正在加载账单</string>
   <string name="ui_spending_calendar">消费日历</string>
-  <string name="ui_spending">消费</string>
   <string name="ui_close_spending_calendar">关闭消费日历</string>
   <string name="ui_add_account">添加账户</string>
   <string name="ui_decrease">环比下降</string>
@@ -183,7 +182,7 @@
   <string name="ui_include_in_total_assets">计入总资产</string>
   <string name="ui_yes">是</string>
   <string name="ui_no">否</string>
-  <string name="ui_transaction">交易</string>
+  <string name="ui_record_transaction">记一笔</string>
   <string name="ui_new_transaction">新建交易</string>
   <string name="ui_record_selected_date">记一笔</string>
   <string name="ui_settings">设置</string>

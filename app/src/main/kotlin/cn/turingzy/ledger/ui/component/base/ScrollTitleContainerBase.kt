@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,6 +38,7 @@ import androidx.compose.ui.unit.sp
  * @param scrollOffset 获取当前垂直滚动偏移量（像素）的函数。
  * @param onScrollToTop 点击返回顶部按钮时执行的挂起动作。
  * @param modifier 应用于根容器的修饰符。
+ * @param actions 始终可用的顶栏右侧操作。
  * @param content 页面主体内容插槽，接收需要附加到可滚动内容上的 [Modifier]（用于录制毛玻璃背景图层）。
  */
 @Composable
@@ -44,6 +47,7 @@ internal fun ScrollTitleContainerBase(
     scrollOffset: () -> Int,
     onScrollToTop: suspend () -> Unit,
     modifier: Modifier = Modifier,
+    actions: (@Composable RowScope.() -> Unit)? = null,
     content: @Composable (Modifier) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
@@ -67,25 +71,36 @@ internal fun ScrollTitleContainerBase(
                         fadeBottom = LedgerStyle.dimensions.primaryTopBarFade,
                     ),
             )
+        }
+        if (progress > 0f || actions != null) {
+            val topPadding = if (actions == null) 0f else 1f - progress
             Row(
-                Modifier.fillMaxWidth().height(LedgerStyle.dimensions.toolbarHeight).padding(horizontal = LedgerStyle.spacing.pageHorizontal)
-                    .graphicsLayer { alpha = progress },
+                Modifier.fillMaxWidth()
+                    .padding(top = LedgerStyle.spacing.extraSmall * topPadding)
+                    .height(LedgerStyle.dimensions.toolbarHeight)
+                    .padding(horizontal = LedgerStyle.spacing.pageHorizontal),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    title,
-                    modifier = Modifier.weight(1f).semantics { heading() },
-                    fontSize = (22f - 4f * progress).sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                TopBarIconButton(
-                    imageVector = MaterialSymbols.ArrowUpward,
-                    contentDescription = stringResource(cn.turingzy.ledger.R.string.ui_scroll_to_top),
-                    onClick = { scope.launch { onScrollToTop() } },
-                )
+                if (progress > 0f) {
+                    Text(
+                        title,
+                        modifier = Modifier.weight(1f).semantics { heading() }.graphicsLayer { alpha = progress },
+                        fontSize = (22f - 4f * progress).sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    TopBarIconButton(
+                        imageVector = MaterialSymbols.ArrowUpward,
+                        contentDescription = stringResource(cn.turingzy.ledger.R.string.ui_scroll_to_top),
+                        onClick = { scope.launch { onScrollToTop() } },
+                        modifier = Modifier.graphicsLayer { alpha = progress },
+                    )
+                } else {
+                    Spacer(Modifier.weight(1f))
+                }
+                actions?.invoke(this)
             }
         }
     }

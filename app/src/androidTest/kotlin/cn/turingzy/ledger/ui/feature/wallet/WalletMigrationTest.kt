@@ -36,7 +36,7 @@ class WalletMigrationTest {
             }
         }
         compose.onNodeWithText("暂无账户").assertIsDisplayed()
-        val addAccount = compose.onNode(hasText("账户") and hasClickAction())
+        val addAccount = compose.onNodeWithContentDescription("添加账户").assertHasClickAction()
         addAccount.performClick().performClick()
         compose.runOnIdle { assertEquals(1, additions); now = 400L }
         addAccount.performClick()

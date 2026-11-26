@@ -5,6 +5,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import cn.turingzy.ledger.model.settings.LedgerCardAppearance
@@ -27,6 +28,7 @@ import cn.turingzy.ledger.ui.component.card.summary.SummaryCardContent
  * @param onUploadBackground 触发上传更换卡片背景图的回调。
  * @param onTransparencyChange 修改卡片遮罩透明度百分比的回调。
  * @param currency 显示货币代码，默认为 "CNY"。
+ * @param amountPeriodKey 统计周期变化时重新建立金额动画基准。
  */
 @Composable
 fun SummaryHeroBanner(
@@ -41,6 +43,7 @@ fun SummaryHeroBanner(
     onUploadBackground: () -> Unit = {},
     onTransparencyChange: (Int) -> Unit = {},
     currency: String = "CNY",
+    amountPeriodKey: Any = cardMonthDisplay,
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     var amountsHidden by rememberSaveable { mutableStateOf(false) }
@@ -51,15 +54,18 @@ fun SummaryHeroBanner(
         settingsEnabled = settingsEnabled,
         onUploadBackground = onUploadBackground,
         onTransparencyChange = onTransparencyChange,
-    ) {
-        SummaryCardContent(
-            title = cardMonthDisplay.ifBlank { textResources.getString(cn.turingzy.ledger.R.string.ui_balance) },
-            amount = balance,
-            currency = currency,
-            amountsHidden = amountsHidden,
-            onToggleAmounts = { amountsHidden = !amountsHidden },
-            leftAmount = expense,
-            rightAmount = income,
-        )
+    ) { activeFace ->
+        key(currency, amountPeriodKey) {
+            SummaryCardContent(
+                title = cardMonthDisplay.ifBlank { textResources.getString(cn.turingzy.ledger.R.string.ui_balance) },
+                amount = balance,
+                currency = currency,
+                amountsHidden = amountsHidden,
+                onToggleAmounts = { amountsHidden = !amountsHidden },
+                leftAmount = expense,
+                rightAmount = income,
+                activeFace = activeFace,
+            )
+        }
     }
 }

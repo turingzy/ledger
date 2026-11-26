@@ -59,9 +59,13 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
@@ -76,6 +80,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cn.turingzy.ledger.model.account.AccountWithTemplate
@@ -647,7 +652,9 @@ private fun RecordCategoryGrid(
     }
     val gridState = rememberLazyGridState(initialFirstVisibleItemIndex = categories.indexOfFirst { it.category.id == selectedId }.coerceAtLeast(0) / 5 * 5)
     LazyVerticalGrid(
-        GridCells.Fixed(5), Modifier.fillMaxSize().testTag("recordCategoryGrid"), state = gridState,
+        columns = GridCells.Fixed(5),
+        modifier = Modifier.fillMaxSize().nestedScroll(RecordCategoryScrollConnection).testTag("recordCategoryGrid"),
+        state = gridState,
         contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 12.dp, bottom = bottomPadding + 12.dp),
         horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.medium), verticalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.extraLarge),
     ) {
@@ -667,6 +674,15 @@ private fun RecordCategoryGrid(
             }
         }
     }
+}
+
+/** 分类滚到边缘后消费剩余的纵向位移和速度，避免继续拖动记账抽屉。 */
+private object RecordCategoryScrollConnection : NestedScrollConnection {
+    override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset =
+        Offset(0f, available.y)
+
+    override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity =
+        Velocity(0f, available.y)
 }
 
 @Composable

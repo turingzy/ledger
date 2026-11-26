@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
@@ -23,7 +24,9 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cn.turingzy.ledger.util.toFormattedAmount
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.currentStateAsState
 
 /**
  * 摘要卡片正面内容展示组件。
@@ -43,6 +46,7 @@ import cn.turingzy.ledger.util.toFormattedAmount
  * @param leftLabel 左侧子项标签文本（默认为“支出”）。
  * @param rightLabel 右侧子项标签文本（默认为“收入”）。
  * @param currency 货币代号（默认为 "CNY"），用于确定货币符号。
+ * @param activeFace 正面是否为当前卡面。
  */
 @Composable
 fun SummaryCardContent(
@@ -56,9 +60,12 @@ fun SummaryCardContent(
     leftLabel: String = androidx.compose.ui.res.stringResource(cn.turingzy.ledger.R.string.ui_expense),
     rightLabel: String = androidx.compose.ui.res.stringResource(cn.turingzy.ledger.R.string.ui_income),
     currency: String = "CNY",
+    activeFace: Boolean = true,
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val currencySymbol = currencySymbolBiz(currency)
+    val lifecycleState by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
+    val animateAmounts = activeFace && lifecycleState.isAtLeast(Lifecycle.State.RESUMED)
     Box(modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -89,13 +96,16 @@ fun SummaryCardContent(
                 )
             }
             Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = if (amountsHidden) "****" else amount.toFormattedAmount(showSymbol = true, symbol = currencySymbol, useGrouping = true),
-                fontSize = LedgerStyle.typography.heroAmount.fontSize,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimary,
-                letterSpacing = (-0.6).sp,
+            SummaryAmountTicker(
+                amount = amount,
+                currencySymbol = currencySymbol,
+                hidden = amountsHidden,
+                animate = animateAmounts,
                 style = TextStyle(
+                    fontSize = LedgerStyle.typography.heroAmount.fontSize,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    letterSpacing = (-0.6).sp,
                     shadow = androidx.compose.ui.graphics.Shadow(
                         color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.55f),
                         offset = androidx.compose.ui.geometry.Offset(0f, 3f),
@@ -136,12 +146,15 @@ fun SummaryCardContent(
                         ),
                     )
                     Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = if (amountsHidden) "****" else leftAmount.toFormattedAmount(showSymbol = true, symbol = currencySymbol, useGrouping = true),
-                        fontSize = LedgerStyle.typography.body.fontSize,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.error,
+                    SummaryAmountTicker(
+                        amount = leftAmount,
+                        currencySymbol = currencySymbol,
+                        hidden = amountsHidden,
+                        animate = animateAmounts,
                         style = TextStyle(
+                            fontSize = LedgerStyle.typography.body.fontSize,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.error,
                             shadow = androidx.compose.ui.graphics.Shadow(
                                 color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.75f),
                                 offset = androidx.compose.ui.geometry.Offset(0f, 2f),
@@ -169,12 +182,15 @@ fun SummaryCardContent(
                         ),
                     )
                     Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = if (amountsHidden) "****" else rightAmount.toFormattedAmount(showSymbol = true, symbol = currencySymbol, useGrouping = true),
-                        fontSize = LedgerStyle.typography.body.fontSize,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.tertiary,
+                    SummaryAmountTicker(
+                        amount = rightAmount,
+                        currencySymbol = currencySymbol,
+                        hidden = amountsHidden,
+                        animate = animateAmounts,
                         style = TextStyle(
+                            fontSize = LedgerStyle.typography.body.fontSize,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.tertiary,
                             shadow = androidx.compose.ui.graphics.Shadow(
                                 color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.75f),
                                 offset = androidx.compose.ui.geometry.Offset(0f, 2f),
