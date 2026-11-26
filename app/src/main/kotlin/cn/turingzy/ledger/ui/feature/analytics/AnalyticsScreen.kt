@@ -143,16 +143,6 @@ fun AnalyticsContent(
                             title = textResources.getString(cn.turingzy.ledger.R.string.ui_analytics),
                             scrollOffset = { scrollState.value },
                             onScrollToTop = { scrollState.animateScrollTo(0) },
-                            actions = {
-                                TopBarIconButton(
-                                    imageVector = MaterialSymbols.CalendarMonth,
-                                    contentDescription = textResources.getString(R.string.ui_spending_calendar),
-                                    onClick = rememberUiAction(
-                                        { onOpenCalendar(minOf(uiState.periodEnd, LocalDate.now())) },
-                                        UiInteractionKind.Navigation,
-                                    ),
-                                )
-                            },
                         ) { scrollModifier ->
                             Column(
                                 scrollModifier.fillMaxSize().verticalScroll(scrollState)
@@ -166,7 +156,16 @@ fun AnalyticsContent(
                             ) {
                                 PrimaryPageHeaderBase(
                                     title = textResources.getString(cn.turingzy.ledger.R.string.ui_analytics),
-                                )
+                                ) {
+                                    TopBarIconButton(
+                                        imageVector = MaterialSymbols.CalendarMonth,
+                                        contentDescription = textResources.getString(R.string.ui_spending_calendar),
+                                        onClick = rememberUiAction(
+                                            { onOpenCalendar(minOf(uiState.periodEnd, LocalDate.now())) },
+                                            UiInteractionKind.Navigation,
+                                        ),
+                                    )
+                                }
                                 AnalyticsTimeScopeSelector(uiState.timeScope, onTimeScopeChange)
                                 Row(
                                     Modifier.fillMaxWidth().padding(vertical = LedgerStyle.spacing.extraSmall),
