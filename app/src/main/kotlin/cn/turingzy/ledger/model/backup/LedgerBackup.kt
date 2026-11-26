@@ -74,11 +74,10 @@ data class LedgerSettingsSnapshot(
  * 卡片外观配置备份模型。
  *
  * @property target 卡片应用目标位置，详见 [SummaryCardTarget]
- * @property transparency 透明度百分比（0..100）
  * @property image 自定义背景图片文件名或 URI，可为空
  */
 @Serializable
-data class BackupAppearance(val target: SummaryCardTarget, val transparency: Int, val image: String? = null)
+data class BackupAppearance(val target: SummaryCardTarget, val image: String? = null)
 
 /**
  * 汇率记录备份模型。

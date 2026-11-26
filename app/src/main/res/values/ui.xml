@@ -151,11 +151,14 @@
   <string name="ui_no_accounts">暂无账户</string>
   <string name="ui_card_settings">打开卡片设置</string>
   <string name="ui_more_colors">更多颜色</string>
-  <string name="ui_change_card_background">更换卡片背景</string>
+  <string name="ui_change_card_image">更换图片</string>
   <string name="ui_change_card_design">更换卡面</string>
   <string name="ui_month">月</string>
   <string name="ui_no_matching_transactions">未找到匹配的交易</string>
   <string name="ui_no_transactions_for_period">本期暂无交易</string>
+  <string name="ui_no_data_this_week">本周暂无数据</string>
+  <string name="ui_no_data_this_month">本月暂无数据</string>
+  <string name="ui_no_data_this_year">本年暂无数据</string>
   <string name="ui_searching_transactions">正在搜索交易</string>
   <string name="ui_view_app_source_code">查看此应用的源代码</string>
   <string name="ui_could_not_check_updates_please_try_again">检查更新失败，请重试</string>
@@ -229,7 +232,6 @@
   <string name="ui_select_ledger_period">选择账本日期</string>
   <string name="ui_select_destination_account">选择转入账户</string>
   <string name="ui_select_source_account">选择转出账户</string>
-  <string name="ui_transparency">透明度</string>
   <string name="ui_amount">金额</string>
   <string name="ui_wallet">钱包</string>
   <string name="ui_hide_amounts">隐藏卡片金额</string>

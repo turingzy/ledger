@@ -148,11 +148,14 @@
   <string name="ui_no_accounts">No accounts</string>
   <string name="ui_card_settings">Open card settings</string>
   <string name="ui_more_colors">More colors</string>
-  <string name="ui_change_card_background">Change card background</string>
+  <string name="ui_change_card_image">Change image</string>
   <string name="ui_change_card_design">Change card design</string>
   <string name="ui_month">Month</string>
   <string name="ui_no_matching_transactions">No matching transactions</string>
   <string name="ui_no_transactions_for_period">No transactions for this period</string>
+  <string name="ui_no_data_this_week">No data this week</string>
+  <string name="ui_no_data_this_month">No data this month</string>
+  <string name="ui_no_data_this_year">No data this year</string>
   <string name="ui_searching_transactions">Searching transactions</string>
   <string name="ui_view_app_source_code">View app source code</string>
   <string name="ui_could_not_check_updates_please_try_again">Could not check updates. Please try again.</string>
@@ -226,7 +229,6 @@
   <string name="ui_select_ledger_period">Select ledger period</string>
   <string name="ui_select_destination_account">Select destination account</string>
   <string name="ui_select_source_account">Select source account</string>
-  <string name="ui_transparency">Transparency</string>
   <string name="ui_amount">Amount</string>
   <string name="ui_wallet">Wallet</string>
   <string name="ui_hide_amounts">Hide amounts</string>

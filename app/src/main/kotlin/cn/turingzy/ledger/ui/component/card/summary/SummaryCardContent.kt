@@ -33,7 +33,7 @@ import androidx.lifecycle.compose.currentStateAsState
  *
  * 布局分为上下两个区域：
  * - 上部：展示卡片主标题、金额明文/密文切换按钮以及核心汇总金额。
- * - 底部毛玻璃区域：左右两侧分别展示子项标签与对应金额（例如支出与收入）。
+ * - 底部区域：左右两侧分别展示支出与收入等子项标签及其金额。
  * 文字均附加阴影效果以保证在各类明暗背景图片下的清晰可读性。
  *
  * @param title 卡片主标题（例如“本月结余”或“总资产”）。
@@ -66,11 +66,13 @@ fun SummaryCardContent(
     val currencySymbol = currencySymbolBiz(currency)
     val lifecycleState by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
     val animateAmounts = activeFace && lifecycleState.isAtLeast(Lifecycle.State.RESUMED)
+    val detailsHeight = 52.dp
     Box(modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = LedgerStyle.spacing.cardPadding, end = LedgerStyle.spacing.cardPadding, top = 10.dp),
+                .padding(start = LedgerStyle.spacing.cardPadding, end = LedgerStyle.spacing.cardPadding,
+                    top = 10.dp, bottom = detailsHeight),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -118,17 +120,18 @@ fun SummaryCardContent(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(52.dp)
+                .height(detailsHeight)
                 .align(Alignment.BottomCenter),
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = LedgerStyle.spacing.cardPadding),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(LedgerStyle.spacing.inlineGap),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(
+                    modifier = Modifier.weight(1f),
                     horizontalAlignment = Alignment.Start,
                     verticalArrangement = Arrangement.Center,
                 ) {
@@ -165,6 +168,7 @@ fun SummaryCardContent(
                 }
 
                 Column(
+                    modifier = Modifier.weight(1f),
                     horizontalAlignment = Alignment.End,
                     verticalArrangement = Arrangement.Center,
                 ) {

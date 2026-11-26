@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.wallet
 
+import android.net.Uri
 import cn.turingzy.ledger.ui.feature.wallet.component.SwipeableBankCardDeck
 import cn.turingzy.ledger.ui.feature.wallet.sheet.AccountDetailsSheet
 import cn.turingzy.ledger.ui.feature.wallet.sheet.AddAccountSheet
@@ -30,8 +31,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
-import cn.turingzy.ledger.model.settings.LedgerCardAppearance
-import cn.turingzy.ledger.ui.component.card.summary.rememberSummaryBackgroundPicker
 import androidx.compose.material3.Text
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.Stable
@@ -70,7 +69,6 @@ fun WalletScreen(
     val cardViewModel: WalletCardViewModel = hiltViewModel()
     val cardUiState by cardViewModel.uiState.collectAsStateWithLifecycle()
     val background = remember(cardUiState.background) { cardUiState.background?.asImageBitmap() }
-    val pickBackground = rememberSummaryBackgroundPicker(cardViewModel::importBackground)
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(cardUiState.error) {
         val error = cardUiState.error ?: return@LaunchedEffect
@@ -86,11 +84,9 @@ fun WalletScreen(
         onAddAccountClick = accountSheets::showAdd,
         onAdjustBalanceClick = accountSheets::showDetails,
         modifier = modifier,
-        cardAppearance = cardUiState.appearance,
         cardBackground = background,
         cardSettingsEnabled = !cardUiState.loading && !cardUiState.importing,
-        onUploadCardBackground = pickBackground,
-        onCardTransparencyChange = cardViewModel::setTransparencyPercent,
+        onCardBackgroundSelected = cardViewModel::importBackground,
         snackbarHostState = snackbarHostState,
     )
 
@@ -210,11 +206,9 @@ private fun WalletAccountSheets(
  * @param onAddAccountClick 点击新增账户回调
  * @param onAdjustBalanceClick 点击调整账户余额/查看账户详情回调
  * @param modifier 外部修饰符
- * @param cardAppearance 汇总卡片外观样式
  * @param cardBackground 汇总卡片自定义背景图
  * @param cardSettingsEnabled 是否允许修改卡片设置
- * @param onUploadCardBackground 上传卡片背景图片回调
- * @param onCardTransparencyChange 调整卡片透明度回调
+ * @param onCardBackgroundSelected 选中卡片背景图片后的回调。
  * @param snackbarHostState 轻量消息提示状态
  */
 @Composable
@@ -223,11 +217,9 @@ fun WalletContent(
     onAddAccountClick: () -> Unit,
     onAdjustBalanceClick: (Account) -> Unit,
     modifier: Modifier = Modifier,
-    cardAppearance: LedgerCardAppearance = LedgerCardAppearance(),
     cardBackground: ImageBitmap? = null,
     cardSettingsEnabled: Boolean = true,
-    onUploadCardBackground: () -> Unit = {},
-    onCardTransparencyChange: (Int) -> Unit = {},
+    onCardBackgroundSelected: (Uri) -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
@@ -281,11 +273,9 @@ fun WalletContent(
                                     totalExpense = totals.expense,
                                     totalIncome = totals.income,
                                     currency = totals.currency,
-                                    appearance = cardAppearance,
                                     background = cardBackground,
                                     settingsEnabled = cardSettingsEnabled,
-                                    onUploadBackground = onUploadCardBackground,
-                                    onTransparencyChange = onCardTransparencyChange,
+                                    onBackgroundSelected = onCardBackgroundSelected,
                                 ) else MissingExchangeRateNoticeBiz()
                             }
                         }
@@ -330,17 +320,15 @@ fun WalletContent(
 /**
  * 钱包顶部总资产概览卡片。
  *
- * 显示总资产、总支出与总收入，支持隐藏金额以及卡片背景与透明度自定义。
+ * 显示总资产、总支出与总收入，支持隐藏金额和自定义卡片背景图片。
  *
  * @param totalAsset 总资产金额（单位：分）
  * @param totalExpense 总支出金额（单位：分）
  * @param totalIncome 总收入金额（单位：分）
  * @param modifier 外部修饰符
- * @param appearance 卡片外观样式
  * @param background 卡片自定义背景位图
  * @param settingsEnabled 是否启用卡片背景及外观设置
- * @param onUploadBackground 触发背景图片选择回调
- * @param onTransparencyChange 修改背景透明度百分比回调
+ * @param onBackgroundSelected 选中卡片背景图片后的回调。
  * @param currency 币种代码，默认为 "CNY"
  */
 @Composable
@@ -349,11 +337,9 @@ fun WalletHeroCard(
     totalExpense: Long,
     totalIncome: Long,
     modifier: Modifier = Modifier,
-    appearance: LedgerCardAppearance = LedgerCardAppearance(),
     background: ImageBitmap? = null,
     settingsEnabled: Boolean = true,
-    onUploadBackground: () -> Unit = {},
-    onTransparencyChange: (Int) -> Unit = {},
+    onBackgroundSelected: (Uri) -> Unit = {},
     currency: String = "CNY",
 ) {
     val textResources = androidx.compose.ui.platform.LocalContext.current.resources
@@ -361,11 +347,9 @@ fun WalletHeroCard(
     SummaryCard(
         modifier = modifier,
         defaultBackgroundRes = R.drawable.bg_wallet_card,
-        appearance = appearance,
         background = background,
         settingsEnabled = settingsEnabled,
-        onUploadBackground = onUploadBackground,
-        onTransparencyChange = onTransparencyChange,
+        onBackgroundSelected = onBackgroundSelected,
     ) { activeFace ->
         key(currency) {
             SummaryCardContent(

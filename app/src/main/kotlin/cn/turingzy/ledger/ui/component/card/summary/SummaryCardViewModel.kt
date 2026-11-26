@@ -20,7 +20,7 @@ import timber.log.Timber
 /**
  * 摘要卡片外观与背景图的 UI 状态。
  *
- * @property appearance 卡片外观属性（包含透明度百分比、关联背景文件名等）。
+ * @property appearance 卡片保存的背景文件引用。
  * @property background 当前加载完成的背景图片位图；若使用默认背景则为 `null`。
  * @property loading 首次初始化加载中状态。
  * @property importing 背景图片导入与裁切处理中状态。
@@ -71,16 +71,6 @@ internal open class SummaryCardViewModel(
     }
 
     /**
-     * 设置毛玻璃透明度百分比并异步持久化。
-     *
-     * @param percent 透明度百分比数值（0 ~ 100）。
-     */
-    fun setTransparencyPercent(percent: Int) {
-        _uiState.update { it.copy(appearance = it.appearance.copy(transparencyPercent = percent)) }
-        save { repository.setTransparencyPercent(percent, target) }
-    }
-
-    /**
      * 导入用户选中的新背景图片并应用。
      *
      * @param uri 用户从相册等选择的图片 [Uri]。
@@ -123,19 +113,4 @@ internal open class SummaryCardViewModel(
         _uiState.update { it.copy(error = null) }
     }
 
-    /**
-     * 异步执行持久化保存，捕获并记录异常。
-     */
-    private fun save(action: suspend () -> Unit) {
-        viewModelScope.launch {
-            try {
-                action()
-            } catch (error: CancellationException) {
-                throw error
-            } catch (error: Exception) {
-                Timber.e(error, "Unable to save card appearance")
-                _uiState.update { it.copy(error = "卡片设置保存失败，请重试") }
-            }
-        }
-    }
 }

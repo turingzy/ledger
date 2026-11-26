@@ -1,5 +1,6 @@
 package cn.turingzy.ledger.ui.feature.bill
 
+import android.net.Uri
 import cn.turingzy.ledger.ui.feature.bill.component.SummaryHeroBanner
 import cn.turingzy.ledger.ui.feature.bill.detail.TransactionDetailsScreen
 import cn.turingzy.ledger.ui.feature.bill.detail.TransactionDetailsViewModel
@@ -13,6 +14,7 @@ import cn.turingzy.ledger.ui.component.MaterialSymbols
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -23,11 +25,11 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
-import cn.turingzy.ledger.model.settings.LedgerCardAppearance
 import cn.turingzy.ledger.ui.component.navigation.LocalBottomBarContentPadding
 import cn.turingzy.ledger.ui.component.base.PageFrameBase
 import cn.turingzy.ledger.ui.component.base.PrimaryPageHeaderBase
 import cn.turingzy.ledger.ui.component.base.EmptyStateBase
+import cn.turingzy.ledger.ui.component.base.CenteredEmptyStateBase
 import cn.turingzy.ledger.ui.component.biz.TransactionRowBiz
 import cn.turingzy.ledger.ui.component.biz.MissingExchangeRateNoticeBiz
 import cn.turingzy.ledger.ui.component.biz.currencySymbolBiz
@@ -47,11 +49,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cn.turingzy.ledger.R
+import cn.turingzy.ledger.ui.component.card.bank.BankCardAspectRatio
 import cn.turingzy.ledger.ui.component.card.summary.TopBarIconButton
 import cn.turingzy.ledger.ui.component.card.summary.LocalSummaryAmountsObscured
-import cn.turingzy.ledger.ui.component.card.summary.rememberSummaryBackgroundPicker
 import cn.turingzy.ledger.ui.component.biz.categoryGlyphBiz
 import cn.turingzy.ledger.model.transaction.TransactionDetail
 import cn.turingzy.ledger.model.transaction.TransactionType
@@ -88,7 +92,6 @@ fun BillScreen(
     val cardViewModel: BillCardViewModel = hiltViewModel()
     val cardUiState by cardViewModel.uiState.collectAsStateWithLifecycle()
     val background = remember(cardUiState.background) { cardUiState.background?.asImageBitmap() }
-    val pickBackground = rememberSummaryBackgroundPicker(cardViewModel::importBackground)
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(cardUiState.error) {
         val error = cardUiState.error ?: return@LaunchedEffect
@@ -118,11 +121,9 @@ fun BillScreen(
                 uiState = uiState,
                 onOpenSearch = onOpenSearch,
                 modifier = modifier,
-                cardAppearance = cardUiState.appearance,
                 cardBackground = background,
                 cardSettingsEnabled = !cardUiState.loading && !cardUiState.importing,
-                onUploadCardBackground = pickBackground,
-                onCardTransparencyChange = cardViewModel::setTransparencyPercent,
+                onCardBackgroundSelected = cardViewModel::importBackground,
                 snackbarHostState = snackbarHostState,
                 onTransactionClick = transactionViewModel::selectTransaction,
                 onSelectPeriod = viewModel::selectPeriod,
@@ -147,11 +148,9 @@ fun BillScreen(
  * @param onOpenSearch 打开搜索页面的回调。
  * @param onTransactionClick 点击单条交易的回调（传入交易 ID）。
  * @param onSelectPeriod 变更统计周期筛选的回调。
- * @param cardAppearance 汇总卡片的外观配置。
  * @param cardBackground 汇总卡片自定义背景图。
  * @param cardSettingsEnabled 是否允许修改卡片设置。
- * @param onUploadCardBackground 上传/更换卡片背景图的回调。
- * @param onCardTransparencyChange 调整卡片透明度百分比的回调。
+ * @param onCardBackgroundSelected 选中卡片背景图片后的回调。
  * @param snackbarHostState 用于展示轻量提示的 [SnackbarHostState]。
  * @param transactionRow 自定义交易行项渲染插槽，通常用于注入带滑动操作或多选状态的行项。
  */
@@ -162,11 +161,9 @@ fun BillContent(
     onOpenSearch: () -> Unit = {},
     onTransactionClick: (Long) -> Unit = {},
     onSelectPeriod: (DateFilterType, LocalDate) -> Unit = { _, _ -> },
-    cardAppearance: LedgerCardAppearance = LedgerCardAppearance(),
     cardBackground: ImageBitmap? = null,
     cardSettingsEnabled: Boolean = true,
-    onUploadCardBackground: () -> Unit = {},
-    onCardTransparencyChange: (Int) -> Unit = {},
+    onCardBackgroundSelected: (Uri) -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     transactionRow: (@Composable (detail: TransactionDetail, roundTop: Boolean, roundBottom: Boolean) -> Unit)? = null,
 ) {
@@ -239,11 +236,9 @@ fun BillContent(
                                     income = periodState.monthIncome,
                                     currency = periodState.currency,
                                     amountPeriodKey = Triple(periodState.filterType, start, end),
-                                    appearance = cardAppearance,
                                     background = cardBackground,
                                     settingsEnabled = cardSettingsEnabled,
-                                    onUploadBackground = onUploadCardBackground,
-                                    onTransparencyChange = onCardTransparencyChange,
+                                    onBackgroundSelected = onCardBackgroundSelected,
                                 )
                             } else {
                                 MissingExchangeRateNoticeBiz()
@@ -257,7 +252,19 @@ fun BillContent(
                         BillListStatus(textResources.getString(cn.turingzy.ledger.R.string.ui_loading_transactions))
                     }
                     periodState.dayGroups.isEmpty() -> item(key = "empty_placeholder") {
-                        BillListStatus(textResources.getString(cn.turingzy.ledger.R.string.ui_no_transactions_for_period))
+                        val message = when (periodState.filterType) {
+                            DateFilterType.WEEK -> R.string.ui_no_data_this_week
+                            DateFilterType.MONTH -> R.string.ui_no_data_this_month
+                            DateFilterType.YEAR -> R.string.ui_no_data_this_year
+                            DateFilterType.RANGE -> R.string.ui_no_transactions_for_period
+                        }
+                        CenteredEmptyStateBase(
+                            title = stringResource(message),
+                            modifier = Modifier.fillMaxWidth()
+                                // 对齐钱包「账户」标题下方的空卡片区域。
+                                .padding(top = LedgerStyle.dimensions.compactIconButton + LedgerStyle.spacing.labelGap)
+                                .aspectRatio(BankCardAspectRatio),
+                        )
                     }
                     else -> periodState.dayGroups.forEach { dayGroup ->
                         item(key = "group_${dayGroup.dateEpochDay}") {

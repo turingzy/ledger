@@ -3,6 +3,7 @@ package cn.turingzy.ledger.util
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.text.DecimalFormat
+import kotlin.math.abs
 
 /**
  * 金额格式化与解析工具类。
@@ -31,14 +32,12 @@ object AmountFormatter {
         useGrouping: Boolean = false,
     ): String {
         val isNegative = cents < 0
-        val absCents = if (isNegative) -cents else cents
-        val yuan = absCents / 100
-        val remainder = absCents % 100
-
+        // Divide before taking the absolute value so Long.MIN_VALUE remains representable.
         val numberString = if (useGrouping) {
-            val bd = BigDecimal(absCents).divide(BigDecimal(100), 2, RoundingMode.UNNECESSARY)
-            decimalFormat.format(bd)
+            decimalFormat.format(BigDecimal.valueOf(cents, 2).abs())
         } else {
+            val yuan = abs(cents / 100)
+            val remainder = abs(cents % 100)
             "$yuan.${remainder.toString().padStart(2, '0')}"
         }
 

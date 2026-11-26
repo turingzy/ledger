@@ -32,12 +32,18 @@ class BillMigrationTest {
 
         compose.onNodeWithText("账本").assertIsDisplayed()
         compose.onNodeWithText("正在加载账单").assertIsDisplayed()
-        compose.onNodeWithText("本期暂无交易").assertDoesNotExist()
+        compose.onNodeWithText("本月暂无数据").assertDoesNotExist()
 
         compose.runOnIdle { uiState.value = state }
         compose.onNodeWithText("账本").assertIsDisplayed()
-        compose.onNodeWithText("本期暂无交易").assertIsDisplayed()
+        compose.onNodeWithText("本月暂无数据").assertIsDisplayed()
         compose.onNodeWithText("正在加载账单").assertDoesNotExist()
+
+        compose.runOnIdle { uiState.value = state.copy(filterType = DateFilterType.WEEK) }
+        compose.onNodeWithText("本周暂无数据").assertIsDisplayed()
+
+        compose.runOnIdle { uiState.value = state.copy(filterType = DateFilterType.YEAR) }
+        compose.onNodeWithText("本年暂无数据").assertIsDisplayed()
     }
 
     @Test fun billSearchButtonNavigatesOutOfTheBillHeader() {

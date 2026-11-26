@@ -23,6 +23,8 @@ class AmountFormatterTest {
     fun formatCents_negativeAmount_formatsWithMinusSign() {
         assertEquals("-50.00", AmountFormatter.formatCents(-5000L))
         assertEquals("-0.99", AmountFormatter.formatCents(-99L))
+        assertEquals("-92233720368547758.08", AmountFormatter.formatCents(Long.MIN_VALUE))
+        assertEquals("-¥92,233,720,368,547,758.08", Long.MIN_VALUE.toFormattedAmount(showSymbol = true, useGrouping = true))
     }
 
     @Test

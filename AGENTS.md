@@ -34,7 +34,7 @@ Main Kotlin sources live under `app/src/main/kotlin/cn/turingzy/ledger/`.
 - `ui/feature/` contains bill, analytics, wallet, and settings screens with their ViewModels and feature-local components. Analytics calculations and the consumption calendar live under `ui/feature/analytics/calculation/` and `ui/feature/analytics/calendar/`.
 - `ui/component/` contains shared UI in `base/`, `biz/`, `card/`, `input/`, `navigation/`, and `picker/`. Shared styling and interaction behavior live in `ui/theme/` and `ui/interaction/`.
 
-Mirror production packages in `app/src/test/` and `app/src/androidTest/`. Prefer cohesive, singular directory names and colocate Compose previews with their components. Keep debug scenario data in `app/src/debug/`. See [test-data/README.md](test-data/README.md) for import fixtures and expected outcomes.
+Mirror production packages in `app/src/test/` and `app/src/androidTest/`. Prefer cohesive, singular directory names and colocate Compose previews with their components.
 
 ## Development Conventions
 

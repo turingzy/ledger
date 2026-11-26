@@ -5,16 +5,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -22,8 +20,8 @@ import cn.turingzy.ledger.ui.component.card.bank.BankCardAspectRatio
 import cn.turingzy.ledger.ui.component.card.bank.rememberCircularCardPagerState
 import cn.turingzy.ledger.ui.component.card.bank.CardPageIndicator
 import cn.turingzy.ledger.ui.component.card.bank.TitaniumBankCard
-import cn.turingzy.ledger.ui.component.base.EmptyStateBase
-import cn.turingzy.ledger.ui.theme.LedgerStyle
+import cn.turingzy.ledger.R
+import cn.turingzy.ledger.ui.component.base.CenteredEmptyStateBase
 import cn.turingzy.ledger.model.account.Account
 import cn.turingzy.ledger.model.account.AccountWithTemplate
 import cn.turingzy.ledger.model.account.CardTemplate
@@ -93,13 +91,8 @@ fun SwipeableBankCardDeck(
  */
 @Composable
 private fun EmptyCardDeck(modifier: Modifier = Modifier) {
-    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
-    Box(modifier.fillMaxWidth().aspectRatio(BankCardAspectRatio), contentAlignment = Alignment.Center) {
-        EmptyStateBase(
-            title = textResources.getString(cn.turingzy.ledger.R.string.ui_no_accounts),
-            contentPadding = PaddingValues(LedgerStyle.spacing.none),
-            titleStyle = MaterialTheme.typography.bodyLarge,
-            titleColor = LedgerStyle.colors.textSecondary,
-        )
-    }
+    CenteredEmptyStateBase(
+        title = stringResource(R.string.ui_no_accounts),
+        modifier = modifier.fillMaxWidth().aspectRatio(BankCardAspectRatio),
+    )
 }

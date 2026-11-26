@@ -21,15 +21,14 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertSame
 import org.junit.Before
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SummaryCardViewModelTest {
     private val repository = mockk<LedgerCardAppearanceRepository>(relaxed = true)
-    private val ledger = MutableStateFlow(LedgerCardAppearance(transparencyPercent = 25))
-    private val wallet = MutableStateFlow(LedgerCardAppearance(transparencyPercent = 75))
+    private val ledger = MutableStateFlow(LedgerCardAppearance(backgroundFile = "ledger.jpg"))
+    private val wallet = MutableStateFlow(LedgerCardAppearance(backgroundFile = "wallet.jpg"))
     private val dispatcher = StandardTestDispatcher()
 
     @Before
@@ -49,23 +48,12 @@ class SummaryCardViewModelTest {
         val ledgerViewModel = SummaryCardViewModel(repository, SummaryCardTarget.LEDGER)
         val walletViewModel = WalletCardViewModel(repository)
         runCurrent()
-        assertEquals(25, ledgerViewModel.uiState.value.appearance.transparencyPercent)
-        assertEquals(75, walletViewModel.uiState.value.appearance.transparencyPercent)
-        wallet.value = wallet.value.copy(transparencyPercent = 90)
+        assertEquals("ledger.jpg", ledgerViewModel.uiState.value.appearance.backgroundFile)
+        assertEquals("wallet.jpg", walletViewModel.uiState.value.appearance.backgroundFile)
+        wallet.value = LedgerCardAppearance()
         runCurrent()
-        assertEquals(90, walletViewModel.uiState.value.appearance.transparencyPercent)
-        assertEquals(25, ledgerViewModel.uiState.value.appearance.transparencyPercent)
-    }
-
-    @Test
-    fun walletTransparencyChangesOnlyWriteWalletPreferences() = runTest {
-        val viewModel = WalletCardViewModel(repository)
-        runCurrent()
-        viewModel.setTransparencyPercent(80)
-        runCurrent()
-        coVerify(exactly = 1) { repository.setTransparencyPercent(80, SummaryCardTarget.WALLET) }
-        coVerify(exactly = 0) { repository.setTransparencyPercent(any(), SummaryCardTarget.LEDGER) }
-        assertEquals(25, ledger.value.transparencyPercent)
+        assertNull(walletViewModel.uiState.value.appearance.backgroundFile)
+        assertEquals("ledger.jpg", ledgerViewModel.uiState.value.appearance.backgroundFile)
     }
 
     @Test

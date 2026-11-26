@@ -253,7 +253,7 @@ class DefaultSettingsDataRepository @Inject constructor(
         }
         val appearanceData = if (includeSettings) SummaryCardTarget.entries.map { target ->
             val appearance = appearances.appearance(target).first()
-            BackupAppearance(target, appearance.transparencyPercent, appearance.backgroundFile?.let {
+            BackupAppearance(target, appearance.backgroundFile?.let {
                 Base64.encodeToString(File(context.filesDir, it).inputStream().use { input -> input.readBytesLimited(8 * 1024 * 1024) }, Base64.NO_WRAP)
             })
         } else emptyList()
@@ -289,7 +289,7 @@ class DefaultSettingsDataRepository @Inject constructor(
         val settings = backup.settings?.let { it.copy(templates = it.templates.map(::unpack)) }
         // Keep rollback copies because applying a background removes its previous image.
         val prepared = mutableMapOf<SummaryCardTarget, String?>()
-        val previous = mutableMapOf<SummaryCardTarget, Pair<Int, String?>>()
+        val previous = mutableMapOf<SummaryCardTarget, String?>()
         var appearanceChanged = false
         var preferencesChanged = false
         val previousPreferences = preferences.preferences.first()
@@ -304,10 +304,9 @@ class DefaultSettingsDataRepository @Inject constructor(
                     }
                 }
                 val old = appearances.appearance(appearance.target).first()
-                val oldImage = old.backgroundFile?.let { filename ->
+                previous[appearance.target] = old.backgroundFile?.let { filename ->
                     appearances.prepareBackground(Uri.fromFile(File(context.filesDir, filename)), appearance.target)
                 }
-                previous[appearance.target] = old.transparencyPercent to oldImage
             }
             database.withTransaction {
                 val previousRules = if (bills != null && settings == null) database.parseRuleDao().backupRows() else emptyList()
@@ -353,7 +352,6 @@ class DefaultSettingsDataRepository @Inject constructor(
                     appearanceChanged = true
                     val image = prepared[appearance.target]
                     if (image != null) appearances.applyPreparedBackground(image, appearance.target) else appearances.resetBackground(appearance.target)
-                    appearances.setTransparencyPercent(appearance.transparency, appearance.target)
                 }
             }
         } catch (error: Exception) {
@@ -366,11 +364,9 @@ class DefaultSettingsDataRepository @Inject constructor(
                 }
             }
             if (appearanceChanged) withContext(NonCancellable) {
-                previous.forEach { (target, old) ->
+                previous.forEach { (target, image) ->
                     try {
-                        val image = old.second
                         if (image != null) appearances.applyPreparedBackground(image, target) else appearances.resetBackground(target)
-                        appearances.setTransparencyPercent(old.first, target)
                     } catch (rollbackError: Exception) {
                         if (rollbackError is kotlinx.coroutines.CancellationException) throw rollbackError
                         timber.log.Timber.e(rollbackError, "Unable to roll back restored appearance")
@@ -382,7 +378,7 @@ class DefaultSettingsDataRepository @Inject constructor(
         } finally {
             withContext(NonCancellable) {
                 exchangeRates.invalidate()
-                (prepared.values + previous.values.map { it.second }).filterNotNull().forEach { appearances.discardPreparedBackground(it) }
+                (prepared.values + previous.values).filterNotNull().forEach { appearances.discardPreparedBackground(it) }
             }
         }
     }

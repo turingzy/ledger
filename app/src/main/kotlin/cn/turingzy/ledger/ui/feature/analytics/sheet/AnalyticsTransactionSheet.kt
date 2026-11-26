@@ -6,6 +6,7 @@ import cn.turingzy.ledger.ui.component.biz.TransactionGroupHeaderBiz
 import cn.turingzy.ledger.ui.component.biz.TransactionGroupRowBiz
 import cn.turingzy.ledger.ui.theme.LedgerStyle
 import cn.turingzy.ledger.ui.component.base.ModalBottomSheetBase
+import cn.turingzy.ledger.ui.component.base.CenteredEmptyStateBase
 import cn.turingzy.ledger.ui.component.biz.LocalCurrencyBiz
 import cn.turingzy.ledger.ui.component.biz.currencySymbolBiz
 import androidx.compose.foundation.layout.*
@@ -58,7 +59,6 @@ internal fun AnalyticsTransactionSheet(
     groupByDate: Boolean = true,
     summaryType: TransactionType? = null,
 ) {
-    val textResources = androidx.compose.ui.platform.LocalContext.current.resources
     val height = LocalConfiguration.current.screenHeightDp.dp * 2 / 3
     val colors = MaterialTheme.colorScheme
     val groups = remember(transactions, groupByDate) {
@@ -102,7 +102,10 @@ internal fun AnalyticsTransactionSheet(
                 )
             }
             if (transactions.isEmpty()) {
-                Text(textResources.getString(R.string.ui_no_transactions), Modifier.padding(LedgerStyle.spacing.extraLarge), color = colors.onSurfaceVariant)
+                CenteredEmptyStateBase(
+                    title = stringResource(R.string.ui_no_transactions),
+                    modifier = Modifier.weight(1f).padding(horizontal = LedgerStyle.spacing.pageHorizontal),
+                )
             } else Box(Modifier.fillMaxWidth().weight(1f)) {
                 AnalyticsTransactionRows(
                     transactions = transactions,

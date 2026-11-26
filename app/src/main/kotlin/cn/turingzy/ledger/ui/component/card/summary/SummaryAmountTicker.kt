@@ -2,6 +2,7 @@ package cn.turingzy.ledger.ui.component.card.summary
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -26,6 +27,7 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.sp
 import cn.turingzy.ledger.util.toFormattedAmount
 
 /** An open transaction sheet defers visible amount changes until the sheet closes. */
@@ -40,8 +42,12 @@ internal fun SummaryAmountTicker(
     animate: Boolean,
     style: TextStyle,
 ) {
+    val amountStyle = style.copy(fontFeatureSettings = "tnum")
+    val autoSize = remember(style.fontSize) {
+        TextAutoSize.StepBased(minFontSize = 1.sp, maxFontSize = style.fontSize)
+    }
     if (hidden) {
-        Text("****", style = style)
+        Text("****", style = amountStyle, maxLines = 1, softWrap = false, autoSize = autoSize)
         return
     }
 
@@ -81,7 +87,10 @@ internal fun SummaryAmountTicker(
 
     Text(
         text = text,
-        style = style,
+        style = amountStyle,
+        maxLines = 1,
+        softWrap = false,
+        autoSize = autoSize,
         onTextLayout = { textLayout = it },
         modifier = Modifier.onVisibilityChanged(minFractionVisible = 0.5f) { visible = it }.drawWithCache {
             val target = textLayout?.takeIf { it.layoutInput.text.text == text }
@@ -91,7 +100,8 @@ internal fun SummaryAmountTicker(
                 val source = textMeasurer.measure(
                     previousText,
                     style = target.layoutInput.style,
-                    constraints = target.layoutInput.constraints,
+                    maxLines = 1,
+                    softWrap = false,
                 )
                 val digits = text.mapIndexedNotNull { index, character ->
                     val oldIndex = index + previousText.length - text.length

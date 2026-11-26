@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">Ledger</string>
     <string name="ui_scroll_to_top">Back to top</string>
-    <string name="calendar_empty_supporting">A quiet day for your wallet.\nAdd a transaction whenever you need.</string>
+    <string name="calendar_empty_supporting">A quiet day for your wallet.</string>
 </resources>

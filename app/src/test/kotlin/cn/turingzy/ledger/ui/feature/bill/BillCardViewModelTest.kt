@@ -9,7 +9,6 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import java.io.IOException
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,29 +44,16 @@ class BillCardViewModelTest {
     }
 
     @Test
-    fun restoredSettingsAndBackgroundAreLoadedWithoutRepeatedImageDecoding() = runTest {
+    fun savedBackgroundIsLoaded() = runTest {
         val bitmap = mockk<Bitmap>()
-        stored.value = LedgerCardAppearance(backgroundFile = "background.jpg", transparencyPercent = 75)
+        stored.value = LedgerCardAppearance(backgroundFile = "background.jpg")
         coEvery { repository.loadBackground("background.jpg") } returns bitmap
         val viewModel = BillCardViewModel(repository)
         runCurrent()
         assertFalse(viewModel.uiState.value.loading)
-        assertEquals(75, viewModel.uiState.value.appearance.transparencyPercent)
-        assertSame(bitmap, viewModel.uiState.value.background)
-        stored.value = stored.value.copy(transparencyPercent = 90)
-        runCurrent()
+        assertEquals("background.jpg", viewModel.uiState.value.appearance.backgroundFile)
         coVerify(exactly = 1) { repository.loadBackground("background.jpg") }
         assertSame(bitmap, viewModel.uiState.value.background)
-    }
-
-    @Test
-    fun settingChangesAreImmediatelyVisibleAndSaved() = runTest {
-        val viewModel = BillCardViewModel(repository)
-        runCurrent()
-        viewModel.setTransparencyPercent(80)
-        assertEquals(80, viewModel.uiState.value.appearance.transparencyPercent)
-        runCurrent()
-        coVerify { repository.setTransparencyPercent(80) }
     }
 
     @Test
@@ -93,16 +79,6 @@ class BillCardViewModelTest {
         runCurrent()
         assertFalse(viewModel.uiState.value.importing)
         assertEquals(LedgerCardAppearance(), viewModel.uiState.value.appearance)
-        assertNotNull(viewModel.uiState.value.error)
-    }
-
-    @Test
-    fun failedSaveIsReported() = runTest {
-        coEvery { repository.setTransparencyPercent(any()) } throws IOException("disk full")
-        val viewModel = BillCardViewModel(repository)
-        runCurrent()
-        viewModel.setTransparencyPercent(80)
-        runCurrent()
         assertNotNull(viewModel.uiState.value.error)
     }
 
@@ -145,13 +121,4 @@ class BillCardViewModelTest {
         assertFalse(viewModel.uiState.value.importing)
     }
 
-    @Test
-    fun cancelledSaveDoesNotBecomeUserFacingFailure() = runTest {
-        coEvery { repository.setTransparencyPercent(any()) } throws CancellationException("cancelled")
-        val viewModel = BillCardViewModel(repository)
-        runCurrent()
-        viewModel.setTransparencyPercent(0)
-        runCurrent()
-        assertNull(viewModel.uiState.value.error)
-    }
 }

@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -303,6 +305,19 @@ fun EmptyStateBase(
             )
         }
         if (actions != null) actions()
+    }
+}
+
+/** 将单行空状态提示居中放在原本展示内容的区域。 */
+@Composable
+internal fun CenteredEmptyStateBase(title: String, modifier: Modifier = Modifier) {
+    Box(modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Text(
+            title,
+            style = MaterialTheme.typography.bodyLarge,
+            color = LedgerStyle.colors.textSecondary,
+            textAlign = TextAlign.Center,
+        )
     }
 }
 

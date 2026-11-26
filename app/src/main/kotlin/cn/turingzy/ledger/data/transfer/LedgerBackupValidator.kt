@@ -27,7 +27,7 @@ object LedgerBackupValidator {
      * - 偏好设置中的主要货币、主题及语言取值有效性。
      * - 汇率历史数据的合法性。
      * - 导入解析规则的有效性及其默认关联账户/分类的外键引用。
-     * - 卡片外观透明度取值范围（0..100）及目标唯一性。
+     * - 卡片背景目标唯一性。
      *
      * @param backup 待验证的账本备份数据对象 [LedgerBackup]。
      * @throws IllegalArgumentException 当数据存在结构错误、孤立引用或违反约束条件时抛出。
@@ -68,7 +68,6 @@ object LedgerBackupValidator {
                 it.name.isNotBlank() && it.startRow > 0 && Json.decodeFromString<BillParseRule>(it.mappingConfig).valid
             }) { "备份包含无效的解析规则" }
             require(settings.appearances.map { it.target }.distinct().size == settings.appearances.size) { "重复的卡片设置" }
-            require(settings.appearances.all { it.transparency in 0..100 }) { "透明度设置无效" }
             backup.bills?.let { bills ->
                 require(settings.rules.all { rule ->
                     (rule.defaultAccountId == null || bills.accounts.any { it.id == rule.defaultAccountId }) &&

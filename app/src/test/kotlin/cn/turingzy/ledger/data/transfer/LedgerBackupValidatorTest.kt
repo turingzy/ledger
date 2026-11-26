@@ -7,6 +7,7 @@ import cn.turingzy.ledger.model.category.CategoryType
 import cn.turingzy.ledger.model.category.Icon
 import cn.turingzy.ledger.model.backup.LedgerBackup
 import cn.turingzy.ledger.model.backup.LedgerBillSnapshot
+import cn.turingzy.ledger.model.settings.SummaryCardTarget
 import cn.turingzy.ledger.model.transaction.Transaction
 import cn.turingzy.ledger.model.transaction.TransactionType
 import kotlinx.serialization.encodeToString
@@ -26,6 +27,17 @@ class LedgerBackupValidatorTest {
         val decoded = Json.decodeFromString<LedgerBackup>(Json.encodeToString(snapshot))
         LedgerBackupValidator.validate(decoded)
         assertEquals(snapshot, decoded)
+    }
+    @Test fun legacyCardAppearanceRestoresImageAndDropsTransparency() {
+        val json = Json { encodeDefaults = true; ignoreUnknownKeys = true }
+        val backup = json.decodeFromString<LedgerBackup>(
+            """{"settings":{"rules":[],"templates":[],"appearances":[{"target":"WALLET","transparency":65,"image":"YWJj"}]}}""",
+        )
+        LedgerBackupValidator.validate(backup)
+        val appearance = requireNotNull(backup.settings).appearances.single()
+        assertEquals(SummaryCardTarget.WALLET, appearance.target)
+        assertEquals("YWJj", appearance.image)
+        assertFalse(json.encodeToString(backup).contains("transparency"))
     }
     @Test fun manuallyAdjustedBalancesArePreserved() {
         val snapshot = LedgerBackup(bills = bills.copy(accounts = bills.accounts.map { it.copy(currentBalance = 12000) }))

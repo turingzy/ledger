@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.Flow
 /**
  * 汇总卡片外观设置数据仓库接口。
  *
- * 管理账本概览与钱包概览等卡片的背景图片及卡片透明度配置，
+ * 管理账本与钱包汇总卡片的背景图片，
  * 支持两阶段暂存-应用背景图片工作流以及位图解码。
  */
 interface LedgerCardAppearanceRepository {
@@ -17,17 +17,9 @@ interface LedgerCardAppearanceRepository {
      * 获取指定目标卡片的外观设置流。
      *
      * @param target 目标卡片类型（账本概览卡或钱包概览卡），默认为 [SummaryCardTarget.LEDGER]
-     * @return 包含背景文件名和透明度百分比的外观模型流
+     * @return 包含背景文件名的外观模型流
      */
     fun appearance(target: SummaryCardTarget = SummaryCardTarget.LEDGER): Flow<LedgerCardAppearance>
-
-    /**
-     * 设置指定目标卡片的透明度百分比。
-     *
-     * @param percent 透明度数值（0 - 100）
-     * @param target 目标卡片类型，默认为 [SummaryCardTarget.LEDGER]
-     */
-    suspend fun setTransparencyPercent(percent: Int, target: SummaryCardTarget = SummaryCardTarget.LEDGER)
 
     /**
      * 重置指定目标卡片的背景图片为默认，并清理旧文件。

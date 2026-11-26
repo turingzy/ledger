@@ -4,11 +4,8 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
 import android.net.Uri
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
-import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import cn.turingzy.ledger.model.settings.LedgerCardAppearance
@@ -31,7 +28,7 @@ private val Context.ledgerCardStore by preferencesDataStore(name = "ledger_card"
 /**
  * [LedgerCardAppearanceRepository] 的默认实现。
  *
- * 基于 DataStore Preferences 持久化卡片透明度与背景文件名，
+ * 基于 DataStore Preferences 持久化背景文件名，
  * 并处理应用内部缓存及私有存储目录中的背景图片编码、缩放与文件生命周期。
  *
  * @param context 应用程序上下文
@@ -54,26 +51,8 @@ class DefaultLedgerCardAppearanceRepository @Inject constructor(
             emit(emptyPreferences())
         }
         .map { preferences ->
-            val keys = keys(target)
-            LedgerCardAppearance(
-                backgroundFile = preferences[keys.background],
-                transparencyPercent = if (preferences[keys.enabled] == false) 0 else (preferences[keys.percent] ?: 50).coerceIn(0, 100),
-            )
+            LedgerCardAppearance(backgroundFile = preferences[backgroundKey(target)])
         }
-
-    /**
-     * 更新指定卡片的透明度百分比。
-     *
-     * @param percent 透明度（0-100）
-     * @param target 目标卡片
-     */
-    override suspend fun setTransparencyPercent(percent: Int, target: SummaryCardTarget) {
-        require(percent in 0..100)
-        context.ledgerCardStore.edit {
-            it[keys(target).percent] = percent
-            it.remove(keys(target).enabled)
-        }
-    }
 
     /**
      * 重置指定卡片的背景图片，并删除对应的私有存储文件。
@@ -83,8 +62,7 @@ class DefaultLedgerCardAppearanceRepository @Inject constructor(
     override suspend fun resetBackground(target: SummaryCardTarget): Unit = withContext(ioDispatcher) {
         var previous: String? = null
         context.ledgerCardStore.edit {
-            previous = it[keys(target).background]
-            it.remove(keys(target).background)
+            previous = it.remove(backgroundKey(target))
         }
         removeBackgroundFile(previous)
     }
@@ -154,8 +132,9 @@ class DefaultLedgerCardAppearanceRepository @Inject constructor(
             prepared.copyTo(destination, overwrite = true)
             var previous: String? = null
             context.ledgerCardStore.edit {
-                previous = it[keys(target).background]
-                it[keys(target).background] = destination.name
+                val key = backgroundKey(target)
+                previous = it[key]
+                it[key] = destination.name
             }
             saved = true
             removeBackgroundFile(previous)
@@ -185,20 +164,9 @@ class DefaultLedgerCardAppearanceRepository @Inject constructor(
         decode(ImageDecoder.createSource(File(context.filesDir, filename)))
     }
 
-    private fun keys(target: SummaryCardTarget): AppearanceKeys {
-        // Keep the original ledger keys so existing backgrounds and transparency settings survive.
-        val prefix = if (target == SummaryCardTarget.LEDGER) "" else "wallet_"
-        return AppearanceKeys(
-            background = stringPreferencesKey("${prefix}background"),
-            enabled = booleanPreferencesKey("${prefix}transparency_enabled"),
-            percent = intPreferencesKey("${prefix}transparency_percent"),
-        )
-    }
-
-    private data class AppearanceKeys(
-        val background: Preferences.Key<String>,
-        val enabled: Preferences.Key<Boolean>,
-        val percent: Preferences.Key<Int>,
+    /** 沿用账本和钱包各自保存背景图片的原始键。 */
+    private fun backgroundKey(target: SummaryCardTarget) = stringPreferencesKey(
+        if (target == SummaryCardTarget.LEDGER) "background" else "wallet_background",
     )
 
     private fun decode(source: ImageDecoder.Source): Bitmap = ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
